@@ -39,19 +39,16 @@ const ContactCardContentComponent = ({
         </p>
       )}
 
-      <div className="flex flex-shrink-0 flex-wrap gap-2">
-        {data.links.map((link) => (
-          <a
-            className="no-drag flex items-center gap-1 rounded-lg bg-white/10 px-3 py-1.5 text-sm text-white/90 transition-colors hover:bg-white/20 hover:text-white"
-            href={link.url}
-            key={link.url}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            {renderIcon(link.icon)}
-            <span>{link.label}</span>
-          </a>
-        ))}
+      <div className="flex flex-shrink-0">
+        <a
+          className="no-drag flex items-center gap-1 rounded-lg bg-white/10 px-3 py-1.5 text-sm text-white/90 transition-colors hover:bg-white/20 hover:text-white"
+          href={data.link.url}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          {renderIcon(data.link.icon)}
+          <span>{data.link.label}</span>
+        </a>
       </div>
     </div>
   );

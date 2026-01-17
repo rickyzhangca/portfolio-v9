@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useAtomValue } from "jotai";
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card } from "@/components/cards/card";
 import { fanConfigAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
@@ -65,10 +65,11 @@ const getOffsets = (
       hasPrevInRow = false;
     }
 
+    const cardHeight = card.size.height ?? 0;
     const rotationDeg = (col + 1) * fanConfig.rotateStepDeg;
     const { width: bboxWidth, height: bboxHeight } = getRotatedBoundingBox(
       card.size.width,
-      card.size.height,
+      cardHeight,
       rotationDeg
     );
     const extraWidth = bboxWidth - card.size.width;
@@ -81,7 +82,7 @@ const getOffsets = (
     }
 
     offsets[index] = { x, y };
-    rowMaxHeight = Math.max(rowMaxHeight, (card.size.height + bboxHeight) / 2);
+    rowMaxHeight = Math.max(rowMaxHeight, (cardHeight + bboxHeight) / 2);
     prevWidth = card.size.width;
     prevExtraWidth = extraWidth;
     hasPrevInRow = true;
@@ -121,10 +122,23 @@ export const CardGroup = ({
   setRootRef,
 }: CardGroupProps) => {
   const fanConfig = useAtomValue(fanConfigAtom);
+  const [measuredSizes, setMeasuredSizes] = useState<Record<string, number>>(
+    {}
+  );
+
+  const cardsWithSizes = useMemo(() => {
+    return group.cards.map((card) => ({
+      ...card,
+      size: {
+        ...card.size,
+        height: measuredSizes[card.id] ?? card.size.height,
+      },
+    }));
+  }, [group.cards, measuredSizes]);
 
   const offsets = useMemo(
-    () => getOffsets(group.cards, isExpanded, fanConfig),
-    [group.cards, isExpanded, fanConfig]
+    () => getOffsets(cardsWithSizes, isExpanded, fanConfig),
+    [cardsWithSizes, isExpanded, fanConfig]
   );
 
   const { isDragging, didDragRef, handleMouseDown, style } = useDraggable({
@@ -140,6 +154,15 @@ export const CardGroup = ({
       onDragEnd?.();
     },
   });
+
+  const handleCardMeasure = useCallback((id: string, height: number) => {
+    setMeasuredSizes((prev) => {
+      if (prev[id] === height) {
+        return prev;
+      }
+      return { ...prev, [id]: height };
+    });
+  }, []);
 
   return (
     <motion.div
@@ -169,7 +192,7 @@ export const CardGroup = ({
         className="absolute top-0 left-0 will-change-transform"
         style={style}
       >
-        {group.cards.map((card, index) => {
+        {cardsWithSizes.map((card, index) => {
           const isCover = index === 0;
           const offset = offsets[index] ?? { x: 0, y: 0 };
           const colInRow = isCover ? 0 : (index - 1) % EXPAND_MAX_PER_ROW;
@@ -183,12 +206,13 @@ export const CardGroup = ({
               : 0;
 
           // Mask styles for cover card only
+          const cardHeight = card.size.height ?? 0;
           const maskStyles = isCover
             ? {
                 maskImage: CARD_MASK_DATA_URI,
                 WebkitMaskImage: CARD_MASK_DATA_URI,
-                maskSize: `${card.size.width}px ${card.size.height}px`,
-                WebkitMaskSize: `${card.size.width}px ${card.size.height}px`,
+                maskSize: `${card.size.width}px ${cardHeight}px`,
+                WebkitMaskSize: `${card.size.width}px ${cardHeight}px`,
                 maskRepeat: "no-repeat",
                 WebkitMaskRepeat: "no-repeat",
                 maskPosition: "center",
@@ -246,6 +270,7 @@ export const CardGroup = ({
                     isCover ? "shadow-none hover:shadow-none" : undefined
                   }
                   data={card}
+                  onMeasure={(h) => handleCardMeasure(card.id, h)}
                 />
               </div>
             </motion.div>
