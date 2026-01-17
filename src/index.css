@@ -55,6 +55,9 @@
   body {
     @apply bg-background1 text-foreground1;
   }
+  button {
+    @apply select-none;
+  }
 }
 
 /* Canvas-specific styles */
