@@ -213,7 +213,7 @@ export const CardGroup = ({
               x: 0,
               y: 0,
             }}
-            className="absolute top-0 left-0 drop-shadow-[0_25px_25px_rgba(0,0,0,0.25)] transition-all duration-200 will-change-transform hover:drop-shadow-[0_20px_35px_rgba(0,0,0,0.5)] active:drop-shadow-[0_15px_15px_rgba(0,0,0,0.25)]"
+            className="absolute top-0 left-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.24)] transition-all duration-200 will-change-transform hover:drop-shadow-[0_20px_24px_rgba(0,0,0,0.32)] active:drop-shadow-[0_8px_20px_rgba(0,0,0,0.24)]"
             key={coverWithSize.id}
             onClick={(e) => {
               const target = e.target as HTMLElement;
@@ -297,19 +297,23 @@ export const CardGroup = ({
           const COLLAPSED_VISIBLE_COUNT = 2;
           const isHiddenWhenCollapsed =
             !isExpanded && index >= COLLAPSED_VISIBLE_COUNT;
-          const collapsedIndex = isHiddenWhenCollapsed
-            ? COLLAPSED_VISIBLE_COUNT - 1
-            : index;
 
-          // For hidden cards, use the same offset as the last visible card
-          const collapsedOffset = isHiddenWhenCollapsed
-            ? (offsets[COLLAPSED_VISIBLE_COUNT - 1] ?? { x: 0, y: 0 })
-            : offset;
+          // Specific collapsed positions for visible cards
+          // Card 1: 16px from left & top, -5deg rotation
+          // Card 2: 32px from left, 68px from top, no rotation
+          const collapsedPositions = [
+            { x: 24, y: 24, rotate: 5 },
+            { x: 32, y: 72, rotate: 0 },
+          ];
+          const collapsedPos = collapsedPositions[Math.min(index, 1)];
 
           // Calculate collapsed opacity - hidden cards get 0, visible cards get gradual reduction
           const collapsedOpacity = isHiddenWhenCollapsed
             ? 0
-            : Math.max(0.7, 1 - (collapsedIndex + 1) * 0.08);
+            : Math.max(0.7, 1 - (index + 1) * 0.08);
+
+          // Calculate collapsed scale based on index (for visible cards)
+          const collapsedScaleIndex = isHiddenWhenCollapsed ? 1 : index;
 
           return (
             <motion.div
@@ -318,10 +322,10 @@ export const CardGroup = ({
                 scale: isExpanded
                   ? 1
                   : collapsedScale *
-                    Math.max(0.94, 1 - (collapsedIndex + 1) * 0.02),
-                rotate: fanRotate,
-                x: isExpanded ? offset.x : collapsedOffset.x,
-                y: isExpanded ? offset.y + fanArcY : collapsedOffset.y,
+                    Math.max(0.94, 1 - (collapsedScaleIndex + 1) * 0.02),
+                rotate: isExpanded ? fanRotate : collapsedPos.rotate,
+                x: isExpanded ? offset.x : collapsedPos.x,
+                y: isExpanded ? offset.y + fanArcY : collapsedPos.y,
               }}
               className={cn(
                 "absolute top-0 left-0 will-change-transform",
