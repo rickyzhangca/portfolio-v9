@@ -1,5 +1,4 @@
 import { memo, useLayoutEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
 import type {
   CardData,
   CompanyCardContent,
@@ -13,10 +12,16 @@ import { ProjectCardContentView } from "./project-card-content";
 interface CardProps {
   data: CardData;
   className?: string;
+  isExpanded?: boolean;
   onMeasure?: (height: number) => void;
 }
 
-const CardComponent = ({ data, className, onMeasure }: CardProps) => {
+const CardComponent = ({
+  data,
+  className,
+  isExpanded = true,
+  onMeasure,
+}: CardProps) => {
   const ref = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -50,7 +55,10 @@ const CardComponent = ({ data, className, onMeasure }: CardProps) => {
         );
       case "project":
         return (
-          <ProjectCardContentView data={data.content as ProjectCardContent} />
+          <ProjectCardContentView
+            data={data.content as ProjectCardContent}
+            isExpanded={isExpanded}
+          />
         );
       case "contact":
         return (
@@ -63,11 +71,7 @@ const CardComponent = ({ data, className, onMeasure }: CardProps) => {
 
   return (
     <div
-      className={cn(
-        "transition-shadow duration-200",
-        "hover:shadow-[0_20px_70px_-15px_rgba(0,0,0,0.5)]",
-        className
-      )}
+      className={className}
       ref={ref}
       style={{
         width: data.size.width,

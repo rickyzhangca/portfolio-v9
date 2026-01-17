@@ -1,12 +1,17 @@
 import { ArrowUpRightIcon } from "@phosphor-icons/react";
+import { motion } from "framer-motion";
 import { memo } from "react";
 import type { ProjectCardContent } from "@/types/canvas";
 
 interface ProjectCardContentProps {
   data: ProjectCardContent;
+  isExpanded?: boolean;
 }
 
-const ProjectCardContentComponent = ({ data }: ProjectCardContentProps) => {
+const ProjectCardContentComponent = ({
+  data,
+  isExpanded = true,
+}: ProjectCardContentProps) => {
   return (
     <div className="flex h-full flex-col gap-2">
       <div className="overflow-hidden rounded-4xl border-4 border-white bg-white shadow-3xl">
@@ -18,7 +23,21 @@ const ProjectCardContentComponent = ({ data }: ProjectCardContentProps) => {
           width="200"
         />
       </div>
-      <div className="flex w-fit items-center gap-4 rounded-full bg-white px-5 py-3 shadow-3xl">
+      <motion.div
+        animate={{
+          opacity: isExpanded ? 1 : 0,
+          y: isExpanded ? 0 : -8,
+          scale: isExpanded ? 1 : 0.95,
+        }}
+        className="flex w-fit items-center gap-4 rounded-full bg-white px-5 py-3 shadow-3xl"
+        initial={false}
+        transition={{
+          type: "spring",
+          stiffness: 520,
+          damping: 46,
+          mass: 0.8,
+        }}
+      >
         <span className="font-medium">{data.title}</span>
         {data.link?.url && (
           <div className="flex items-center gap-1">
@@ -39,15 +58,47 @@ const ProjectCardContentComponent = ({ data }: ProjectCardContentProps) => {
             </a>
           </div>
         )}
-      </div>
+      </motion.div>
       {data.description && (
-        <p className="rounded-3xl bg-white px-5 py-3 text-sm shadow-3xl">
+        <motion.p
+          animate={{
+            opacity: isExpanded ? 1 : 0,
+            y: isExpanded ? 0 : -8,
+            scale: isExpanded ? 1 : 0.95,
+          }}
+          className="rounded-3xl bg-white px-5 py-4 text-sm shadow-3xl"
+          initial={false}
+          transition={{
+            type: "spring",
+            stiffness: 520,
+            damping: 46,
+            mass: 0.8,
+            delay: 0.02,
+          }}
+        >
           {data.description}
-        </p>
+        </motion.p>
       )}
 
       {data.richContent && (
-        <div className="flex-grow overflow-auto">{data.richContent}</div>
+        <motion.div
+          animate={{
+            opacity: isExpanded ? 1 : 0,
+            y: isExpanded ? 0 : -8,
+            scale: isExpanded ? 1 : 0.95,
+          }}
+          className="flex-grow overflow-auto"
+          initial={false}
+          transition={{
+            type: "spring",
+            stiffness: 520,
+            damping: 46,
+            mass: 0.8,
+            delay: 0.04,
+          }}
+        >
+          {data.richContent}
+        </motion.div>
       )}
     </div>
   );
