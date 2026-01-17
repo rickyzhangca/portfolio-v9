@@ -1,6 +1,6 @@
 import { Canvas } from "@/components/canvas/canvas";
-import { portfolioGroups } from "@/data/portfolio-groups";
+import { data } from "@/data/data";
 
 export const App = () => {
-  return <Canvas initialGroups={portfolioGroups} />;
+  return <Canvas initialGroups={data} />;
 };

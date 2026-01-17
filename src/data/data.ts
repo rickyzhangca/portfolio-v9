@@ -1,6 +1,6 @@
 import type { CardGroupData } from "@/types/canvas";
 
-export const portfolioGroups: CardGroupData[] = [
+export const data: CardGroupData[] = [
   {
     id: "rbc-group",
     position: { x: 100, y: 100 },
@@ -9,7 +9,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "rbc-company",
         type: "company",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "RBC",
           description: "Software Developer Intern",
@@ -19,7 +19,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-1",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "E-Commerce Platform",
           description:
@@ -42,7 +42,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-2",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Task Management App",
           description:
@@ -65,7 +65,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-3",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "PySpark Analytics",
           description:
@@ -88,7 +88,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-4",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Redesign",
           description:
@@ -119,7 +119,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "wealthsimple-company",
         type: "company",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Wealthsimple",
           description: "Frontend Developer",
@@ -129,7 +129,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-5",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "AI Content Generator",
           description:
@@ -152,7 +152,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-6",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Design System",
           description:
@@ -167,7 +167,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-7",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Home Gradients",
           description:
@@ -182,7 +182,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-8",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Native Sheet",
           description:
@@ -197,7 +197,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-9",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Profile Layout",
           description:
@@ -212,7 +212,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-10",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Snackbar",
           description:
@@ -227,7 +227,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-11",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Swipeable",
           description:
@@ -242,7 +242,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-12",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Ticker",
           description:
@@ -257,7 +257,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-13",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Web Chart",
           description:
@@ -272,7 +272,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-14",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Widget",
           description:
@@ -287,7 +287,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-15",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "WS Sans",
           description:
@@ -310,7 +310,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "mintlify-company",
         type: "company",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Mintlify",
           description: "Software Engineer",
@@ -320,7 +320,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-16",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Auth",
           description:
@@ -335,7 +335,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-17",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Chat",
           description:
@@ -350,7 +350,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-18",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Editor",
           description:
@@ -365,7 +365,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-19",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Fonts",
           description:
@@ -380,7 +380,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-20",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Footer",
           description:
@@ -395,7 +395,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-21",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "GitLab",
           description:
@@ -410,7 +410,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-22",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Support",
           description:
@@ -433,7 +433,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "mosaic-company",
         type: "company",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Mosaic",
           description: "Full Stack Developer",
@@ -443,7 +443,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-23",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Analytics Dashboard",
           description:
@@ -458,7 +458,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-24",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Design System",
           description:
@@ -473,7 +473,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-25",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Graphic",
           description:
@@ -488,7 +488,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-26",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Icon",
           description:
@@ -503,7 +503,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-27",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Packaging",
           description:
@@ -518,7 +518,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "project-28",
         type: "project",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Printers",
           description:
@@ -541,7 +541,7 @@ export const portfolioGroups: CardGroupData[] = [
       {
         id: "contact-card",
         type: "contact",
-        size: { width: 200, height: 200 },
+        size: { width: 240, height: 240 },
         content: {
           title: "Let's Connect",
           description:
