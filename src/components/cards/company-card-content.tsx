@@ -18,7 +18,7 @@ const CompanyCardContentComponent = ({ data }: CompanyCardContentProps) => {
 
       <div className="absolute bottom-6 left-6 flex flex-col gap-1">
         <h3 className="font-medium text-white">{data.company}</h3>
-        <p className="relative text-sm text-white">
+        <p className="relative text-[13px] text-white">
           <span className="absolute opacity-50 mix-blend-overlay">
             {data.title}
           </span>
