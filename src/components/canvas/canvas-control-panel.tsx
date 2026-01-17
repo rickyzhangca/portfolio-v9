@@ -1,6 +1,9 @@
 import { useAtom } from "jotai";
 import { repulsionConfigAtom } from "@/context/atoms";
 import { Slider } from "../ui/slider";
+
+const toSingleNumber = (value: number | readonly number[]) =>
+  (Array.isArray(value) ? value[0] : value) ?? 0;
 export const CanvasControlPanel = () => {
   const [config, setConfig] = useAtom(repulsionConfigAtom);
 
@@ -50,7 +53,9 @@ export const CanvasControlPanel = () => {
           <Slider
             max={2000}
             min={200}
-            onValueChange={(value) => setConfig({ ...config, radiusPx: value })}
+            onValueChange={(value) =>
+              setConfig({ ...config, radiusPx: toSingleNumber(value) })
+            }
             step={100}
             value={config.radiusPx}
           />
@@ -72,7 +77,7 @@ export const CanvasControlPanel = () => {
             max={500}
             min={0}
             onValueChange={(value) =>
-              setConfig({ ...config, strengthPx: value })
+              setConfig({ ...config, strengthPx: toSingleNumber(value) })
             }
             step={50}
             value={config.strengthPx}

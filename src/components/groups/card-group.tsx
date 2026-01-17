@@ -7,6 +7,8 @@ import type { CardGroupData, Position } from "@/types/canvas";
 
 const STACK_OFFSET_PX = 6;
 const EXPAND_GAP_PX = 24;
+const EXPAND_MAX_PER_ROW = 3;
+const EXPAND_ROW_GAP_PX = 24;
 
 const getOffsets = (cards: CardGroupData["cards"], expanded: boolean) => {
   if (!expanded) {
@@ -16,12 +18,36 @@ const getOffsets = (cards: CardGroupData["cards"], expanded: boolean) => {
     }));
   }
 
-  let x = 0;
-  return cards.map((card, index) => {
-    const offset = { x, y: 0 };
-    x += card.size.width + (index === cards.length - 1 ? 0 : EXPAND_GAP_PX);
-    return offset;
-  });
+  const offsets = cards.map(() => ({ x: 0, y: 0 }));
+
+  const coverWidth = cards[0]?.size.width ?? 0;
+  const baseX = coverWidth + EXPAND_GAP_PX;
+
+  let x = baseX;
+  let y = 0;
+  let rowMaxHeight = 0;
+  let col = 0;
+
+  for (let index = 1; index < cards.length; index++) {
+    const card = cards[index];
+    if (!card) {
+      continue;
+    }
+
+    if (col === EXPAND_MAX_PER_ROW) {
+      y += rowMaxHeight + EXPAND_ROW_GAP_PX;
+      x = baseX;
+      rowMaxHeight = 0;
+      col = 0;
+    }
+
+    offsets[index] = { x, y };
+    x += card.size.width + EXPAND_GAP_PX;
+    rowMaxHeight = Math.max(rowMaxHeight, card.size.height);
+    col += 1;
+  }
+
+  return offsets;
 };
 
 interface CardGroupProps {

@@ -5,10 +5,15 @@ export interface RepulsionConfig {
    * Screen-space radius (px). Converted to world-space using the current zoom `scale`
    * so the effect looks consistent at different zoom levels.
    */
-  radiusPx?: number;
+  radiusPx: number;
   /** Screen-space max push (px at `scale === 1`). */
-  strengthPx?: number;
+  strengthPx: number;
 }
+
+export const DEFAULT_REPULSION_CONFIG: RepulsionConfig = {
+  radiusPx: 900,
+  strengthPx: 120,
+};
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
@@ -28,7 +33,7 @@ export const computeRepulsionOffsets = (
   groups: Map<string, CardGroupData>,
   expandedGroupId: string | null,
   scale: number,
-  config: RepulsionConfig = {}
+  config: Partial<RepulsionConfig> = {}
 ): Map<string, Position> => {
   if (!expandedGroupId) {
     return new Map();
@@ -40,8 +45,10 @@ export const computeRepulsionOffsets = (
   }
 
   const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
-  const radiusWorld = (config.radiusPx ?? 900) / safeScale;
-  const strengthWorld = (config.strengthPx ?? 120) / safeScale;
+  const radiusWorld =
+    (config.radiusPx ?? DEFAULT_REPULSION_CONFIG.radiusPx) / safeScale;
+  const strengthWorld =
+    (config.strengthPx ?? DEFAULT_REPULSION_CONFIG.strengthPx) / safeScale;
 
   const source = getCoverCenter(expanded);
   const offsets = new Map<string, Position>();
@@ -73,4 +80,3 @@ export const computeRepulsionOffsets = (
 
   return offsets;
 };
-

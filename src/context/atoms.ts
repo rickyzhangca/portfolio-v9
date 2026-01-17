@@ -1,7 +1,6 @@
 import { atom } from "jotai";
-import type { RepulsionConfig } from "@/lib/repulsion";
+import { DEFAULT_REPULSION_CONFIG, type RepulsionConfig } from "@/lib/repulsion";
 
 export const repulsionConfigAtom = atom<RepulsionConfig>({
-  radiusPx: 900,
-  strengthPx: 120,
+  ...DEFAULT_REPULSION_CONFIG,
 });
