@@ -348,6 +348,7 @@ export const CardGroup = ({
                       : undefined
                   }
                   data={card}
+                  isExpanded={isExpanded}
                   onMeasure={(h) => handleCardMeasure(card.id, h)}
                 />
               </div>
