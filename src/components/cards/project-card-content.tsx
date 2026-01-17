@@ -20,8 +20,8 @@ const ProjectCardContentComponent = ({ data }: ProjectCardContentProps) => {
       </div>
       <div className="flex w-fit items-center gap-4 rounded-full bg-white px-5 py-3 shadow-3xl">
         <span className="font-medium">{data.title}</span>
-        <div className="flex items-center gap-1">
-          {data.link?.url && (
+        {data.link?.url && (
+          <div className="flex items-center gap-1">
             <a
               className="no-drag flex items-center gap-1 text-accent"
               href={data.link.url}
@@ -37,8 +37,8 @@ const ProjectCardContentComponent = ({ data }: ProjectCardContentProps) => {
                 <span className="text-sm">{data.link.label}</span>
               )}
             </a>
-          )}
-        </div>
+          </div>
+        )}
       </div>
       {data.description && (
         <p className="rounded-3xl bg-white px-5 py-3 text-sm shadow-3xl">

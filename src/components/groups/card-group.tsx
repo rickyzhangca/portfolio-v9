@@ -289,11 +289,17 @@ export const CardGroup = ({
               }
             : {};
 
+          // Calculate scale factor to fit project card within cover width when collapsed
+          const coverWidth = coverWithSize?.size.width ?? card.size.width;
+          const collapsedScale = Math.min(1, coverWidth / card.size.width);
+
           return (
             <motion.div
               animate={{
                 opacity: isExpanded ? 1 : Math.max(0.7, 1 - (index + 1) * 0.08),
-                scale: isExpanded ? 1 : Math.max(0.94, 1 - (index + 1) * 0.02),
+                scale: isExpanded
+                  ? 1
+                  : collapsedScale * Math.max(0.94, 1 - (index + 1) * 0.02),
                 rotate: fanRotate,
                 x: offset.x,
                 y: offset.y + fanArcY,
@@ -325,6 +331,7 @@ export const CardGroup = ({
               style={{
                 zIndex: projectsWithSizes.length - index,
                 pointerEvents: isExpanded || !group.cover ? "auto" : "none",
+                transformOrigin: "top left",
               }}
               transition={{
                 type: "spring",
