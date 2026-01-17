@@ -21,7 +21,7 @@ const getCoverCenter = (group: CardGroupData): Position => {
   const cover = group.cards[0];
   return {
     x: group.position.x + (cover?.size.width ?? 0) / 2,
-    y: group.position.y + (cover?.size.height ?? 0) / 2,
+    y: group.position.y + (cover?.size.height ?? 360) / 2,
   };
 };
 

@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useLayoutEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import type {
   CardData,
@@ -29,6 +29,7 @@ export const cardMask = (
 interface CardProps {
   data: CardData;
   className?: string;
+  onMeasure?: (height: number) => void;
 }
 
 const isCompanyContent = (
@@ -49,7 +50,32 @@ const isContactContent = (
   return "links" in data && !("image" in data) && !("richContent" in data);
 };
 
-const CardComponent = ({ data, className }: CardProps) => {
+const CardComponent = ({ data, className, onMeasure }: CardProps) => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!(ref.current && onMeasure)) {
+      return;
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.borderBoxSize) {
+          const height = entry.borderBoxSize[0].blockSize;
+          if (height !== data.size.height) {
+            onMeasure(height);
+          }
+        }
+      }
+    });
+
+    observer.observe(ref.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [onMeasure, data.size.height]);
+
   const renderContent = () => {
     if (isCompanyContent(data.content)) {
       return <CompanyCardContentView data={data.content} />;
@@ -71,9 +97,10 @@ const CardComponent = ({ data, className }: CardProps) => {
         "hover:shadow-[0_20px_70px_-15px_rgba(0,0,0,0.5)]",
         className
       )}
+      ref={ref}
       style={{
         width: data.size.width,
-        height: data.size.height,
+        height: data.size.height ?? "auto",
       }}
     >
       {renderContent()}

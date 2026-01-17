@@ -5,9 +5,7 @@ interface CompanyCardContentProps {
   data: CompanyCardContent;
 }
 
-const CompanyCardContentComponent = ({
-  data,
-}: CompanyCardContentProps) => {
+const CompanyCardContentComponent = ({ data }: CompanyCardContentProps) => {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="mb-4 flex-shrink-0 overflow-hidden rounded-lg bg-white/5">

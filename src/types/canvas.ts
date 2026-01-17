@@ -5,7 +5,7 @@ export interface Position {
 
 export interface Size {
   width: number;
-  height: number;
+  height?: number;
 }
 
 export interface ViewportState {
@@ -25,11 +25,11 @@ export interface CompanyCardContent {
 export interface ProjectCardContent {
   title: string;
   description: string;
-  links: Array<{
+  link: {
     label: string;
     url: string;
     icon?: string;
-  }>;
+  };
   image: string;
   richContent?: React.ReactNode;
 }
@@ -37,11 +37,11 @@ export interface ProjectCardContent {
 export interface ContactCardContent {
   title: string;
   description?: string;
-  links: Array<{
+  link: {
     label: string;
     url: string;
     icon?: string;
-  }>;
+  };
 }
 
 export type CardContent =
