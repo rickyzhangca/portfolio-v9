@@ -17,8 +17,8 @@ export interface ViewportState {
 export type CardType = "company" | "project" | "contact";
 
 export interface CompanyCardContent {
-  title: string;
-  description?: string;
+  company: string;
+  title?: string;
   image: string;
 }
 
@@ -60,7 +60,8 @@ export interface CardGroupData {
   id: string;
   position: Position;
   zIndex: number;
-  cards: CardData[]; // index 0 is the cover card
+  cover: CardData | undefined; // Company cover (undefined for contact-only groups)
+  projects: CardData[]; // Project cards (or contact card for contact-only groups)
 }
 
 export interface CanvasState {
