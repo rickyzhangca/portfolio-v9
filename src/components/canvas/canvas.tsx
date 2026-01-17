@@ -35,16 +35,10 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
     }
 
     const handleWheel = (e: WheelEvent) => {
-      // Check if we should ignore this event (e.g. over a no-pan element)
-      if ((e.target as Element).closest(".no-pan")) {
-        return;
-      }
+      const isOverNoPan = (e.target as Element).closest(".no-pan");
+      const isPinchGesture = e.ctrlKey || e.metaKey;
 
-      // If zoom keys are pressed, let the library handle it
-      if (e.ctrlKey || e.metaKey) {
-        return;
-      }
-
+      // Always prevent default to stop browser zoom behavior
       e.preventDefault();
 
       const instance = transformRef.current?.instance;
@@ -54,12 +48,38 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
 
       const { positionX, positionY, scale } = instance.transformState;
 
-      // Calculate new position
-      const newX = positionX - e.deltaX;
-      const newY = positionY - e.deltaY;
+      if (isPinchGesture) {
+        // Handle pinch-to-zoom (trackpad pinch fires wheel events with ctrlKey=true)
+        // Skip zoom if over a no-pan element
+        if (isOverNoPan) {
+          return;
+        }
 
-      // Update transform (0ms animation for direct control)
-      transformRef.current?.setTransform(newX, newY, scale, 0);
+        // Calculate zoom based on deltaY (negative = zoom in, positive = zoom out)
+        const zoomSensitivity = 0.01;
+        const zoomDelta = -e.deltaY * zoomSensitivity;
+        const newScale = Math.min(3, Math.max(0.3, scale * (1 + zoomDelta)));
+
+        // Get the mouse position relative to the container
+        const rect = container.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        // Calculate the point in canvas space that should stay fixed
+        const pointXInCanvas = (mouseX - positionX) / scale;
+        const pointYInCanvas = (mouseY - positionY) / scale;
+
+        // Calculate new position so the point under cursor stays fixed
+        const newX = mouseX - pointXInCanvas * newScale;
+        const newY = mouseY - pointYInCanvas * newScale;
+
+        transformRef.current?.setTransform(newX, newY, newScale, 0);
+      } else {
+        // Handle two-finger pan (works everywhere, including over no-pan elements for navigation)
+        const newX = positionX - e.deltaX;
+        const newY = positionY - e.deltaY;
+        transformRef.current?.setTransform(newX, newY, scale, 0);
+      }
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
@@ -171,12 +191,9 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
           velocityDisabled: false,
           excluded: ["no-pan"],
         }}
-        pinch={{ step: 5, excluded: ["no-pan"] }}
-        wheel={{
-          step: 0.1,
-          excluded: ["no-pan"],
-          activationKeys: ["Control", "Meta"],
-        }}
+        pinch={{ disabled: true }}
+        ref={transformRef}
+        wheel={{ disabled: true }}
       >
         {({ resetTransform }) => (
           <>
