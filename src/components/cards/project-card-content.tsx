@@ -23,8 +23,8 @@ const ProjectCardContentComponent = ({ data }: ProjectCardContentProps) => {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <div className="mb-4 flex-shrink-0 overflow-hidden rounded-lg bg-white/5">
+    <div className="flex h-full flex-col gap-2">
+      <div className="overflow-hidden rounded-4xl border-4 border-white shadow-3xl">
         <img
           alt={data.title}
           className="h-auto w-full object-cover"
@@ -33,28 +33,25 @@ const ProjectCardContentComponent = ({ data }: ProjectCardContentProps) => {
           width="200"
         />
       </div>
-
-      <h3 className="mb-2 flex-shrink-0 font-bold text-white text-xl">
+      <div className="flex w-fit items-center gap-3 rounded-full bg-white px-5 py-3 font-medium shadow-3xl">
         {data.title}
-      </h3>
-
-      {data.description && (
-        <p className="mb-4 flex-grow overflow-auto text-sm text-white/70">
+        {/* <div className="flex">
+          <a
+            className="no-drag flex items-center gap-1"
+            href={data.link.url}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            {renderIcon(data.link.icon)}
+            <span>{data.link.label}</span>
+          </a>
+        </div> */}
+      </div>
+      {/* {data.description && (
+        <p className="mb-4 flex-grow overflow-auto text-sm">
           {data.description}
         </p>
-      )}
-
-      <div className="flex">
-        <a
-          className="no-drag flex items-center gap-1 rounded-lg bg-white/10 px-3 py-1.5 text-sm text-white/90 transition-colors hover:bg-white/20 hover:text-white"
-          href={data.link.url}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          {renderIcon(data.link.icon)}
-          <span>{data.link.label}</span>
-        </a>
-      </div>
+      )} */}
 
       {data.richContent && (
         <div className="flex-grow overflow-auto">{data.richContent}</div>

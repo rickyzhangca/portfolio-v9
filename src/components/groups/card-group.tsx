@@ -6,9 +6,9 @@ import { fanConfigAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
 import type { FanConfig } from "@/lib/fan";
 import { cn } from "@/lib/utils";
-import type { CardGroupData, Position } from "@/types/canvas";
+import type { CardData, CardGroupData, Position } from "@/types/canvas";
 
-const CARD_MASK_DATA_URI = `url("data:image/svg+xml,%3Csvg viewBox='0 0 240 360' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 302.4C0 322.562 0 332.643 3.92377 340.344C7.37521 347.117 12.8825 352.625 19.6563 356.076C27.3572 360 37.4381 360 57.6 360H188.8C206.722 360 215.683 360 222.528 356.512C228.549 353.444 233.444 348.549 236.512 342.528C240 335.683 240 326.722 240 308.8V279.367C240 272.913 240 269.686 239.454 266.587C238.753 262.606 237.386 258.771 235.411 255.243C233.873 252.498 231.832 249.999 227.75 245C223.668 240.001 221.627 237.502 220.089 234.757C218.114 231.229 216.747 227.394 216.046 223.413C215.5 220.314 215.5 217.087 215.5 210.633V149.367C215.5 142.913 215.5 139.686 216.046 136.587C216.747 132.606 218.114 128.771 220.089 125.243C221.627 122.498 223.668 119.999 227.75 115C231.832 110.001 233.873 107.502 235.411 104.757C237.386 101.229 238.753 97.3944 239.454 93.4129C240 90.3142 240 87.0873 240 80.6335V51.2C240 33.2783 240 24.3175 236.512 17.4723C233.444 11.4511 228.549 6.55574 222.528 3.48779C215.683 0 206.722 0 188.8 0H57.6C37.4381 0 27.3572 0 19.6563 3.92377C12.8825 7.37521 7.37521 12.8825 3.92377 19.6563C0 27.3572 0 37.4381 0 57.6V302.4Z' fill='black'/%3E%3C/svg%3E")`;
+const CARD_MASK_DATA_URI = `url("data:image/svg+xml,%3Csvg viewBox='0 0 280 360' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 321.6C0 335.041 2.38419e-07 341.762 2.61584 346.896C4.9168 351.412 8.58834 355.083 13.1042 357.384C18.2381 360 24.9587 360 38.4 360H241.6C255.041 360 261.762 360 266.896 357.384C271.412 355.083 275.083 351.412 277.384 346.896C280 341.762 280 335.041 280 321.6V270.875C280 265.342 280 262.576 279.541 259.894C279.133 257.514 278.457 255.187 277.526 252.958C276.476 250.448 274.994 248.112 272.03 243.441L271.47 242.559C268.506 237.888 267.024 235.552 265.974 233.042C265.043 230.813 264.367 228.486 263.959 226.106C263.5 223.424 263.5 220.658 263.5 215.125V144.875C263.5 139.342 263.5 136.576 263.959 133.894C264.367 131.514 265.043 129.187 265.974 126.958C267.024 124.448 268.506 122.112 271.47 117.441L272.03 116.559C274.994 111.888 276.476 109.552 277.526 107.042C278.457 104.813 279.133 102.486 279.541 100.106C280 97.424 280 94.6577 280 89.1251V38.4C280 24.9587 280 18.2381 277.384 13.1042C275.083 8.58834 271.412 4.9168 266.896 2.61584C261.762 0 255.041 0 241.6 0H38.4C24.9587 0 18.2381 0 13.1042 2.61584C8.58834 4.9168 4.9168 8.58834 2.61584 13.1042C2.38419e-07 18.2381 0 24.9587 0 38.4V321.6Z' fill='black'/%3E%3C/svg%3E")`;
 
 const STACK_OFFSET_PX = 6;
 const EXPAND_MAX_PER_ROW = 3;
@@ -25,20 +25,21 @@ const getRotatedBoundingBox = (width: number, height: number, deg: number) => {
 };
 
 const getOffsets = (
-  cards: CardGroupData["cards"],
+  cover: CardData | undefined,
+  projects: CardData[],
   expanded: boolean,
   fanConfig: FanConfig
 ) => {
   if (!expanded) {
-    return cards.map((_, index) => ({
+    return projects.map((_, index) => ({
       x: index * STACK_OFFSET_PX,
       y: index * STACK_OFFSET_PX,
     }));
   }
 
-  const offsets = cards.map(() => ({ x: 0, y: 0 }));
+  const offsets = projects.map(() => ({ x: 0, y: 0 }));
 
-  const coverWidth = cards[0]?.size.width ?? 0;
+  const coverWidth = cover?.size.width ?? 0;
   const baseX = coverWidth + fanConfig.expandGapPx;
 
   let y = 0;
@@ -49,8 +50,8 @@ const getOffsets = (
   let prevExtraWidth = 0;
   let hasPrevInRow = false;
 
-  for (let index = 1; index < cards.length; index++) {
-    const card = cards[index];
+  for (let index = 0; index < projects.length; index++) {
+    const card = projects[index];
     if (!card) {
       continue;
     }
@@ -126,19 +127,30 @@ export const CardGroup = ({
     {}
   );
 
-  const cardsWithSizes = useMemo(() => {
-    return group.cards.map((card) => ({
+  const coverWithSize = useMemo(() => {
+    if (!group.cover) return undefined;
+    return {
+      ...group.cover,
+      size: {
+        ...group.cover.size,
+        height: measuredSizes[group.cover.id] ?? group.cover.size.height,
+      },
+    };
+  }, [group.cover, measuredSizes]);
+
+  const projectsWithSizes = useMemo(() => {
+    return group.projects.map((card) => ({
       ...card,
       size: {
         ...card.size,
         height: measuredSizes[card.id] ?? card.size.height,
       },
     }));
-  }, [group.cards, measuredSizes]);
+  }, [group.projects, measuredSizes]);
 
   const offsets = useMemo(
-    () => getOffsets(cardsWithSizes, isExpanded, fanConfig),
-    [cardsWithSizes, isExpanded, fanConfig]
+    () => getOffsets(coverWithSize, projectsWithSizes, isExpanded, fanConfig),
+    [coverWithSize, projectsWithSizes, isExpanded, fanConfig]
   );
 
   const { isDragging, didDragRef, handleMouseDown, style } = useDraggable({
@@ -192,22 +204,79 @@ export const CardGroup = ({
         className="absolute top-0 left-0 will-change-transform"
         style={style}
       >
-        {cardsWithSizes.map((card, index) => {
-          const isCover = index === 0;
+        {coverWithSize && (
+          <motion.div
+            animate={{
+              opacity: 1,
+              scale: 1,
+              rotate: 0,
+              x: 0,
+              y: 0,
+            }}
+            className="absolute top-0 left-0 drop-shadow-[0_25px_25px_rgba(0,0,0,0.25)] transition-all duration-200 will-change-transform hover:drop-shadow-[0_20px_35px_rgba(0,0,0,0.5)] active:drop-shadow-[0_15px_15px_rgba(0,0,0,0.25)]"
+            key={coverWithSize.id}
+            onClick={(e) => {
+              const target = e.target as HTMLElement;
+              if (target.closest(".no-drag")) {
+                return;
+              }
+
+              // Prevent "click after drag" from toggling the stack.
+              if (!dragDisabled && didDragRef.current) {
+                didDragRef.current = false;
+                return;
+              }
+
+              onToggleExpanded();
+            }}
+            style={{
+              zIndex: (group.cover ? 1 : 0) + projectsWithSizes.length,
+              pointerEvents: "auto",
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 520,
+              damping: 46,
+              mass: 0.8,
+            }}
+          >
+            <div
+              style={{
+                maskImage: CARD_MASK_DATA_URI,
+                WebkitMaskImage: CARD_MASK_DATA_URI,
+                maskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
+                WebkitMaskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
+                maskRepeat: "no-repeat",
+                WebkitMaskRepeat: "no-repeat",
+                maskPosition: "center",
+                WebkitMaskPosition: "center",
+              }}
+            >
+              <Card
+                className="shadow-none hover:shadow-none"
+                data={coverWithSize}
+                onMeasure={(h) => handleCardMeasure(coverWithSize.id, h)}
+              />
+            </div>
+          </motion.div>
+        )}
+        {projectsWithSizes.map((card, index) => {
           const offset = offsets[index] ?? { x: 0, y: 0 };
-          const colInRow = isCover ? 0 : (index - 1) % EXPAND_MAX_PER_ROW;
+          const colInRow = index % EXPAND_MAX_PER_ROW;
           const fanRotate =
-            isExpanded && !isCover
+            isExpanded && group.cover
               ? (colInRow + 1) * fanConfig.rotateStepDeg
               : 0;
           const fanArcY =
-            isExpanded && !isCover
+            isExpanded && group.cover
               ? (colInRow + 1) ** 2 * fanConfig.arcStepPx
               : 0;
 
-          // Mask styles for cover card only
+          // Contact card (when no cover) gets cover-like styling
+          const isContactCardWithoutCover =
+            !group.cover && card.type === "contact";
           const cardHeight = card.size.height ?? 0;
-          const maskStyles = isCover
+          const maskStyles = isContactCardWithoutCover
             ? {
                 maskImage: CARD_MASK_DATA_URI,
                 WebkitMaskImage: CARD_MASK_DATA_URI,
@@ -223,20 +292,20 @@ export const CardGroup = ({
           return (
             <motion.div
               animate={{
-                opacity: isExpanded ? 1 : Math.max(0.7, 1 - index * 0.08),
-                scale: isExpanded ? 1 : Math.max(0.94, 1 - index * 0.02),
+                opacity: isExpanded ? 1 : Math.max(0.7, 1 - (index + 1) * 0.08),
+                scale: isExpanded ? 1 : Math.max(0.94, 1 - (index + 1) * 0.02),
                 rotate: fanRotate,
                 x: offset.x,
                 y: offset.y + fanArcY,
               }}
               className={cn(
                 "absolute top-0 left-0 will-change-transform",
-                isCover &&
+                isContactCardWithoutCover &&
                   "drop-shadow-[0_25px_25px_rgba(0,0,0,0.25)] transition-all duration-200 hover:drop-shadow-[0_20px_35px_rgba(0,0,0,0.5)] active:drop-shadow-[0_15px_15px_rgba(0,0,0,0.25)]"
               )}
               key={card.id}
               onClick={
-                isCover
+                isContactCardWithoutCover
                   ? (e) => {
                       const target = e.target as HTMLElement;
                       if (target.closest(".no-drag")) {
@@ -254,8 +323,8 @@ export const CardGroup = ({
                   : undefined
               }
               style={{
-                zIndex: group.cards.length - index,
-                pointerEvents: isExpanded || isCover ? "auto" : "none",
+                zIndex: projectsWithSizes.length - index,
+                pointerEvents: isExpanded || !group.cover ? "auto" : "none",
               }}
               transition={{
                 type: "spring",
@@ -267,7 +336,9 @@ export const CardGroup = ({
               <div style={maskStyles}>
                 <Card
                   className={
-                    isCover ? "shadow-none hover:shadow-none" : undefined
+                    isContactCardWithoutCover
+                      ? "shadow-none hover:shadow-none"
+                      : undefined
                   }
                   data={card}
                   onMeasure={(h) => handleCardMeasure(card.id, h)}

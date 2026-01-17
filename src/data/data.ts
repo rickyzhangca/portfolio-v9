@@ -5,21 +5,21 @@ export const data: CardGroupData[] = [
     id: "rbc-group",
     position: { x: 100, y: 100 },
     zIndex: 1,
-    cards: [
-      {
-        id: "rbc-company",
-        type: "company",
-        size: { width: 240 },
-        content: {
-          title: "RBC",
-          description: "Software Developer Intern",
-          image: "/src/assets/covers/rbc-logo.webp",
-        },
+    cover: {
+      id: "rbc-company",
+      type: "company",
+      size: { width: 280 },
+      content: {
+        company: "RBC",
+        title: "UX Engineer, AIOps",
+        image: "/src/assets/covers/rbc-logo.webp",
       },
+    },
+    projects: [
       {
         id: "project-1",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "E-Commerce Platform",
           description:
@@ -35,7 +35,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-2",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Task Management App",
           description:
@@ -51,7 +51,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-3",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "PySpark Analytics",
           description:
@@ -67,7 +67,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-4",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Redesign",
           description:
@@ -87,21 +87,21 @@ export const data: CardGroupData[] = [
     id: "wealthsimple-group",
     position: { x: 500, y: 100 },
     zIndex: 2,
-    cards: [
-      {
-        id: "wealthsimple-company",
-        type: "company",
-        size: { width: 240 },
-        content: {
-          title: "Wealthsimple",
-          description: "Frontend Developer",
-          image: "/src/assets/covers/wealthsimple-logo.webp",
-        },
+    cover: {
+      id: "wealthsimple-company",
+      type: "company",
+      size: { width: 280 },
+      content: {
+        company: "Wealthsimple",
+        title: "Design Engineer, Design System",
+        image: "/src/assets/covers/wealthsimple-logo.webp",
       },
+    },
+    projects: [
       {
         id: "project-5",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "AI Content Generator",
           description:
@@ -117,7 +117,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-6",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Design System",
           description:
@@ -129,7 +129,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-7",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Home Gradients",
           description:
@@ -141,7 +141,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-8",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Native Sheet",
           description:
@@ -153,7 +153,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-9",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Profile Layout",
           description:
@@ -165,7 +165,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-10",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Snackbar",
           description:
@@ -177,7 +177,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-11",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Swipeable",
           description:
@@ -189,7 +189,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-12",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Ticker",
           description:
@@ -201,7 +201,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-13",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Web Chart",
           description:
@@ -213,7 +213,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-14",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Widget",
           description:
@@ -225,7 +225,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-15",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "WS Sans",
           description:
@@ -241,21 +241,21 @@ export const data: CardGroupData[] = [
     id: "mintlify-group",
     position: { x: 900, y: 100 },
     zIndex: 3,
-    cards: [
-      {
-        id: "mintlify-company",
-        type: "company",
-        size: { width: 240 },
-        content: {
-          title: "Mintlify",
-          description: "Software Engineer",
-          image: "/src/assets/covers/mintlify-logo.webp",
-        },
+    cover: {
+      id: "mintlify-company",
+      type: "company",
+      size: { width: 280 },
+      content: {
+        company: "Mintlify",
+        title: "Design Engineer",
+        image: "/src/assets/covers/mintlify-logo.webp",
       },
+    },
+    projects: [
       {
         id: "project-16",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Auth",
           description:
@@ -267,7 +267,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-17",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Chat",
           description:
@@ -279,7 +279,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-18",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Editor",
           description:
@@ -291,7 +291,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-19",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Fonts",
           description:
@@ -303,7 +303,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-20",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Footer",
           description:
@@ -315,7 +315,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-21",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "GitLab",
           description:
@@ -327,7 +327,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-22",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Support",
           description:
@@ -343,21 +343,21 @@ export const data: CardGroupData[] = [
     id: "mosaic-group",
     position: { x: 1300, y: 100 },
     zIndex: 4,
-    cards: [
-      {
-        id: "mosaic-company",
-        type: "company",
-        size: { width: 240 },
-        content: {
-          title: "Mosaic",
-          description: "Full Stack Developer",
-          image: "/src/assets/covers/mosaic-logo.webp",
-        },
+    cover: {
+      id: "mosaic-company",
+      type: "company",
+      size: { width: 280 },
+      content: {
+        company: "Mosaic",
+        title: "UI/UX Designer",
+        image: "/src/assets/covers/mosaic-logo.webp",
       },
+    },
+    projects: [
       {
         id: "project-23",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Analytics Dashboard",
           description:
@@ -369,7 +369,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-24",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Design System",
           description:
@@ -381,7 +381,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-25",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Graphic",
           description:
@@ -393,7 +393,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-26",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Icon",
           description:
@@ -405,7 +405,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-27",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Packaging",
           description:
@@ -417,7 +417,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-28",
         type: "project",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Printers",
           description:
@@ -433,11 +433,12 @@ export const data: CardGroupData[] = [
     id: "contact-group",
     position: { x: 1700, y: 100 },
     zIndex: 5,
-    cards: [
+    cover: undefined,
+    projects: [
       {
         id: "contact-card",
         type: "contact",
-        size: { width: 360 },
+        size: { width: 420 },
         content: {
           title: "Let's Connect",
           description:

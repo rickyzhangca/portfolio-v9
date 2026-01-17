@@ -18,7 +18,7 @@ export const DEFAULT_REPULSION_CONFIG: RepulsionConfig = {
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
 const getCoverCenter = (group: CardGroupData): Position => {
-  const cover = group.cards[0];
+  const cover = group.cover ?? group.projects[0];
   return {
     x: group.position.x + (cover?.size.width ?? 0) / 2,
     y: group.position.y + (cover?.size.height ?? 360) / 2,

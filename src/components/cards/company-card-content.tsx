@@ -7,26 +7,24 @@ interface CompanyCardContentProps {
 
 const CompanyCardContentComponent = ({ data }: CompanyCardContentProps) => {
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <div className="mb-4 flex-shrink-0 overflow-hidden rounded-lg bg-white/5">
-        <img
-          alt={data.title}
-          className="h-auto w-full object-cover"
-          height="200"
-          src={data.image}
-          width="200"
-        />
-      </div>
+    <div className="relative flex h-full flex-col overflow-hidden">
+      <img
+        alt={data.company}
+        className="h-auto w-full object-cover"
+        height="200"
+        src={data.image}
+        width="200"
+      />
 
-      <h3 className="mb-2 flex-shrink-0 font-bold text-white text-xl">
-        {data.title}
-      </h3>
-
-      {data.description && (
-        <p className="mb-4 flex-grow overflow-auto text-sm text-white/70">
-          {data.description}
+      <div className="absolute bottom-6 left-6 flex flex-col gap-1">
+        <h3 className="font-medium text-white">{data.company}</h3>
+        <p className="relative text-sm text-white">
+          <span className="absolute opacity-50 mix-blend-overlay">
+            {data.title}
+          </span>
+          <span className="mix-blend-overlay">{data.title}</span>
         </p>
-      )}
+      </div>
     </div>
   );
 };
