@@ -19,7 +19,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-1",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "E-Commerce Platform",
           description:
@@ -42,7 +42,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-2",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Task Management App",
           description:
@@ -65,7 +65,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-3",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "PySpark Analytics",
           description:
@@ -88,7 +88,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-4",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Redesign",
           description:
@@ -129,7 +129,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-5",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "AI Content Generator",
           description:
@@ -152,7 +152,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-6",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Design System",
           description:
@@ -167,7 +167,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-7",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Home Gradients",
           description:
@@ -182,7 +182,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-8",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Native Sheet",
           description:
@@ -197,7 +197,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-9",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Profile Layout",
           description:
@@ -212,7 +212,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-10",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Snackbar",
           description:
@@ -227,7 +227,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-11",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Swipeable",
           description:
@@ -242,7 +242,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-12",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Ticker",
           description:
@@ -257,7 +257,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-13",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Web Chart",
           description:
@@ -272,7 +272,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-14",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Widget",
           description:
@@ -287,7 +287,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-15",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "WS Sans",
           description:
@@ -320,7 +320,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-16",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Auth",
           description:
@@ -335,7 +335,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-17",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Chat",
           description:
@@ -350,7 +350,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-18",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Editor",
           description:
@@ -365,7 +365,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-19",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Fonts",
           description:
@@ -380,7 +380,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-20",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Footer",
           description:
@@ -395,7 +395,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-21",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "GitLab",
           description:
@@ -410,7 +410,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-22",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Support",
           description:
@@ -443,7 +443,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-23",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Analytics Dashboard",
           description:
@@ -458,7 +458,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-24",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Design System",
           description:
@@ -473,7 +473,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-25",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Graphic",
           description:
@@ -488,7 +488,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-26",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Icon",
           description:
@@ -503,7 +503,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-27",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Packaging",
           description:
@@ -518,7 +518,7 @@ export const data: CardGroupData[] = [
       {
         id: "project-28",
         type: "project",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Printers",
           description:
@@ -541,7 +541,7 @@ export const data: CardGroupData[] = [
       {
         id: "contact-card",
         type: "contact",
-        size: { width: 240, height: 240 },
+        size: { width: 360, height: 360 },
         content: {
           title: "Let's Connect",
           description:
