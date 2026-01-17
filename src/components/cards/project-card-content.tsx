@@ -1,6 +1,7 @@
 import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { memo } from "react";
+import { cn } from "@/lib/utils";
 import type { ProjectCardContent } from "@/types/canvas";
 
 interface ProjectCardContentProps {
@@ -14,7 +15,12 @@ const ProjectCardContentComponent = ({
 }: ProjectCardContentProps) => {
   return (
     <div className="flex h-full flex-col gap-2">
-      <div className="overflow-hidden rounded-4xl border-4 border-white bg-white shadow-3xl">
+      <div
+        className={cn(
+          "overflow-hidden rounded-4xl border-4 border-white bg-white transition-shadow",
+          isExpanded ? "shadow-3xl" : "drop-shadow-[0_2px_6px_rgba(0,0,0,0.12)]"
+        )}
+      >
         <img
           alt={data.title}
           className="h-auto w-full object-cover"
