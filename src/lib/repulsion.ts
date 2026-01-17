@@ -2,11 +2,13 @@ import type { CardGroupData, Position } from "@/types/canvas";
 
 export interface RepulsionConfig {
   /**
-   * Screen-space radius (px). Converted to world-space using the current zoom `scale`
-   * so the effect looks consistent at different zoom levels.
+   * Canvas/world-space radius (px at `scale === 1`).
+   *
+   * Important: this is intentionally *not* scaled by the viewport zoom. Zooming
+   * should change what you see, not the underlying layout/repulsion.
    */
   radiusPx: number;
-  /** Screen-space max push (px at `scale === 1`). */
+  /** Canvas/world-space max push (px at `scale === 1`). */
   strengthPx: number;
 }
 
@@ -32,7 +34,6 @@ const getCoverCenter = (group: CardGroupData): Position => {
 export const computeRepulsionOffsets = (
   groups: Map<string, CardGroupData>,
   expandedGroupId: string | null,
-  scale: number,
   config: Partial<RepulsionConfig> = {}
 ): Map<string, Position> => {
   if (!expandedGroupId) {
@@ -44,11 +45,9 @@ export const computeRepulsionOffsets = (
     return new Map();
   }
 
-  const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
-  const radiusWorld =
-    (config.radiusPx ?? DEFAULT_REPULSION_CONFIG.radiusPx) / safeScale;
+  const radiusWorld = config.radiusPx ?? DEFAULT_REPULSION_CONFIG.radiusPx;
   const strengthWorld =
-    (config.strengthPx ?? DEFAULT_REPULSION_CONFIG.strengthPx) / safeScale;
+    config.strengthPx ?? DEFAULT_REPULSION_CONFIG.strengthPx;
 
   const source = getCoverCenter(expanded);
   const offsets = new Map<string, Position>();

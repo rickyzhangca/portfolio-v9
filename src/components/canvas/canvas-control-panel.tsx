@@ -54,7 +54,10 @@ export const CanvasControlPanel = () => {
   };
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-3xl bg-background2 outline outline-border">
+    <div
+      className="flex flex-col overflow-hidden rounded-3xl bg-background2 outline outline-border"
+      data-no-collapse
+    >
       <Tabs>
         <TabsList className="px-3 pt-3">
           <TabsTrigger value="repulsion">Repulsion</TabsTrigger>

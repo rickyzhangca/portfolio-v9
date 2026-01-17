@@ -139,10 +139,9 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
       computeRepulsionOffsets(
         state.groups,
         state.expandedGroupId,
-        scale,
         repulsionConfig
       ),
-    [state.groups, state.expandedGroupId, scale, repulsionConfig]
+    [state.groups, state.expandedGroupId, repulsionConfig]
   );
 
   const isViewportReset =
