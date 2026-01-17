@@ -35,7 +35,6 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
     }
 
     const handleWheel = (e: WheelEvent) => {
-      const isOverNoPan = (e.target as Element).closest(".no-pan");
       const isPinchGesture = e.ctrlKey || e.metaKey;
 
       // Always prevent default to stop browser zoom behavior
@@ -50,10 +49,7 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
 
       if (isPinchGesture) {
         // Handle pinch-to-zoom (trackpad pinch fires wheel events with ctrlKey=true)
-        // Skip zoom if over a no-pan element
-        if (isOverNoPan) {
-          return;
-        }
+        // Zoom works everywhere, including over .no-pan elements (like Figma)
 
         // Calculate zoom based on deltaY (negative = zoom in, positive = zoom out)
         const zoomSensitivity = 0.01;
@@ -75,7 +71,7 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
 
         transformRef.current?.setTransform(newX, newY, newScale, 0);
       } else {
-        // Handle two-finger pan (works everywhere, including over no-pan elements for navigation)
+        // Handle two-finger pan (works everywhere, like Figma)
         const newX = positionX - e.deltaX;
         const newY = positionY - e.deltaY;
         transformRef.current?.setTransform(newX, newY, scale, 0);
