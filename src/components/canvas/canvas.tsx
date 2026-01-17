@@ -20,11 +20,51 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
   const [repulsionConfig] = useAtom(repulsionConfigAtom);
 
   const groupElementsRef = useRef(new Map<string, HTMLDivElement | null>());
+  const transformRef = useRef<ReactZoomPanPinchRef>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const pointerDownRef = useRef<{
     clientX: number;
     clientY: number;
     startedOutsideExpandedGroup: boolean;
   } | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const handleWheel = (e: WheelEvent) => {
+      // Check if we should ignore this event (e.g. over a no-pan element)
+      if ((e.target as Element).closest(".no-pan")) {
+        return;
+      }
+
+      // If zoom keys are pressed, let the library handle it
+      if (e.ctrlKey || e.metaKey) {
+        return;
+      }
+
+      e.preventDefault();
+
+      const instance = transformRef.current?.instance;
+      if (!instance) {
+        return;
+      }
+
+      const { positionX, positionY, scale } = instance.transformState;
+
+      // Calculate new position
+      const newX = positionX - e.deltaX;
+      const newY = positionY - e.deltaY;
+
+      // Update transform (0ms animation for direct control)
+      transformRef.current?.setTransform(newX, newY, scale, 0);
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
+  }, []);
 
   const registerGroupElement = useCallback(
     (id: string, el: HTMLDivElement | null) => {
@@ -111,7 +151,7 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
     state.viewportState.positionY === 0;
 
   return (
-    <div className="h-screen w-screen overflow-hidden">
+    <div className="h-screen w-screen overflow-hidden" ref={containerRef}>
       <TransformWrapper
         centerOnInit={true}
         doubleClick={{ disabled: true, mode: "zoomIn" }}
@@ -133,7 +173,11 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
           excluded: ["no-pan"],
         }}
         pinch={{ step: 5, excluded: ["no-pan"] }}
-        wheel={{ step: 0.1, excluded: ["no-pan"] }}
+        wheel={{
+          step: 0.1,
+          excluded: ["no-pan"],
+          activationKeys: ["Control", "Meta"],
+        }}
       >
         {({ resetTransform }) => (
           <>
