@@ -25,11 +25,6 @@ export const data: CardGroupData[] = [
           description:
             "A full-stack e-commerce platform with real-time inventory management, payment processing, and admin dashboard. Built with Next.js, Stripe, and PostgreSQL.",
           image: "/src/assets/rbc/amplify.webp",
-          link: {
-            label: "View Demo",
-            url: "#",
-            icon: "default",
-          },
         },
       },
       {
@@ -41,11 +36,6 @@ export const data: CardGroupData[] = [
           description:
             "A collaborative task management application with real-time updates and team collaboration features. Built with React and Firebase.",
           image: "/src/assets/rbc/product.webp",
-          link: {
-            label: "View Demo",
-            url: "#",
-            icon: "default",
-          },
         },
       },
       {
@@ -57,11 +47,6 @@ export const data: CardGroupData[] = [
           description:
             "Big data analytics pipeline using PySpark for processing large-scale datasets with real-time insights and reporting capabilities.",
           image: "/src/assets/rbc/pyspark.webp",
-          link: {
-            label: "View Demo",
-            url: "#",
-            icon: "default",
-          },
         },
       },
       {
@@ -73,11 +58,6 @@ export const data: CardGroupData[] = [
           description:
             "Complete UI/UX redesign of internal tools with improved accessibility, performance, and user experience.",
           image: "/src/assets/rbc/redesign.webp",
-          link: {
-            label: "View Demo",
-            url: "#",
-            icon: "default",
-          },
         },
       },
     ],
@@ -107,11 +87,6 @@ export const data: CardGroupData[] = [
           description:
             "An AI-powered content generation tool for blog posts, social media, and marketing copy using advanced language models.",
           image: "/src/assets/wealthsimple/dark-mode.webp",
-          link: {
-            label: "View Demo",
-            url: "#",
-            icon: "default",
-          },
         },
       },
       {
@@ -123,7 +98,6 @@ export const data: CardGroupData[] = [
           description:
             "A reusable component library with accessible primitives, theming, and documentation.",
           image: "/src/assets/wealthsimple/data-viz.webp",
-          link: { label: "Docs", url: "#", icon: "default" },
         },
       },
       {
@@ -135,7 +109,6 @@ export const data: CardGroupData[] = [
           description:
             "Dynamic gradient backgrounds for landing pages with smooth animations and color transitions.",
           image: "/src/assets/wealthsimple/home-gradients.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -147,7 +120,6 @@ export const data: CardGroupData[] = [
           description:
             "Native spreadsheet component with formulas, formatting, and export capabilities for mobile apps.",
           image: "/src/assets/wealthsimple/native-sheet.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -159,7 +131,6 @@ export const data: CardGroupData[] = [
           description:
             "New user profile layout with improved navigation, settings organization, and personalization options.",
           image: "/src/assets/wealthsimple/new-profile-layout.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -171,7 +142,6 @@ export const data: CardGroupData[] = [
           description:
             "Toast notification system with queue management, animations, and accessibility features.",
           image: "/src/assets/wealthsimple/snackbar.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -183,7 +153,6 @@ export const data: CardGroupData[] = [
           description:
             "Gesture-based swipe actions for mobile interfaces with customizable triggers and feedback.",
           image: "/src/assets/wealthsimple/swipeable.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -195,7 +164,6 @@ export const data: CardGroupData[] = [
           description:
             "Real-time stock ticker component with live updates, charts, and price change indicators.",
           image: "/src/assets/wealthsimple/ticker.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -207,7 +175,6 @@ export const data: CardGroupData[] = [
           description:
             "Interactive charting library for financial data with zooming, panning, and customization options.",
           image: "/src/assets/wealthsimple/web-chart.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -219,7 +186,6 @@ export const data: CardGroupData[] = [
           description:
             "Embeddable widgets for third-party integration with customizable themes and branding options.",
           image: "/src/assets/wealthsimple/widget.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -231,7 +197,6 @@ export const data: CardGroupData[] = [
           description:
             "Custom typeface designed for financial applications with improved readability and brand consistency.",
           image: "/src/assets/wealthsimple/ws-sans.webp",
-          link: { label: "Docs", url: "#", icon: "default" },
         },
       },
     ],
@@ -261,7 +226,6 @@ export const data: CardGroupData[] = [
           description:
             "Authentication system with SSO, 2FA, and role-based access control for enterprise applications.",
           image: "/src/assets/mintlify/auth.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -273,7 +237,6 @@ export const data: CardGroupData[] = [
           description:
             "A realtime chat app with presence, typing indicators, and offline-first caching.",
           image: "/src/assets/mintlify/chat.webp",
-          link: { label: "View", url: "#", icon: "default" },
         },
       },
       {
@@ -285,7 +248,6 @@ export const data: CardGroupData[] = [
           description:
             "WYSIWYG editor with markdown support, syntax highlighting, and collaborative editing features.",
           image: "/src/assets/mintlify/editor.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -297,7 +259,6 @@ export const data: CardGroupData[] = [
           description:
             "Typography system with custom fonts, variable weights, and responsive scaling for documentation sites.",
           image: "/src/assets/mintlify/fonts.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -309,7 +270,6 @@ export const data: CardGroupData[] = [
           description:
             "Customizable footer component with navigation, social links, and analytics integration.",
           image: "/src/assets/mintlify/footer.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -321,7 +281,6 @@ export const data: CardGroupData[] = [
           description:
             "GitLab integration with CI/CD pipelines, issue tracking, and repository management features.",
           image: "/src/assets/mintlify/gitlab.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -333,7 +292,6 @@ export const data: CardGroupData[] = [
           description:
             "Customer support portal with ticket management, live chat, and knowledge base integration.",
           image: "/src/assets/mintlify/support.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
     ],
@@ -363,7 +321,6 @@ export const data: CardGroupData[] = [
           description:
             "A fast dashboard with filters, charts, and shareable views optimized for large datasets.",
           image: "/src/assets/mosaic/b2b.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -375,7 +332,6 @@ export const data: CardGroupData[] = [
           description:
             "Component library with theming, documentation, and accessibility features for design consistency.",
           image: "/src/assets/mosaic/ds.webp",
-          link: { label: "Docs", url: "#", icon: "default" },
         },
       },
       {
@@ -387,7 +343,6 @@ export const data: CardGroupData[] = [
           description:
             "Graphic design tools with vector editing, layers, and export options for creative workflows.",
           image: "/src/assets/mosaic/graphic.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -399,7 +354,6 @@ export const data: CardGroupData[] = [
           description:
             "Icon library with thousands of customizable icons in multiple formats and styles.",
           image: "/src/assets/mosaic/icon.webp",
-          link: { label: "View", url: "#", icon: "default" },
         },
       },
       {
@@ -411,7 +365,6 @@ export const data: CardGroupData[] = [
           description:
             "Automated packaging system for software distribution with versioning and dependency management.",
           image: "/src/assets/mosaic/packaging.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
       {
@@ -423,7 +376,6 @@ export const data: CardGroupData[] = [
           description:
             "Printer management system with queue handling, driver support, and remote printing capabilities.",
           image: "/src/assets/mosaic/printers.webp",
-          link: { label: "Demo", url: "#", icon: "default" },
         },
       },
     ],

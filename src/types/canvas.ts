@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 export interface Position {
   x: number;
   y: number;
@@ -25,10 +27,10 @@ export interface CompanyCardContent {
 export interface ProjectCardContent {
   title: string;
   description: string;
-  link: {
-    label: string;
+  link?: {
+    label?: string;
     url: string;
-    icon?: string;
+    icon?: ReactNode;
   };
   image: string;
   richContent?: React.ReactNode;
@@ -40,7 +42,7 @@ export interface ContactCardContent {
   link: {
     label: string;
     url: string;
-    icon?: string;
+    icon?: ReactNode;
   };
 }
 

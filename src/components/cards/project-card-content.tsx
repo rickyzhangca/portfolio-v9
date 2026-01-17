@@ -1,3 +1,4 @@
+import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { memo } from "react";
 import type { ProjectCardContent } from "@/types/canvas";
 
@@ -17,25 +18,33 @@ const ProjectCardContentComponent = ({ data }: ProjectCardContentProps) => {
           width="200"
         />
       </div>
-      <div className="flex w-fit items-center gap-3 rounded-full bg-white px-5 py-3 font-medium shadow-3xl">
-        {data.title}
-        {/* <div className="flex">
-          <a
-            className="no-drag flex items-center gap-1"
-            href={data.link.url}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            {renderIcon(data.link.icon)}
-            <span>{data.link.label}</span>
-          </a>
-        </div> */}
+      <div className="flex w-fit items-center gap-4 rounded-full bg-white px-5 py-3 shadow-3xl">
+        <span className="font-medium">{data.title}</span>
+        <div className="flex items-center gap-1">
+          {data.link?.url && (
+            <a
+              className="no-drag flex items-center gap-1 text-accent"
+              href={data.link.url}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {data.link.icon ?? (
+                <ArrowUpRightIcon
+                  weight={data.link.label ? "regular" : "bold"}
+                />
+              )}
+              {data.link.label && (
+                <span className="text-sm">{data.link.label}</span>
+              )}
+            </a>
+          )}
+        </div>
       </div>
-      {/* {data.description && (
-        <p className="mb-4 flex-grow overflow-auto text-sm">
+      {data.description && (
+        <p className="rounded-3xl bg-white px-5 py-3 text-sm shadow-3xl">
           {data.description}
         </p>
-      )} */}
+      )}
 
       {data.richContent && (
         <div className="flex-grow overflow-auto">{data.richContent}</div>
