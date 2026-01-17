@@ -1,8 +1,3 @@
-import {
-  ArrowSquareOut,
-  GithubLogo,
-  LinkedinLogo,
-} from "@phosphor-icons/react";
 import { memo } from "react";
 import type { ProjectCardContent } from "@/types/canvas";
 
@@ -11,20 +6,9 @@ interface ProjectCardContentProps {
 }
 
 const ProjectCardContentComponent = ({ data }: ProjectCardContentProps) => {
-  const renderIcon = (iconName?: string) => {
-    switch (iconName) {
-      case "github":
-        return <GithubLogo size={18} weight="fill" />;
-      case "linkedin":
-        return <LinkedinLogo size={18} weight="fill" />;
-      default:
-        return <ArrowSquareOut size={18} weight="fill" />;
-    }
-  };
-
   return (
     <div className="flex h-full flex-col gap-2">
-      <div className="overflow-hidden rounded-4xl border-4 border-white shadow-3xl">
+      <div className="overflow-hidden rounded-4xl border-4 border-white bg-white shadow-3xl">
         <img
           alt={data.title}
           className="h-auto w-full object-cover"

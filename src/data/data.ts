@@ -8,7 +8,7 @@ export const data: CardGroupData[] = [
     cover: {
       id: "rbc-company",
       type: "company",
-      size: { width: 280 },
+      size: { width: 240 },
       content: {
         company: "RBC",
         title: "UX Engineer, AIOps",
@@ -90,7 +90,7 @@ export const data: CardGroupData[] = [
     cover: {
       id: "wealthsimple-company",
       type: "company",
-      size: { width: 280 },
+      size: { width: 240 },
       content: {
         company: "Wealthsimple",
         title: "Design Engineer, Design System",
@@ -244,7 +244,7 @@ export const data: CardGroupData[] = [
     cover: {
       id: "mintlify-company",
       type: "company",
-      size: { width: 280 },
+      size: { width: 240 },
       content: {
         company: "Mintlify",
         title: "Design Engineer",
@@ -346,7 +346,7 @@ export const data: CardGroupData[] = [
     cover: {
       id: "mosaic-company",
       type: "company",
-      size: { width: 280 },
+      size: { width: 240 },
       content: {
         company: "Mosaic",
         title: "UI/UX Designer",
