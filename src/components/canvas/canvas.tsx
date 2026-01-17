@@ -1,11 +1,11 @@
+import { useAtom } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
-import { useAtom } from "jotai";
 import { CardGroup } from "@/components/groups/card-group";
+import { repulsionConfigAtom } from "@/context/atoms";
 import { useCanvasState } from "@/hooks/use-canvas-state";
 import { computeRepulsionOffsets } from "@/lib/repulsion";
-import { repulsionConfigAtom } from "@/context/atoms";
 import type { CardGroupData } from "@/types/canvas";
 import { CanvasControls } from "./canvas-controls";
 
@@ -95,9 +95,20 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
   }, [state.expandedGroupId, actions.setExpandedGroup]);
 
   const repulsionOffsets = useMemo(
-    () => computeRepulsionOffsets(state.groups, state.expandedGroupId, scale, repulsionConfig),
+    () =>
+      computeRepulsionOffsets(
+        state.groups,
+        state.expandedGroupId,
+        scale,
+        repulsionConfig
+      ),
     [state.groups, state.expandedGroupId, scale, repulsionConfig]
   );
+
+  const isViewportReset =
+    state.viewportState.scale === 1 &&
+    state.viewportState.positionX === 0 &&
+    state.viewportState.positionY === 0;
 
   return (
     <div className="h-screen w-screen overflow-hidden">
@@ -154,7 +165,6 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
                     onPositionUpdate={(position) =>
                       actions.updateGroupPosition(group.id, position)
                     }
-                    repulsionOffset={repulsionOffset}
                     onToggleExpanded={() => {
                       if (isExpanded) {
                         actions.setExpandedGroup(null);
@@ -164,6 +174,7 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
                       actions.bringGroupToFront(group.id);
                       actions.setExpandedGroup(group.id);
                     }}
+                    repulsionOffset={repulsionOffset}
                     scale={scale}
                     setRootRef={(el) => registerGroupElement(group.id, el)}
                   />
@@ -171,7 +182,10 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
               })}
             </TransformComponent>
 
-            <CanvasControls onReset={() => resetTransform()} />
+            <CanvasControls
+              isResetDisabled={isViewportReset}
+              onReset={() => resetTransform()}
+            />
           </>
         )}
       </TransformWrapper>

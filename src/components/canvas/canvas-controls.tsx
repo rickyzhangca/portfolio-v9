@@ -5,9 +5,13 @@ import { CanvasControlPanel } from "./canvas-control-panel";
 
 interface CanvasControlsProps {
   onReset: () => void;
+  isResetDisabled?: boolean;
 }
 
-export const CanvasControls = ({ onReset }: CanvasControlsProps) => {
+export const CanvasControls = ({
+  onReset,
+  isResetDisabled,
+}: CanvasControlsProps) => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   return (
@@ -21,7 +25,11 @@ export const CanvasControls = ({ onReset }: CanvasControlsProps) => {
           Icon={SlidersHorizontalIcon}
           onClick={() => setIsPanelOpen(!isPanelOpen)}
         />
-        <CanvasControlButton Icon={ArrowUUpLeftIcon} onClick={onReset} />
+        <CanvasControlButton
+          disabled={isResetDisabled}
+          Icon={ArrowUUpLeftIcon}
+          onClick={onReset}
+        />
       </div>
     </div>
   );

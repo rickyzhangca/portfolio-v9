@@ -1,7 +1,12 @@
+@import url("https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: "Google Sans", sans-serif;
+}
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
