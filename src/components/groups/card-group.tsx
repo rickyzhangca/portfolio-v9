@@ -293,16 +293,35 @@ export const CardGroup = ({
           const coverWidth = coverWithSize?.size.width ?? card.size.width;
           const collapsedScale = Math.min(1, coverWidth / card.size.width);
 
+          // When collapsed: only first 2 cards visible, others stack behind 2nd card
+          const COLLAPSED_VISIBLE_COUNT = 2;
+          const isHiddenWhenCollapsed =
+            !isExpanded && index >= COLLAPSED_VISIBLE_COUNT;
+          const collapsedIndex = isHiddenWhenCollapsed
+            ? COLLAPSED_VISIBLE_COUNT - 1
+            : index;
+
+          // For hidden cards, use the same offset as the last visible card
+          const collapsedOffset = isHiddenWhenCollapsed
+            ? (offsets[COLLAPSED_VISIBLE_COUNT - 1] ?? { x: 0, y: 0 })
+            : offset;
+
+          // Calculate collapsed opacity - hidden cards get 0, visible cards get gradual reduction
+          const collapsedOpacity = isHiddenWhenCollapsed
+            ? 0
+            : Math.max(0.7, 1 - (collapsedIndex + 1) * 0.08);
+
           return (
             <motion.div
               animate={{
-                opacity: isExpanded ? 1 : Math.max(0.7, 1 - (index + 1) * 0.08),
+                opacity: isExpanded ? 1 : collapsedOpacity,
                 scale: isExpanded
                   ? 1
-                  : collapsedScale * Math.max(0.94, 1 - (index + 1) * 0.02),
+                  : collapsedScale *
+                    Math.max(0.94, 1 - (collapsedIndex + 1) * 0.02),
                 rotate: fanRotate,
-                x: offset.x,
-                y: offset.y + fanArcY,
+                x: isExpanded ? offset.x : collapsedOffset.x,
+                y: isExpanded ? offset.y + fanArcY : collapsedOffset.y,
               }}
               className={cn(
                 "absolute top-0 left-0 will-change-transform",
