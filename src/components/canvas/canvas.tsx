@@ -1,0 +1,180 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
+import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import { useAtom } from "jotai";
+import { CardGroup } from "@/components/groups/card-group";
+import { useCanvasState } from "@/hooks/use-canvas-state";
+import { computeRepulsionOffsets } from "@/lib/repulsion";
+import { repulsionConfigAtom } from "@/context/atoms";
+import type { CardGroupData } from "@/types/canvas";
+import { CanvasControls } from "./canvas-controls";
+
+interface CanvasProps {
+  initialGroups: CardGroupData[];
+}
+
+export const Canvas = ({ initialGroups }: CanvasProps) => {
+  const { state, actions } = useCanvasState(initialGroups);
+  const [isPanningDisabled, setIsPanningDisabled] = useState(false);
+  const [scale, setScale] = useState(1);
+  const [repulsionConfig] = useAtom(repulsionConfigAtom);
+
+  const groupElementsRef = useRef(new Map<string, HTMLDivElement | null>());
+  const pointerDownRef = useRef<{
+    clientX: number;
+    clientY: number;
+    startedOutsideExpandedGroup: boolean;
+  } | null>(null);
+
+  const registerGroupElement = useCallback(
+    (id: string, el: HTMLDivElement | null) => {
+      if (el) {
+        groupElementsRef.current.set(id, el);
+      } else {
+        groupElementsRef.current.delete(id);
+      }
+    },
+    []
+  );
+
+  // Collapse the expanded group when clicking outside it (but not when panning/dragging).
+  useEffect(() => {
+    const expandedGroupId = state.expandedGroupId;
+    if (!expandedGroupId) {
+      return;
+    }
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (!target) {
+        return;
+      }
+
+      if (target.closest("[data-no-collapse]")) {
+        pointerDownRef.current = null;
+        return;
+      }
+
+      const expandedEl = groupElementsRef.current.get(expandedGroupId);
+      pointerDownRef.current = {
+        clientX: event.clientX,
+        clientY: event.clientY,
+        startedOutsideExpandedGroup: expandedEl
+          ? !expandedEl.contains(target)
+          : true,
+      };
+    };
+
+    const onPointerUp = (event: PointerEvent) => {
+      const start = pointerDownRef.current;
+      pointerDownRef.current = null;
+
+      if (!start?.startedOutsideExpandedGroup) {
+        return;
+      }
+
+      const moved = Math.hypot(
+        event.clientX - start.clientX,
+        event.clientY - start.clientY
+      );
+
+      if (moved < 6) {
+        actions.setExpandedGroup(null);
+      }
+    };
+
+    window.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("pointerup", onPointerUp, true);
+    window.addEventListener("pointercancel", onPointerUp, true);
+
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown, true);
+      window.removeEventListener("pointerup", onPointerUp, true);
+      window.removeEventListener("pointercancel", onPointerUp, true);
+    };
+  }, [state.expandedGroupId, actions.setExpandedGroup]);
+
+  const repulsionOffsets = useMemo(
+    () => computeRepulsionOffsets(state.groups, state.expandedGroupId, scale, repulsionConfig),
+    [state.groups, state.expandedGroupId, scale, repulsionConfig]
+  );
+
+  return (
+    <div className="h-screen w-screen overflow-hidden">
+      <TransformWrapper
+        centerOnInit={true}
+        doubleClick={{ disabled: true, mode: "zoomIn" }}
+        initialScale={1}
+        limitToBounds={false}
+        maxScale={3}
+        minScale={0.3}
+        onTransformed={(ref: ReactZoomPanPinchRef) => {
+          setScale(ref.state.scale);
+          actions.updateViewport({
+            scale: ref.state.scale,
+            positionX: ref.state.positionX,
+            positionY: ref.state.positionY,
+          });
+        }}
+        panning={{
+          disabled: isPanningDisabled,
+          velocityDisabled: false,
+          excluded: ["no-pan"],
+        }}
+        pinch={{ step: 5, excluded: ["no-pan"] }}
+        wheel={{ step: 0.1, excluded: ["no-pan"] }}
+      >
+        {({ resetTransform }) => (
+          <>
+            <TransformComponent
+              contentClass="relative w-full h-full"
+              wrapperClass="!w-screen !h-screen"
+            >
+              {/* Render groups */}
+              {Array.from(state.groups.values()).map((group) => {
+                const expandedGroupId = state.expandedGroupId;
+                const isExpanded = expandedGroupId === group.id;
+                const dimmed = expandedGroupId !== null && !isExpanded;
+                const dragDisabled = expandedGroupId !== null;
+                const repulsionOffset = repulsionOffsets.get(group.id) ?? {
+                  x: 0,
+                  y: 0,
+                };
+
+                return (
+                  <CardGroup
+                    dimmed={dimmed}
+                    dragDisabled={dragDisabled}
+                    group={group}
+                    isExpanded={isExpanded}
+                    key={group.id}
+                    onBringToFront={() => actions.bringGroupToFront(group.id)}
+                    onDragEnd={() => setIsPanningDisabled(false)}
+                    onDragStart={() => setIsPanningDisabled(true)}
+                    onPositionUpdate={(position) =>
+                      actions.updateGroupPosition(group.id, position)
+                    }
+                    repulsionOffset={repulsionOffset}
+                    onToggleExpanded={() => {
+                      if (isExpanded) {
+                        actions.setExpandedGroup(null);
+                        return;
+                      }
+
+                      actions.bringGroupToFront(group.id);
+                      actions.setExpandedGroup(group.id);
+                    }}
+                    scale={scale}
+                    setRootRef={(el) => registerGroupElement(group.id, el)}
+                  />
+                );
+              })}
+            </TransformComponent>
+
+            <CanvasControls onReset={() => resetTransform()} />
+          </>
+        )}
+      </TransformWrapper>
+    </div>
+  );
+};
