@@ -10,7 +10,7 @@ import { CompanyCardContentView } from "./company-card-content";
 import { ContactCardContentView } from "./contact-card-content";
 import { ProjectCardContentView } from "./project-card-content";
 
-const mask = (
+export const cardMask = (
   <svg
     fill="none"
     height="360"
