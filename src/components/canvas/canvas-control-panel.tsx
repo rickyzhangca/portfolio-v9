@@ -220,7 +220,7 @@ export const CanvasControlPanel = () => {
                 </span>
               </div>
               <Slider
-                max={10}
+                max={5}
                 min={0}
                 onValueChange={(value) =>
                   setFanConfig({
@@ -272,8 +272,8 @@ export const CanvasControlPanel = () => {
                 </span>
               </div>
               <Slider
-                max={100}
-                min={-100}
+                max={70}
+                min={-70}
                 onValueChange={(value) =>
                   setFanConfig({
                     ...fanConfig,
@@ -298,8 +298,8 @@ export const CanvasControlPanel = () => {
                 </span>
               </div>
               <Slider
-                max={100}
-                min={-100}
+                max={70}
+                min={-70}
                 onValueChange={(value) =>
                   setFanConfig({
                     ...fanConfig,
@@ -314,8 +314,8 @@ export const CanvasControlPanel = () => {
 
           <div className="px-4 pb-4">
             <CanvasControlResetButton
-              onClick={handleResetFan}
               disabled={!isFanModified}
+              onClick={handleResetFan}
             />
           </div>
         </TabsPanel>

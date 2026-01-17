@@ -205,7 +205,11 @@ export const CardGroup = ({
                 x: offset.x,
                 y: offset.y + fanArcY,
               }}
-              className="absolute top-0 left-0 will-change-transform"
+              className={cn(
+                "absolute top-0 left-0 will-change-transform",
+                isCover &&
+                  "drop-shadow-[0_25px_25px_rgba(0,0,0,0.25)] transition-all duration-200 hover:drop-shadow-[0_20px_35px_rgba(0,0,0,0.5)] active:drop-shadow-[0_15px_15px_rgba(0,0,0,0.25)]"
+              )}
               key={card.id}
               onClick={
                 isCover
@@ -228,7 +232,6 @@ export const CardGroup = ({
               style={{
                 zIndex: group.cards.length - index,
                 pointerEvents: isExpanded || isCover ? "auto" : "none",
-                ...maskStyles,
               }}
               transition={{
                 type: "spring",
@@ -237,7 +240,14 @@ export const CardGroup = ({
                 mass: 0.8,
               }}
             >
-              <Card data={card} />
+              <div style={maskStyles}>
+                <Card
+                  className={
+                    isCover ? "shadow-none hover:shadow-none" : undefined
+                  }
+                  data={card}
+                />
+              </div>
             </motion.div>
           );
         })}
