@@ -1,72 +1,16 @@
 import type { CardGroupData } from "@/types/canvas";
 
-export const data: CardGroupData[] = [
-  {
-    id: "rbc-group",
-    position: { x: 100, y: 100 },
-    zIndex: 1,
-    cover: {
-      id: "rbc-company",
-      type: "company",
-      size: { width: 240 },
-      content: {
-        company: "RBC",
-        title: "UX Engineer, AIOps",
-        image: "/src/assets/covers/rbc-logo.webp",
-      },
-    },
-    projects: [
-      {
-        id: "project-2",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "New internal AIOps products",
-          description:
-            "A collaborative task management application with real-time updates and team collaboration features. Built with React and Firebase.",
-          image: "/src/assets/rbc/product.webp",
-        },
-      },
-      {
-        id: "project-4",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "Redesign UI for larger data volumes",
-          description:
-            "Complete UI/UX redesign of internal tools with improved accessibility, performance, and user experience.",
-          image: "/src/assets/rbc/redesign.webp",
-        },
-      },
-      {
-        id: "project-3",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "Internal tool to help data engineers manage PySpark jobs",
-          description:
-            "Big data analytics pipeline using PySpark for processing large-scale datasets with real-time insights and reporting capabilities.",
-          image: "/src/assets/rbc/pyspark.webp",
-        },
-      },
-      {
-        id: "project-1",
-        type: "project",
-        size: { width: 420 },
-        notShipped: true,
-        content: {
-          title: "Mentor and judge two years of RBC Amplify projects",
-          description:
-            "A full-stack e-commerce platform with real-time inventory management, payment processing, and admin dashboard. Built with Next.js, Stripe, and PostgreSQL.",
-          image: "/src/assets/rbc/amplify.webp",
-        },
-      },
-    ],
-  },
+const START_X = 160;
+const START_Y = 300;
 
+const GAP_X = 320;
+const GAP_Y = 20;
+
+export const data: CardGroupData[] = [
+  // wealthsimple
   {
     id: "wealthsimple-group",
-    position: { x: 500, y: 100 },
+    position: { x: START_X, y: START_Y },
     zIndex: 2,
     cover: {
       id: "wealthsimple-company",
@@ -202,10 +146,10 @@ export const data: CardGroupData[] = [
       },
     ],
   },
-
+  // mintlify
   {
     id: "mintlify-group",
-    position: { x: 900, y: 100 },
+    position: { x: START_X + GAP_X, y: START_Y + GAP_Y },
     zIndex: 3,
     cover: {
       id: "mintlify-company",
@@ -297,10 +241,72 @@ export const data: CardGroupData[] = [
       },
     ],
   },
-
+  // rbc
+  {
+    id: "rbc-group",
+    position: { x: START_X + GAP_X * 2, y: START_Y + GAP_Y * 2 },
+    zIndex: 1,
+    cover: {
+      id: "rbc-company",
+      type: "company",
+      size: { width: 240 },
+      content: {
+        company: "RBC",
+        title: "UX Engineer, AIOps",
+        image: "/src/assets/covers/rbc-logo.webp",
+      },
+    },
+    projects: [
+      {
+        id: "project-2",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "New internal AIOps products",
+          description:
+            "A collaborative task management application with real-time updates and team collaboration features. Built with React and Firebase.",
+          image: "/src/assets/rbc/product.webp",
+        },
+      },
+      {
+        id: "project-4",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "Redesigned UI for larger data volumes",
+          description:
+            "Complete UI/UX redesign of internal tools with improved accessibility, performance, and user experience.",
+          image: "/src/assets/rbc/redesign.webp",
+        },
+      },
+      {
+        id: "project-3",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "Internal tool for managing PySpark jobs",
+          description:
+            "Big data analytics pipeline using PySpark for processing large-scale datasets with real-time insights and reporting capabilities.",
+          image: "/src/assets/rbc/pyspark.webp",
+        },
+      },
+      {
+        id: "project-1",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "Mentor and judge for 2 years of Amplify",
+          description:
+            "A full-stack e-commerce platform with real-time inventory management, payment processing, and admin dashboard. Built with Next.js, Stripe, and PostgreSQL.",
+          image: "/src/assets/rbc/amplify.webp",
+        },
+      },
+    ],
+  },
+  // mosaic
   {
     id: "mosaic-group",
-    position: { x: 1300, y: 100 },
+    position: { x: START_X + GAP_X * 3, y: START_Y + GAP_Y * 3 },
     zIndex: 4,
     cover: {
       id: "mosaic-company",
@@ -362,7 +368,7 @@ export const data: CardGroupData[] = [
         type: "project",
         size: { width: 420 },
         content: {
-          title: "All print materials from business cards to trade show walls",
+          title: "All sorts of print materials",
           description:
             "Graphic design tools with vector editing, layers, and export options for creative workflows.",
           image: "/src/assets/mosaic/graphic.webp",
@@ -377,30 +383,6 @@ export const data: CardGroupData[] = [
           description:
             "Automated packaging system for software distribution with versioning and dependency management.",
           image: "/src/assets/mosaic/packaging.webp",
-        },
-      },
-    ],
-  },
-
-  {
-    id: "contact-group",
-    position: { x: 1700, y: 100 },
-    zIndex: 5,
-    cover: undefined,
-    projects: [
-      {
-        id: "contact-card",
-        type: "contact",
-        size: { width: 420 },
-        content: {
-          title: "Let's Connect",
-          description:
-            "Feel free to reach out for collaborations or just a friendly chat!",
-          link: {
-            label: "Email",
-            url: "mailto:hello@example.com",
-            icon: "email",
-          },
         },
       },
     ],
