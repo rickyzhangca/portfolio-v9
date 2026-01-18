@@ -30,11 +30,13 @@ export const CanvasControls = ({
       >
         <CanvasControlButton
           Icon={SlidersHorizontalIcon}
+          label="Open playground"
           onClick={() => setIsPanelOpen(!isPanelOpen)}
         />
         <CanvasControlButton
           disabled={isResetDisabled}
           Icon={ArrowUUpLeftIcon}
+          label="Reset canvas"
           onClick={handleReset}
         />
       </div>

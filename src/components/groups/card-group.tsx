@@ -4,94 +4,19 @@ import { useCallback, useMemo, useState } from "react";
 import { Card } from "@/components/cards/card";
 import { fanConfigAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
-import type { FanConfig } from "@/lib/fan";
 import { cn } from "@/lib/utils";
-import type { CardData, CardGroupData, Position } from "@/types/canvas";
+import type { CardGroupData, Position } from "@/types/canvas";
 
 const CARD_MASK_DATA_URI = `url("data:image/svg+xml,%3Csvg viewBox='0 0 240 340' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 301.6C0 315.041 0 321.762 2.61584 326.896C4.9168 331.412 8.58834 335.083 13.1042 337.384C18.2381 340 24.9587 340 38.4 340H201.6C215.041 340 221.762 340 226.896 337.384C231.412 335.083 235.083 331.412 237.384 326.896C240 321.762 240 315.041 240 301.6V250.875C240 245.342 240 242.576 239.541 239.894C239.133 237.514 238.457 235.187 237.526 232.958C236.476 230.448 234.994 228.112 232.03 223.441L231.47 222.559C228.506 217.888 227.024 215.552 225.974 213.042C225.043 210.813 224.367 208.486 223.959 206.106C223.5 203.424 223.5 200.658 223.5 195.125V134.875C223.5 129.342 223.5 126.576 223.959 123.894C224.367 121.514 225.043 119.187 225.974 116.958C227.024 114.448 228.506 112.112 231.47 107.441L232.03 106.559C234.994 101.888 236.476 99.5523 237.526 97.0418C238.457 94.8133 239.133 92.4865 239.541 90.1058C240 87.424 240 84.6577 240 79.1251V38.4C240 24.9587 240 18.2381 237.384 13.1042C235.083 8.58834 231.412 4.9168 226.896 2.61584C221.762 0 215.041 0 201.6 0H38.4C24.9587 0 18.2381 0 13.1042 2.61584C8.58834 4.9168 4.9168 8.58834 2.61584 13.1042C0 18.2381 0 24.9587 0 38.4V301.6Z'/%3E%3C/svg%3E")`;
 
-const STACK_OFFSET_PX = 6;
-const EXPAND_MAX_PER_ROW = 3;
+import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
+import {
+  COLLAPSED_POSITIONS,
+  EXPAND_MAX_PER_ROW,
+  getOffsets,
+} from "@/lib/card-layout";
 
-const getRotatedBoundingBox = (width: number, height: number, deg: number) => {
-  const theta = (Math.abs(deg) * Math.PI) / 180;
-  const cos = Math.cos(theta);
-  const sin = Math.sin(theta);
-
-  return {
-    width: Math.abs(width * cos) + Math.abs(height * sin),
-    height: Math.abs(height * cos) + Math.abs(width * sin),
-  };
-};
-
-const getOffsets = (
-  cover: CardData | undefined,
-  projects: CardData[],
-  expanded: boolean,
-  fanConfig: FanConfig
-) => {
-  if (!expanded) {
-    return projects.map((_, index) => ({
-      x: index * STACK_OFFSET_PX,
-      y: index * STACK_OFFSET_PX,
-    }));
-  }
-
-  const offsets = projects.map(() => ({ x: 0, y: 0 }));
-
-  const coverWidth = cover?.size.width ?? 0;
-  const baseX = coverWidth + fanConfig.expandGapPx;
-
-  let y = 0;
-  let rowMaxHeight = 0;
-  let col = 0;
-  let x = baseX;
-  let prevWidth = 0;
-  let prevExtraWidth = 0;
-  let hasPrevInRow = false;
-
-  for (let index = 0; index < projects.length; index++) {
-    const card = projects[index];
-    if (!card) {
-      continue;
-    }
-
-    if (col === EXPAND_MAX_PER_ROW) {
-      y += rowMaxHeight + fanConfig.expandRowGapPx;
-      x = baseX;
-      rowMaxHeight = 0;
-      col = 0;
-      prevWidth = 0;
-      prevExtraWidth = 0;
-      hasPrevInRow = false;
-    }
-
-    const cardHeight = card.size.height ?? 0;
-    const rotationDeg = (col + 1) * fanConfig.rotateStepDeg;
-    const { width: bboxWidth, height: bboxHeight } = getRotatedBoundingBox(
-      card.size.width,
-      cardHeight,
-      rotationDeg
-    );
-    const extraWidth = bboxWidth - card.size.width;
-
-    if (hasPrevInRow) {
-      // Prevent rotated cards from visually colliding by widening the gap
-      // based on their rotated bounding boxes.
-      const minGap = (prevExtraWidth + extraWidth) / 2;
-      x += prevWidth + Math.max(fanConfig.expandGapPx, minGap);
-    }
-
-    offsets[index] = { x, y };
-    rowMaxHeight = Math.max(rowMaxHeight, (cardHeight + bboxHeight) / 2);
-    prevWidth = card.size.width;
-    prevExtraWidth = extraWidth;
-    hasPrevInRow = true;
-    col += 1;
-  }
-
-  return offsets;
-};
+// Local definitions removed as they are now imported
 
 interface CardGroupProps {
   group: CardGroupData;
@@ -196,9 +121,9 @@ export const CardGroup = ({
       ref={setRootRef}
       style={{ zIndex: group.zIndex }}
       transition={{
-        opacity: { duration: 0.18 },
-        x: { type: "spring", stiffness: 260, damping: 30, mass: 0.9 },
-        y: { type: "spring", stiffness: 260, damping: 30, mass: 0.9 },
+        opacity: TRANSITIONS.opacity,
+        x: SPRING_PRESETS.smooth,
+        y: SPRING_PRESETS.smooth,
       }}
     >
       <motion.div
@@ -207,11 +132,7 @@ export const CardGroup = ({
           y: currentPosition.y,
         }}
         className="absolute top-0 left-0 will-change-transform"
-        transition={
-          isDragging
-            ? { type: "tween", duration: 0 }
-            : { type: "spring", stiffness: 400, damping: 35, mass: 0.8 }
-        }
+        transition={isDragging ? TRANSITIONS.none : SPRING_PRESETS.quick}
       >
         {coverWithSize && (
           <motion.div
@@ -242,12 +163,7 @@ export const CardGroup = ({
               zIndex: (group.cover ? 1 : 0) + projectsWithSizes.length,
               pointerEvents: "auto",
             }}
-            transition={{
-              type: "spring",
-              stiffness: 520,
-              damping: 46,
-              mass: 0.8,
-            }}
+            transition={SPRING_PRESETS.snappy}
           >
             <div
               style={{
@@ -310,11 +226,8 @@ export const CardGroup = ({
           // Specific collapsed positions for visible cards
           // Card 1: 16px from left & top, -5deg rotation
           // Card 2: 32px from left, 68px from top, no rotation
-          const collapsedPositions = [
-            { x: 24, y: 24, rotate: 5 },
-            { x: 32, y: 72, rotate: 0 },
-          ];
-          const collapsedPos = collapsedPositions[Math.min(index, 1)];
+
+          const collapsedPos = COLLAPSED_POSITIONS[Math.min(index, 1)];
 
           // Calculate collapsed opacity - hidden cards get 0, visible cards get gradual reduction
           const collapsedOpacity = isHiddenWhenCollapsed

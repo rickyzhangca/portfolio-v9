@@ -1,10 +1,5 @@
 import { memo, useLayoutEffect, useRef } from "react";
-import type {
-  CardData,
-  CompanyCardContent,
-  ContactCardContent,
-  ProjectCardContent,
-} from "@/types/canvas";
+import type { CardData } from "@/types/canvas";
 import { CompanyCardContentView } from "./company-card-content";
 import { ContactCardContentView } from "./contact-card-content";
 import { ProjectCardContentView } from "./project-card-content";
@@ -48,25 +43,18 @@ const CardComponent = ({
   }, [onMeasure, data.size.height]);
 
   const renderContent = () => {
-    switch (data.type) {
-      case "company":
-        return (
-          <CompanyCardContentView data={data.content as CompanyCardContent} />
-        );
-      case "project":
-        return (
-          <ProjectCardContentView
-            data={data.content as ProjectCardContent}
-            isExpanded={isExpanded}
-          />
-        );
-      case "contact":
-        return (
-          <ContactCardContentView data={data.content as ContactCardContent} />
-        );
-      default:
-        return null;
+    if (data.type === "company") {
+      return <CompanyCardContentView data={data.content} />;
     }
+    if (data.type === "project") {
+      return (
+        <ProjectCardContentView data={data.content} isExpanded={isExpanded} />
+      );
+    }
+    if (data.type === "contact") {
+      return <ContactCardContentView data={data.content} />;
+    }
+    return null;
   };
 
   return (

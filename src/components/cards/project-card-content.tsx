@@ -1,6 +1,7 @@
 import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
-import { memo } from "react";
+import { memo, useState } from "react";
+import { SPRING_PRESETS } from "@/lib/animation";
 import { cn } from "@/lib/utils";
 import type { ProjectCardContent } from "@/types/canvas";
 
@@ -13,23 +14,37 @@ const ProjectCardContentComponent = ({
   data,
   isExpanded = true,
 }: ProjectCardContentProps) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
   return (
     <div className="flex h-full flex-col gap-2">
       <div
         className={cn(
-          "overflow-hidden rounded-4xl border-4 transition-shadow",
+          "overflow-hidden rounded-4xl border-4 bg-neutral-900 transition-shadow",
           isExpanded
             ? "border-white shadow-3xl"
             : "border-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.12)]"
         )}
       >
-        <img
-          alt={data.title}
-          className="h-auto w-full object-cover"
-          height="200"
-          src={data.image}
-          width="200"
-        />
+        {imageError ? (
+          <div className="flex h-[200px] w-[200px] items-center justify-center bg-white/5 text-white/20">
+            <span className="text-sm">No Image</span>
+          </div>
+        ) : (
+          <img
+            alt={data.title}
+            className={cn(
+              "h-auto w-full object-cover transition-opacity duration-300",
+              imageLoaded ? "opacity-100" : "opacity-0"
+            )}
+            height="200"
+            onError={() => setImageError(true)}
+            onLoad={() => setImageLoaded(true)}
+            src={data.image}
+            width="200"
+          />
+        )}
       </div>
       <motion.div
         animate={{
@@ -39,12 +54,7 @@ const ProjectCardContentComponent = ({
         }}
         className="flex w-fit items-center gap-4 rounded-full bg-white px-5 py-3 shadow-3xl"
         initial={false}
-        transition={{
-          type: "spring",
-          stiffness: 520,
-          damping: 46,
-          mass: 0.8,
-        }}
+        transition={SPRING_PRESETS.snappy}
       >
         <span className="font-medium">{data.title}</span>
         {data.link?.url && (
@@ -77,10 +87,7 @@ const ProjectCardContentComponent = ({
           className="rounded-3xl bg-white px-5 py-4 text-sm shadow-3xl"
           initial={false}
           transition={{
-            type: "spring",
-            stiffness: 520,
-            damping: 46,
-            mass: 0.8,
+            ...SPRING_PRESETS.snappy,
             delay: 0.02,
           }}
         >
@@ -98,10 +105,7 @@ const ProjectCardContentComponent = ({
           className="flex-grow overflow-auto"
           initial={false}
           transition={{
-            type: "spring",
-            stiffness: 520,
-            damping: 46,
-            mass: 0.8,
+            ...SPRING_PRESETS.snappy,
             delay: 0.04,
           }}
         >
