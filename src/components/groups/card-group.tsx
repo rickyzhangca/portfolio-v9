@@ -181,6 +181,9 @@ export const CardGroup = ({
               y: 0,
             }}
             key={coverWithSize.id}
+            layoutId={
+              coverWithSize.type === "resume" ? "resume-card" : undefined
+            }
             onClick={(e) => {
               const target = e.target as HTMLElement;
               if (target.closest(".no-drag")) {
@@ -201,24 +204,32 @@ export const CardGroup = ({
             }}
             transition={{ ...SPRING_PRESETS.snappy, delay: coverEntranceDelay }}
           >
-            <div
-              style={{
-                maskImage: CARD_MASK_DATA_URI,
-                WebkitMaskImage: CARD_MASK_DATA_URI,
-                maskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
-                WebkitMaskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
-                maskRepeat: "no-repeat",
-                WebkitMaskRepeat: "no-repeat",
-                maskPosition: "center",
-                WebkitMaskPosition: "center",
-              }}
-            >
+            {coverWithSize.type === "resume" ? (
               <Card
                 className="shadow-none hover:shadow-none"
                 data={coverWithSize}
                 onMeasure={(h) => handleCardMeasure(coverWithSize.id, h)}
               />
-            </div>
+            ) : (
+              <div
+                style={{
+                  maskImage: CARD_MASK_DATA_URI,
+                  WebkitMaskImage: CARD_MASK_DATA_URI,
+                  maskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
+                  WebkitMaskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
+                  maskRepeat: "no-repeat",
+                  WebkitMaskRepeat: "no-repeat",
+                  maskPosition: "center",
+                  WebkitMaskPosition: "center",
+                }}
+              >
+                <Card
+                  className="shadow-none hover:shadow-none"
+                  data={coverWithSize}
+                  onMeasure={(h) => handleCardMeasure(coverWithSize.id, h)}
+                />
+              </div>
+            )}
           </motion.div>
         )}
         {projectsWithSizes.map((card, index) => {

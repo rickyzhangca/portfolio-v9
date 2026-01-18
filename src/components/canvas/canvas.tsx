@@ -2,7 +2,9 @@ import { useAtom, useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import { LayoutGroup } from "framer-motion";
 import { CardGroup } from "@/components/groups/card-group";
+import { ResumeModal } from "@/components/resume/resume-modal";
 import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
 import { getAutoPanTarget, AUTO_PAN_DURATION_MS } from "@/lib/auto-pan";
 import { useCanvasState } from "@/hooks/use-canvas-state";
@@ -18,12 +20,14 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
   const { state, actions } = useCanvasState(initialGroups);
   const [isPanningDisabled, setIsPanningDisabled] = useState(false);
   const [scale, setScale] = useState(1);
+  const [isResumeOpen, setIsResumeOpen] = useState(false);
   const [repulsionConfig] = useAtom(repulsionConfigAtom);
   const fanConfig = useAtomValue(fanConfigAtom);
 
   const groupElementsRef = useRef(new Map<string, HTMLDivElement | null>());
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isInteractionLockedRef = useRef(false);
   const pointerDownRef = useRef<{
     clientX: number;
     clientY: number;
@@ -39,12 +43,24 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
   initialGroupsRef.current = initialGroups;
 
   useEffect(() => {
+    isInteractionLockedRef.current = isResumeOpen;
+  }, [isResumeOpen]);
+
+  useEffect(() => {
     const container = containerRef.current;
     if (!container) {
       return;
     }
 
     const handleWheel = (e: WheelEvent) => {
+      if (isInteractionLockedRef.current) {
+        // Keep the app from triggering browser/page zoom while a modal is open.
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+        }
+        return;
+      }
+
       const isPinchGesture = e.ctrlKey || e.metaKey;
 
       // Always prevent default to stop browser zoom behavior
@@ -207,127 +223,137 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
   }, [state.groups]);
 
   return (
-    <div className="h-screen w-screen overflow-hidden" ref={containerRef}>
-      <TransformWrapper
-        centerOnInit={true}
-        doubleClick={{ disabled: true, mode: "zoomIn" }}
-        initialScale={1}
-        limitToBounds={false}
-        maxScale={3}
-        minScale={0.3}
-        onTransformed={(ref: ReactZoomPanPinchRef) => {
-          setScale(ref.state.scale);
-          actions.updateViewport({
-            scale: ref.state.scale,
-            positionX: ref.state.positionX,
-            positionY: ref.state.positionY,
-          });
-        }}
-        panning={{
-          disabled: isPanningDisabled,
-          velocityDisabled: false,
-          excluded: ["no-pan"],
-        }}
-        pinch={{ disabled: true }}
-        ref={transformRef}
-        wheel={{ disabled: true }}
-      >
-        {({ resetTransform }) => (
-          <>
-            <TransformComponent
-              contentClass="relative w-full h-full"
-              wrapperClass="!w-screen !h-screen"
-            >
-              {/* Render groups */}
-              {Array.from(state.groups.values()).map((group, groupIndex) => {
-                const expandedGroupId = state.expandedGroupId;
-                const isExpanded = expandedGroupId === group.id;
-                const dimmed = expandedGroupId !== null && !isExpanded;
-                const dragDisabled = expandedGroupId !== null;
-                const repulsionOffset = repulsionOffsets.get(group.id) ?? {
-                  x: 0,
-                  y: 0,
-                };
+    <LayoutGroup>
+      <div className="h-screen w-screen overflow-hidden" ref={containerRef}>
+        <TransformWrapper
+          centerOnInit={true}
+          doubleClick={{ disabled: true, mode: "zoomIn" }}
+          initialScale={1}
+          limitToBounds={false}
+          maxScale={3}
+          minScale={0.3}
+          onTransformed={(ref: ReactZoomPanPinchRef) => {
+            setScale(ref.state.scale);
+            actions.updateViewport({
+              scale: ref.state.scale,
+              positionX: ref.state.positionX,
+              positionY: ref.state.positionY,
+            });
+          }}
+          panning={{
+            disabled: isPanningDisabled || isResumeOpen,
+            velocityDisabled: false,
+            excluded: ["no-pan"],
+          }}
+          pinch={{ disabled: true }}
+          ref={transformRef}
+          wheel={{ disabled: true }}
+        >
+          {({ resetTransform }) => (
+            <>
+              <TransformComponent
+                contentClass="relative w-full h-full"
+                wrapperClass="!w-screen !h-screen"
+              >
+                {/* Render groups */}
+                {Array.from(state.groups.values()).map((group, groupIndex) => {
+                  const expandedGroupId = state.expandedGroupId;
+                  const isExpanded = expandedGroupId === group.id;
+                  const dimmed = expandedGroupId !== null && !isExpanded;
+                  const dragDisabled = expandedGroupId !== null || isResumeOpen;
+                  const repulsionOffset = repulsionOffsets.get(group.id) ?? {
+                    x: 0,
+                    y: 0,
+                  };
 
-                return (
-                  <CardGroup
-                    dimmed={dimmed}
-                    dragDisabled={dragDisabled}
-                    group={group}
-                    groupIndex={groupIndex}
-                    isExpanded={isExpanded}
-                    key={group.id}
-                    onBringToFront={() => actions.bringGroupToFront(group.id)}
-                    onCardHeightMeasured={(cardId, height) =>
-                      actions.updateCardHeight(group.id, cardId, height)
-                    }
-                    onDragEnd={() => setIsPanningDisabled(false)}
-                    onDragStart={() => setIsPanningDisabled(true)}
-                    onPositionUpdate={(position) =>
-                      actions.updateGroupPosition(group.id, position)
-                    }
-                    onToggleExpanded={() => {
-                      if (isExpanded) {
-                        // Restore to pre-auto-pan position if available
-                        const savedPosition = preAutoPanPositionRef.current;
-                        if (savedPosition) {
-                          transformRef.current?.setTransform(
-                            savedPosition.x,
-                            savedPosition.y,
-                            savedPosition.scale,
-                            AUTO_PAN_DURATION_MS
-                          );
-                          preAutoPanPositionRef.current = null;
+                  return (
+                    <CardGroup
+                      dimmed={dimmed}
+                      dragDisabled={dragDisabled}
+                      group={group}
+                      groupIndex={groupIndex}
+                      isExpanded={isExpanded}
+                      key={group.id}
+                      onBringToFront={() => actions.bringGroupToFront(group.id)}
+                      onCardHeightMeasured={(cardId, height) =>
+                        actions.updateCardHeight(group.id, cardId, height)
+                      }
+                      onDragEnd={() => setIsPanningDisabled(false)}
+                      onDragStart={() => setIsPanningDisabled(true)}
+                      onPositionUpdate={(position) =>
+                        actions.updateGroupPosition(group.id, position)
+                      }
+                      onToggleExpanded={() => {
+                        if (group.cover?.type === "resume") {
+                          actions.bringGroupToFront(group.id);
+                          setIsResumeOpen(true);
+                          return;
                         }
-                        actions.setExpandedGroup(null);
-                        return;
-                      }
 
-                      actions.bringGroupToFront(group.id);
-                      actions.setExpandedGroup(group.id);
+                        if (isExpanded) {
+                          // Restore to pre-auto-pan position if available
+                          const savedPosition = preAutoPanPositionRef.current;
+                          if (savedPosition) {
+                            transformRef.current?.setTransform(
+                              savedPosition.x,
+                              savedPosition.y,
+                              savedPosition.scale,
+                              AUTO_PAN_DURATION_MS
+                            );
+                            preAutoPanPositionRef.current = null;
+                          }
+                          actions.setExpandedGroup(null);
+                          return;
+                        }
 
-                      // Check if auto-pan is needed
-                      const panTarget = getAutoPanTarget(
-                        group,
-                        fanConfig,
-                        state.viewportState,
-                        window.innerWidth,
-                        window.innerHeight
-                      );
+                        actions.bringGroupToFront(group.id);
+                        actions.setExpandedGroup(group.id);
 
-                      if (panTarget) {
-                        // Save current position before auto-panning
-                        preAutoPanPositionRef.current = {
-                          x: state.viewportState.positionX,
-                          y: state.viewportState.positionY,
-                          scale: state.viewportState.scale,
-                        };
-                        requestAnimationFrame(() => {
-                          transformRef.current?.setTransform(
-                            panTarget.x,
-                            panTarget.y,
-                            panTarget.scale,
-                            AUTO_PAN_DURATION_MS
-                          );
-                        });
-                      }
-                    }}
-                    repulsionOffset={repulsionOffset}
-                    scale={scale}
-                    setRootRef={(el) => registerGroupElement(group.id, el)}
-                  />
-                );
-              })}
-            </TransformComponent>
+                        // Check if auto-pan is needed
+                        const panTarget = getAutoPanTarget(
+                          group,
+                          fanConfig,
+                          state.viewportState,
+                          window.innerWidth,
+                          window.innerHeight
+                        );
 
-            <CanvasControls
-              isResetDisabled={isViewportReset && !arePositionsModified}
-              onReset={() => resetTransform()}
-              onResetPositions={() => actions.resetGroups()}
-            />
-          </>
-        )}
-      </TransformWrapper>
-    </div>
+                        if (panTarget) {
+                          // Save current position before auto-panning
+                          preAutoPanPositionRef.current = {
+                            x: state.viewportState.positionX,
+                            y: state.viewportState.positionY,
+                            scale: state.viewportState.scale,
+                          };
+                          requestAnimationFrame(() => {
+                            transformRef.current?.setTransform(
+                              panTarget.x,
+                              panTarget.y,
+                              panTarget.scale,
+                              AUTO_PAN_DURATION_MS
+                            );
+                          });
+                        }
+                      }}
+                      repulsionOffset={repulsionOffset}
+                      scale={scale}
+                      setRootRef={(el) => registerGroupElement(group.id, el)}
+                    />
+                  );
+                })}
+              </TransformComponent>
+
+              <CanvasControls
+                isResetDisabled={isViewportReset && !arePositionsModified}
+                onReset={() => resetTransform()}
+                onResetPositions={() => actions.resetGroups()}
+              />
+            </>
+          )}
+        </TransformWrapper>
+
+        <ResumeModal isOpen={isResumeOpen} onClose={() => setIsResumeOpen(false)} />
+      </div>
+    </LayoutGroup>
   );
 };

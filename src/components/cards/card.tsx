@@ -3,6 +3,7 @@ import type { CardData } from "@/types/canvas";
 import { CompanyCardContentView } from "./company-card-content";
 import { ContactCardContentView } from "./contact-card-content";
 import { ProjectCardContentView } from "./project-card-content";
+import { ResumeCardContentView } from "./resume-card-content";
 
 interface CardProps {
   data: CardData;
@@ -59,6 +60,9 @@ const CardComponent = ({
     }
     if (data.type === "contact") {
       return <ContactCardContentView data={data.content} />;
+    }
+    if (data.type === "resume") {
+      return <ResumeCardContentView data={data.content} />;
     }
     return null;
   };

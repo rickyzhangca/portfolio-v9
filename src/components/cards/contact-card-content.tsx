@@ -4,7 +4,7 @@ import {
   GithubLogo,
   LinkedinLogo,
 } from "@phosphor-icons/react";
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import type { ContactCardContent } from "@/types/canvas";
 
 interface ContactCardContentProps {
@@ -12,17 +12,25 @@ interface ContactCardContentProps {
 }
 
 const ContactCardContentComponent = ({ data }: ContactCardContentProps) => {
-  const renderIcon = (iconName?: string) => {
-    switch (iconName) {
-      case "github":
-        return <GithubLogo size={18} weight="fill" />;
-      case "linkedin":
-        return <LinkedinLogo size={18} weight="fill" />;
-      case "email":
-        return <EnvelopeSimple size={18} weight="fill" />;
-      default:
-        return <ArrowSquareOut size={18} weight="fill" />;
+  const renderIcon = (icon?: ReactNode) => {
+    if (typeof icon === "string") {
+      switch (icon) {
+        case "github":
+          return <GithubLogo size={18} weight="fill" />;
+        case "linkedin":
+          return <LinkedinLogo size={18} weight="fill" />;
+        case "email":
+          return <EnvelopeSimple size={18} weight="fill" />;
+        default:
+          return <ArrowSquareOut size={18} weight="fill" />;
+      }
     }
+
+    if (icon != null) {
+      return icon;
+    }
+
+    return <ArrowSquareOut size={18} weight="fill" />;
   };
 
   return (
