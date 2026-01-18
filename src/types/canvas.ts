@@ -56,6 +56,7 @@ export interface CardData {
   type: CardType;
   size: Size;
   content: CardContent;
+  notShipped?: boolean;
 }
 
 export interface CardGroupData {
