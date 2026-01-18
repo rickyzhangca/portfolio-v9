@@ -116,11 +116,10 @@ export const useDraggable = ({
     isDragging,
     didDragRef,
     handleMouseDown,
-    style: {
-      // Apply base position + drag offset for smooth dragging
-      // This element already lives inside the zoom/pan transformed container.
-      // `scale` is only needed to convert pointer deltas (screen space) to world space.
-      transform: `translate(${position.x + dragOffset.x}px, ${position.y + dragOffset.y}px)`,
+    // Expose current position for Framer Motion animation during resets
+    currentPosition: {
+      x: position.x + dragOffset.x,
+      y: position.y + dragOffset.y,
     },
   };
 };

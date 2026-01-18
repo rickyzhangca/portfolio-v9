@@ -153,19 +153,20 @@ export const CardGroup = ({
     [coverWithSize, projectsWithSizes, isExpanded, fanConfig]
   );
 
-  const { isDragging, didDragRef, handleMouseDown, style } = useDraggable({
-    position: group.position,
-    scale,
-    disabled: dragDisabled,
-    onDragStart: () => {
-      onBringToFront();
-      onDragStart?.();
-    },
-    onDragEnd: (finalPosition) => {
-      onPositionUpdate(finalPosition);
-      onDragEnd?.();
-    },
-  });
+  const { isDragging, didDragRef, handleMouseDown, currentPosition } =
+    useDraggable({
+      position: group.position,
+      scale,
+      disabled: dragDisabled,
+      onDragStart: () => {
+        onBringToFront();
+        onDragStart?.();
+      },
+      onDragEnd: (finalPosition) => {
+        onPositionUpdate(finalPosition);
+        onDragEnd?.();
+      },
+    });
 
   const handleCardMeasure = useCallback((id: string, height: number) => {
     setMeasuredSizes((prev) => {
@@ -200,9 +201,17 @@ export const CardGroup = ({
         y: { type: "spring", stiffness: 260, damping: 30, mass: 0.9 },
       }}
     >
-      <div
+      <motion.div
+        animate={{
+          x: currentPosition.x,
+          y: currentPosition.y,
+        }}
         className="absolute top-0 left-0 will-change-transform"
-        style={style}
+        transition={
+          isDragging
+            ? { type: "tween", duration: 0 }
+            : { type: "spring", stiffness: 400, damping: 35, mass: 0.8 }
+        }
       >
         {coverWithSize && (
           <motion.div
@@ -378,7 +387,7 @@ export const CardGroup = ({
             </motion.div>
           );
         })}
-      </div>
+      </motion.div>
     </motion.div>
   );
 };
