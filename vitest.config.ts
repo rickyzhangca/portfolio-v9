@@ -10,5 +10,23 @@ export default defineConfig({
   test: {
     environment: "happy-dom",
     globals: true,
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json", "html", "lcov"],
+      exclude: [
+        "node_modules/",
+        "src/test-utils/**",
+        "**/*.d.ts",
+        "**/*.config.*",
+        "src/main.tsx",
+        "src/vite-env.d.ts",
+      ],
+      thresholds: {
+        statements: 80,
+        branches: 65,
+        functions: 60,
+        lines: 80,
+      },
+    },
   },
 });
