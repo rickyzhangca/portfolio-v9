@@ -1,6 +1,6 @@
 import { LayoutGroup } from "framer-motion";
 import { useAtom, useAtomValue } from "jotai";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { CardGroup } from "@/components/groups/card-group";
@@ -27,6 +27,14 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
   const [repulsionConfig] = useAtom(repulsionConfigAtom);
   const fanConfig = useAtomValue(fanConfigAtom);
 
+  const [viewportDimensions, setViewportDimensions] = useState<{
+    width: number;
+    height: number;
+  }>(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }));
+
   const groupElementsRef = useRef(new Map<string, HTMLDivElement | null>());
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,6 +56,21 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
   useEffect(() => {
     isInteractionLockedRef.current = isResumeOpen;
   }, [isResumeOpen]);
+
+  // Track viewport dimensions for responsive repulsion calculations
+  useLayoutEffect(() => {
+    const updateDimensions = () => {
+      setViewportDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    updateDimensions();
+
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -190,12 +213,40 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
     };
   }, [state.expandedGroupId, actions.setExpandedGroup]);
 
+  // Calculate viewport-proportional repulsion values for resume mode
+  const getResumeRepulsionConfig = useCallback(
+    (viewportWidth: number, viewportHeight: number) => {
+      // Use the larger dimension for consistent behavior across orientations
+      const maxDimension = Math.max(viewportWidth, viewportHeight);
+
+      // Radius: 2.5x max dimension creates large clear zone
+      // Strength: 0.5x max dimension provides strong push distance
+      return {
+        radiusPx: maxDimension * 2.5,
+        strengthPx: maxDimension * 0.5,
+      };
+    },
+    []
+  );
+
   const repulsionOffsets = useMemo(() => {
     // Stronger repulsion when Resume is active to clear the screen
     const effectiveConfig = activeResumeGroupId
       ? {
-          radiusPx: Math.max(repulsionConfig.radiusPx, 4000),
-          strengthPx: Math.max(repulsionConfig.strengthPx, 800),
+          radiusPx: Math.max(
+            repulsionConfig.radiusPx,
+            getResumeRepulsionConfig(
+              viewportDimensions.width,
+              viewportDimensions.height
+            ).radiusPx
+          ),
+          strengthPx: Math.max(
+            repulsionConfig.strengthPx,
+            getResumeRepulsionConfig(
+              viewportDimensions.width,
+              viewportDimensions.height
+            ).strengthPx
+          ),
         }
       : repulsionConfig;
 
@@ -209,6 +260,8 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
     state.expandedGroupId,
     activeResumeGroupId,
     repulsionConfig,
+    viewportDimensions,
+    getResumeRepulsionConfig,
   ]);
 
   const isViewportReset =

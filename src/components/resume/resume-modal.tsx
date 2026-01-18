@@ -75,7 +75,7 @@ export const ResumeModal = ({
           transition={{ duration: 0.32 }}
         >
           <div
-            className="absolute inset-0 flex items-center justify-center p-[28px]"
+            className="absolute inset-0 flex items-center justify-center"
             onPointerDown={onClose}
           >
             <motion.div
