@@ -11,9 +11,7 @@ interface ContactCardContentProps {
   data: ContactCardContent;
 }
 
-const ContactCardContentComponent = ({
-  data,
-}: ContactCardContentProps) => {
+const ContactCardContentComponent = ({ data }: ContactCardContentProps) => {
   const renderIcon = (iconName?: string) => {
     switch (iconName) {
       case "github":
