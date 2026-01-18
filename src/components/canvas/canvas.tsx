@@ -1,9 +1,10 @@
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { CardGroup } from "@/components/groups/card-group";
-import { repulsionConfigAtom } from "@/context/atoms";
+import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
+import { getAutoPanTarget, AUTO_PAN_DURATION_MS } from "@/lib/auto-pan";
 import { useCanvasState } from "@/hooks/use-canvas-state";
 import { computeRepulsionOffsets } from "@/lib/repulsion";
 import type { CardGroupData } from "@/types/canvas";
@@ -18,6 +19,7 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
   const [isPanningDisabled, setIsPanningDisabled] = useState(false);
   const [scale, setScale] = useState(1);
   const [repulsionConfig] = useAtom(repulsionConfigAtom);
+  const fanConfig = useAtomValue(fanConfigAtom);
 
   const groupElementsRef = useRef(new Map<string, HTMLDivElement | null>());
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
@@ -252,6 +254,26 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
 
                       actions.bringGroupToFront(group.id);
                       actions.setExpandedGroup(group.id);
+
+                      // Check if auto-pan is needed
+                      const panTarget = getAutoPanTarget(
+                        group,
+                        fanConfig,
+                        state.viewportState,
+                        window.innerWidth,
+                        window.innerHeight
+                      );
+
+                      if (panTarget) {
+                        requestAnimationFrame(() => {
+                          transformRef.current?.setTransform(
+                            panTarget.x,
+                            panTarget.y,
+                            panTarget.scale,
+                            AUTO_PAN_DURATION_MS
+                          );
+                        });
+                      }
                     }}
                     repulsionOffset={repulsionOffset}
                     scale={scale}
