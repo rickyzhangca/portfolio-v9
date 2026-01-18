@@ -30,7 +30,9 @@ const ProjectCardContentComponent = ({
         )}
       >
         {imageError ? (
-          <div className="flex p-12 items-center justify-center text-foreground2">No Image</div>
+          <div className="flex items-center justify-center p-12 text-foreground2">
+            No Image
+          </div>
         ) : (
           <img
             alt={data.title}
