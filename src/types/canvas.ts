@@ -42,7 +42,7 @@ export interface ContactCardContent {
   link: {
     label: string;
     url: string;
-    icon?: ReactNode
+    icon?: ReactNode;
   };
 }
 
