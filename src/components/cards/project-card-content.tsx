@@ -8,11 +8,13 @@ import type { ProjectCardContent } from "@/types/canvas";
 interface ProjectCardContentProps {
   data: ProjectCardContent;
   isExpanded?: boolean;
+  priority?: boolean;
 }
 
 const ProjectCardContentComponent = ({
   data,
   isExpanded = true,
+  priority = false,
 }: ProjectCardContentProps) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -39,6 +41,7 @@ const ProjectCardContentComponent = ({
               imageLoaded ? "opacity-100" : "opacity-0"
             )}
             height="200"
+            loading={priority ? "eager" : "lazy"}
             onError={() => setImageError(true)}
             onLoad={() => setImageLoaded(true)}
             src={data.image}

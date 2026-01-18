@@ -161,7 +161,7 @@ export const CardGroup = ({
             initial={{
               opacity: 0,
               scale: 0,
-              rotate: -10,
+              rotate: -5,
               x: 0,
               y: 0,
             }}
@@ -332,6 +332,7 @@ export const CardGroup = ({
                   data={card}
                   isExpanded={isExpanded}
                   onMeasure={(h) => handleCardMeasure(card.id, h)}
+                  priority={index < 2}
                 />
               </div>
             </motion.div>

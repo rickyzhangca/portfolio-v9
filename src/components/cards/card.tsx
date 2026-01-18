@@ -9,6 +9,7 @@ interface CardProps {
   className?: string;
   isExpanded?: boolean;
   onMeasure?: (height: number) => void;
+  priority?: boolean;
 }
 
 const CardComponent = ({
@@ -16,6 +17,7 @@ const CardComponent = ({
   className,
   isExpanded = true,
   onMeasure,
+  priority,
 }: CardProps) => {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -48,7 +50,11 @@ const CardComponent = ({
     }
     if (data.type === "project") {
       return (
-        <ProjectCardContentView data={data.content} isExpanded={isExpanded} />
+        <ProjectCardContentView
+          data={data.content}
+          isExpanded={isExpanded}
+          priority={priority}
+        />
       );
     }
     if (data.type === "contact") {
