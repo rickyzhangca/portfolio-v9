@@ -190,15 +190,26 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
     };
   }, [state.expandedGroupId, actions.setExpandedGroup]);
 
-  const repulsionOffsets = useMemo(
-    () =>
-      computeRepulsionOffsets(
-        state.groups,
-        state.expandedGroupId ?? activeResumeGroupId,
-        repulsionConfig
-      ),
-    [state.groups, state.expandedGroupId, activeResumeGroupId, repulsionConfig]
-  );
+  const repulsionOffsets = useMemo(() => {
+    // Stronger repulsion when Resume is active to clear the screen
+    const effectiveConfig = activeResumeGroupId
+      ? {
+          radiusPx: Math.max(repulsionConfig.radiusPx, 4000),
+          strengthPx: Math.max(repulsionConfig.strengthPx, 800),
+        }
+      : repulsionConfig;
+
+    return computeRepulsionOffsets(
+      state.groups,
+      state.expandedGroupId ?? activeResumeGroupId,
+      effectiveConfig
+    );
+  }, [
+    state.groups,
+    state.expandedGroupId,
+    activeResumeGroupId,
+    repulsionConfig,
+  ]);
 
   const isViewportReset =
     state.viewportState.scale === 1 &&

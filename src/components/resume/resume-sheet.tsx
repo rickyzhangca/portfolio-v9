@@ -66,22 +66,27 @@ export const ResumeSheet = ({
 
         <section className="grid grid-cols-[1fr_240px] gap-10">
           <div className="min-w-0">
-            <h2 className="font-semibold text-[13px] tracking-[0.14em] text-foreground2 uppercase">
+            <h2 className="font-semibold text-[13px] text-foreground2 uppercase tracking-[0.14em]">
               Summary
             </h2>
             <p className="mt-3 text-[15px] leading-relaxed">
               {resumeConfig.summary}
             </p>
 
-            <h2 className="mt-10 font-semibold text-[13px] tracking-[0.14em] text-foreground2 uppercase">
+            <h2 className="mt-10 font-semibold text-[13px] text-foreground2 uppercase tracking-[0.14em]">
               Experience
             </h2>
             <div className="mt-4 flex flex-col gap-6">
               {resumeConfig.experience.map((item) => (
-                <div className="rounded-2xl border border-border p-4" key={item.company}>
+                <div
+                  className="rounded-2xl border border-border p-4"
+                  key={item.company}
+                >
                   <div className="flex items-baseline justify-between gap-4">
                     <div className="min-w-0">
-                      <div className="truncate font-semibold">{item.company}</div>
+                      <div className="truncate font-semibold">
+                        {item.company}
+                      </div>
                       <div className="truncate text-foreground2 text-sm">
                         {item.title}
                       </div>
@@ -102,7 +107,7 @@ export const ResumeSheet = ({
 
           <aside className="flex flex-col gap-10">
             <div>
-              <h2 className="font-semibold text-[13px] tracking-[0.14em] text-foreground2 uppercase">
+              <h2 className="font-semibold text-[13px] text-foreground2 uppercase tracking-[0.14em]">
                 Skills
               </h2>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -118,14 +123,19 @@ export const ResumeSheet = ({
             </div>
 
             <div>
-              <h2 className="font-semibold text-[13px] tracking-[0.14em] text-foreground2 uppercase">
+              <h2 className="font-semibold text-[13px] text-foreground2 uppercase tracking-[0.14em]">
                 Education
               </h2>
               <div className="mt-3 flex flex-col gap-3">
                 {resumeConfig.education.map((item) => (
-                  <div className="rounded-2xl border border-border p-4" key={item.school}>
+                  <div
+                    className="rounded-2xl border border-border p-4"
+                    key={item.school}
+                  >
                     <div className="font-semibold">{item.school}</div>
-                    <div className="text-foreground2 text-sm">{item.degree}</div>
+                    <div className="text-foreground2 text-sm">
+                      {item.degree}
+                    </div>
                     <div className="mt-1 text-foreground2 text-sm">
                       {item.period}
                     </div>
@@ -151,4 +161,3 @@ export const ResumeSheet = ({
     </article>
   );
 };
-

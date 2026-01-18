@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { resumeConfig } from "@/data/resume";
 import { SPRING_PRESETS } from "@/lib/animation";
-import { cn } from "@/lib/utils";
 import { RESUME_SHEET_SIZE, ResumeSheet } from "./resume-sheet";
 
 const VIEWPORT_MARGIN_PX = 28;
@@ -69,18 +68,18 @@ export const ResumeModal = ({
         <motion.div
           animate={{ opacity: 1 }}
           aria-modal="true"
-          className="fixed inset-0 z-50 bg-background1"
-          exit={{ opacity: 0, transition: { duration: 0.08, delay: 0.22 } }}
+          className="fixed inset-0 z-50 bg-white"
+          exit={{ opacity: 0, transition: { duration: 0.32, delay: 0.12 } }}
           initial={{ opacity: 0 }}
           role="dialog"
-          transition={{ duration: 0.1 }}
+          transition={{ duration: 0.32 }}
         >
           <div
             className="absolute inset-0 flex items-center justify-center p-[28px]"
             onPointerDown={onClose}
           >
             <motion.div
-              className={cn("relative overflow-auto rounded-[28px] bg-white")}
+              className="relative overflow-auto rounded-4xl"
               layoutId={layoutId}
               onPointerDown={(e) => e.stopPropagation()}
               style={{
