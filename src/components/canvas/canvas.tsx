@@ -239,7 +239,7 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
               wrapperClass="!w-screen !h-screen"
             >
               {/* Render groups */}
-              {Array.from(state.groups.values()).map((group) => {
+              {Array.from(state.groups.values()).map((group, groupIndex) => {
                 const expandedGroupId = state.expandedGroupId;
                 const isExpanded = expandedGroupId === group.id;
                 const dimmed = expandedGroupId !== null && !isExpanded;
@@ -254,6 +254,7 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
                     dimmed={dimmed}
                     dragDisabled={dragDisabled}
                     group={group}
+                    groupIndex={groupIndex}
                     isExpanded={isExpanded}
                     key={group.id}
                     onBringToFront={() => actions.bringGroupToFront(group.id)}

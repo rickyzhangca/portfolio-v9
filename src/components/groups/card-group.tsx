@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useAtomValue } from "jotai";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/cards/card";
 import { fanConfigAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
@@ -18,8 +18,14 @@ import {
 
 // Local definitions removed as they are now imported
 
+// Entrance animation timing constants
+const COVER_BASE_DELAY = 0.05; // seconds before first cover appears
+const COVER_STAGGER = 0.05; // seconds between each group's cover
+const PROJECT_DELAY_AFTER_COVER = 0.8; // seconds after cover before projects appear
+
 interface CardGroupProps {
   group: CardGroupData;
+  groupIndex: number;
   scale: number;
   isExpanded: boolean;
   dimmed: boolean;
@@ -35,6 +41,7 @@ interface CardGroupProps {
 
 export const CardGroup = ({
   group,
+  groupIndex,
   scale,
   isExpanded,
   dimmed,
@@ -51,6 +58,20 @@ export const CardGroup = ({
   const [measuredSizes, setMeasuredSizes] = useState<Record<string, number>>(
     {}
   );
+  // Control when projects become visible (after cover animation completes)
+  const [showProjects, setShowProjects] = useState(false);
+
+  // Calculate entrance delays based on group index
+  const coverEntranceDelay = COVER_BASE_DELAY + groupIndex * COVER_STAGGER;
+  const projectsEntranceDelay = coverEntranceDelay + PROJECT_DELAY_AFTER_COVER;
+
+  // Show projects after cover animation has time to complete
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowProjects(true);
+    }, projectsEntranceDelay * 1000); // Convert to ms
+    return () => clearTimeout(timer);
+  }, [projectsEntranceDelay]);
 
   const coverWithSize = useMemo(() => {
     if (!group.cover) return undefined;
@@ -137,6 +158,13 @@ export const CardGroup = ({
       >
         {coverWithSize && (
           <motion.div
+            initial={{
+              opacity: 0.6,
+              scale: 0.5,
+              rotate: 0,
+              x: 0,
+              y: 0,
+            }}
             animate={{
               opacity: 1,
               scale: 1,
@@ -164,7 +192,10 @@ export const CardGroup = ({
               zIndex: (group.cover ? 1 : 0) + projectsWithSizes.length,
               pointerEvents: "auto",
             }}
-            transition={SPRING_PRESETS.snappy}
+            transition={{
+              ...SPRING_PRESETS.snappy,
+              delay: coverEntranceDelay,
+            }}
           >
             <div
               style={{
@@ -240,14 +271,21 @@ export const CardGroup = ({
 
           return (
             <motion.div
+              initial={false}
               animate={{
-                opacity: isExpanded ? 1 : collapsedOpacity,
-                scale: isExpanded
-                  ? 1
-                  : collapsedScale *
-                    Math.max(0.94, 1 - (collapsedScaleIndex + 1) * 0.02),
+                opacity: showProjects ? (isExpanded ? 1 : collapsedOpacity) : 0,
+                scale: showProjects
+                  ? isExpanded
+                    ? 1
+                    : collapsedScale *
+                      Math.max(0.94, 1 - (collapsedScaleIndex + 1) * 0.02)
+                  : collapsedScale * 0.5,
                 rotate: isExpanded ? fanRotate : collapsedPos.rotate,
-                x: isExpanded ? offset.x : collapsedPos.x,
+                x: showProjects
+                  ? isExpanded
+                    ? offset.x
+                    : collapsedPos.x
+                  : collapsedPos.x - 20,
                 y: isExpanded ? offset.y + fanArcY : collapsedPos.y,
               }}
               className={cn(
@@ -280,10 +318,11 @@ export const CardGroup = ({
                 transformOrigin: "top left",
               }}
               transition={{
-                type: "spring",
-                stiffness: 520,
-                damping: 46,
-                mass: 0.8,
+                opacity: { duration: 0 },
+                scale: SPRING_PRESETS.snappy,
+                rotate: SPRING_PRESETS.snappy,
+                x: SPRING_PRESETS.snappy,
+                y: SPRING_PRESETS.snappy,
               }}
             >
               <div style={maskStyles}>
