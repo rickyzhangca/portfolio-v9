@@ -1,4 +1,7 @@
-import { ResumeSheet, RESUME_SHEET_SIZE } from "@/components/resume/resume-sheet";
+import {
+  RESUME_SHEET_SIZE,
+  ResumeSheet,
+} from "@/components/resume/resume-sheet";
 import type { ResumeCardContent } from "@/types/canvas";
 
 const PREVIEW_SIZE = { width: 240, height: 340 } as const;
@@ -24,4 +27,3 @@ export const ResumeCardContentView = (_props: ResumeCardContentProps) => {
     </div>
   );
 };
-

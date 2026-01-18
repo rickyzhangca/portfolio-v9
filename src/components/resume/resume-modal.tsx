@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
 import { resumeConfig } from "@/data/resume";
 import { SPRING_PRESETS } from "@/lib/animation";
+import { ScrollArea } from "../ui/scroll-area";
 import { RESUME_SHEET_SIZE, ResumeSheet } from "./resume-sheet";
 
 interface ResumeModalProps {
@@ -48,7 +49,7 @@ export const ResumeModal = ({
             onPointerDown={onClose}
           >
             <motion.div
-              className="relative h-full overflow-auto rounded-4xl"
+              className="relative h-full overflow-hidden rounded-4xl"
               layoutId={layoutId}
               onPointerDown={(e) => e.stopPropagation()}
               style={{
@@ -56,7 +57,9 @@ export const ResumeModal = ({
               }}
               transition={SPRING_PRESETS.smooth}
             >
-              <ResumeSheet interactive={true} />
+              <ScrollArea showScrollbar={false}>
+                <ResumeSheet interactive={true} />
+              </ScrollArea>
             </motion.div>
           </div>
 

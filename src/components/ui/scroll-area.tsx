@@ -7,8 +7,10 @@ function ScrollArea({
   children,
   scrollFade = false,
   scrollbarGutter = false,
+  showScrollbar = true,
   ...props
 }: ScrollAreaPrimitive.Root.Props & {
+  showScrollbar?: boolean;
   scrollFade?: boolean;
   scrollbarGutter?: boolean;
 }) {
@@ -29,8 +31,8 @@ function ScrollArea({
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar orientation="vertical" />
-      <ScrollBar orientation="horizontal" />
+      {showScrollbar && <ScrollBar orientation="vertical" />}
+      {showScrollbar && <ScrollBar orientation="horizontal" />}
       <ScrollAreaPrimitive.Corner data-slot="scroll-area-corner" />
     </ScrollAreaPrimitive.Root>
   );
