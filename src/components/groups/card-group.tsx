@@ -126,7 +126,7 @@ export const CardGroup = ({
   return (
     <motion.div
       animate={{
-        opacity: dimmed ? 0.35 : 1,
+        opacity: dimmed ? 0.25 : 1,
         x: repulsionOffset.x,
         y: repulsionOffset.y,
       }}
@@ -160,7 +160,7 @@ export const CardGroup = ({
           <motion.div
             initial={{
               opacity: 0.6,
-              scale: 0.5,
+              scale: 0,
               rotate: 0,
               x: 0,
               y: 0,
