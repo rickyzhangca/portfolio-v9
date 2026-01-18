@@ -37,7 +37,6 @@ const getExpandedBoundingBox = (
   let maxX = cover?.size.width ?? 0;
   let maxY = cover?.size.height ?? 360;
 
-
   // Calculate bounds for each project card at its fanned offset
   for (let i = 0; i < projects.length; i++) {
     const card = projects[i];
@@ -67,13 +66,11 @@ const getExpandedBoundingBox = (
     const cardMaxX = offset.x + bboxWidth;
     const cardMaxY = offset.y + fanArcY + bboxHeight;
 
-
     minX = Math.min(minX, cardMinX);
     minY = Math.min(minY, cardMinY);
     maxX = Math.max(maxX, cardMaxX);
     maxY = Math.max(maxY, cardMaxY);
   }
-
 
   return { minX, minY, maxX, maxY };
 };
@@ -146,8 +143,10 @@ const calculateCenteredTransform = (
   windowHeight: number
 ): { x: number; y: number } => {
   // Calculate the center of the expanded content in canvas coordinates
-  const contentCenterX = groupPosition.x + (expandedBbox.minX + expandedBbox.maxX) / 2;
-  const contentCenterY = groupPosition.y + (expandedBbox.minY + expandedBbox.maxY) / 2;
+  const contentCenterX =
+    groupPosition.x + (expandedBbox.minX + expandedBbox.maxX) / 2;
+  const contentCenterY =
+    groupPosition.y + (expandedBbox.minY + expandedBbox.maxY) / 2;
 
   // Calculate the position that would center this content in the viewport
   // Formula: screenCenter = contentCenter * scale + positionX
@@ -196,7 +195,6 @@ export const getAutoPanTarget = (
   windowWidth: number,
   windowHeight: number
 ): { x: number; y: number; scale: number } | null => {
-
   // Calculate bounding box of expanded content
   const expandedBbox = getExpandedBoundingBox(
     group.cover,
@@ -212,15 +210,10 @@ export const getAutoPanTarget = (
   );
 
   if (
-    !doesExpandedContentOverflow(
-      group.position,
-      expandedBbox,
-      visibleViewport
-    )
+    !doesExpandedContentOverflow(group.position, expandedBbox, visibleViewport)
   ) {
     return null; // Content fits, no pan needed
   }
-
 
   const canCenter = canCenterContent(
     expandedBbox,

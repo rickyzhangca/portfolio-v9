@@ -155,23 +155,16 @@ export const CardGroup = ({
       }}
     >
       <motion.div
-        initial={false}
         animate={{
           x: currentPosition.x,
           y: currentPosition.y,
         }}
         className="absolute top-0 left-0 will-change-transform"
+        initial={false}
         transition={isDragging ? TRANSITIONS.none : SPRING_PRESETS.quick}
       >
         {coverWithSize && (
           <motion.div
-            initial={{
-              opacity: 0,
-              scale: 0,
-              rotate: -5,
-              x: 0,
-              y: 0,
-            }}
             animate={{
               opacity: 1,
               scale: 1,
@@ -179,8 +172,14 @@ export const CardGroup = ({
               x: 0,
               y: 0,
             }}
-            transition={{...SPRING_PRESETS.snappy, delay: coverEntranceDelay}}
-            className="absolute transition-[filter] top-0 left-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.24)] will-change-transform hover:drop-shadow-[0_20px_24px_rgba(0,0,0,0.32)] active:drop-shadow-[0_8px_20px_rgba(0,0,0,0.24)]"
+            className="absolute top-0 left-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.24)] transition-[filter] will-change-transform hover:drop-shadow-[0_20px_24px_rgba(0,0,0,0.32)] active:drop-shadow-[0_8px_20px_rgba(0,0,0,0.24)]"
+            initial={{
+              opacity: 0,
+              scale: 0,
+              rotate: -5,
+              x: 0,
+              y: 0,
+            }}
             key={coverWithSize.id}
             onClick={(e) => {
               const target = e.target as HTMLElement;
@@ -200,6 +199,7 @@ export const CardGroup = ({
               zIndex: (group.cover ? 1 : 0) + projectsWithSizes.length,
               pointerEvents: "auto",
             }}
+            transition={{ ...SPRING_PRESETS.snappy, delay: coverEntranceDelay }}
           >
             <div
               style={{
@@ -275,7 +275,6 @@ export const CardGroup = ({
 
           return (
             <motion.div
-              initial={false}
               animate={{
                 opacity: showProjects ? (isExpanded ? 1 : collapsedOpacity) : 0,
                 scale: showProjects
@@ -297,6 +296,7 @@ export const CardGroup = ({
                 isContactCardWithoutCover &&
                   "drop-shadow-[0_25px_25px_rgba(0,0,0,0.25)] transition-all duration-200 hover:drop-shadow-[0_20px_35px_rgba(0,0,0,0.5)] active:drop-shadow-[0_15px_15px_rgba(0,0,0,0.25)]"
               )}
+              initial={false}
               key={card.id}
               onClick={
                 isContactCardWithoutCover
