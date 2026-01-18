@@ -6,13 +6,20 @@ import { CanvasControlPanel } from "./canvas-control-panel";
 interface CanvasControlsProps {
   onReset: () => void;
   isResetDisabled?: boolean;
+  onResetPositions: () => void;
 }
 
 export const CanvasControls = ({
   onReset,
   isResetDisabled,
+  onResetPositions,
 }: CanvasControlsProps) => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+
+  const handleReset = () => {
+    onReset();
+    onResetPositions();
+  };
 
   return (
     <div className="no-pan fixed right-3 bottom-3 z-50 flex flex-col items-end justify-end gap-2">
@@ -28,7 +35,7 @@ export const CanvasControls = ({
         <CanvasControlButton
           disabled={isResetDisabled}
           Icon={ArrowUUpLeftIcon}
-          onClick={onReset}
+          onClick={handleReset}
         />
       </div>
     </div>

@@ -85,4 +85,5 @@ export type CanvasAction =
   | { type: "UPDATE_VIEWPORT"; payload: ViewportState }
   | { type: "LOAD_STATE"; payload: Partial<CanvasState> }
   | { type: "ADD_GROUP"; payload: CardGroupData }
-  | { type: "DELETE_GROUP"; payload: { id: string } };
+  | { type: "DELETE_GROUP"; payload: { id: string } }
+  | { type: "RESET_GROUPS"; payload: { initialGroups: CardGroupData[] } };
