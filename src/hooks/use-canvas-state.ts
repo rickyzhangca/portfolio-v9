@@ -13,7 +13,7 @@ const initialViewportState: ViewportState = {
   positionY: 0,
 };
 
-const canvasReducer = (
+export const canvasReducer = (
   state: CanvasState,
   action: CanvasAction
 ): CanvasState => {

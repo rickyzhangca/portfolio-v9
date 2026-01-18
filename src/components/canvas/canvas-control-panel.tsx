@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useAtom } from "jotai";
 import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
+import { SPRING_PRESETS } from "@/lib/animation";
 import { DEFAULT_FAN_CONFIG } from "@/lib/fan";
 import { DEFAULT_REPULSION_CONFIG } from "@/lib/repulsion";
 import { Slider } from "../ui/slider";
@@ -165,21 +166,21 @@ export const CanvasControlPanel = () => {
                     animate={calculateCardTransform(1, false)}
                     className="size-8 rounded-md bg-accent/10 outline outline-accent"
                     style={{ transformOrigin: "center center" }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    transition={SPRING_PRESETS.smooth}
                   />
                   {/* Row 1, Card 2 - index 2 */}
                   <motion.div
                     animate={calculateCardTransform(2, false)}
                     className="size-8 rounded-md bg-accent/10 outline outline-accent"
                     style={{ transformOrigin: "center center" }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    transition={SPRING_PRESETS.smooth}
                   />
                   {/* Row 1, Card 3 - index 3 */}
                   <motion.div
                     animate={calculateCardTransform(3, false)}
                     className="size-8 rounded-md bg-accent/10 outline outline-accent"
                     style={{ transformOrigin: "center center" }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    transition={SPRING_PRESETS.smooth}
                   />
                 </div>
                 <div className="flex">
@@ -188,21 +189,21 @@ export const CanvasControlPanel = () => {
                     animate={calculateCardTransform(4, false)}
                     className="size-8 rounded-md bg-accent/10 outline outline-accent"
                     style={{ transformOrigin: "center center" }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    transition={SPRING_PRESETS.smooth}
                   />
                   {/* Row 2, Card 2 - index 5 */}
                   <motion.div
                     animate={calculateCardTransform(5, false)}
                     className="size-8 rounded-md bg-accent/10 outline outline-accent"
                     style={{ transformOrigin: "center center" }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    transition={SPRING_PRESETS.smooth}
                   />
                   {/* Row 2, Card 3 - index 6 */}
                   <motion.div
                     animate={calculateCardTransform(6, false)}
                     className="size-8 rounded-md bg-accent/10 outline outline-accent"
                     style={{ transformOrigin: "center center" }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    transition={SPRING_PRESETS.smooth}
                   />
                 </div>
               </div>

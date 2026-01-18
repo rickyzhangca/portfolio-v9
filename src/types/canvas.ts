@@ -42,21 +42,32 @@ export interface ContactCardContent {
   link: {
     label: string;
     url: string;
-    icon?: ReactNode;
+    icon?: ReactNode
   };
 }
 
-export type CardContent =
-  | CompanyCardContent
-  | ProjectCardContent
-  | ContactCardContent;
-
-export interface CardData {
+export interface CompanyCardData {
   id: string;
-  type: CardType;
+  type: "company";
   size: Size;
-  content: CardContent;
+  content: CompanyCardContent;
 }
+
+export interface ProjectCardData {
+  id: string;
+  type: "project";
+  size: Size;
+  content: ProjectCardContent;
+}
+
+export interface ContactCardData {
+  id: string;
+  type: "contact";
+  size: Size;
+  content: ContactCardContent;
+}
+
+export type CardData = CompanyCardData | ProjectCardData | ContactCardData;
 
 export interface CardGroupData {
   id: string;
