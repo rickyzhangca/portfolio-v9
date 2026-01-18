@@ -101,7 +101,7 @@ export const ResumeModal = ({
               target="_blank"
             >
               <FileIcon size={20} weight="bold" />
-              Get PDF
+              Download PDF
             </a>
           </motion.div>
         </motion.div>
