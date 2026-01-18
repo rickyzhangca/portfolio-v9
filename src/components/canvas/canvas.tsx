@@ -258,6 +258,9 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
                     isExpanded={isExpanded}
                     key={group.id}
                     onBringToFront={() => actions.bringGroupToFront(group.id)}
+                    onCardHeightMeasured={(cardId, height) =>
+                      actions.updateCardHeight(group.id, cardId, height)
+                    }
                     onDragEnd={() => setIsPanningDisabled(false)}
                     onDragStart={() => setIsPanningDisabled(true)}
                     onPositionUpdate={(position) =>

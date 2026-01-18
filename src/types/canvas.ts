@@ -97,4 +97,8 @@ export type CanvasAction =
   | { type: "LOAD_STATE"; payload: Partial<CanvasState> }
   | { type: "ADD_GROUP"; payload: CardGroupData }
   | { type: "DELETE_GROUP"; payload: { id: string } }
-  | { type: "RESET_GROUPS"; payload: { initialGroups: CardGroupData[] } };
+  | { type: "RESET_GROUPS"; payload: { initialGroups: CardGroupData[] } }
+  | {
+      type: "UPDATE_CARD_HEIGHT";
+      payload: { groupId: string; cardId: string; height: number };
+    };

@@ -36,6 +36,7 @@ interface CardGroupProps {
   onPositionUpdate: (position: Position) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  onCardHeightMeasured?: (cardId: string, height: number) => void;
   setRootRef?: (el: HTMLDivElement | null) => void;
 }
 
@@ -52,6 +53,7 @@ export const CardGroup = ({
   onPositionUpdate,
   onDragStart,
   onDragEnd,
+  onCardHeightMeasured,
   setRootRef,
 }: CardGroupProps) => {
   const fanConfig = useAtomValue(fanConfigAtom);
@@ -114,14 +116,19 @@ export const CardGroup = ({
       },
     });
 
-  const handleCardMeasure = useCallback((id: string, height: number) => {
-    setMeasuredSizes((prev) => {
-      if (prev[id] === height) {
-        return prev;
-      }
-      return { ...prev, [id]: height };
-    });
-  }, []);
+  const handleCardMeasure = useCallback(
+    (id: string, height: number) => {
+      setMeasuredSizes((prev) => {
+        if (prev[id] === height) {
+          return prev;
+        }
+        return { ...prev, [id]: height };
+      });
+      // Propagate measured height to canvas state
+      onCardHeightMeasured?.(id, height);
+    },
+    [onCardHeightMeasured]
+  );
 
   return (
     <motion.div
@@ -173,7 +180,7 @@ export const CardGroup = ({
               y: 0,
             }}
             transition={{...SPRING_PRESETS.snappy, delay: coverEntranceDelay}}
-            className="absolute top-0 left-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.24)] will-change-transform hover:drop-shadow-[0_20px_24px_rgba(0,0,0,0.32)] active:drop-shadow-[0_8px_20px_rgba(0,0,0,0.24)]"
+            className="absolute transition-[filter] top-0 left-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.24)] will-change-transform hover:drop-shadow-[0_20px_24px_rgba(0,0,0,0.32)] active:drop-shadow-[0_8px_20px_rgba(0,0,0,0.24)]"
             key={coverWithSize.id}
             onClick={(e) => {
               const target = e.target as HTMLElement;

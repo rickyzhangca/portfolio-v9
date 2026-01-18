@@ -117,6 +117,54 @@ export const canvasReducer = (
       };
     }
 
+    case "UPDATE_CARD_HEIGHT": {
+      const { groupId, cardId, height } = action.payload;
+      const group = state.groups.get(groupId);
+      if (!group) {
+        return state;
+      }
+
+      // Check if it's the cover card
+      if (group.cover?.id === cardId) {
+        if (group.cover.size.height === height) {
+          return state; // No change needed
+        }
+        const newGroups = new Map(state.groups);
+        newGroups.set(groupId, {
+          ...group,
+          cover: {
+            ...group.cover,
+            size: { ...group.cover.size, height },
+          },
+        });
+        return { ...state, groups: newGroups };
+      }
+
+      // Check if it's a project card
+      const projectIndex = group.projects.findIndex((p) => p.id === cardId);
+      if (projectIndex === -1) {
+        return state;
+      }
+
+      const project = group.projects[projectIndex];
+      if (project.size.height === height) {
+        return state; // No change needed
+      }
+
+      const newProjects = [...group.projects];
+      newProjects[projectIndex] = {
+        ...project,
+        size: { ...project.size, height },
+      };
+
+      const newGroups = new Map(state.groups);
+      newGroups.set(groupId, {
+        ...group,
+        projects: newProjects,
+      });
+      return { ...state, groups: newGroups };
+    }
+
     default:
       return state;
   }
@@ -191,6 +239,16 @@ export const useCanvasState = (initialGroups: CardGroupData[] = []) => {
     });
   }, []);
 
+  const updateCardHeight = useCallback(
+    (groupId: string, cardId: string, height: number) => {
+      dispatch({
+        type: "UPDATE_CARD_HEIGHT",
+        payload: { groupId, cardId, height },
+      });
+    },
+    []
+  );
+
   return {
     state,
     actions: {
@@ -202,6 +260,7 @@ export const useCanvasState = (initialGroups: CardGroupData[] = []) => {
       addGroup,
       deleteGroup,
       resetGroups,
+      updateCardHeight,
     },
   };
 };

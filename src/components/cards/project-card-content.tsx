@@ -23,16 +23,14 @@ const ProjectCardContentComponent = ({
     <div className="flex h-full flex-col gap-2">
       <div
         className={cn(
-          "overflow-hidden rounded-4xl border-4 bg-neutral-900 transition-shadow",
+          "overflow-hidden rounded-4xl border-4 bg-white transition-shadow",
           isExpanded
             ? "border-white shadow-3xl"
             : "border-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.12)]"
         )}
       >
         {imageError ? (
-          <div className="flex h-[200px] w-[200px] items-center justify-center bg-white/5 text-white/20">
-            <span className="text-sm">No Image</span>
-          </div>
+          <div className="flex p-12 items-center justify-center text-foreground2">No Image</div>
         ) : (
           <img
             alt={data.title}
