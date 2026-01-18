@@ -13,7 +13,7 @@ interface ResumeCardContentProps {
 
 export const ResumeCardContentView = (_props: ResumeCardContentProps) => {
   return (
-    <div className="h-full w-full overflow-hidden rounded-3xl border border-border bg-white shadow-none">
+    <div className="h-full w-full overflow-hidden rounded-3xl">
       <div
         className="origin-top-left"
         style={{

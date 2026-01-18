@@ -1,5 +1,5 @@
-import type { CardGroupData } from "@/types/canvas";
 import { resumeConfig } from "@/data/resume";
+import type { CardGroupData } from "@/types/canvas";
 
 const START_X = 160;
 const START_Y = 300;
@@ -11,7 +11,7 @@ export const data: CardGroupData[] = [
   // resume
   {
     id: "resume-group",
-    position: { x: START_X, y: START_Y - 200 },
+    position: { x: START_X + 60, y: START_Y + 440 },
     zIndex: 1,
     cover: {
       id: "resume-card",
