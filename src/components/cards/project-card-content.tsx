@@ -25,7 +25,7 @@ const ProjectCardContentComponent = ({
         className={tw(
           "overflow-hidden rounded-4xl border-4 bg-white transition-shadow",
           isExpanded
-            ? "border-white shadow-3xl"
+            ? "border-white shadow-2xl"
             : "border-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.12)]"
         )}
       >
@@ -57,7 +57,7 @@ const ProjectCardContentComponent = ({
           y: isExpanded ? 0 : -8,
           scale: isExpanded ? 1 : 0.95,
         }}
-        className="flex w-fit items-center gap-4 rounded-full bg-white px-5 py-3 shadow-3xl"
+        className="flex w-fit items-center gap-4 rounded-full bg-white px-5 py-3 shadow-2xl"
         initial={false}
         transition={SPRING_PRESETS.snappy}
       >
@@ -89,7 +89,7 @@ const ProjectCardContentComponent = ({
             y: isExpanded ? 0 : -8,
             scale: isExpanded ? 1 : 0.95,
           }}
-          className="rounded-3xl bg-white px-5 py-4 text-sm shadow-3xl"
+          className="rounded-3xl bg-white px-5 py-4 text-sm shadow-2xl"
           initial={false}
           transition={{
             ...SPRING_PRESETS.snappy,
