@@ -34,10 +34,12 @@ const ProjectCardContentComponent = ({
             No Image
           </div>
         ) : (
+          // biome-ignore lint/a11y/noNoninteractiveElementInteractions: error handling
           <img
             alt={data.title}
             className={cn(
-              "h-auto w-full object-cover transition-opacity duration-300",
+              // FIXME: should support maintaining aspect ratio
+              "aspect-square w-full object-cover transition-opacity duration-300",
               imageLoaded ? "opacity-100" : "opacity-0"
             )}
             height="200"
