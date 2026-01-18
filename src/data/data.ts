@@ -1,4 +1,3 @@
-import { resumeConfig } from "@/data/resume";
 import type { CardGroupData } from "@/types/canvas";
 
 const START_X = 160;
@@ -16,8 +15,8 @@ export const data: CardGroupData[] = [
     cover: {
       id: "resume-card",
       type: "resume",
-      size: { width: 240, height: 396 },
-      content: { pdfUrl: resumeConfig.pdfUrl },
+      size: { width: 240, height: 444 },
+      content: {},
     },
     projects: [],
   },

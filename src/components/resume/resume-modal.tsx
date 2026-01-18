@@ -1,7 +1,6 @@
 import { ArrowLeftIcon, FileIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
-import { resumeConfig } from "@/data/resume";
 import { SPRING_PRESETS } from "@/lib/animation";
 import { ScrollArea } from "../ui/scroll-area";
 import { RESUME_SHEET_SIZE, ResumeSheet } from "./resume-sheet";
@@ -96,7 +95,7 @@ export const ResumeModal = ({
             <div className="h-8 w-px bg-white/20" />
             <a
               className="no-drag flex items-center gap-2 py-4 pr-7 pl-5 font-medium transition-colors hover:bg-foreground1/20"
-              href={resumeConfig.pdfUrl}
+              href="https://rickyzhang.ca/resume"
               rel="noopener noreferrer"
               target="_blank"
             >
