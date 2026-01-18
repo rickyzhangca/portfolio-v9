@@ -1,6 +1,13 @@
 import { LayoutGroup } from "framer-motion";
 import { useAtom, useAtomValue } from "jotai";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { CardGroup } from "@/components/groups/card-group";
@@ -190,12 +197,14 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
         // Restore to pre-auto-pan position if available
         const savedPosition = preAutoPanPositionRef.current;
         if (savedPosition) {
-          transformRef.current?.setTransform(
-            savedPosition.x,
-            savedPosition.y,
-            savedPosition.scale,
-            AUTO_PAN_DURATION_MS
-          );
+          requestAnimationFrame(() => {
+            transformRef.current?.setTransform(
+              savedPosition.x,
+              savedPosition.y,
+              savedPosition.scale,
+              AUTO_PAN_DURATION_MS
+            );
+          });
           preAutoPanPositionRef.current = null;
         }
         actions.setExpandedGroup(null);
