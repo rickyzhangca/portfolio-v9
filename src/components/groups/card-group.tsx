@@ -127,6 +127,7 @@ export const CardGroup = ({
       }}
     >
       <motion.div
+        initial={false}
         animate={{
           x: currentPosition.x,
           y: currentPosition.y,
