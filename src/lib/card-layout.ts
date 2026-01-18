@@ -67,7 +67,7 @@ export const getOffsets = (
       hasPrevInRow = false;
     }
 
-    const cardHeight = card.size.height ?? 0;
+    const cardHeight = card.size.height ?? 360;
     const rotationDeg = (col + 1) * fanConfig.rotateStepDeg;
     const { width: bboxWidth, height: bboxHeight } = getRotatedBoundingBox(
       card.size.width,

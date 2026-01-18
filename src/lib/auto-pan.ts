@@ -37,6 +37,10 @@ const getExpandedBoundingBox = (
   let maxX = cover?.size.width ?? 0;
   let maxY = cover?.size.height ?? 360;
 
+  console.log('📊 Bounding Box Calculation:');
+  console.log('Cover size:', cover?.size);
+  console.log('Initial maxY (from cover):', maxY);
+
   // Calculate bounds for each project card at its fanned offset
   for (let i = 0; i < projects.length; i++) {
     const card = projects[i];
@@ -48,7 +52,6 @@ const getExpandedBoundingBox = (
     // For expanded cards, calculate rotation based on position in row
     // Row 0: first 3 cards get 0.5, 1.0, 1.5 deg rotation
     // Row 1: next 3 cards get 0.5, 1.0, 1.5 deg rotation, etc.
-    const rowIndex = Math.floor(i / 3);
     const colIndex = i % 3;
     const rotationDeg = (colIndex + 1) * fanConfig.rotateStepDeg;
 
@@ -58,16 +61,31 @@ const getExpandedBoundingBox = (
       rotationDeg
     );
 
+    // Account for fanArcY offset applied to each card in card-group.tsx
+    // Formula: (colInRow + 1) ** 2 * fanConfig.arcStepPx
+    const fanArcY = (colIndex + 1) ** 2 * fanConfig.arcStepPx;
+
     const cardMinX = offset.x;
     const cardMinY = offset.y;
     const cardMaxX = offset.x + bboxWidth;
-    const cardMaxY = offset.y + bboxHeight;
+    const cardMaxY = offset.y + fanArcY + bboxHeight;
+
+    console.log(`Card ${i} (${card.id}):`, {
+      'card.size.height': card.size.height,
+      'cardHeight (with fallback)': cardHeight,
+      'offset.y': offset.y,
+      fanArcY,
+      bboxHeight,
+      cardMaxY,
+    });
 
     minX = Math.min(minX, cardMinX);
     minY = Math.min(minY, cardMinY);
     maxX = Math.max(maxX, cardMaxX);
     maxY = Math.max(maxY, cardMaxY);
   }
+
+  console.log('Final maxY:', maxY);
 
   return { minX, minY, maxX, maxY };
 };
@@ -190,12 +208,24 @@ export const getAutoPanTarget = (
   windowWidth: number,
   windowHeight: number
 ): { x: number; y: number; scale: number } | null => {
+  console.group('🎯 Auto-Pan Debug');
+  console.log('Group ID:', group.id);
+  console.log('Group Position:', group.position);
+  console.log('Fan Config:', fanConfig);
+  console.log('Viewport State:', viewportState);
+  console.log('Window:', { width: windowWidth, height: windowHeight });
+
   // Calculate bounding box of expanded content
   const expandedBbox = getExpandedBoundingBox(
     group.cover,
     group.projects,
     fanConfig
   );
+  console.log('📦 Expanded Bounding Box:', expandedBbox);
+  console.log('📦 Bounding Box Size:', {
+    width: expandedBbox.maxX - expandedBbox.minX,
+    height: expandedBbox.maxY - expandedBbox.minY,
+  });
 
   // Get current visible viewport in canvas coordinates
   const visibleViewport = getVisibleViewport(
@@ -203,8 +233,20 @@ export const getAutoPanTarget = (
     windowWidth,
     windowHeight
   );
+  console.log('👁️ Visible Viewport:', visibleViewport);
 
   // Check if expanded content would overflow
+  const contentMinX = group.position.x + expandedBbox.minX;
+  const contentMinY = group.position.y + expandedBbox.minY;
+  const contentMaxX = group.position.x + expandedBbox.maxX;
+  const contentMaxY = group.position.y + expandedBbox.maxY;
+  console.log('📍 Content Bounds (absolute):', {
+    minX: contentMinX,
+    minY: contentMinY,
+    maxX: contentMaxX,
+    maxY: contentMaxY,
+  });
+
   if (
     !doesExpandedContentOverflow(
       group.position,
@@ -212,10 +254,22 @@ export const getAutoPanTarget = (
       visibleViewport
     )
   ) {
+    console.log('✅ No overflow, no pan needed');
+    console.groupEnd();
     return null; // Content fits, no pan needed
   }
 
+  console.log('⚠️ Content overflows viewport');
+
   // Check which axes can be centered
+  const contentWidth = (expandedBbox.maxX - expandedBbox.minX) * viewportState.scale;
+  const contentHeight = (expandedBbox.maxY - expandedBbox.minY) * viewportState.scale;
+  const availableWidth = windowWidth - AUTO_PAN_MARGIN * 2;
+  const availableHeight = windowHeight - AUTO_PAN_MARGIN * 2;
+
+  console.log('📏 Content Size (scaled):', { width: contentWidth, height: contentHeight });
+  console.log('📐 Available Space:', { width: availableWidth, height: availableHeight });
+
   const canCenter = canCenterContent(
     expandedBbox,
     viewportState.scale,
@@ -223,6 +277,7 @@ export const getAutoPanTarget = (
     windowHeight,
     AUTO_PAN_MARGIN
   );
+  console.log('🎯 Can Center:', canCenter);
 
   // Calculate both potential transforms
   const marginTransform = calculateMarginTransform(
@@ -230,6 +285,7 @@ export const getAutoPanTarget = (
     viewportState.scale,
     AUTO_PAN_MARGIN
   );
+  console.log('📌 Margin Transform:', marginTransform);
 
   const centeredTransform = calculateCenteredTransform(
     group.position,
@@ -238,11 +294,17 @@ export const getAutoPanTarget = (
     windowWidth,
     windowHeight
   );
+  console.log('🎯 Centered Transform:', centeredTransform);
 
   // Use centered transform for axes that fit, margin transform for axes that don't
-  return {
+  const result = {
     x: canCenter.horizontal ? centeredTransform.x : marginTransform.x,
     y: canCenter.vertical ? centeredTransform.y : marginTransform.y,
     scale: viewportState.scale,
   };
+  console.log('🚀 Final Result:', result);
+  console.log('Decision: X =', canCenter.horizontal ? 'CENTERED' : 'MARGIN', ', Y =', canCenter.vertical ? 'CENTERED' : 'MARGIN');
+  console.groupEnd();
+
+  return result;
 };
