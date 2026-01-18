@@ -17,36 +17,14 @@ export const data: CardGroupData[] = [
     },
     projects: [
       {
-        id: "project-1",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "E-Commerce Platform",
-          description:
-            "A full-stack e-commerce platform with real-time inventory management, payment processing, and admin dashboard. Built with Next.js, Stripe, and PostgreSQL.",
-          image: "/src/assets/rbc/amplify.webp",
-        },
-      },
-      {
         id: "project-2",
         type: "project",
         size: { width: 420 },
         content: {
-          title: "Task Management App",
+          title: "New internal AIOps products",
           description:
             "A collaborative task management application with real-time updates and team collaboration features. Built with React and Firebase.",
           image: "/src/assets/rbc/product.webp",
-        },
-      },
-      {
-        id: "project-3",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "PySpark Analytics",
-          description:
-            "Big data analytics pipeline using PySpark for processing large-scale datasets with real-time insights and reporting capabilities.",
-          image: "/src/assets/rbc/pyspark.webp",
         },
       },
       {
@@ -54,10 +32,33 @@ export const data: CardGroupData[] = [
         type: "project",
         size: { width: 420 },
         content: {
-          title: "Redesign",
+          title: "Redesign UI for larger data volumes",
           description:
             "Complete UI/UX redesign of internal tools with improved accessibility, performance, and user experience.",
           image: "/src/assets/rbc/redesign.webp",
+        },
+      },
+      {
+        id: "project-3",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "Internal tool to help data engineers manage PySpark jobs",
+          description:
+            "Big data analytics pipeline using PySpark for processing large-scale datasets with real-time insights and reporting capabilities.",
+          image: "/src/assets/rbc/pyspark.webp",
+        },
+      },
+      {
+        id: "project-1",
+        type: "project",
+        size: { width: 420 },
+        notShipped: true,
+        content: {
+          title: "Mentor and judge two years of RBC Amplify projects",
+          description:
+            "A full-stack e-commerce platform with real-time inventory management, payment processing, and admin dashboard. Built with Next.js, Stripe, and PostgreSQL.",
+          image: "/src/assets/rbc/amplify.webp",
         },
       },
     ],
@@ -79,36 +80,14 @@ export const data: CardGroupData[] = [
     },
     projects: [
       {
-        id: "project-5",
+        id: "project-15",
         type: "project",
         size: { width: 420 },
         content: {
-          title: "AI Content Generator",
+          title: "Wealthsimple Sans rollout",
           description:
-            "An AI-powered content generation tool for blog posts, social media, and marketing copy using advanced language models.",
-          image: "/src/assets/wealthsimple/dark-mode.webp",
-        },
-      },
-      {
-        id: "project-6",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "Design System",
-          description:
-            "A reusable component library with accessible primitives, theming, and documentation.",
-          image: "/src/assets/wealthsimple/data-viz.webp",
-        },
-      },
-      {
-        id: "project-7",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "Home Gradients",
-          description:
-            "Dynamic gradient backgrounds for landing pages with smooth animations and color transitions.",
-          image: "/src/assets/wealthsimple/home-gradients.webp",
+            "Custom typeface designed for financial applications with improved readability and brand consistency.",
+          image: "/src/assets/wealthsimple/ws-sans.webp",
         },
       },
       {
@@ -116,43 +95,10 @@ export const data: CardGroupData[] = [
         type: "project",
         size: { width: 420 },
         content: {
-          title: "Native Sheet",
+          title: "Native sheets",
           description:
             "Native spreadsheet component with formulas, formatting, and export capabilities for mobile apps.",
           image: "/src/assets/wealthsimple/native-sheet.webp",
-        },
-      },
-      {
-        id: "project-9",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "Profile Layout",
-          description:
-            "New user profile layout with improved navigation, settings organization, and personalization options.",
-          image: "/src/assets/wealthsimple/new-profile-layout.webp",
-        },
-      },
-      {
-        id: "project-10",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "Snackbar",
-          description:
-            "Toast notification system with queue management, animations, and accessibility features.",
-          image: "/src/assets/wealthsimple/snackbar.webp",
-        },
-      },
-      {
-        id: "project-11",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "Swipeable",
-          description:
-            "Gesture-based swipe actions for mobile interfaces with customizable triggers and feedback.",
-          image: "/src/assets/wealthsimple/swipeable.webp",
         },
       },
       {
@@ -160,21 +106,21 @@ export const data: CardGroupData[] = [
         type: "project",
         size: { width: 420 },
         content: {
-          title: "Ticker",
+          title: "Web rolling ticker",
           description:
             "Real-time stock ticker component with live updates, charts, and price change indicators.",
           image: "/src/assets/wealthsimple/ticker.webp",
         },
       },
       {
-        id: "project-13",
+        id: "project-6",
         type: "project",
         size: { width: 420 },
         content: {
-          title: "Web Chart",
+          title: "Data viz colors",
           description:
-            "Interactive charting library for financial data with zooming, panning, and customization options.",
-          image: "/src/assets/wealthsimple/web-chart.webp",
+            "A reusable component library with accessible primitives, theming, and documentation.",
+          image: "/src/assets/wealthsimple/data-viz.webp",
         },
       },
       {
@@ -182,21 +128,76 @@ export const data: CardGroupData[] = [
         type: "project",
         size: { width: 420 },
         content: {
-          title: "Widget",
+          title: "Redesigned securities widget",
           description:
             "Embeddable widgets for third-party integration with customizable themes and branding options.",
           image: "/src/assets/wealthsimple/widget.webp",
         },
       },
       {
-        id: "project-15",
+        id: "project-13",
         type: "project",
         size: { width: 420 },
         content: {
-          title: "WS Sans",
+          title: "Web chart segments + animations",
           description:
-            "Custom typeface designed for financial applications with improved readability and brand consistency.",
-          image: "/src/assets/wealthsimple/ws-sans.webp",
+            "Interactive charting library for financial data with zooming, panning, and customization options.",
+          image: "/src/assets/wealthsimple/web-chart.webp",
+        },
+      },
+      {
+        id: "project-7",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "Home gradients",
+          description:
+            "Dynamic gradient backgrounds for landing pages with smooth animations and color transitions.",
+          image: "/src/assets/wealthsimple/home-gradients.webp",
+        },
+      },
+      {
+        id: "project-9",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "New profile layout",
+          description:
+            "New user profile layout with improved navigation, settings organization, and personalization options.",
+          image: "/src/assets/wealthsimple/new-profile-layout.webp",
+        },
+      },
+      {
+        id: "project-5",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "Web dark mode",
+          description:
+            "An AI-powered content generation tool for blog posts, social media, and marketing copy using advanced language models.",
+          image: "/src/assets/wealthsimple/dark-mode.webp",
+        },
+      },
+      {
+        id: "project-11",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "Swipeable components",
+          description:
+            "Gesture-based swipe actions for mobile interfaces with customizable triggers and feedback.",
+          image: "/src/assets/wealthsimple/swipeable.webp",
+        },
+      },
+      {
+        id: "project-10",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "Web snackbar",
+          description:
+            "Toast notification system with queue management, animations, and accessibility features.",
+          image: "/src/assets/wealthsimple/snackbar.webp",
         },
       },
     ],
@@ -218,22 +219,11 @@ export const data: CardGroupData[] = [
     },
     projects: [
       {
-        id: "project-16",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "Auth",
-          description:
-            "Authentication system with SSO, 2FA, and role-based access control for enterprise applications.",
-          image: "/src/assets/mintlify/auth.webp",
-        },
-      },
-      {
         id: "project-17",
         type: "project",
         size: { width: 420 },
         content: {
-          title: "Chat",
+          title: "New search & chat and Mintlify widget",
           description:
             "A realtime chat app with presence, typing indicators, and offline-first caching.",
           image: "/src/assets/mintlify/chat.webp",
@@ -244,10 +234,32 @@ export const data: CardGroupData[] = [
         type: "project",
         size: { width: 420 },
         content: {
-          title: "Editor",
+          title: "Editor file tree",
           description:
             "WYSIWYG editor with markdown support, syntax highlighting, and collaborative editing features.",
           image: "/src/assets/mintlify/editor.webp",
+        },
+      },
+      {
+        id: "project-16",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "Refreshed auth and onboarding",
+          description:
+            "Authentication system with SSO, 2FA, and role-based access control for enterprise applications.",
+          image: "/src/assets/mintlify/auth.webp",
+        },
+      },
+      {
+        id: "project-22",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "Dashboard support form",
+          description:
+            "Customer support portal with ticket management, live chat, and knowledge base integration.",
+          image: "/src/assets/mintlify/support.webp",
         },
       },
       {
@@ -255,7 +267,7 @@ export const data: CardGroupData[] = [
         type: "project",
         size: { width: 420 },
         content: {
-          title: "Fonts",
+          title: "Custom fonts",
           description:
             "Typography system with custom fonts, variable weights, and responsive scaling for documentation sites.",
           image: "/src/assets/mintlify/fonts.webp",
@@ -266,7 +278,7 @@ export const data: CardGroupData[] = [
         type: "project",
         size: { width: 420 },
         content: {
-          title: "Footer",
+          title: "Advanced footer",
           description:
             "Customizable footer component with navigation, social links, and analytics integration.",
           image: "/src/assets/mintlify/footer.webp",
@@ -277,21 +289,10 @@ export const data: CardGroupData[] = [
         type: "project",
         size: { width: 420 },
         content: {
-          title: "GitLab",
+          title: "Gitlab configuration",
           description:
             "GitLab integration with CI/CD pipelines, issue tracking, and repository management features.",
           image: "/src/assets/mintlify/gitlab.webp",
-        },
-      },
-      {
-        id: "project-22",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "Support",
-          description:
-            "Customer support portal with ticket management, live chat, and knowledge base integration.",
-          image: "/src/assets/mintlify/support.webp",
         },
       },
     ],
@@ -313,58 +314,14 @@ export const data: CardGroupData[] = [
     },
     projects: [
       {
-        id: "project-23",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "Analytics Dashboard",
-          description:
-            "A fast dashboard with filters, charts, and shareable views optimized for large datasets.",
-          image: "/src/assets/mosaic/b2b.webp",
-        },
-      },
-      {
         id: "project-24",
         type: "project",
         size: { width: 420 },
         content: {
-          title: "Design System",
+          title: "A web and multi-device IoT design system",
           description:
             "Component library with theming, documentation, and accessibility features for design consistency.",
           image: "/src/assets/mosaic/ds.webp",
-        },
-      },
-      {
-        id: "project-25",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "Graphic",
-          description:
-            "Graphic design tools with vector editing, layers, and export options for creative workflows.",
-          image: "/src/assets/mosaic/graphic.webp",
-        },
-      },
-      {
-        id: "project-26",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "Icon",
-          description:
-            "Icon library with thousands of customizable icons in multiple formats and styles.",
-          image: "/src/assets/mosaic/icon.webp",
-        },
-      },
-      {
-        id: "project-27",
-        type: "project",
-        size: { width: 420 },
-        content: {
-          title: "Packaging",
-          description:
-            "Automated packaging system for software distribution with versioning and dependency management.",
-          image: "/src/assets/mosaic/packaging.webp",
         },
       },
       {
@@ -372,10 +329,54 @@ export const data: CardGroupData[] = [
         type: "project",
         size: { width: 420 },
         content: {
-          title: "Printers",
+          title: "UI for 3 new 3D printers",
           description:
             "Printer management system with queue handling, driver support, and remote printing capabilities.",
           image: "/src/assets/mosaic/printers.webp",
+        },
+      },
+      {
+        id: "project-23",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "B2B service offerings from scratch",
+          description:
+            "A fast dashboard with filters, charts, and shareable views optimized for large datasets.",
+          image: "/src/assets/mosaic/b2b.webp",
+        },
+      },
+      {
+        id: "project-26",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "Refreshed icon system and pipeline",
+          description:
+            "Icon library with thousands of customizable icons in multiple formats and styles.",
+          image: "/src/assets/mosaic/icon.webp",
+        },
+      },
+      {
+        id: "project-25",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "All print materials from business cards to trade show walls",
+          description:
+            "Graphic design tools with vector editing, layers, and export options for creative workflows.",
+          image: "/src/assets/mosaic/graphic.webp",
+        },
+      },
+      {
+        id: "project-27",
+        type: "project",
+        size: { width: 420 },
+        content: {
+          title: "Packaging design with a unified language",
+          description:
+            "Automated packaging system for software distribution with versioning and dependency management.",
+          image: "/src/assets/mosaic/packaging.webp",
         },
       },
     ],
