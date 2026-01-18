@@ -28,6 +28,9 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
     startedOutsideExpandedGroup: boolean;
   } | null>(null);
 
+  const initialGroupsRef = useRef(initialGroups);
+  initialGroupsRef.current = initialGroups;
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) {
@@ -165,6 +168,26 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
     state.viewportState.positionX === 0 &&
     state.viewportState.positionY === 0;
 
+  const arePositionsModified = useMemo(() => {
+    const initialMap = new Map(
+      initialGroupsRef.current.map((g) => [g.id, g.position])
+    );
+
+    for (const [id, group] of state.groups) {
+      const initialPos = initialMap.get(id);
+      if (!initialPos) {
+        return true;
+      }
+      if (
+        group.position.x !== initialPos.x ||
+        group.position.y !== initialPos.y
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }, [state.groups]);
+
   return (
     <div className="h-screen w-screen overflow-hidden" ref={containerRef}>
       <TransformWrapper
@@ -239,8 +262,9 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
             </TransformComponent>
 
             <CanvasControls
-              isResetDisabled={isViewportReset}
+              isResetDisabled={isViewportReset && !arePositionsModified}
               onReset={() => resetTransform()}
+              onResetPositions={() => actions.resetGroups()}
             />
           </>
         )}

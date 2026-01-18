@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import type {
   CanvasAction,
   CanvasState,
@@ -6,8 +6,6 @@ import type {
   Position,
   ViewportState,
 } from "@/types/canvas";
-
-
 
 const initialViewportState: ViewportState = {
   scale: 1,
@@ -101,12 +99,33 @@ const canvasReducer = (
       };
     }
 
+    case "RESET_GROUPS": {
+      const initialGroupsMap = new Map<string, CardGroupData>();
+      let maxZIndex = 0;
+
+      for (const group of action.payload.initialGroups) {
+        initialGroupsMap.set(group.id, group);
+        maxZIndex = Math.max(maxZIndex, group.zIndex);
+      }
+
+      return {
+        ...state,
+        groups: initialGroupsMap,
+        maxZIndex,
+        selectedGroupId: null,
+        expandedGroupId: null,
+      };
+    }
+
     default:
       return state;
   }
 };
 
 export const useCanvasState = (initialGroups: CardGroupData[] = []) => {
+  const initialGroupsRef = useRef(initialGroups);
+  initialGroupsRef.current = initialGroups;
+
   const [state, dispatch] = useReducer(canvasReducer, {
     groups: new Map(),
     selectedGroupId: null,
@@ -165,6 +184,13 @@ export const useCanvasState = (initialGroups: CardGroupData[] = []) => {
     dispatch({ type: "DELETE_GROUP", payload: { id } });
   }, []);
 
+  const resetGroups = useCallback(() => {
+    dispatch({
+      type: "RESET_GROUPS",
+      payload: { initialGroups: initialGroupsRef.current },
+    });
+  }, []);
+
   return {
     state,
     actions: {
@@ -175,6 +201,7 @@ export const useCanvasState = (initialGroups: CardGroupData[] = []) => {
       updateViewport,
       addGroup,
       deleteGroup,
+      resetGroups,
     },
   };
 };
