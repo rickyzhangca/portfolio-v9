@@ -1,13 +1,13 @@
+import { LayoutGroup } from "framer-motion";
 import { useAtom, useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
-import { LayoutGroup } from "framer-motion";
 import { CardGroup } from "@/components/groups/card-group";
 import { ResumeModal } from "@/components/resume/resume-modal";
 import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
-import { getAutoPanTarget, AUTO_PAN_DURATION_MS } from "@/lib/auto-pan";
 import { useCanvasState } from "@/hooks/use-canvas-state";
+import { AUTO_PAN_DURATION_MS, getAutoPanTarget } from "@/lib/auto-pan";
 import { computeRepulsionOffsets } from "@/lib/repulsion";
 import type { CardGroupData } from "@/types/canvas";
 import { CanvasControls } from "./canvas-controls";
@@ -20,7 +20,10 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
   const { state, actions } = useCanvasState(initialGroups);
   const [isPanningDisabled, setIsPanningDisabled] = useState(false);
   const [scale, setScale] = useState(1);
-  const [isResumeOpen, setIsResumeOpen] = useState(false);
+  const [activeResumeGroupId, setActiveResumeGroupId] = useState<string | null>(
+    null
+  );
+  const isResumeOpen = !!activeResumeGroupId;
   const [repulsionConfig] = useAtom(repulsionConfigAtom);
   const fanConfig = useAtomValue(fanConfigAtom);
 
@@ -191,10 +194,10 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
     () =>
       computeRepulsionOffsets(
         state.groups,
-        state.expandedGroupId,
+        state.expandedGroupId ?? activeResumeGroupId,
         repulsionConfig
       ),
-    [state.groups, state.expandedGroupId, repulsionConfig]
+    [state.groups, state.expandedGroupId, activeResumeGroupId, repulsionConfig]
   );
 
   const isViewportReset =
@@ -259,7 +262,12 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
                 {Array.from(state.groups.values()).map((group, groupIndex) => {
                   const expandedGroupId = state.expandedGroupId;
                   const isExpanded = expandedGroupId === group.id;
-                  const dimmed = expandedGroupId !== null && !isExpanded;
+                  const isResumeActive = activeResumeGroupId === group.id;
+                  const dimmed =
+                    (expandedGroupId !== null ||
+                      activeResumeGroupId !== null) &&
+                    !isExpanded &&
+                    !isResumeActive;
                   const dragDisabled = expandedGroupId !== null || isResumeOpen;
                   const repulsionOffset = repulsionOffsets.get(group.id) ?? {
                     x: 0,
@@ -286,7 +294,7 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
                       onToggleExpanded={() => {
                         if (group.cover?.type === "resume") {
                           actions.bringGroupToFront(group.id);
-                          setIsResumeOpen(true);
+                          setActiveResumeGroupId(group.id);
                           return;
                         }
 
@@ -352,7 +360,10 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
           )}
         </TransformWrapper>
 
-        <ResumeModal isOpen={isResumeOpen} onClose={() => setIsResumeOpen(false)} />
+        <ResumeModal
+          isOpen={isResumeOpen}
+          onClose={() => setActiveResumeGroupId(null)}
+        />
       </div>
     </LayoutGroup>
   );
