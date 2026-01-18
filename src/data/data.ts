@@ -16,7 +16,7 @@ export const data: CardGroupData[] = [
     cover: {
       id: "resume-card",
       type: "resume",
-      size: { width: 240, height: 340 },
+      size: { width: 240, height: 400 },
       content: { pdfUrl: resumeConfig.pdfUrl },
     },
     projects: [],
