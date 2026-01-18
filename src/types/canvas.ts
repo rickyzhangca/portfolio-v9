@@ -16,7 +16,7 @@ export interface ViewportState {
   positionY: number;
 }
 
-export type CardType = "company" | "project" | "contact";
+export type CardType = "company" | "project" | "contact" | "resume";
 
 export interface CompanyCardContent {
   company: string;
@@ -46,6 +46,10 @@ export interface ContactCardContent {
   };
 }
 
+export interface ResumeCardContent {
+  pdfUrl?: string;
+}
+
 export interface CompanyCardData {
   id: string;
   type: "company";
@@ -67,7 +71,18 @@ export interface ContactCardData {
   content: ContactCardContent;
 }
 
-export type CardData = CompanyCardData | ProjectCardData | ContactCardData;
+export interface ResumeCardData {
+  id: string;
+  type: "resume";
+  size: Size;
+  content: ResumeCardContent;
+}
+
+export type CardData =
+  | CompanyCardData
+  | ProjectCardData
+  | ContactCardData
+  | ResumeCardData;
 
 export interface CardGroupData {
   id: string;

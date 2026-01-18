@@ -1,4 +1,5 @@
 import type { CardGroupData } from "@/types/canvas";
+import { resumeConfig } from "@/data/resume";
 
 const START_X = 160;
 const START_Y = 300;
@@ -7,6 +8,19 @@ const GAP_X = 320;
 const GAP_Y = 20;
 
 export const data: CardGroupData[] = [
+  // resume
+  {
+    id: "resume-group",
+    position: { x: START_X, y: START_Y - 200 },
+    zIndex: 1,
+    cover: {
+      id: "resume-card",
+      type: "resume",
+      size: { width: 240, height: 340 },
+      content: { pdfUrl: resumeConfig.pdfUrl },
+    },
+    projects: [],
+  },
   // wealthsimple
   {
     id: "wealthsimple-group",

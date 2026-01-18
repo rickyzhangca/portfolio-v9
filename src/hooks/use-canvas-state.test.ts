@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { createMockGroup } from "@/test-utils/test-helpers";
+import type { CanvasState, CardGroupData } from "@/types/canvas";
 import { canvasReducer } from "./use-canvas-state";
 
 describe("useCanvasState - Reducer Action Coverage", () => {
-  const createMockState = (groups: any[] = []) => {
-    const groupsMap = new Map();
+  const createMockState = (groups: CardGroupData[] = []): CanvasState => {
+    const groupsMap = new Map<string, CardGroupData>();
     let maxZIndex = 0;
     for (const g of groups) {
       groupsMap.set(g.id, g);
@@ -288,7 +289,7 @@ describe("useCanvasState - Reducer Action Coverage", () => {
     it("updates cover card height", () => {
       const group = createMockGroup("g1", 0, 0);
       group.cover = {
-        ...group.cover,
+        ...group.cover!,
         id: "cover",
         size: { width: 200, height: 200 },
       };
@@ -303,7 +304,7 @@ describe("useCanvasState - Reducer Action Coverage", () => {
     it("returns same state when cover height unchanged", () => {
       const group = createMockGroup("g1", 0, 0);
       group.cover = {
-        ...group.cover,
+        ...group.cover!,
         id: "cover",
         size: { width: 200, height: 200 },
       };
