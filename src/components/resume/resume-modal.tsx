@@ -1,21 +1,9 @@
 import { ArrowLeftIcon, FileIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect } from "react";
 import { resumeConfig } from "@/data/resume";
 import { SPRING_PRESETS } from "@/lib/animation";
-import { RESUME_SHEET_SIZE, ResumeSheet } from "./resume-sheet";
-
-const VIEWPORT_MARGIN_PX = 28;
-
-const getFrameSize = () => {
-  const availableWidth = window.innerWidth - VIEWPORT_MARGIN_PX * 2;
-  const availableHeight = window.innerHeight - VIEWPORT_MARGIN_PX * 2;
-
-  return {
-    width: Math.min(RESUME_SHEET_SIZE.width, availableWidth),
-    height: Math.min(RESUME_SHEET_SIZE.height, availableHeight),
-  };
-};
+import { ResumeSheet } from "./resume-sheet";
 
 interface ResumeModalProps {
   isOpen: boolean;
@@ -28,25 +16,6 @@ export const ResumeModal = ({
   onClose,
   layoutId = "resume-card",
 }: ResumeModalProps) => {
-  const [frameSize, setFrameSize] = useState<{ width: number; height: number }>(
-    () => ({
-      width: RESUME_SHEET_SIZE.width,
-      height: RESUME_SHEET_SIZE.height,
-    })
-  );
-
-  useLayoutEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const update = () => setFrameSize(getFrameSize());
-    update();
-
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, [isOpen]);
-
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -75,17 +44,13 @@ export const ResumeModal = ({
           transition={{ duration: 0.32 }}
         >
           <div
-            className="absolute inset-0 flex items-center justify-center"
+            className="absolute inset-0 flex items-center justify-center p-[28px]"
             onPointerDown={onClose}
           >
             <motion.div
-              className="relative overflow-auto rounded-4xl"
+              className="relative h-full max-h-[1188px] w-full max-w-[840px] overflow-auto rounded-4xl"
               layoutId={layoutId}
               onPointerDown={(e) => e.stopPropagation()}
-              style={{
-                width: frameSize.width,
-                height: frameSize.height,
-              }}
               transition={SPRING_PRESETS.smooth}
             >
               <ResumeSheet interactive={true} />
