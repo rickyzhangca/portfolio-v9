@@ -29,6 +29,11 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
     clientY: number;
     startedOutsideExpandedGroup: boolean;
   } | null>(null);
+  const preAutoPanPositionRef = useRef<{
+    x: number;
+    y: number;
+    scale: number;
+  } | null>(null);
 
   const initialGroupsRef = useRef(initialGroups);
   initialGroupsRef.current = initialGroups;
@@ -140,6 +145,17 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
       );
 
       if (moved < 6) {
+        // Restore to pre-auto-pan position if available
+        const savedPosition = preAutoPanPositionRef.current;
+        if (savedPosition) {
+          transformRef.current?.setTransform(
+            savedPosition.x,
+            savedPosition.y,
+            savedPosition.scale,
+            AUTO_PAN_DURATION_MS
+          );
+          preAutoPanPositionRef.current = null;
+        }
         actions.setExpandedGroup(null);
       }
     };
@@ -248,6 +264,17 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
                     }
                     onToggleExpanded={() => {
                       if (isExpanded) {
+                        // Restore to pre-auto-pan position if available
+                        const savedPosition = preAutoPanPositionRef.current;
+                        if (savedPosition) {
+                          transformRef.current?.setTransform(
+                            savedPosition.x,
+                            savedPosition.y,
+                            savedPosition.scale,
+                            AUTO_PAN_DURATION_MS
+                          );
+                          preAutoPanPositionRef.current = null;
+                        }
                         actions.setExpandedGroup(null);
                         return;
                       }
@@ -265,6 +292,12 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
                       );
 
                       if (panTarget) {
+                        // Save current position before auto-panning
+                        preAutoPanPositionRef.current = {
+                          x: state.viewportState.positionX,
+                          y: state.viewportState.positionY,
+                          scale: state.viewportState.scale,
+                        };
                         requestAnimationFrame(() => {
                           transformRef.current?.setTransform(
                             panTarget.x,

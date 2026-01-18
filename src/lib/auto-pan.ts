@@ -2,7 +2,7 @@ import type { FanConfig } from "@/lib/fan";
 import { getRotatedBoundingBox, getOffsets } from "@/lib/card-layout";
 import type { CardData, CardGroupData, ViewportState } from "@/types/canvas";
 
-export const AUTO_PAN_MARGIN = 160;
+export const AUTO_PAN_MARGIN = 40;
 export const AUTO_PAN_DURATION_MS = 350;
 
 interface BoundingBox {
