@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
 import { resumeConfig } from "@/data/resume";
 import { SPRING_PRESETS } from "@/lib/animation";
-import { ResumeSheet } from "./resume-sheet";
+import { RESUME_SHEET_SIZE, ResumeSheet } from "./resume-sheet";
 
 interface ResumeModalProps {
   isOpen: boolean;
@@ -44,13 +44,16 @@ export const ResumeModal = ({
           transition={{ duration: 0.32 }}
         >
           <div
-            className="absolute inset-0 flex items-center justify-center p-[28px]"
+            className="absolute inset-0 flex items-center justify-center"
             onPointerDown={onClose}
           >
             <motion.div
-              className="relative h-full max-h-[1188px] w-full max-w-[840px] overflow-auto rounded-4xl"
+              className="relative h-full overflow-auto rounded-4xl"
               layoutId={layoutId}
               onPointerDown={(e) => e.stopPropagation()}
+              style={{
+                width: RESUME_SHEET_SIZE.width,
+              }}
               transition={SPRING_PRESETS.smooth}
             >
               <ResumeSheet interactive={true} />
