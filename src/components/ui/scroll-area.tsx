@@ -1,6 +1,5 @@
 import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area";
-
-import { cn } from "@/lib/utils";
+import { tw } from "@/lib/utils";
 
 function ScrollArea({
   className,
@@ -16,11 +15,11 @@ function ScrollArea({
 }) {
   return (
     <ScrollAreaPrimitive.Root
-      className={cn("size-full min-h-0", className)}
+      className={tw("size-full min-h-0", className)}
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
-        className={cn(
+        className={tw(
           "h-full rounded-[inherit] outline-none transition-shadows data-has-overflow-x:overscroll-x-contain",
           scrollFade &&
             "mask-t-from-[calc(100%-min(var(--fade-size),var(--scroll-area-overflow-y-start)))] mask-b-from-[calc(100%-min(var(--fade-size),var(--scroll-area-overflow-y-end)))] mask-l-from-[calc(100%-min(var(--fade-size),var(--scroll-area-overflow-x-start)))] mask-r-from-[calc(100%-min(var(--fade-size),var(--scroll-area-overflow-x-end)))] [--fade-size:1.5rem]",
@@ -45,7 +44,7 @@ function ScrollBar({
 }: ScrollAreaPrimitive.Scrollbar.Props) {
   return (
     <ScrollAreaPrimitive.Scrollbar
-      className={cn(
+      className={tw(
         "m-1 flex opacity-0 transition-opacity delay-300 data-[orientation=horizontal]:h-1.5 data-[orientation=vertical]:w-1.5 data-[orientation=horizontal]:flex-col data-hovering:opacity-100 data-scrolling:opacity-100 data-hovering:delay-0 data-scrolling:delay-0 data-hovering:duration-100 data-scrolling:duration-100",
         className
       )}

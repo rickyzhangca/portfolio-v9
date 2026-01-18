@@ -1,6 +1,6 @@
 import { Slider as SliderPrimitive } from "@base-ui/react/slider";
 import { useMemo } from "react";
-import { cn } from "@/lib/utils";
+import { tw } from "@/lib/utils";
 
 function Slider({
   className,
@@ -33,7 +33,7 @@ function Slider({
     >
       {children}
       <SliderPrimitive.Control
-        className={cn(
+        className={tw(
           "flex touch-none select-none data-disabled:pointer-events-none data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=horizontal]:w-full data-[orientation=horizontal]:min-w-44 data-[orientation=vertical]:flex-col data-disabled:opacity-64",
           className
         )}
@@ -63,7 +63,7 @@ function Slider({
 function SliderValue({ className, ...props }: SliderPrimitive.Value.Props) {
   return (
     <SliderPrimitive.Value
-      className={cn("flex justify-end text-sm", className)}
+      className={tw("flex justify-end text-sm", className)}
       data-slot="slider-value"
       {...props}
     />
