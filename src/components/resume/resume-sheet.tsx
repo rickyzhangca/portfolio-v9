@@ -1,4 +1,5 @@
 import { tw } from "@/lib/utils";
+import type { ResumeData } from "@/types/canvas";
 import { ResumeEducation } from "./resume-education";
 import { ResumeExperience } from "./resume-experience";
 import { ResumeHeader } from "./resume-header";
@@ -12,11 +13,13 @@ export const RESUME_SHEET_SIZE = {
 interface ResumeSheetProps {
   className?: string;
   interactive?: boolean;
+  data?: ResumeData;
 }
 
 export const ResumeSheet = ({
   className,
   interactive = true,
+  data,
 }: ResumeSheetProps) => {
   return (
     <article
@@ -30,10 +33,10 @@ export const ResumeSheet = ({
         height: RESUME_SHEET_SIZE.height,
       }}
     >
-      <ResumeHeader />
-      <ResumeExperience />
-      <ResumeEducation />
-      <ResumeSkills />
+      <ResumeHeader data={data?.header} />
+      <ResumeExperience data={data?.experiences} />
+      <ResumeEducation data={data?.education} />
+      <ResumeSkills data={data?.skills} />
     </article>
   );
 };

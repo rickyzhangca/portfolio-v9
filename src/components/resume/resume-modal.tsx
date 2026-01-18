@@ -2,6 +2,7 @@ import { ArrowLeftIcon, FileIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
 import { SPRING_PRESETS } from "@/lib/animation";
+import type { ResumeData } from "@/types/canvas";
 import { ScrollArea } from "../ui/scroll-area";
 import { RESUME_SHEET_SIZE, ResumeSheet } from "./resume-sheet";
 
@@ -9,12 +10,14 @@ interface ResumeModalProps {
   isOpen: boolean;
   onClose: () => void;
   layoutId?: string;
+  data?: ResumeData;
 }
 
 export const ResumeModal = ({
   isOpen,
   onClose,
   layoutId = "resume-card",
+  data,
 }: ResumeModalProps) => {
   useEffect(() => {
     if (!isOpen) {
@@ -57,7 +60,7 @@ export const ResumeModal = ({
               transition={SPRING_PRESETS.smooth}
             >
               <ScrollArea showScrollbar={false}>
-                <ResumeSheet interactive={true} />
+                <ResumeSheet data={data} interactive={true} />
               </ScrollArea>
             </motion.div>
           </div>

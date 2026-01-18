@@ -14,7 +14,7 @@ interface ResumeCardContentProps {
   data: ResumeCardContent;
 }
 
-export const ResumeCardContentView = (_props: ResumeCardContentProps) => {
+export const ResumeCardContentView = ({ data }: ResumeCardContentProps) => {
   return (
     <div className="h-full w-full overflow-hidden rounded-3xl bg-white">
       <p className="mx-2 mt-2 mb-1 w-fit rounded-full bg-background2 px-5 py-2 font-medium text-foreground1/50 text-sm">
@@ -28,7 +28,7 @@ export const ResumeCardContentView = (_props: ResumeCardContentProps) => {
           paddingRight: PADDING_X,
         }}
       >
-        <ResumeSheet interactive={false} />
+        <ResumeSheet data={data.data} interactive={false} />
       </div>
     </div>
   );
