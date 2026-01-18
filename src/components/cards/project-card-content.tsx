@@ -2,7 +2,7 @@ import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { memo, useState } from "react";
 import { SPRING_PRESETS } from "@/lib/animation";
-import { cn } from "@/lib/utils";
+import { tw } from "@/lib/utils";
 import type { ProjectCardContent } from "@/types/canvas";
 
 interface ProjectCardContentProps {
@@ -22,7 +22,7 @@ const ProjectCardContentComponent = ({
   return (
     <div className="flex h-full flex-col gap-2">
       <div
-        className={cn(
+        className={tw(
           "overflow-hidden rounded-4xl border-4 bg-white transition-shadow",
           isExpanded
             ? "border-white shadow-3xl"
@@ -37,7 +37,7 @@ const ProjectCardContentComponent = ({
           // biome-ignore lint/a11y/noNoninteractiveElementInteractions: error handling
           <img
             alt={data.title}
-            className={cn(
+            className={tw(
               // FIXME: should support maintaining aspect ratio
               "aspect-square w-full object-cover transition-opacity duration-300",
               imageLoaded ? "opacity-100" : "opacity-0"

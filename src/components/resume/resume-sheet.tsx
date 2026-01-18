@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { tw } from "@/lib/utils";
 import { ResumeEducation } from "./resume-education";
 import { ResumeExperience } from "./resume-experience";
 import { ResumeHeader } from "./resume-header";
@@ -20,7 +20,7 @@ export const ResumeSheet = ({
 }: ResumeSheetProps) => {
   return (
     <article
-      className={cn(
+      className={tw(
         "flex h-full w-full flex-col gap-10 bg-white py-16",
         !interactive && "pointer-events-none select-none",
         className
