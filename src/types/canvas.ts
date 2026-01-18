@@ -26,7 +26,7 @@ export interface CompanyCardContent {
 
 export interface ProjectCardContent {
   title: string;
-  description: string;
+  description?: string;
   link?: {
     label?: string;
     url: string;
