@@ -1,4 +1,4 @@
-import { DownloadSimple, X } from "@phosphor-icons/react";
+import { ArrowLeftIcon, FileIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { resumeConfig } from "@/data/resume";
@@ -92,23 +92,23 @@ export const ResumeModal = ({
             </motion.div>
           </div>
 
-          <div className="absolute top-6 right-6 flex items-center gap-2">
+          <div className="fixed bottom-4 left-1/2 flex -translate-x-1/2 items-center overflow-hidden rounded-3xl">
+            <button
+              className="no-drag flex items-center gap-2 bg-foreground1/80 py-5 pr-5 pl-6 font-medium text-background1 backdrop-blur transition-[background-color] hover:bg-foreground1/90"
+              onClick={onClose}
+              type="button"
+            >
+              <ArrowLeftIcon size={24} />
+            </button>
             <a
-              className="no-drag inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-foreground1 text-sm shadow-lg backdrop-blur transition hover:bg-white"
+              className="no-drag flex items-center gap-2 bg-foreground1/80 py-5 pr-7 pl-6 font-medium text-background1 backdrop-blur transition-[background-color] hover:bg-foreground1/90"
               href={resumeConfig.pdfUrl}
               rel="noopener noreferrer"
               target="_blank"
             >
-              <DownloadSimple size={16} />
-              PDF
+              <FileIcon size={24} />
+              Get PDF
             </a>
-            <button
-              className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-2 text-foreground1 text-sm shadow-lg backdrop-blur transition hover:bg-white"
-              onClick={onClose}
-              type="button"
-            >
-              <X size={16} />
-            </button>
           </div>
         </motion.div>
       )}
