@@ -1,9 +1,10 @@
+import { getOffsets, getRotatedBoundingBox } from "@/lib/card-layout";
 import type { FanConfig } from "@/lib/fan";
-import { getRotatedBoundingBox, getOffsets } from "@/lib/card-layout";
 import type { CardData, CardGroupData, ViewportState } from "@/types/canvas";
 
 export const AUTO_PAN_MARGIN = 40;
-export const AUTO_PAN_DURATION_MS = 350;
+export const AUTO_PAN_DURATION_MS = 360;
+export const AUTO_PAN_EASING = "easeInOutCubic";
 
 interface BoundingBox {
   minX: number;

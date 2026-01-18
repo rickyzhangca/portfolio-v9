@@ -14,7 +14,11 @@ import { CardGroup } from "@/components/groups/card-group";
 import { ResumeModal } from "@/components/resume/resume-modal";
 import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
 import { useCanvasState } from "@/hooks/use-canvas-state";
-import { AUTO_PAN_DURATION_MS, getAutoPanTarget } from "@/lib/auto-pan";
+import {
+  AUTO_PAN_DURATION_MS,
+  AUTO_PAN_EASING,
+  getAutoPanTarget,
+} from "@/lib/auto-pan";
 import { computeRepulsionOffsets } from "@/lib/repulsion";
 import type { CardGroupData } from "@/types/canvas";
 import { CanvasControls } from "./canvas-controls";
@@ -202,7 +206,8 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
               savedPosition.x,
               savedPosition.y,
               savedPosition.scale,
-              AUTO_PAN_DURATION_MS
+              AUTO_PAN_DURATION_MS,
+              AUTO_PAN_EASING
             );
           });
           preAutoPanPositionRef.current = null;
@@ -379,7 +384,8 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
                               savedPosition.x,
                               savedPosition.y,
                               savedPosition.scale,
-                              AUTO_PAN_DURATION_MS
+                              AUTO_PAN_DURATION_MS,
+                              AUTO_PAN_EASING
                             );
                             preAutoPanPositionRef.current = null;
                           }
@@ -411,7 +417,8 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
                               panTarget.x,
                               panTarget.y,
                               panTarget.scale,
-                              AUTO_PAN_DURATION_MS
+                              AUTO_PAN_DURATION_MS,
+                              AUTO_PAN_EASING
                             );
                           });
                         }
