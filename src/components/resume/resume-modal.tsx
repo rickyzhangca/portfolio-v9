@@ -92,24 +92,47 @@ export const ResumeModal = ({
             </motion.div>
           </div>
 
-          <div className="fixed bottom-4 left-1/2 flex -translate-x-1/2 items-center overflow-hidden rounded-3xl">
+          <motion.div
+            animate={{
+              x: "-50%",
+              y: 0,
+              boxShadow: "0 12px 24px -12px rgba(0, 0, 0, 0.48)",
+            }}
+            className="fixed bottom-6 left-1/2 flex items-center overflow-hidden rounded-full bg-foreground1/80 text-background1 backdrop-blur"
+            exit={{
+              x: "-50%",
+              y: "200%",
+              boxShadow: "0 0 0 rgba(0,0,0,0)",
+              transition: { duration: 0.24 },
+            }}
+            initial={{
+              x: "-50%",
+              y: "200%",
+              boxShadow: "0 0 0 rgba(0,0,0,0)",
+            }}
+            transition={{
+              y: { ...SPRING_PRESETS.smooth, delay: 0.16 },
+              boxShadow: { duration: 0.24 },
+            }}
+          >
             <button
-              className="no-drag flex items-center gap-2 bg-foreground1/80 py-5 pr-5 pl-6 font-medium text-background1 backdrop-blur transition-[background-color] hover:bg-foreground1/90"
+              className="no-drag flex cursor-pointer items-center gap-2 py-4 pr-4.5 pl-6 transition-colors hover:bg-foreground1/20"
               onClick={onClose}
               type="button"
             >
-              <ArrowLeftIcon size={24} />
+              <ArrowLeftIcon size={20} weight="bold" />
             </button>
+            <div className="h-8 w-px bg-white/20" />
             <a
-              className="no-drag flex items-center gap-2 bg-foreground1/80 py-5 pr-7 pl-6 font-medium text-background1 backdrop-blur transition-[background-color] hover:bg-foreground1/90"
+              className="no-drag flex items-center gap-2 py-4 pr-7 pl-5 font-medium transition-colors hover:bg-foreground1/20"
               href={resumeConfig.pdfUrl}
               rel="noopener noreferrer"
               target="_blank"
             >
-              <FileIcon size={24} />
+              <FileIcon size={20} weight="bold" />
               Get PDF
             </a>
-          </div>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
