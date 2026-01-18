@@ -1,16 +1,22 @@
-export const ResumeHeader = () => {
+import type { ResumeHeader as ResumeHeaderData } from "@/types/canvas";
+
+interface ResumeHeaderProps {
+  data?: ResumeHeaderData;
+}
+
+export const ResumeHeader = ({ data }: ResumeHeaderProps) => {
   return (
     <div className="flex gap-10">
-      <p className="w-32 text-end font-medium text-xl">Ricky Zhang</p>
+      <p className="w-32 text-end font-medium text-xl">{data?.name}</p>
       <div className="flex flex-col gap-1">
-        <a href="https://rickyzhang.me">rickyzhang.me</a>
+        <a href={data?.website}>{data?.website.replace("https://", "")}</a>
         <a
           className="underline decoration-foreground1/30 underline-offset-3"
-          href="mailto:ricky.zhang@queensu.ca"
+          href={`mailto:${data?.email}`}
         >
-          ricky.zhang@queensu.ca
+          {data?.email}
         </a>
-        <p>+1 647-514-6238</p>
+        <p>{data?.phone}</p>
       </div>
     </div>
   );

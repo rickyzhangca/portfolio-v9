@@ -35,6 +35,9 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
     null
   );
   const isResumeOpen = !!activeResumeGroupId;
+  const activeResumeGroup = activeResumeGroupId
+    ? state.groups.get(activeResumeGroupId)
+    : null;
   const [repulsionConfig] = useAtom(repulsionConfigAtom);
   const fanConfig = useAtomValue(fanConfigAtom);
 
@@ -441,6 +444,11 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
         </TransformWrapper>
 
         <ResumeModal
+          data={
+            activeResumeGroup?.cover?.type === "resume"
+              ? activeResumeGroup.cover.content.data
+              : undefined
+          }
           isOpen={isResumeOpen}
           onClose={() => setActiveResumeGroupId(null)}
         />
