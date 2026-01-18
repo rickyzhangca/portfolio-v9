@@ -1,4 +1,7 @@
+import { render } from "@testing-library/react";
+import { vi } from "vitest";
 import type { CardData, CardGroupData } from "@/types/canvas";
+import type { MockProvider } from "./mock-provider";
 
 export const createMockCard = (
   id: string,
@@ -23,7 +26,7 @@ export const createMockGroup = (
   cover: {
     id: "c",
     type: "company",
-    size: { width: 100 },
+    size: { width: 100, height: 100 },
     content: { company: "C", image: "" },
   },
   projects: [],
@@ -39,8 +42,8 @@ export const createMockMouseEvent = (
     clientX,
     clientY,
     target: { closest: () => null },
-    stopPropagation: () => {},
-    preventDefault: () => {},
+    stopPropagation: vi.fn(),
+    preventDefault: vi.fn(),
   }) as unknown as React.MouseEvent;
 
 export const createMockTouchEvent = (
@@ -49,5 +52,9 @@ export const createMockTouchEvent = (
   ({
     touches,
     target: { closest: () => null },
-    stopPropagation: () => {},
+    stopPropagation: vi.fn(),
   }) as unknown as React.TouchEvent;
+
+export const renderWithProviders = (ui: React.ReactNode) => {
+  return render(<MockProvider>{ui}</MockProvider>);
+};
