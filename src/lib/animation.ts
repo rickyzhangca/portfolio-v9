@@ -1,5 +1,5 @@
 export const SPRING_PRESETS = {
-  snappy: { type: "spring", stiffness: 520, damping: 46, mass: 0.8 },
+  snappy: { type: "spring", stiffness: 800, damping: 50, mass: 1 },
   smooth: { type: "spring", stiffness: 260, damping: 30, mass: 0.9 },
   quick: { type: "spring", stiffness: 400, damping: 35, mass: 0.8 },
 } as const;

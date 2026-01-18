@@ -21,7 +21,7 @@ import {
 // Entrance animation timing constants
 const COVER_BASE_DELAY = 0.05; // seconds before first cover appears
 const COVER_STAGGER = 0.05; // seconds between each group's cover
-const PROJECT_DELAY_AFTER_COVER = 0.8; // seconds after cover before projects appear
+const PROJECT_DELAY_AFTER_COVER = 0.2; // seconds after cover before projects appear
 
 interface CardGroupProps {
   group: CardGroupData;
@@ -159,9 +159,9 @@ export const CardGroup = ({
         {coverWithSize && (
           <motion.div
             initial={{
-              opacity: 0.6,
+              opacity: 0,
               scale: 0,
-              rotate: 0,
+              rotate: -10,
               x: 0,
               y: 0,
             }}
@@ -172,7 +172,8 @@ export const CardGroup = ({
               x: 0,
               y: 0,
             }}
-            className="absolute top-0 left-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.24)] transition-all duration-200 will-change-transform hover:drop-shadow-[0_20px_24px_rgba(0,0,0,0.32)] active:drop-shadow-[0_8px_20px_rgba(0,0,0,0.24)]"
+            transition={{...SPRING_PRESETS.snappy, delay: coverEntranceDelay}}
+            className="absolute top-0 left-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.24)] will-change-transform hover:drop-shadow-[0_20px_24px_rgba(0,0,0,0.32)] active:drop-shadow-[0_8px_20px_rgba(0,0,0,0.24)]"
             key={coverWithSize.id}
             onClick={(e) => {
               const target = e.target as HTMLElement;
@@ -191,10 +192,6 @@ export const CardGroup = ({
             style={{
               zIndex: (group.cover ? 1 : 0) + projectsWithSizes.length,
               pointerEvents: "auto",
-            }}
-            transition={{
-              ...SPRING_PRESETS.snappy,
-              delay: coverEntranceDelay,
             }}
           >
             <div
