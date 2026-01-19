@@ -1,9 +1,8 @@
 import { memo, useLayoutEffect, useRef } from "react";
 import type { CardData } from "@/types/canvas";
-import { CompanyCardContentView } from "./company-card-content";
-import { ContactCardContentView } from "./contact-card-content";
+import { CoverCardContentView } from "./cover-card-content";
+import { DocCardContentView } from "./doc-card-content";
 import { ProjectCardContentView } from "./project-card-content";
-import { ResumeCardContentView } from "./resume-card-content";
 
 interface CardProps {
   data: CardData;
@@ -46,8 +45,8 @@ const CardComponent = ({
   }, [onMeasure, data.size.height]);
 
   const renderContent = () => {
-    if (data.type === "company") {
-      return <CompanyCardContentView data={data.content} />;
+    if (data.type === "cover") {
+      return <CoverCardContentView data={data.content} />;
     }
     if (data.type === "project") {
       return (
@@ -58,11 +57,8 @@ const CardComponent = ({
         />
       );
     }
-    if (data.type === "contact") {
-      return <ContactCardContentView data={data.content} />;
-    }
-    if (data.type === "resume") {
-      return <ResumeCardContentView data={data.content} />;
+    if (data.type === "doc") {
+      return <DocCardContentView data={data.content} />;
     }
     return null;
   };

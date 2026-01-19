@@ -5,7 +5,7 @@ import { data } from "@/data/data";
 export const App = () => {
   return (
     <ErrorBoundary>
-      <Canvas initialGroups={data} />
+      <Canvas initialItems={data} />
     </ErrorBoundary>
   );
 };

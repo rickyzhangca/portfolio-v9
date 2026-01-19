@@ -1,6 +1,6 @@
 import { getOffsets, getRotatedBoundingBox } from "@/lib/card-layout";
 import type { FanConfig } from "@/lib/fan";
-import type { CardData, CardGroupData, ViewportState } from "@/types/canvas";
+import type { CanvasStackItem, CardData, ViewportState } from "@/types/canvas";
 
 export const AUTO_PAN_MARGIN = 40;
 export const AUTO_PAN_DURATION_MS = 360;
@@ -21,16 +21,16 @@ interface VisibleViewport {
 }
 
 /**
- * Calculate the bounding box of expanded group content.
+ * Calculate the bounding box of expanded stack content.
  * Uses getOffsets() with expanded=true to get fan positions,
  * accounts for card rotations, and includes fallback height.
  */
 const getExpandedBoundingBox = (
   cover: CardData | undefined,
-  projects: CardData[],
+  stack: CardData[],
   fanConfig: FanConfig
 ): BoundingBox => {
-  const offsets = getOffsets(cover, projects, true, fanConfig);
+  const offsets = getOffsets(cover, stack, true, fanConfig);
 
   // Start with cover card bounds
   let minX = 0;
@@ -38,9 +38,9 @@ const getExpandedBoundingBox = (
   let maxX = cover?.size.width ?? 0;
   let maxY = cover?.size.height ?? 360;
 
-  // Calculate bounds for each project card at its fanned offset
-  for (let i = 0; i < projects.length; i++) {
-    const card = projects[i];
+  // Calculate bounds for each stack card at its fanned offset
+  for (let i = 0; i < stack.length; i++) {
+    const card = stack[i];
     if (!card) continue;
 
     const offset = offsets[i];
@@ -190,7 +190,7 @@ const canCenterContent = (
  * - Applies centering logic independently for horizontal and vertical axes
  */
 export const getAutoPanTarget = (
-  group: CardGroupData,
+  stack: CanvasStackItem,
   fanConfig: FanConfig,
   viewportState: ViewportState,
   windowWidth: number,
@@ -198,8 +198,8 @@ export const getAutoPanTarget = (
 ): { x: number; y: number; scale: number } | null => {
   // Calculate bounding box of expanded content
   const expandedBbox = getExpandedBoundingBox(
-    group.cover,
-    group.projects,
+    stack.cover,
+    stack.stack,
     fanConfig
   );
 
@@ -211,7 +211,7 @@ export const getAutoPanTarget = (
   );
 
   if (
-    !doesExpandedContentOverflow(group.position, expandedBbox, visibleViewport)
+    !doesExpandedContentOverflow(stack.position, expandedBbox, visibleViewport)
   ) {
     return null; // Content fits, no pan needed
   }
@@ -226,13 +226,13 @@ export const getAutoPanTarget = (
 
   // Calculate both potential transforms
   const marginTransform = calculateMarginTransform(
-    group.position,
+    stack.position,
     viewportState.scale,
     AUTO_PAN_MARGIN
   );
 
   const centeredTransform = calculateCenteredTransform(
-    group.position,
+    stack.position,
     expandedBbox,
     viewportState.scale,
     windowWidth,

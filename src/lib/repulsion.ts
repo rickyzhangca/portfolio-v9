@@ -1,4 +1,4 @@
-import type { CardGroupData, Position } from "@/types/canvas";
+import type { CanvasItem, Position } from "@/types/canvas";
 
 export interface RepulsionConfig {
   /**
@@ -19,29 +19,37 @@ export const DEFAULT_REPULSION_CONFIG: RepulsionConfig = {
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
-const getCoverCenter = (group: CardGroupData): Position => {
-  const cover = group.cover ?? group.projects[0];
+const getItemCenter = (item: CanvasItem): Position => {
+  if (item.kind === "single") {
+    const card = item.card;
+    return {
+      x: item.position.x + (card?.size.width ?? 0) / 2,
+      y: item.position.y + (card?.size.height ?? 360) / 2,
+    };
+  }
+  // Stack item
+  const cover = item.cover;
   return {
-    x: group.position.x + (cover?.size.width ?? 0) / 2,
-    y: group.position.y + (cover?.size.height ?? 360) / 2,
+    x: item.position.x + (cover?.size.width ?? 0) / 2,
+    y: item.position.y + (cover?.size.height ?? 360) / 2,
   };
 };
 
 /**
- * Computes per-group translation offsets so non-expanded groups are pushed away
- * from the expanded group's cover card.
+ * Computes per-item translation offsets so non-expanded items are pushed away
+ * from the expanded stack's cover card or the active doc item.
  */
 export const computeRepulsionOffsets = (
-  groups: Map<string, CardGroupData>,
-  expandedGroupId: string | null,
+  items: Map<string, CanvasItem>,
+  sourceItemId: string | null,
   config: Partial<RepulsionConfig> = {}
 ): Map<string, Position> => {
-  if (!expandedGroupId) {
+  if (!sourceItemId) {
     return new Map();
   }
 
-  const expanded = groups.get(expandedGroupId);
-  if (!expanded) {
+  const source = items.get(sourceItemId);
+  if (!source) {
     return new Map();
   }
 
@@ -49,29 +57,29 @@ export const computeRepulsionOffsets = (
   const strengthWorld =
     config.strengthPx ?? DEFAULT_REPULSION_CONFIG.strengthPx;
 
-  const source = getCoverCenter(expanded);
+  const sourceCenter = getItemCenter(source);
   const offsets = new Map<string, Position>();
 
-  for (const group of groups.values()) {
-    if (group.id === expandedGroupId) {
-      offsets.set(group.id, { x: 0, y: 0 });
+  for (const item of items.values()) {
+    if (item.id === sourceItemId) {
+      offsets.set(item.id, { x: 0, y: 0 });
       continue;
     }
 
-    const target = getCoverCenter(group);
-    const dx = target.x - source.x;
-    const dy = target.y - source.y;
+    const target = getItemCenter(item);
+    const dx = target.x - sourceCenter.x;
+    const dy = target.y - sourceCenter.y;
     const dist = Math.hypot(dx, dy);
 
     if (dist < 0.001) {
-      offsets.set(group.id, { x: strengthWorld, y: 0 });
+      offsets.set(item.id, { x: strengthWorld, y: 0 });
       continue;
     }
 
     const t = clamp01(dist / radiusWorld);
     const magnitude = strengthWorld * (1 - t);
 
-    offsets.set(group.id, {
+    offsets.set(item.id, {
       x: (dx / dist) * magnitude,
       y: (dy / dist) * magnitude,
     });

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/cards/card";
 import { fanConfigAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
-import type { CardGroupData, Position } from "@/types/canvas";
+import type { CanvasStackItem, Position } from "@/types/canvas";
 
 const CARD_MASK_DATA_URI = `url("data:image/svg+xml,%3Csvg viewBox='0 0 240 340' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 301.6C0 315.041 0 321.762 2.61584 326.896C4.9168 331.412 8.58834 335.083 13.1042 337.384C18.2381 340 24.9587 340 38.4 340H201.6C215.041 340 221.762 340 226.896 337.384C231.412 335.083 235.083 331.412 237.384 326.896C240 321.762 240 315.041 240 301.6V250.875C240 245.342 240 242.576 239.541 239.894C239.133 237.514 238.457 235.187 237.526 232.958C236.476 230.448 234.994 228.112 232.03 223.441L231.47 222.559C228.506 217.888 227.024 215.552 225.974 213.042C225.043 210.813 224.367 208.486 223.959 206.106C223.5 203.424 223.5 200.658 223.5 195.125V134.875C223.5 129.342 223.5 126.576 223.959 123.894C224.367 121.514 225.043 119.187 225.974 116.958C227.024 114.448 228.506 112.112 231.47 107.441L232.03 106.559C234.994 101.888 236.476 99.5523 237.526 97.0418C238.457 94.8133 239.133 92.4865 239.541 90.1058C240 87.424 240 84.6577 240 79.1251V38.4C240 24.9587 240 18.2381 237.384 13.1042C235.083 8.58834 231.412 4.9168 226.896 2.61584C221.762 0 215.041 0 201.6 0H38.4C24.9587 0 18.2381 0 13.1042 2.61584C8.58834 4.9168 4.9168 8.58834 2.61584 13.1042C0 18.2381 0 24.9587 0 38.4V301.6Z'/%3E%3C/svg%3E")`;
 
@@ -23,9 +23,9 @@ const COVER_BASE_DELAY = 0.05; // seconds before first cover appears
 const COVER_STAGGER = 0.05; // seconds between each group's cover
 const PROJECT_DELAY_AFTER_COVER = 0.2; // seconds after cover before projects appear
 
-interface CardGroupProps {
-  group: CardGroupData;
-  groupIndex: number;
+interface CardStackProps {
+  stack: CanvasStackItem;
+  stackIndex: number;
   scale: number;
   isExpanded: boolean;
   dragDisabled: boolean;
@@ -39,9 +39,9 @@ interface CardGroupProps {
   setRootRef?: (el: HTMLDivElement | null) => void;
 }
 
-export const CardGroup = ({
-  group,
-  groupIndex,
+export const CardStack = ({
+  stack,
+  stackIndex,
   scale,
   isExpanded,
   dragDisabled,
@@ -53,7 +53,7 @@ export const CardGroup = ({
   onDragEnd,
   onCardHeightMeasured,
   setRootRef,
-}: CardGroupProps) => {
+}: CardStackProps) => {
   const fanConfig = useAtomValue(fanConfigAtom);
   const [measuredSizes, setMeasuredSizes] = useState<Record<string, number>>(
     {}
@@ -62,7 +62,7 @@ export const CardGroup = ({
   const [showProjects, setShowProjects] = useState(false);
 
   // Calculate entrance delays based on group index
-  const coverEntranceDelay = COVER_BASE_DELAY + groupIndex * COVER_STAGGER;
+  const coverEntranceDelay = COVER_BASE_DELAY + stackIndex * COVER_STAGGER;
   const projectsEntranceDelay = coverEntranceDelay + PROJECT_DELAY_AFTER_COVER;
 
   // Show projects after cover animation has time to complete
@@ -74,25 +74,25 @@ export const CardGroup = ({
   }, [projectsEntranceDelay]);
 
   const coverWithSize = useMemo(() => {
-    if (!group.cover) return undefined;
+    if (!stack.cover) return undefined;
     return {
-      ...group.cover,
+      ...stack.cover,
       size: {
-        ...group.cover.size,
-        height: measuredSizes[group.cover.id] ?? group.cover.size.height,
+        ...stack.cover.size,
+        height: measuredSizes[stack.cover.id] ?? stack.cover.size.height,
       },
     };
-  }, [group.cover, measuredSizes]);
+  }, [stack.cover, measuredSizes]);
 
   const projectsWithSizes = useMemo(() => {
-    return group.projects.map((card) => ({
+    return stack.stack.map((card) => ({
       ...card,
       size: {
         ...card.size,
         height: measuredSizes[card.id] ?? card.size.height,
       },
     }));
-  }, [group.projects, measuredSizes]);
+  }, [stack.stack, measuredSizes]);
 
   const offsets = useMemo(
     () => getOffsets(coverWithSize, projectsWithSizes, isExpanded, fanConfig),
@@ -101,7 +101,7 @@ export const CardGroup = ({
 
   const { isDragging, didDragRef, handleMouseDown, currentPosition } =
     useDraggable({
-      position: group.position,
+      position: stack.position,
       scale,
       disabled: dragDisabled,
       onDragStart: () => {
@@ -140,11 +140,11 @@ export const CardGroup = ({
         !dragDisabled && "cursor-grab",
         isDragging && "cursor-grabbing"
       )}
-      data-card-group-id={group.id}
+      data-card-stack-id={stack.id}
       onMouseDown={handleMouseDown}
       onTouchStart={handleMouseDown}
       ref={setRootRef}
-      style={{ zIndex: group.zIndex }}
+      style={{ zIndex: stack.zIndex }}
       transition={{
         opacity: TRANSITIONS.opacity,
         x: SPRING_PRESETS.smooth,
@@ -179,7 +179,7 @@ export const CardGroup = ({
             }}
             key={coverWithSize.id}
             layoutId={
-              coverWithSize.type === "resume" ? "resume-card" : undefined
+              coverWithSize.type === "doc" ? "resume-card" : undefined
             }
             onClick={(e) => {
               const target = e.target as HTMLElement;
@@ -196,7 +196,7 @@ export const CardGroup = ({
               onToggleExpanded();
             }}
             style={{
-              zIndex: (group.cover ? 1 : 0) + projectsWithSizes.length,
+              zIndex: (stack.cover ? 1 : 0) + projectsWithSizes.length,
               pointerEvents: "auto",
             }}
             transition={{ ...SPRING_PRESETS.snappy, delay: coverEntranceDelay }}
@@ -233,30 +233,13 @@ export const CardGroup = ({
           const offset = offsets[index] ?? { x: 0, y: 0 };
           const colInRow = index % EXPAND_MAX_PER_ROW;
           const fanRotate =
-            isExpanded && group.cover
+            isExpanded && stack.cover
               ? (colInRow + 1) * fanConfig.rotateStepDeg
               : 0;
           const fanArcY =
-            isExpanded && group.cover
+            isExpanded && stack.cover
               ? (colInRow + 1) ** 2 * fanConfig.arcStepPx
               : 0;
-
-          // Contact card (when no cover) gets cover-like styling
-          const isContactCardWithoutCover =
-            !group.cover && card.type === "contact";
-          const cardHeight = card.size.height ?? 0;
-          const maskStyles = isContactCardWithoutCover
-            ? {
-                maskImage: CARD_MASK_DATA_URI,
-                WebkitMaskImage: CARD_MASK_DATA_URI,
-                maskSize: `${card.size.width}px ${cardHeight}px`,
-                WebkitMaskSize: `${card.size.width}px ${cardHeight}px`,
-                maskRepeat: "no-repeat",
-                WebkitMaskRepeat: "no-repeat",
-                maskPosition: "center",
-                WebkitMaskPosition: "center",
-              }
-            : {};
 
           // Calculate scale factor to fit project card within cover width when collapsed
           const coverWidth = coverWithSize?.size.width ?? card.size.width;
@@ -300,33 +283,13 @@ export const CardGroup = ({
                 y: isExpanded ? offset.y + fanArcY : collapsedPos.y,
               }}
               className={tw(
-                "absolute top-0 left-0 will-change-transform",
-                isContactCardWithoutCover &&
-                  "drop-shadow-[0_25px_25px_rgba(0,0,0,0.25)] transition-all duration-200 hover:drop-shadow-[0_20px_35px_rgba(0,0,0,0.5)] active:drop-shadow-[0_15px_15px_rgba(0,0,0,0.25)]"
+                "absolute top-0 left-0 will-change-transform"
               )}
               initial={false}
               key={card.id}
-              onClick={
-                isContactCardWithoutCover
-                  ? (e) => {
-                      const target = e.target as HTMLElement;
-                      if (target.closest(".no-drag")) {
-                        return;
-                      }
-
-                      // Prevent "click after drag" from toggling the stack.
-                      if (!dragDisabled && didDragRef.current) {
-                        didDragRef.current = false;
-                        return;
-                      }
-
-                      onToggleExpanded();
-                    }
-                  : undefined
-              }
               style={{
                 zIndex: projectsWithSizes.length - index,
-                pointerEvents: isExpanded || !group.cover ? "auto" : "none",
+                pointerEvents: isExpanded || !stack.cover ? "auto" : "none",
                 transformOrigin: "top left",
               }}
               transition={{
@@ -337,19 +300,12 @@ export const CardGroup = ({
                 y: SPRING_PRESETS.snappy,
               }}
             >
-              <div style={maskStyles}>
-                <Card
-                  className={
-                    isContactCardWithoutCover
-                      ? "shadow-none hover:shadow-none"
-                      : undefined
-                  }
-                  data={card}
-                  isExpanded={isExpanded}
-                  onMeasure={(h) => handleCardMeasure(card.id, h)}
-                  priority={index < 2}
-                />
-              </div>
+              <Card
+                data={card}
+                isExpanded={isExpanded}
+                onMeasure={(h) => handleCardMeasure(card.id, h)}
+                priority={index < 2}
+              />
             </motion.div>
           );
         })}

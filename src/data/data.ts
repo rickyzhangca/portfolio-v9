@@ -1,4 +1,4 @@
-import type { CardGroupData, ResumeData } from "@/types/canvas";
+import type { CanvasItem, ResumeData } from "@/types/canvas";
 
 const START_X = 160;
 const START_Y = 300;
@@ -102,30 +102,32 @@ const resumeData: ResumeData = {
   ],
 };
 
-export const data: CardGroupData[] = [
-  // resume
+export const data: CanvasItem[] = [
+  // resume - single item
   {
-    id: "resume-group",
+    id: "resume-item",
+    kind: "single",
     position: { x: START_X + 60, y: START_Y + 440 },
     zIndex: 1,
-    cover: {
+    card: {
       id: "resume-card",
-      type: "resume",
+      type: "doc",
       size: { width: 240, height: 444 },
       content: {
+        docType: "resume",
         data: resumeData,
       },
     },
-    projects: [],
   },
-  // wealthsimple
+  // wealthsimple - stack
   {
-    id: "wealthsimple-group",
+    id: "wealthsimple-stack",
+    kind: "stack",
     position: { x: START_X, y: START_Y },
     zIndex: 2,
     cover: {
-      id: "wealthsimple-company",
-      type: "company",
+      id: "wealthsimple-cover",
+      type: "cover",
       size: { width: 240, height: 340 },
       content: {
         company: "Wealthsimple",
@@ -133,7 +135,7 @@ export const data: CardGroupData[] = [
         image: "/src/assets/covers/wealthsimple-logo.webp",
       },
     },
-    projects: [
+    stack: [
       {
         id: "project-15",
         type: "project",
@@ -235,14 +237,15 @@ export const data: CardGroupData[] = [
       },
     ],
   },
-  // mintlify
+  // mintlify - stack
   {
-    id: "mintlify-group",
+    id: "mintlify-stack",
+    kind: "stack",
     position: { x: START_X + GAP_X, y: START_Y + GAP_Y },
     zIndex: 3,
     cover: {
-      id: "mintlify-company",
-      type: "company",
+      id: "mintlify-cover",
+      type: "cover",
       size: { width: 240, height: 340 },
       content: {
         company: "Mintlify",
@@ -250,7 +253,7 @@ export const data: CardGroupData[] = [
         image: "/src/assets/covers/mintlify-logo.webp",
       },
     },
-    projects: [
+    stack: [
       {
         id: "project-17",
         type: "project",
@@ -316,14 +319,15 @@ export const data: CardGroupData[] = [
       },
     ],
   },
-  // rbc
+  // rbc - stack
   {
-    id: "rbc-group",
+    id: "rbc-stack",
+    kind: "stack",
     position: { x: START_X + GAP_X * 2, y: START_Y + GAP_Y * 2 },
     zIndex: 1,
     cover: {
-      id: "rbc-company",
-      type: "company",
+      id: "rbc-cover",
+      type: "cover",
       size: { width: 240, height: 340 },
       content: {
         company: "RBC",
@@ -331,7 +335,7 @@ export const data: CardGroupData[] = [
         image: "/src/assets/covers/rbc-logo.webp",
       },
     },
-    projects: [
+    stack: [
       {
         id: "project-2",
         type: "project",
@@ -370,14 +374,15 @@ export const data: CardGroupData[] = [
       },
     ],
   },
-  // mosaic
+  // mosaic - stack
   {
-    id: "mosaic-group",
+    id: "mosaic-stack",
+    kind: "stack",
     position: { x: START_X + GAP_X * 3, y: START_Y + GAP_Y * 3 },
     zIndex: 4,
     cover: {
-      id: "mosaic-company",
-      type: "company",
+      id: "mosaic-cover",
+      type: "cover",
       size: { width: 240, height: 340 },
       content: {
         company: "Mosaic",
@@ -385,7 +390,7 @@ export const data: CardGroupData[] = [
         image: "/src/assets/covers/mosaic-logo.webp",
       },
     },
-    projects: [
+    stack: [
       {
         id: "project-24",
         type: "project",

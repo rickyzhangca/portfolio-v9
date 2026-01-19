@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import type {
   CanvasAction,
+  CanvasItem,
   CanvasState,
-  CardGroupData,
   Position,
   ViewportState,
 } from "@/types/canvas";
@@ -18,47 +18,47 @@ export const canvasReducer = (
   action: CanvasAction
 ): CanvasState => {
   switch (action.type) {
-    case "UPDATE_GROUP_POSITION": {
-      const group = state.groups.get(action.payload.id);
-      if (!group) {
+    case "UPDATE_ITEM_POSITION": {
+      const item = state.items.get(action.payload.id);
+      if (!item) {
         return state;
       }
 
       if (
-        group.position.x === action.payload.position.x &&
-        group.position.y === action.payload.position.y
+        item.position.x === action.payload.position.x &&
+        item.position.y === action.payload.position.y
       ) {
         return state;
       }
 
-      const newGroups = new Map(state.groups);
-      newGroups.set(action.payload.id, {
-        ...group,
+      const newItems = new Map(state.items);
+      newItems.set(action.payload.id, {
+        ...item,
         position: action.payload.position,
       });
-      return { ...state, groups: newGroups };
+      return { ...state, items: newItems };
     }
 
-    case "BRING_GROUP_TO_FRONT": {
-      const group = state.groups.get(action.payload.id);
-      if (group) {
+    case "BRING_ITEM_TO_FRONT": {
+      const item = state.items.get(action.payload.id);
+      if (item) {
         const newZIndex = state.maxZIndex + 1;
-        const newGroups = new Map(state.groups);
-        newGroups.set(action.payload.id, {
-          ...group,
+        const newItems = new Map(state.items);
+        newItems.set(action.payload.id, {
+          ...item,
           zIndex: newZIndex,
         });
-        return { ...state, groups: newGroups, maxZIndex: newZIndex };
+        return { ...state, items: newItems, maxZIndex: newZIndex };
       }
       return state;
     }
 
-    case "SELECT_GROUP": {
-      return { ...state, selectedGroupId: action.payload.id };
+    case "SELECT_ITEM": {
+      return { ...state, selectedItemId: action.payload.id };
     }
 
-    case "SET_EXPANDED_GROUP": {
-      return { ...state, expandedGroupId: action.payload.id };
+    case "SET_EXPANDED_STACK": {
+      return { ...state, expandedStackId: action.payload.id };
     }
 
     case "UPDATE_VIEWPORT": {
@@ -72,97 +72,111 @@ export const canvasReducer = (
       };
     }
 
-    case "ADD_GROUP": {
-      const newGroups = new Map(state.groups);
+    case "ADD_ITEM": {
+      const newItems = new Map(state.items);
       const newZIndex = state.maxZIndex + 1;
-      newGroups.set(action.payload.id, {
+      newItems.set(action.payload.id, {
         ...action.payload,
         zIndex: newZIndex,
       });
-      return { ...state, groups: newGroups, maxZIndex: newZIndex };
+      return { ...state, items: newItems, maxZIndex: newZIndex };
     }
 
-    case "DELETE_GROUP": {
-      const newGroups = new Map(state.groups);
-      newGroups.delete(action.payload.id);
+    case "DELETE_ITEM": {
+      const newItems = new Map(state.items);
+      newItems.delete(action.payload.id);
       return {
         ...state,
-        groups: newGroups,
-        selectedGroupId:
-          state.selectedGroupId === action.payload.id
+        items: newItems,
+        selectedItemId:
+          state.selectedItemId === action.payload.id
             ? null
-            : state.selectedGroupId,
-        expandedGroupId:
-          state.expandedGroupId === action.payload.id
+            : state.selectedItemId,
+        expandedStackId:
+          state.expandedStackId === action.payload.id
             ? null
-            : state.expandedGroupId,
+            : state.expandedStackId,
       };
     }
 
-    case "RESET_GROUPS": {
-      const initialGroupsMap = new Map<string, CardGroupData>();
+    case "RESET_ITEMS": {
+      const initialItemsMap = new Map<string, CanvasItem>();
       let maxZIndex = 0;
 
-      for (const group of action.payload.initialGroups) {
-        initialGroupsMap.set(group.id, group);
-        maxZIndex = Math.max(maxZIndex, group.zIndex);
+      for (const item of action.payload.initialItems) {
+        initialItemsMap.set(item.id, item);
+        maxZIndex = Math.max(maxZIndex, item.zIndex);
       }
 
       return {
         ...state,
-        groups: initialGroupsMap,
+        items: initialItemsMap,
         maxZIndex,
-        selectedGroupId: null,
-        expandedGroupId: null,
+        selectedItemId: null,
+        expandedStackId: null,
       };
     }
 
     case "UPDATE_CARD_HEIGHT": {
-      const { groupId, cardId, height } = action.payload;
-      const group = state.groups.get(groupId);
-      if (!group) {
+      const { itemId, cardId, height } = action.payload;
+      const item = state.items.get(itemId);
+      if (!item) {
         return state;
       }
 
-      // Check if it's the cover card
-      if (group.cover?.id === cardId) {
-        if (group.cover.size.height === height) {
+      const newItems = new Map(state.items);
+
+      if (item.kind === "single") {
+        // Single item: update the card directly
+        if (item.card.id === cardId && item.card.size.height !== height) {
+          newItems.set(itemId, {
+            ...item,
+            card: {
+              ...item.card,
+              size: { ...item.card.size, height },
+            },
+          });
+          return { ...state, items: newItems };
+        }
+        return state;
+      }
+
+      // Stack item: check cover and stack cards
+      if (item.cover.id === cardId) {
+        if (item.cover.size.height === height) {
           return state; // No change needed
         }
-        const newGroups = new Map(state.groups);
-        newGroups.set(groupId, {
-          ...group,
+        newItems.set(itemId, {
+          ...item,
           cover: {
-            ...group.cover,
-            size: { ...group.cover.size, height },
+            ...item.cover,
+            size: { ...item.cover.size, height },
           },
         });
-        return { ...state, groups: newGroups };
+        return { ...state, items: newItems };
       }
 
-      // Check if it's a project card
-      const projectIndex = group.projects.findIndex((p) => p.id === cardId);
-      if (projectIndex === -1) {
+      const stackIndex = item.stack.findIndex((c) => c.id === cardId);
+      if (stackIndex === -1) {
         return state;
       }
 
-      const project = group.projects[projectIndex];
-      if (project.size.height === height) {
+      const stackCard = item.stack[stackIndex];
+      if (stackCard.size.height === height) {
         return state; // No change needed
       }
 
-      const newProjects = [...group.projects];
-      newProjects[projectIndex] = {
-        ...project,
-        size: { ...project.size, height },
+      const newStack = [...item.stack];
+      newStack[stackIndex] = {
+        ...stackCard,
+        size: { ...stackCard.size, height },
       };
 
-      const newGroups = new Map(state.groups);
-      newGroups.set(groupId, {
-        ...group,
-        projects: newProjects,
+      newItems.set(itemId, {
+        ...item,
+        stack: newStack,
       });
-      return { ...state, groups: newGroups };
+      return { ...state, items: newItems };
     }
 
     default:
@@ -170,80 +184,80 @@ export const canvasReducer = (
   }
 };
 
-export const useCanvasState = (initialGroups: CardGroupData[] = []) => {
-  const initialGroupsRef = useRef(initialGroups);
-  initialGroupsRef.current = initialGroups;
+export const useCanvasState = (initialItems: CanvasItem[] = []) => {
+  const initialItemsRef = useRef(initialItems);
+  initialItemsRef.current = initialItems;
 
   const [state, dispatch] = useReducer(canvasReducer, {
-    groups: new Map(),
-    selectedGroupId: null,
-    expandedGroupId: null,
-    maxZIndex: initialGroups.length,
+    items: new Map(),
+    selectedItemId: null,
+    expandedStackId: null,
+    maxZIndex: initialItems.length,
     viewportState: initialViewportState,
   });
 
-  // Initialize with provided groups on mount
+  // Initialize with provided items on mount
   useEffect(() => {
-    if (initialGroups.length > 0) {
-      const groupsMap = new Map<string, CardGroupData>();
+    if (initialItems.length > 0) {
+      const itemsMap = new Map<string, CanvasItem>();
       let maxZIndex = 0;
 
-      for (const group of initialGroups) {
-        groupsMap.set(group.id, group);
-        maxZIndex = Math.max(maxZIndex, group.zIndex);
+      for (const item of initialItems) {
+        itemsMap.set(item.id, item);
+        maxZIndex = Math.max(maxZIndex, item.zIndex);
       }
 
       dispatch({
         type: "LOAD_STATE",
         payload: {
-          groups: groupsMap,
+          items: itemsMap,
           maxZIndex,
         },
       });
     }
-  }, [initialGroups]);
+  }, [initialItems]);
 
   // Action creators
-  const updateGroupPosition = useCallback((id: string, position: Position) => {
-    dispatch({ type: "UPDATE_GROUP_POSITION", payload: { id, position } });
+  const updateItemPosition = useCallback((id: string, position: Position) => {
+    dispatch({ type: "UPDATE_ITEM_POSITION", payload: { id, position } });
   }, []);
 
-  const bringGroupToFront = useCallback((id: string) => {
-    dispatch({ type: "BRING_GROUP_TO_FRONT", payload: { id } });
+  const bringItemToFront = useCallback((id: string) => {
+    dispatch({ type: "BRING_ITEM_TO_FRONT", payload: { id } });
   }, []);
 
-  const selectGroup = useCallback((id: string | null) => {
-    dispatch({ type: "SELECT_GROUP", payload: { id } });
+  const selectItem = useCallback((id: string | null) => {
+    dispatch({ type: "SELECT_ITEM", payload: { id } });
   }, []);
 
-  const setExpandedGroup = useCallback((id: string | null) => {
-    dispatch({ type: "SET_EXPANDED_GROUP", payload: { id } });
+  const setExpandedStack = useCallback((id: string | null) => {
+    dispatch({ type: "SET_EXPANDED_STACK", payload: { id } });
   }, []);
 
   const updateViewport = useCallback((viewport: ViewportState) => {
     dispatch({ type: "UPDATE_VIEWPORT", payload: viewport });
   }, []);
 
-  const addGroup = useCallback((group: CardGroupData) => {
-    dispatch({ type: "ADD_GROUP", payload: group });
+  const addItem = useCallback((item: CanvasItem) => {
+    dispatch({ type: "ADD_ITEM", payload: item });
   }, []);
 
-  const deleteGroup = useCallback((id: string) => {
-    dispatch({ type: "DELETE_GROUP", payload: { id } });
+  const deleteItem = useCallback((id: string) => {
+    dispatch({ type: "DELETE_ITEM", payload: { id } });
   }, []);
 
-  const resetGroups = useCallback(() => {
+  const resetItems = useCallback(() => {
     dispatch({
-      type: "RESET_GROUPS",
-      payload: { initialGroups: initialGroupsRef.current },
+      type: "RESET_ITEMS",
+      payload: { initialItems: initialItemsRef.current },
     });
   }, []);
 
   const updateCardHeight = useCallback(
-    (groupId: string, cardId: string, height: number) => {
+    (itemId: string, cardId: string, height: number) => {
       dispatch({
         type: "UPDATE_CARD_HEIGHT",
-        payload: { groupId, cardId, height },
+        payload: { itemId, cardId, height },
       });
     },
     []
@@ -252,14 +266,14 @@ export const useCanvasState = (initialGroups: CardGroupData[] = []) => {
   return {
     state,
     actions: {
-      updateGroupPosition,
-      bringGroupToFront,
-      selectGroup,
-      setExpandedGroup,
+      updateItemPosition,
+      bringItemToFront,
+      selectItem,
+      setExpandedStack,
       updateViewport,
-      addGroup,
-      deleteGroup,
-      resetGroups,
+      addItem,
+      deleteItem,
+      resetItems,
       updateCardHeight,
     },
   };
