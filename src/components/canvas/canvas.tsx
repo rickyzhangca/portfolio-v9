@@ -20,7 +20,7 @@ import {
 } from "@/lib/auto-pan";
 import { computeRepulsionOffsets } from "@/lib/repulsion";
 import type { CanvasItem } from "@/types/canvas";
-import { CanvasItem as CanvasItemComponent } from "./canvas-item";
+import { CanvasItemRenderer } from "./canvas-item";
 import { CanvasControls } from "./canvas-controls";
 
 interface CanvasProps {
@@ -327,7 +327,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                   };
 
                   return (
-                    <CanvasItemComponent
+                    <CanvasItemRenderer
                       dragDisabled={dragDisabled}
                       item={item}
                       itemIndex={itemIndex}
