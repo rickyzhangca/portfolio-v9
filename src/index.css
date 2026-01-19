@@ -58,6 +58,9 @@
   button {
     @apply select-none;
   }
+  ::selection {
+    @apply bg-foreground1/20;
+  }
 }
 
 /* Canvas-specific styles */
