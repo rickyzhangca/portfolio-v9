@@ -114,7 +114,7 @@ export const SingleCardItem = ({
             x: 0,
             y: 0,
           }}
-          className="absolute top-0 left-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.16)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
+          className="absolute top-0 left-0 drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
           initial={{
             opacity: 0,
             scale: 0,
