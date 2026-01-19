@@ -256,9 +256,7 @@ export const CardStack = ({
           const collapsedPos = COLLAPSED_POSITIONS[Math.min(index, 1)];
 
           // Calculate collapsed opacity - hidden cards get 0, visible cards get gradual reduction
-          const collapsedOpacity = isHiddenWhenCollapsed
-            ? 0
-            : Math.max(0.7, 1 - (index + 1) * 0.08);
+          const collapsedOpacity = isHiddenWhenCollapsed ? 0 : 1;
 
           // Calculate collapsed scale based on index (for visible cards)
           const collapsedScaleIndex = isHiddenWhenCollapsed ? 1 : index;
