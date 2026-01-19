@@ -1,10 +1,10 @@
 import { ArrowLeftIcon, FileIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { type PointerEventHandler, useEffect } from "react";
-import { RESUME_CARD_SIZE } from "@/data/data";
+import { RESUME_CARD_SIZE, RESUME_SHEET_SIZE } from "@/data/data";
 import { SPRING_PRESETS } from "@/lib/animation";
 import type { ResumeData } from "@/types/canvas";
-import { RESUME_SHEET_SIZE, ResumeSheet } from "./resume-sheet";
+import { ResumeSheet } from "./resume-sheet";
 
 interface ResumeModalProps {
   isOpen: boolean;

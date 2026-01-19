@@ -102,8 +102,15 @@ const resumeData: ResumeData = {
   ],
 };
 
-export const RESUME_CARD_SIZE = { width: 240, height: 444 };
-export const ABOUT_CARD_SIZE = { width: 240, height: 444 };
+export const RESUME_CARD_SIZE = { width: 240, height: 440 };
+export const RESUME_SHEET_SIZE = {
+  width: 840,
+};
+
+export const ABOUT_CARD_SIZE = { width: 240, height: 420 };
+export const ABOUT_SHEET_SIZE = {
+  width: 840,
+};
 
 export const data: CanvasItem[] = [
   // resume - single item

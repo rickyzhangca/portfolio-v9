@@ -1,10 +1,7 @@
+import aboutContent from "@/content/about.md?raw";
+import { ABOUT_SHEET_SIZE } from "@/data/data";
 import { tw } from "@/lib/utils";
-import { AboutHeader } from "./about-header";
-
-export const ABOUT_SHEET_SIZE = {
-  width: 840,
-  height: 1000,
-} as const;
+import { MarkdownRenderer } from "./markdown-renderer";
 
 interface AboutSheetProps {
   className?: string;
@@ -18,16 +15,15 @@ export const AboutSheet = ({
   return (
     <article
       className={tw(
-        "flex h-full w-full flex-col gap-10 bg-white pt-10",
+        "flex h-full w-full flex-col bg-white px-10 pt-10",
         !interactive && "pointer-events-none select-none",
         className
       )}
       style={{
         width: ABOUT_SHEET_SIZE.width,
-        height: ABOUT_SHEET_SIZE.height,
       }}
     >
-      <AboutHeader />
+      <MarkdownRenderer content={aboutContent} />
     </article>
   );
 };
