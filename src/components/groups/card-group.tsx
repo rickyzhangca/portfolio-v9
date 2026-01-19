@@ -135,7 +135,7 @@ export const CardStack = ({
         y: repulsionOffset.y,
       }}
       className={tw(
-        "no-pan absolute top-0 left-0 will-change-transform",
+        "absolute top-0 left-0 will-change-transform",
         !isExpanded && "select-none",
         !dragDisabled && "cursor-grab",
         isDragging && "cursor-grabbing"
@@ -199,7 +199,8 @@ export const CardStack = ({
             }}
             transition={{ ...SPRING_PRESETS.snappy, delay: coverEntranceDelay }}
           >
-            {coverWithSize.type === "doc" && coverWithSize.content.docType === "resume" ? (
+            {coverWithSize.type === "doc" &&
+            coverWithSize.content.docType === "resume" ? (
               <Card
                 className="shadow-none hover:shadow-none"
                 data={coverWithSize}
