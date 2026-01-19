@@ -123,7 +123,7 @@ export const data: CanvasItem[] = [
   {
     id: "email-item",
     kind: "single",
-    position: { x: 180, y: 80 },
+    position: { x: 160, y: 80 },
     zIndex: 1,
     card: {
       id: "email-card",
@@ -141,7 +141,7 @@ export const data: CanvasItem[] = [
   {
     id: "socials-item",
     kind: "single",
-    position: { x: 180, y: 200 },
+    position: { x: 800, y: 80 },
     zIndex: 1,
     card: {
       id: "socials-card",
@@ -502,14 +502,17 @@ export const data: CanvasItem[] = [
   {
     id: "profilepic-item",
     kind: "single",
-    position: { x: 180, y: 320 },
+    position: { x: 32, y: 32 },
     zIndex: 1,
     card: {
       id: "profilepic-card",
       type: "profilepic",
-      size: { width: 160, height: 160 },
+      size: { width: 120, height: 120 },
       content: {
-        imageUrl: "src/assets/profile-pic/ricky.webp",
+        images: [
+          "src/assets/profile-pic/ricky.webp",
+          "src/assets/profile-pic/ricky-alt.webp",
+        ],
         alt: "Profile pic",
       },
     },

@@ -16,7 +16,14 @@ export interface ViewportState {
   positionY: number;
 }
 
-export type CardType = "cover" | "project" | "doc" | "stickynote" | "email" | "socials" | "profilepic";
+export type CardType =
+  | "cover"
+  | "project"
+  | "doc"
+  | "stickynote"
+  | "email"
+  | "socials"
+  | "profilepic";
 
 export type DocType = "resume";
 
@@ -96,7 +103,7 @@ export interface StickyNoteCardContent {
 }
 
 export interface ProfilePicCardContent {
-  imageUrl: string;
+  images: string[];
   alt?: string;
 }
 
