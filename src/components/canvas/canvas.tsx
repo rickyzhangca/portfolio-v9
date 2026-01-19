@@ -435,9 +435,26 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                       return (
                         <motion.div
                           animate={{ opacity: 0.8 }}
-                          className="pointer-events-none absolute bg-background1"
+                          className="absolute cursor-pointer bg-background1"
                           exit={{ opacity: 0 }}
                           initial={{ opacity: 0 }}
+                          onClick={() => {
+                            // Restore to pre-auto-pan position if available
+                            const savedPosition = preAutoPanPositionRef.current;
+                            if (savedPosition) {
+                              requestAnimationFrame(() => {
+                                transformRef.current?.setTransform(
+                                  savedPosition.x,
+                                  savedPosition.y,
+                                  savedPosition.scale,
+                                  AUTO_PAN_DURATION_MS,
+                                  AUTO_PAN_EASING
+                                );
+                              });
+                              preAutoPanPositionRef.current = null;
+                            }
+                            actions.setExpandedStack(null);
+                          }}
                           style={{
                             zIndex: expandedGroup.zIndex - 1,
                             left: -50_000,
