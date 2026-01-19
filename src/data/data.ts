@@ -107,7 +107,7 @@ export const data: CanvasItem[] = [
   {
     id: "resume-item",
     kind: "single",
-    position: { x: START_X + 60, y: START_Y + 440 },
+    position: { x: START_X - 40, y: START_Y + 440 },
     zIndex: 1,
     card: {
       id: "resume-card",
