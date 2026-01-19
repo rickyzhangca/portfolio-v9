@@ -1,7 +1,11 @@
 import { render } from "@testing-library/react";
 import { vi } from "vitest";
-import type { CardData, CardGroupData } from "@/types/canvas";
-import type { MockProvider } from "./mock-provider";
+import type {
+  CanvasSingleItem,
+  CanvasStackItem,
+  CardData,
+} from "@/types/canvas";
+import { MockProvider } from "./mock-provider";
 
 export const createMockCard = (
   id: string,
@@ -14,23 +18,52 @@ export const createMockCard = (
   content: { title: "Test", description: "Test", image: "" },
 });
 
-export const createMockGroup = (
+export const createMockStack = (
   id: string,
   x = 0,
   y = 0,
-  zIndex = 1
-): CardGroupData => ({
+  zIndex = 1,
+  cover?: CardData,
+  stack?: CardData[]
+): CanvasStackItem => ({
   id,
+  kind: "stack",
   position: { x, y },
   zIndex,
-  cover: {
-    id: "c",
-    type: "company",
-    size: { width: 100, height: 100 },
-    content: { company: "C", image: "" },
-  },
-  projects: [],
+  cover:
+    cover ??
+    ({
+      id: `${id}-cover`,
+      type: "cover",
+      size: { width: 100, height: 100 },
+      content: { company: "Test Company", image: "" },
+    } satisfies CardData),
+  stack: stack ?? [],
 });
+
+export const createMockSingle = (
+  id: string,
+  x = 0,
+  y = 0,
+  zIndex = 1,
+  card?: CardData
+): CanvasSingleItem => ({
+  id,
+  kind: "single",
+  position: { x, y },
+  zIndex,
+  card:
+    card ??
+    ({
+      id: `${id}-card`,
+      type: "doc",
+      size: { width: 100, height: 100 },
+      content: { docType: "resume" },
+    } satisfies CardData),
+});
+
+// Alias for backward compatibility
+export const createMockGroup = createMockStack;
 
 export const createMockMouseEvent = (
   _x: number,

@@ -30,7 +30,7 @@ describe("ErrorBoundary", () => {
     );
 
     expect(screen.getByText("Something went wrong")).toBeDefined();
-    expect(screen.getByText("Please try refreshing the page.")).toBeDefined();
+    expect(screen.getByText("Please ping Ricky")).toBeDefined();
 
     console.error = originalError;
   });
