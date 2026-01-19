@@ -2,7 +2,9 @@ import { memo, useLayoutEffect, useRef } from "react";
 import type { CardData } from "@/types/canvas";
 import { CoverCardContentView } from "./cover-card-content";
 import { DocCardContentView } from "./doc-card-content";
+import { EmailCardContentView } from "./email-card-content";
 import { ProjectCardContentView } from "./project-card-content";
+import { StickyNoteCardContentView } from "./stickynote-card-content";
 
 interface CardProps {
   data: CardData;
@@ -60,6 +62,12 @@ const CardComponent = ({
     if (data.type === "doc") {
       return <DocCardContentView data={data.content} />;
     }
+    if (data.type === "email") {
+      return <EmailCardContentView data={data.content} />;
+    }
+    if (data.type === "stickynote") {
+      return <StickyNoteCardContentView data={data.content} />;
+    }
     return null;
   };
 
@@ -68,7 +76,7 @@ const CardComponent = ({
       className={className}
       ref={ref}
       style={{
-        width: data.size.width,
+        width: data.size.width ?? "auto",
         height: data.size.height ?? "auto",
       }}
     >
