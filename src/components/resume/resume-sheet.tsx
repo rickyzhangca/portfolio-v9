@@ -7,7 +7,7 @@ import { ResumeSkills } from "./resume-skills";
 
 export const RESUME_SHEET_SIZE = {
   width: 840,
-  height: 1700,
+  height: 1600,
 } as const;
 
 interface ResumeSheetProps {
@@ -24,7 +24,7 @@ export const ResumeSheet = ({
   return (
     <article
       className={tw(
-        "flex h-full w-full flex-col gap-10 bg-white py-16",
+        "flex h-full w-full flex-col gap-10 bg-white pt-10",
         !interactive && "pointer-events-none select-none",
         className
       )}

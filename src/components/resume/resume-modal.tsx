@@ -1,6 +1,7 @@
 import { ArrowLeftIcon, FileIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
+import { RESUME_CARD_SIZE } from "@/data/data";
 import { SPRING_PRESETS } from "@/lib/animation";
 import type { ResumeData } from "@/types/canvas";
 import { ScrollArea } from "../ui/scroll-area";
@@ -47,15 +48,19 @@ export const ResumeModal = ({
           transition={{ duration: 0.32 }}
         >
           <div
-            className="absolute inset-0 flex items-center justify-center"
+            className="absolute inset-0 flex items-start justify-center overflow-auto pt-12 pb-24"
             onPointerDown={onClose}
           >
             <motion.div
-              className="relative h-full overflow-hidden rounded-4xl"
+              className="relative overflow-hidden rounded-4xl bg-white"
               layoutId={layoutId}
               onPointerDown={(e) => e.stopPropagation()}
               style={{
                 width: RESUME_SHEET_SIZE.width,
+                // Match the card's aspect ratio to minimize layout animation distortion
+                height:
+                  RESUME_SHEET_SIZE.width *
+                  (RESUME_CARD_SIZE.height / RESUME_CARD_SIZE.width),
               }}
               transition={SPRING_PRESETS.smooth}
             >
