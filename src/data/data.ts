@@ -102,6 +102,8 @@ const resumeData: ResumeData = {
   ],
 };
 
+export const RESUME_CARD_SIZE = { width: 240, height: 444 } as const;
+
 export const data: CanvasItem[] = [
   // resume - single item
   {
@@ -112,7 +114,7 @@ export const data: CanvasItem[] = [
     card: {
       id: "resume-card",
       type: "doc",
-      size: { width: 240, height: 444 },
+      size: RESUME_CARD_SIZE,
       content: {
         docType: "resume",
         data: resumeData,
