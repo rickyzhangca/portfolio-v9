@@ -15,7 +15,7 @@ const Key = ({
     >
       <div
         className={tw(
-          "absolute flex size-20 -translate-y-2 items-center justify-center border-2 border-foreground1/80 transition duration-75 hover:-translate-y-1.5 active:translate-y-0",
+          "absolute flex size-18 -translate-y-2 items-center justify-center border-2 border-foreground1/80 transition duration-75 hover:-translate-y-1.5 active:translate-y-0",
           mode === "logi" ? "rounded-2xl" : "rounded-md"
         )}
         style={{
@@ -28,7 +28,7 @@ const Key = ({
       >
         <div
           className={tw(
-            "flex size-18 items-center justify-center rounded-full transition",
+            "flex size-16 items-center justify-center rounded-full transition",
             mode === "apple" ? "opacity-0" : "opacity-100"
           )}
           style={{
@@ -42,7 +42,7 @@ const Key = ({
       </div>
       <div
         className={tw(
-          "z-20 size-20 bg-foreground1",
+          "z-20 size-18 bg-foreground1",
           mode === "logi" ? "rounded-2xl" : "rounded-md"
         )}
       />
@@ -71,7 +71,7 @@ const SocialsCardContentComponent = ({ data }: SocialsCardContentProps) => {
     <div className="relative flex h-full">
       <div
         className={tw(
-          "absolute flex items-center justify-center gap-6 py-2.5 pr-6 pl-3 outline outline-foreground1/60",
+          "absolute flex items-center justify-center gap-5 py-2 pr-5 pl-2 outline outline-foreground1/60",
           mode === "logi" ? "rounded-2xl" : "rounded-lg"
         )}
         style={{
@@ -82,7 +82,7 @@ const SocialsCardContentComponent = ({ data }: SocialsCardContentProps) => {
           boxShadow: "0px 8px 16px rgba(0, 0, 0, 0.32)",
         }}
       >
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <button
             className="cursor-pointer focus:outline-none"
             onClick={() => handleLinkClick(data.linkedinUrl)}
@@ -154,7 +154,7 @@ const SocialsCardContentComponent = ({ data }: SocialsCardContentProps) => {
       </div>
       <div
         className={tw(
-          "h-[110px] w-[252px] bg-foreground1",
+          "h-[96px] w-[220px] bg-foreground1",
           mode === "logi" ? "rounded-2xl" : "rounded-xl"
         )}
       />
