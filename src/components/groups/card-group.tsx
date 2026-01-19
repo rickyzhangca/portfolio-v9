@@ -28,7 +28,6 @@ interface CardGroupProps {
   groupIndex: number;
   scale: number;
   isExpanded: boolean;
-  dimmed: boolean;
   dragDisabled: boolean;
   repulsionOffset: Position;
   onBringToFront: () => void;
@@ -45,7 +44,6 @@ export const CardGroup = ({
   groupIndex,
   scale,
   isExpanded,
-  dimmed,
   dragDisabled,
   repulsionOffset,
   onBringToFront,
@@ -133,7 +131,6 @@ export const CardGroup = ({
   return (
     <motion.div
       animate={{
-        opacity: dimmed ? 0.25 : 1,
         x: repulsionOffset.x,
         y: repulsionOffset.y,
       }}

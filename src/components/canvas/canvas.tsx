@@ -1,4 +1,4 @@
-import { LayoutGroup } from "framer-motion";
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useAtom, useAtomValue } from "jotai";
 import {
   useCallback,
@@ -343,12 +343,8 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
                 {Array.from(state.groups.values()).map((group, groupIndex) => {
                   const expandedGroupId = state.expandedGroupId;
                   const isExpanded = expandedGroupId === group.id;
-                  const isResumeActive = activeResumeGroupId === group.id;
-                  const dimmed =
-                    (expandedGroupId !== null ||
-                      activeResumeGroupId !== null) &&
-                    !isExpanded &&
-                    !isResumeActive;
+
+                  // Dimming is now handled by a global overlay
                   const dragDisabled = expandedGroupId !== null || isResumeOpen;
                   const repulsionOffset = repulsionOffsets.get(group.id) ?? {
                     x: 0,
@@ -357,7 +353,6 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
 
                   return (
                     <CardGroup
-                      dimmed={dimmed}
                       dragDisabled={dragDisabled}
                       group={group}
                       groupIndex={groupIndex}
@@ -432,6 +427,33 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
                     />
                   );
                 })}
+
+                <AnimatePresence>
+                  {state.expandedGroupId &&
+                    (() => {
+                      const expandedGroup = state.groups.get(
+                        state.expandedGroupId
+                      );
+                      if (!expandedGroup) {
+                        return null;
+                      }
+                      return (
+                        <motion.div
+                          animate={{ opacity: 0.8 }}
+                          className="pointer-events-none absolute bg-background1"
+                          exit={{ opacity: 0 }}
+                          initial={{ opacity: 0 }}
+                          style={{
+                            zIndex: expandedGroup.zIndex - 1,
+                            left: -50_000,
+                            top: -50_000,
+                            width: 50_000 * 2,
+                            height: 50_000 * 2,
+                          }}
+                        />
+                      );
+                    })()}
+                </AnimatePresence>
               </TransformComponent>
 
               <CanvasControls
