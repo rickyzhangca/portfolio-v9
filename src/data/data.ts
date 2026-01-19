@@ -1,4 +1,4 @@
-import type { CanvasItem, ResumeData } from "@/types/canvas";
+import type { AboutData, CanvasItem, ResumeData } from "@/types/canvas";
 
 const START_X = 120;
 const START_Y = 240;
@@ -102,7 +102,12 @@ const resumeData: ResumeData = {
   ],
 };
 
-export const RESUME_CARD_SIZE = { width: 240, height: 444 } as const;
+const aboutData: AboutData = {
+  title: "Make design happen",
+};
+
+export const RESUME_CARD_SIZE = { width: 240, height: 444 };
+export const ABOUT_CARD_SIZE = { width: 240, height: 444 };
 
 export const data: CanvasItem[] = [
   // resume - single item
@@ -118,6 +123,22 @@ export const data: CanvasItem[] = [
       content: {
         docType: "resume",
         data: resumeData,
+      },
+    },
+  },
+  // about - single item
+  {
+    id: "about-item",
+    kind: "single",
+    position: { x: START_X - 20 + RESUME_CARD_SIZE.width, y: START_Y + 440 },
+    zIndex: 1,
+    card: {
+      id: "about-card",
+      type: "doc",
+      size: ABOUT_CARD_SIZE,
+      content: {
+        docType: "about",
+        data: aboutData,
       },
     },
   },
@@ -487,7 +508,7 @@ export const data: CanvasItem[] = [
   {
     id: "stickynote-item-1",
     kind: "single",
-    position: { x: 600, y: 800 },
+    position: { x: 640, y: 800 },
     zIndex: 5,
     card: {
       id: "stickynote-card-1",

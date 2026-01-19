@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import { AboutModal } from "@/components/about/about-modal";
 import { ResumeModal } from "@/components/resume/resume-modal";
 import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
 import { useCanvasState } from "@/hooks/use-canvas-state";
@@ -19,9 +20,9 @@ import {
   getAutoPanTarget,
 } from "@/lib/auto-pan";
 import { computeRepulsionOffsets } from "@/lib/repulsion";
-import type { CanvasItem } from "@/types/canvas";
-import { CanvasItemRenderer } from "./canvas-item";
+import type { AboutData, CanvasItem, ResumeData } from "@/types/canvas";
 import { CanvasControls } from "./canvas-controls";
+import { CanvasItemRenderer } from "./canvas-item";
 
 interface CanvasProps {
   initialItems: CanvasItem[];
@@ -37,6 +38,13 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
   const isResumeOpen = !!activeResumeItemId;
   const activeResumeItem = activeResumeItemId
     ? state.items.get(activeResumeItemId)
+    : null;
+  const [activeAboutItemId, setActiveAboutItemId] = useState<string | null>(
+    null
+  );
+  const isAboutOpen = !!activeAboutItemId;
+  const activeAboutItem = activeAboutItemId
+    ? state.items.get(activeAboutItemId)
     : null;
   const [repulsionConfig] = useAtom(repulsionConfigAtom);
   const fanConfig = useAtomValue(fanConfigAtom);
@@ -68,8 +76,8 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
   initialItemsRef.current = initialItems;
 
   useEffect(() => {
-    isInteractionLockedRef.current = isResumeOpen;
-  }, [isResumeOpen]);
+    isInteractionLockedRef.current = isResumeOpen || isAboutOpen;
+  }, [isResumeOpen, isAboutOpen]);
 
   // Track viewport dimensions for responsive repulsion calculations
   useLayoutEffect(() => {
@@ -205,7 +213,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     };
   }, [state.expandedStackId, actions.setExpandedStack]);
 
-  // Calculate viewport-proportional repulsion values for resume mode
+  // Calculate viewport-proportional repulsion values for doc modal mode
   const getResumeRepulsionConfig = useCallback(
     (viewportWidth: number, viewportHeight: number) => {
       // Use the larger dimension for consistent behavior across orientations
@@ -222,8 +230,9 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
   );
 
   const repulsionOffsets = useMemo(() => {
-    // Stronger repulsion when Resume is active to clear the screen
-    const effectiveConfig = activeResumeItemId
+    // Stronger repulsion when Resume or About modal is active to clear the screen
+    const activeDocItemId = activeResumeItemId || activeAboutItemId;
+    const effectiveConfig = activeDocItemId
       ? {
           radiusPx: Math.max(
             repulsionConfig.radiusPx,
@@ -244,13 +253,14 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
 
     return computeRepulsionOffsets(
       state.items,
-      state.expandedStackId ?? activeResumeItemId,
+      state.expandedStackId ?? activeDocItemId,
       effectiveConfig
     );
   }, [
     state.items,
     state.expandedStackId,
     activeResumeItemId,
+    activeAboutItemId,
     repulsionConfig,
     viewportDimensions,
     getResumeRepulsionConfig,
@@ -329,25 +339,25 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                   return (
                     <CanvasItemRenderer
                       dragDisabled={dragDisabled}
+                      isExpanded={isExpanded}
                       item={item}
                       itemIndex={itemIndex}
-                      isExpanded={isExpanded}
                       key={item.id}
-                      scale={scale}
-                      repulsionOffset={repulsionOffset}
                       onBringToFront={() => actions.bringItemToFront(item.id)}
                       onCardHeightMeasured={(cardId, height) =>
                         actions.updateCardHeight(item.id, cardId, height)
                       }
                       onDocClick={() => {
-                        // Handle doc card click (resume modal)
                         if (
                           item.kind === "single" &&
-                          item.card.type === "doc" &&
-                          item.card.content.docType === "resume"
+                          item.card.type === "doc"
                         ) {
                           actions.bringItemToFront(item.id);
-                          setActiveResumeItemId(item.id);
+                          if (item.card.content.docType === "resume") {
+                            setActiveResumeItemId(item.id);
+                          } else if (item.card.content.docType === "about") {
+                            setActiveAboutItemId(item.id);
+                          }
                         }
                       }}
                       onDragEnd={() => setIsPanningDisabled(false)}
@@ -406,6 +416,8 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                           }
                         }
                       }}
+                      repulsionOffset={repulsionOffset}
+                      scale={scale}
                       setRootRef={(el) => registerGroupElement(item.id, el)}
                     />
                   );
@@ -453,11 +465,22 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
             activeResumeItem?.kind === "single" &&
             activeResumeItem.card.type === "doc" &&
             activeResumeItem.card.content.docType === "resume"
-              ? activeResumeItem.card.content.data
+              ? (activeResumeItem.card.content.data as ResumeData)
               : undefined
           }
           isOpen={isResumeOpen}
           onClose={() => setActiveResumeItemId(null)}
+        />
+        <AboutModal
+          data={
+            activeAboutItem?.kind === "single" &&
+            activeAboutItem.card.type === "doc" &&
+            activeAboutItem.card.content.docType === "about"
+              ? (activeAboutItem.card.content.data as AboutData)
+              : undefined
+          }
+          isOpen={isAboutOpen}
+          onClose={() => setActiveAboutItemId(null)}
         />
       </div>
     </LayoutGroup>

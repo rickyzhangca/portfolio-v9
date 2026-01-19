@@ -2,7 +2,7 @@ import {
   RESUME_SHEET_SIZE,
   ResumeSheet,
 } from "@/components/resume/resume-sheet";
-import type { DocCardContent } from "@/types/canvas";
+import type { DocCardContent, ResumeData } from "@/types/canvas";
 
 const PREVIEW_WIDTH = 240;
 
@@ -19,6 +19,8 @@ export const ResumeCardContentView = ({ data }: DocCardContentProps) => {
     return null;
   }
 
+  const resumeData = data.data as ResumeData;
+
   return (
     <div className="h-full w-full overflow-hidden rounded-3xl bg-white">
       <p className="mx-2 mt-2 mb-1 w-fit rounded-full bg-background2 px-5 py-2 font-medium text-foreground1/50 text-sm">
@@ -32,7 +34,7 @@ export const ResumeCardContentView = ({ data }: DocCardContentProps) => {
           paddingRight: PADDING_X,
         }}
       >
-        <ResumeSheet data={data.data} interactive={false} />
+        <ResumeSheet data={resumeData} interactive={false} />
       </div>
     </div>
   );
