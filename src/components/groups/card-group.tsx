@@ -178,9 +178,7 @@ export const CardStack = ({
               y: 0,
             }}
             key={coverWithSize.id}
-            layoutId={
-              coverWithSize.type === "doc" ? "resume-card" : undefined
-            }
+            layoutId={coverWithSize.type === "doc" ? "resume-card" : undefined}
             onClick={(e) => {
               const target = e.target as HTMLElement;
               if (target.closest(".no-drag")) {
@@ -201,7 +199,7 @@ export const CardStack = ({
             }}
             transition={{ ...SPRING_PRESETS.snappy, delay: coverEntranceDelay }}
           >
-            {coverWithSize.type === "resume" ? (
+            {coverWithSize.type === "doc" && coverWithSize.content.docType === "resume" ? (
               <Card
                 className="shadow-none hover:shadow-none"
                 data={coverWithSize}
@@ -282,9 +280,7 @@ export const CardStack = ({
                   : collapsedPos.x - 20,
                 y: isExpanded ? offset.y + fanArcY : collapsedPos.y,
               }}
-              className={tw(
-                "absolute top-0 left-0 will-change-transform"
-              )}
+              className={tw("absolute top-0 left-0 will-change-transform")}
               initial={false}
               key={card.id}
               style={{

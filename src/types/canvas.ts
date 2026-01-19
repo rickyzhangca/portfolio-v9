@@ -6,7 +6,7 @@ export interface Position {
 }
 
 export interface Size {
-  width: number;
+  width?: number;
   height?: number;
 }
 
@@ -16,9 +16,9 @@ export interface ViewportState {
   positionY: number;
 }
 
-export type CardType = "cover" | "project" | "doc";
+export type CardType = "cover" | "project" | "doc" | "stickynote" | "email";
 
-export type DocType = "resume" | "contact";
+export type DocType = "resume";
 
 export interface CoverCardContent {
   company: string;
@@ -38,13 +38,10 @@ export interface ProjectCardContent {
   richContent?: React.ReactNode;
 }
 
-export interface ContactCardContent {
-  title: string;
-  description?: string;
+export interface EmailCardContent {
   link: {
     label: string;
     url: string;
-    icon?: ReactNode;
   };
 }
 
@@ -85,16 +82,12 @@ export interface ResumeData {
 
 export interface DocCardContent {
   docType: DocType;
-  // Resume fields
   data?: ResumeData;
-  // Contact fields
-  title?: string;
-  description?: string;
-  link?: {
-    label: string;
-    url: string;
-    icon?: ReactNode;
-  };
+}
+
+export interface StickyNoteCardContent {
+  content: string;
+  color?: "yellow" | "pink" | "blue" | "green" | "orange";
 }
 
 export interface CoverCardData {
@@ -118,7 +111,26 @@ export interface DocCardData {
   content: DocCardContent;
 }
 
-export type CardData = CoverCardData | ProjectCardData | DocCardData;
+export interface StickyNoteCardData {
+  id: string;
+  type: "stickynote";
+  size: Size;
+  content: StickyNoteCardContent;
+}
+
+export interface EmailCardData {
+  id: string;
+  type: "email";
+  size: Size;
+  content: EmailCardContent;
+}
+
+export type CardData =
+  | CoverCardData
+  | ProjectCardData
+  | DocCardData
+  | StickyNoteCardData
+  | EmailCardData;
 
 // Canvas item base properties
 export interface CanvasItemBase {

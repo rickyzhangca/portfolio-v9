@@ -2,9 +2,9 @@ import { motion } from "framer-motion";
 import { useCallback, useMemo, useState } from "react";
 import { Card } from "@/components/cards/card";
 import { useDraggable } from "@/hooks/use-draggable";
-import type { CanvasSingleItem, Position } from "@/types/canvas";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { tw } from "@/lib/utils";
+import type { CanvasSingleItem, Position } from "@/types/canvas";
 
 interface SingleCardItemProps {
   item: CanvasSingleItem;

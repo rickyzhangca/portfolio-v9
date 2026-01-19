@@ -119,6 +119,24 @@ export const data: CanvasItem[] = [
       },
     },
   },
+  // email - single item
+  {
+    id: "email-item",
+    kind: "single",
+    position: { x: START_X + 60, y: START_Y + 80 },
+    zIndex: 1,
+    card: {
+      id: "email-card",
+      type: "email",
+      size: {},
+      content: {
+        link: {
+          label: "ricky.zhang@queensu.ca",
+          url: "mailto:ricky.zhang@queensu.ca",
+        },
+      },
+    },
+  },
   // wealthsimple - stack
   {
     id: "wealthsimple-stack",
@@ -446,5 +464,22 @@ export const data: CanvasItem[] = [
         },
       },
     ],
+  },
+  // sticky note - single item
+  {
+    id: "stickynote-item-1",
+    kind: "single",
+    position: { x: START_X + 400, y: START_Y + 100 },
+    zIndex: 5,
+    card: {
+      id: "stickynote-card-1",
+      type: "stickynote",
+      size: { width: 240 },
+      content: {
+        content:
+          "Hello! This is my portfolio. Feel free to explore my work by clicking on the company cards!",
+        color: "yellow",
+      },
+    },
   },
 ];
