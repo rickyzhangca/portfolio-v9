@@ -2,7 +2,7 @@ import type { CanvasItem, Position } from "@/types/canvas";
 import { CardStack } from "@/components/groups/card-group";
 import { SingleCardItem } from "@/components/canvas/single-card-item";
 
-interface CanvasItemProps {
+interface CanvasItemRendererProps {
   item: CanvasItem;
   itemIndex: number;
   scale: number;
@@ -19,7 +19,7 @@ interface CanvasItemProps {
   setRootRef?: (el: HTMLDivElement | null) => void;
 }
 
-export function CanvasItem({
+export function CanvasItemRenderer({
   item,
   itemIndex,
   scale,
@@ -34,7 +34,7 @@ export function CanvasItem({
   onCardHeightMeasured,
   onDocClick,
   setRootRef,
-}: CanvasItemProps) {
+}: CanvasItemRendererProps) {
   if (item.kind === "single") {
     return (
       <SingleCardItem
