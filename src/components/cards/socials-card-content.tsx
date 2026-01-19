@@ -11,29 +11,41 @@ const Key = ({
 }) => {
   return (
     <div
-      className={tw(
-        "flex size-20 items-center justify-center outline-2 outline-foreground1/80 transition-all duration-300",
-        mode === "logi" ? "rounded-2xl" : "rounded-md"
-      )}
-      style={{
-        background:
-          mode === "logi"
-            ? "linear-gradient(195deg, rgba(65.58, 66.47, 68.23, 0.50) 0%, rgba(26.62, 27.04, 27.88, 0.50) 100%), linear-gradient(225deg, #5A5B5D 0%, #393A3C 100%)"
-            : "linear-gradient(180deg, #4D4E50 0%, #222325 40%)",
-        boxShadow: "-3px 4px 6px rgba(0, 0, 0, 0.16)",
-      }}
+      className={tw("relative", mode === "logi" ? "rounded-2xl" : "rounded-md")}
     >
       <div
-        className="flex size-18 items-center justify-center rounded-full"
+        className={tw(
+          "absolute flex size-20 -translate-y-2 items-center justify-center border-2 border-foreground1/80 transition duration-75 hover:-translate-y-1.5 active:translate-y-0",
+          mode === "logi" ? "rounded-2xl" : "rounded-md"
+        )}
         style={{
           background:
             mode === "logi"
-              ? "radial-gradient(ellipse 104.51% 104.51% at 13.64% 87.50%, rgba(102, 103, 105, 0.50) 0%, rgba(0, 0, 0, 0.50) 100%), linear-gradient(225deg, #3A3B3D 0%, #666769 100%)"
-              : undefined,
+              ? "linear-gradient(195deg, rgba(65.58, 66.47, 68.23, 0.50) 0%, rgba(26.62, 27.04, 27.88, 0.50) 100%), linear-gradient(225deg, #5A5B5D 0%, #393A3C 100%)"
+              : "linear-gradient(180deg, #4D4E50 0%, #222325 40%)",
+          boxShadow: "-3px 4px 6px rgba(0, 0, 0, 0.16)",
         }}
       >
-        {children}
+        <div
+          className={tw(
+            "flex size-18 items-center justify-center rounded-full transition",
+            mode === "apple" ? "opacity-0" : "opacity-100"
+          )}
+          style={{
+            background:
+              "radial-gradient(ellipse 104.51% 104.51% at 13.64% 87.50%, rgba(102, 103, 105, 0.50) 0%, rgba(0, 0, 0, 0.50) 100%), linear-gradient(225deg, #3A3B3D 0%, #666769 100%)",
+          }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          {children}
+        </div>
       </div>
+      <div
+        className={tw(
+          "z-20 size-20 bg-foreground1",
+          mode === "logi" ? "rounded-2xl" : "rounded-md"
+        )}
+      />
     </div>
   );
 };
@@ -49,12 +61,18 @@ const SocialsCardContentComponent = ({ data }: SocialsCardContentProps) => {
     setMode((prev) => (prev === "logi" ? "apple" : "logi"));
   };
 
+  const handleLinkClick = (url: string) => {
+    setTimeout(() => {
+      window.open(url, "_blank");
+    }, 400);
+  };
+
   return (
-    <div className="flex h-full">
+    <div className="relative flex h-full">
       <div
         className={tw(
-          "flex items-center justify-center gap-6 pt-2.5 pr-6 pb-3 pl-3 outline outline-foreground1/60",
-          mode === "logi" ? "rounded-2xl" : "rounded-xl"
+          "absolute flex items-center justify-center gap-6 py-2.5 pr-6 pl-3 outline outline-foreground1/60",
+          mode === "logi" ? "rounded-2xl" : "rounded-lg"
         )}
         style={{
           background:
@@ -65,7 +83,11 @@ const SocialsCardContentComponent = ({ data }: SocialsCardContentProps) => {
         }}
       >
         <div className="flex gap-3">
-          <a href={data.linkedinUrl} rel="noopener noreferrer" target="_blank">
+          <button
+            className="cursor-pointer focus:outline-none"
+            onClick={() => handleLinkClick(data.linkedinUrl)}
+            type="button"
+          >
             <Key mode={mode}>
               <svg
                 fill="none"
@@ -81,9 +103,13 @@ const SocialsCardContentComponent = ({ data }: SocialsCardContentProps) => {
                 />
               </svg>
             </Key>
-          </a>
+          </button>
 
-          <a href={data.twitterUrl} rel="noopener noreferrer" target="_blank">
+          <button
+            className="cursor-pointer focus:outline-none"
+            onClick={() => handleLinkClick(data.twitterUrl)}
+            type="button"
+          >
             <Key mode={mode}>
               <svg
                 fill="none"
@@ -99,12 +125,12 @@ const SocialsCardContentComponent = ({ data }: SocialsCardContentProps) => {
                 />
               </svg>
             </Key>
-          </a>
+          </button>
         </div>
 
         <div>
           <button
-            className="flex h-12 cursor-pointer flex-col items-center justify-start rounded-full transition-all"
+            className="flex h-12 cursor-pointer flex-col items-center justify-start rounded-full transition"
             onClick={toggleMode}
             style={{
               background: "linear-gradient(225deg, black 0%, #393A3C 100%)",
@@ -114,7 +140,7 @@ const SocialsCardContentComponent = ({ data }: SocialsCardContentProps) => {
           >
             <div
               className={tw(
-                "size-5 rounded-full transition-transform",
+                "size-5 rounded-full transition",
                 mode === "apple" ? "translate-y-7" : "translate-y-0"
               )}
               style={{
@@ -126,6 +152,12 @@ const SocialsCardContentComponent = ({ data }: SocialsCardContentProps) => {
           </button>
         </div>
       </div>
+      <div
+        className={tw(
+          "h-[110px] w-[252px] bg-foreground1",
+          mode === "logi" ? "rounded-2xl" : "rounded-xl"
+        )}
+      />
     </div>
   );
 };
