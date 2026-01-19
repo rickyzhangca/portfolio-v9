@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { RESUME_CARD_SIZE } from "@/data/data";
 import { SPRING_PRESETS } from "@/lib/animation";
 import type { ResumeData } from "@/types/canvas";
-import { ScrollArea } from "../ui/scroll-area";
 import { RESUME_SHEET_SIZE, ResumeSheet } from "./resume-sheet";
 
 interface ResumeModalProps {
@@ -64,9 +63,7 @@ export const ResumeModal = ({
               }}
               transition={SPRING_PRESETS.smooth}
             >
-              <ScrollArea showScrollbar={false}>
-                <ResumeSheet data={data} interactive={true} />
-              </ScrollArea>
+              <ResumeSheet data={data} interactive={true} />
             </motion.div>
           </div>
 
