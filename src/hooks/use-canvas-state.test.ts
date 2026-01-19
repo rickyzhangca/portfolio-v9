@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  createMockStack,
-  createMockSingle,
-} from "@/test-utils/test-helpers";
+import { createMockStack, createMockSingle } from "@/test-utils/test-helpers";
 import type { CanvasItem } from "@/types/canvas";
 import { canvasReducer } from "./use-canvas-state";
 
