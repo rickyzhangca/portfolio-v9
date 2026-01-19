@@ -485,16 +485,30 @@ export const data: CanvasItem[] = [
   {
     id: "stickynote-item-1",
     kind: "single",
-    position: { x: 160, y: 160 },
+    position: { x: 600, y: 800 },
     zIndex: 5,
     card: {
       id: "stickynote-card-1",
       type: "stickynote",
       size: { width: 240 },
       content: {
-        content:
-          "Hello! This is my portfolio. Feel free to explore my work by clicking on the company cards!",
-        color: "yellow",
+        content: "Fun projects",
+        color: "green",
+      },
+    },
+  },
+  {
+    id: "stickynote-item-2",
+    kind: "single",
+    position: { x: 920, y: 800 },
+    zIndex: 5,
+    card: {
+      id: "swag-collection",
+      type: "stickynote",
+      size: { width: 240 },
+      content: {
+        content: "Swag collection",
+        color: "blue",
       },
     },
   },
