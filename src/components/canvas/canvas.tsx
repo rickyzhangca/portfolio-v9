@@ -10,7 +10,6 @@ import {
 } from "react";
 import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
-import { CardGroup } from "@/components/groups/card-group";
 import { ResumeModal } from "@/components/resume/resume-modal";
 import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
 import { useCanvasState } from "@/hooks/use-canvas-state";
@@ -20,23 +19,24 @@ import {
   getAutoPanTarget,
 } from "@/lib/auto-pan";
 import { computeRepulsionOffsets } from "@/lib/repulsion";
-import type { CardGroupData } from "@/types/canvas";
+import type { CanvasItem } from "@/types/canvas";
+import { CanvasItem as CanvasItemComponent } from "./canvas-item";
 import { CanvasControls } from "./canvas-controls";
 
 interface CanvasProps {
-  initialGroups: CardGroupData[];
+  initialItems: CanvasItem[];
 }
 
-export const Canvas = ({ initialGroups }: CanvasProps) => {
-  const { state, actions } = useCanvasState(initialGroups);
+export const Canvas = ({ initialItems }: CanvasProps) => {
+  const { state, actions } = useCanvasState(initialItems);
   const [isPanningDisabled, setIsPanningDisabled] = useState(false);
   const [scale, setScale] = useState(1);
-  const [activeResumeGroupId, setActiveResumeGroupId] = useState<string | null>(
+  const [activeResumeItemId, setActiveResumeItemId] = useState<string | null>(
     null
   );
-  const isResumeOpen = !!activeResumeGroupId;
-  const activeResumeGroup = activeResumeGroupId
-    ? state.groups.get(activeResumeGroupId)
+  const isResumeOpen = !!activeResumeItemId;
+  const activeResumeItem = activeResumeItemId
+    ? state.items.get(activeResumeItemId)
     : null;
   const [repulsionConfig] = useAtom(repulsionConfigAtom);
   const fanConfig = useAtomValue(fanConfigAtom);
@@ -64,8 +64,8 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
     scale: number;
   } | null>(null);
 
-  const initialGroupsRef = useRef(initialGroups);
-  initialGroupsRef.current = initialGroups;
+  const initialItemsRef = useRef(initialItems);
+  initialItemsRef.current = initialItems;
 
   useEffect(() => {
     isInteractionLockedRef.current = isResumeOpen;
@@ -136,8 +136,8 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
 
   // Collapse the expanded group when clicking outside it (but not when panning/dragging).
   useEffect(() => {
-    const expandedGroupId = state.expandedGroupId;
-    if (!expandedGroupId) {
+    const expandedStackId = state.expandedStackId;
+    if (!expandedStackId) {
       return;
     }
 
@@ -152,7 +152,7 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
         return;
       }
 
-      const expandedEl = groupElementsRef.current.get(expandedGroupId);
+      const expandedEl = groupElementsRef.current.get(expandedStackId);
       pointerDownRef.current = {
         clientX: event.clientX,
         clientY: event.clientY,
@@ -190,7 +190,7 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
           });
           preAutoPanPositionRef.current = null;
         }
-        actions.setExpandedGroup(null);
+        actions.setExpandedStack(null);
       }
     };
 
@@ -203,7 +203,7 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
       window.removeEventListener("pointerup", onPointerUp, true);
       window.removeEventListener("pointercancel", onPointerUp, true);
     };
-  }, [state.expandedGroupId, actions.setExpandedGroup]);
+  }, [state.expandedStackId, actions.setExpandedStack]);
 
   // Calculate viewport-proportional repulsion values for resume mode
   const getResumeRepulsionConfig = useCallback(
@@ -223,7 +223,7 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
 
   const repulsionOffsets = useMemo(() => {
     // Stronger repulsion when Resume is active to clear the screen
-    const effectiveConfig = activeResumeGroupId
+    const effectiveConfig = activeResumeItemId
       ? {
           radiusPx: Math.max(
             repulsionConfig.radiusPx,
@@ -243,14 +243,14 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
       : repulsionConfig;
 
     return computeRepulsionOffsets(
-      state.groups,
-      state.expandedGroupId ?? activeResumeGroupId,
+      state.items,
+      state.expandedStackId ?? activeResumeItemId,
       effectiveConfig
     );
   }, [
-    state.groups,
-    state.expandedGroupId,
-    activeResumeGroupId,
+    state.items,
+    state.expandedStackId,
+    activeResumeItemId,
     repulsionConfig,
     viewportDimensions,
     getResumeRepulsionConfig,
@@ -263,10 +263,10 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
 
   const arePositionsModified = useMemo(() => {
     const initialMap = new Map(
-      initialGroupsRef.current.map((g) => [g.id, g.position])
+      initialItemsRef.current.map((g) => [g.id, g.position])
     );
 
-    for (const [id, group] of state.groups) {
+    for (const [id, group] of state.items) {
       const initialPos = initialMap.get(id);
       if (!initialPos) {
         return true;
@@ -279,7 +279,7 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
       }
     }
     return false;
-  }, [state.groups]);
+  }, [state.items]);
 
   return (
     <LayoutGroup>
@@ -314,100 +314,108 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
                 contentClass="relative w-full h-full"
                 wrapperClass="!w-screen !h-screen"
               >
-                {/* Render groups */}
-                {Array.from(state.groups.values()).map((group, groupIndex) => {
-                  const expandedGroupId = state.expandedGroupId;
-                  const isExpanded = expandedGroupId === group.id;
+                {/* Render items */}
+                {Array.from(state.items.values()).map((item, itemIndex) => {
+                  const expandedStackId = state.expandedStackId;
+                  const isExpanded = expandedStackId === item.id;
 
                   // Dimming is now handled by a global overlay
-                  const dragDisabled = expandedGroupId !== null || isResumeOpen;
-                  const repulsionOffset = repulsionOffsets.get(group.id) ?? {
+                  const dragDisabled = expandedStackId !== null || isResumeOpen;
+                  const repulsionOffset = repulsionOffsets.get(item.id) ?? {
                     x: 0,
                     y: 0,
                   };
 
                   return (
-                    <CardGroup
+                    <CanvasItemComponent
                       dragDisabled={dragDisabled}
-                      group={group}
-                      groupIndex={groupIndex}
+                      item={item}
+                      itemIndex={itemIndex}
                       isExpanded={isExpanded}
-                      key={group.id}
-                      onBringToFront={() => actions.bringGroupToFront(group.id)}
+                      key={item.id}
+                      scale={scale}
+                      repulsionOffset={repulsionOffset}
+                      onBringToFront={() => actions.bringItemToFront(item.id)}
                       onCardHeightMeasured={(cardId, height) =>
-                        actions.updateCardHeight(group.id, cardId, height)
+                        actions.updateCardHeight(item.id, cardId, height)
                       }
+                      onDocClick={() => {
+                        // Handle doc card click (resume modal)
+                        if (
+                          item.kind === "single" &&
+                          item.card.type === "doc" &&
+                          item.card.content.docType === "resume"
+                        ) {
+                          actions.bringItemToFront(item.id);
+                          setActiveResumeItemId(item.id);
+                        }
+                      }}
                       onDragEnd={() => setIsPanningDisabled(false)}
                       onDragStart={() => setIsPanningDisabled(true)}
                       onPositionUpdate={(position) =>
-                        actions.updateGroupPosition(group.id, position)
+                        actions.updateItemPosition(item.id, position)
                       }
                       onToggleExpanded={() => {
-                        if (group.cover?.type === "resume") {
-                          actions.bringGroupToFront(group.id);
-                          setActiveResumeGroupId(group.id);
-                          return;
-                        }
-
-                        if (isExpanded) {
-                          // Restore to pre-auto-pan position if available
-                          const savedPosition = preAutoPanPositionRef.current;
-                          if (savedPosition) {
-                            transformRef.current?.setTransform(
-                              savedPosition.x,
-                              savedPosition.y,
-                              savedPosition.scale,
-                              AUTO_PAN_DURATION_MS,
-                              AUTO_PAN_EASING
-                            );
-                            preAutoPanPositionRef.current = null;
+                        // Stack items can expand/collapse
+                        if (item.kind === "stack") {
+                          if (isExpanded) {
+                            // Restore to pre-auto-pan position if available
+                            const savedPosition = preAutoPanPositionRef.current;
+                            if (savedPosition) {
+                              transformRef.current?.setTransform(
+                                savedPosition.x,
+                                savedPosition.y,
+                                savedPosition.scale,
+                                AUTO_PAN_DURATION_MS,
+                                AUTO_PAN_EASING
+                              );
+                              preAutoPanPositionRef.current = null;
+                            }
+                            actions.setExpandedStack(null);
+                            return;
                           }
-                          actions.setExpandedGroup(null);
-                          return;
-                        }
 
-                        actions.bringGroupToFront(group.id);
-                        actions.setExpandedGroup(group.id);
+                          actions.bringItemToFront(item.id);
+                          actions.setExpandedStack(item.id);
 
-                        // Check if auto-pan is needed
-                        const panTarget = getAutoPanTarget(
-                          group,
-                          fanConfig,
-                          state.viewportState,
-                          window.innerWidth,
-                          window.innerHeight
-                        );
+                          // Check if auto-pan is needed
+                          const panTarget = getAutoPanTarget(
+                            item,
+                            fanConfig,
+                            state.viewportState,
+                            window.innerWidth,
+                            window.innerHeight
+                          );
 
-                        if (panTarget) {
-                          // Save current position before auto-panning
-                          preAutoPanPositionRef.current = {
-                            x: state.viewportState.positionX,
-                            y: state.viewportState.positionY,
-                            scale: state.viewportState.scale,
-                          };
-                          requestAnimationFrame(() => {
-                            transformRef.current?.setTransform(
-                              panTarget.x,
-                              panTarget.y,
-                              panTarget.scale,
-                              AUTO_PAN_DURATION_MS,
-                              AUTO_PAN_EASING
-                            );
-                          });
+                          if (panTarget) {
+                            // Save current position before auto-panning
+                            preAutoPanPositionRef.current = {
+                              x: state.viewportState.positionX,
+                              y: state.viewportState.positionY,
+                              scale: state.viewportState.scale,
+                            };
+                            requestAnimationFrame(() => {
+                              transformRef.current?.setTransform(
+                                panTarget.x,
+                                panTarget.y,
+                                panTarget.scale,
+                                AUTO_PAN_DURATION_MS,
+                                AUTO_PAN_EASING
+                              );
+                            });
+                          }
                         }
                       }}
-                      repulsionOffset={repulsionOffset}
-                      scale={scale}
-                      setRootRef={(el) => registerGroupElement(group.id, el)}
+                      setRootRef={(el) => registerGroupElement(item.id, el)}
                     />
                   );
                 })}
 
                 <AnimatePresence>
-                  {state.expandedGroupId &&
+                  {state.expandedStackId &&
                     (() => {
-                      const expandedGroup = state.groups.get(
-                        state.expandedGroupId
+                      const expandedGroup = state.items.get(
+                        state.expandedStackId
                       );
                       if (!expandedGroup) {
                         return null;
@@ -434,7 +442,7 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
               <CanvasControls
                 isResetDisabled={isViewportReset && !arePositionsModified}
                 onReset={() => resetTransform()}
-                onResetPositions={() => actions.resetGroups()}
+                onResetPositions={() => actions.resetItems()}
               />
             </>
           )}
@@ -442,12 +450,14 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
 
         <ResumeModal
           data={
-            activeResumeGroup?.cover?.type === "resume"
-              ? activeResumeGroup.cover.content.data
+            activeResumeItem?.kind === "single" &&
+            activeResumeItem.card.type === "doc" &&
+            activeResumeItem.card.content.docType === "resume"
+              ? activeResumeItem.card.content.data
               : undefined
           }
           isOpen={isResumeOpen}
-          onClose={() => setActiveResumeGroupId(null)}
+          onClose={() => setActiveResumeItemId(null)}
         />
       </div>
     </LayoutGroup>

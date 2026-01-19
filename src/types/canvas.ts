@@ -16,9 +16,11 @@ export interface ViewportState {
   positionY: number;
 }
 
-export type CardType = "company" | "project" | "contact" | "resume";
+export type CardType = "cover" | "project" | "doc";
 
-export interface CompanyCardContent {
+export type DocType = "resume" | "contact";
+
+export interface CoverCardContent {
   company: string;
   title?: string;
   image: string;
@@ -81,15 +83,25 @@ export interface ResumeData {
   skills: SkillCategory[];
 }
 
-export interface ResumeCardContent {
-  data: ResumeData;
+export interface DocCardContent {
+  docType: DocType;
+  // Resume fields
+  data?: ResumeData;
+  // Contact fields
+  title?: string;
+  description?: string;
+  link?: {
+    label: string;
+    url: string;
+    icon?: ReactNode;
+  };
 }
 
-export interface CompanyCardData {
+export interface CoverCardData {
   id: string;
-  type: "company";
+  type: "cover";
   size: Size;
-  content: CompanyCardContent;
+  content: CoverCardContent;
 }
 
 export interface ProjectCardData {
@@ -99,56 +111,59 @@ export interface ProjectCardData {
   content: ProjectCardContent;
 }
 
-export interface ContactCardData {
+export interface DocCardData {
   id: string;
-  type: "contact";
+  type: "doc";
   size: Size;
-  content: ContactCardContent;
+  content: DocCardContent;
 }
 
-export interface ResumeCardData {
-  id: string;
-  type: "resume";
-  size: Size;
-  content: ResumeCardContent;
-}
+export type CardData = CoverCardData | ProjectCardData | DocCardData;
 
-export type CardData =
-  | CompanyCardData
-  | ProjectCardData
-  | ContactCardData
-  | ResumeCardData;
-
-export interface CardGroupData {
+// Canvas item base properties
+export interface CanvasItemBase {
   id: string;
   position: Position;
   zIndex: number;
-  cover: CardData | undefined; // Company cover (undefined for contact-only groups)
-  projects: CardData[]; // Project cards (or contact card for contact-only groups)
 }
 
+// Single card item (standalone card like resume, contact, doc)
+export interface CanvasSingleItem extends CanvasItemBase {
+  kind: "single";
+  card: CardData;
+}
+
+// Stack item (cover + 1+ cards in the stack)
+export interface CanvasStackItem extends CanvasItemBase {
+  kind: "stack";
+  cover: CardData;
+  stack: CardData[];
+}
+
+export type CanvasItem = CanvasSingleItem | CanvasStackItem;
+
 export interface CanvasState {
-  groups: Map<string, CardGroupData>;
-  selectedGroupId: string | null;
-  expandedGroupId: string | null;
+  items: Map<string, CanvasItem>;
+  selectedItemId: string | null;
+  expandedStackId: string | null;
   maxZIndex: number;
   viewportState: ViewportState;
 }
 
 export type CanvasAction =
   | {
-      type: "UPDATE_GROUP_POSITION";
+      type: "UPDATE_ITEM_POSITION";
       payload: { id: string; position: Position };
     }
-  | { type: "BRING_GROUP_TO_FRONT"; payload: { id: string } }
-  | { type: "SELECT_GROUP"; payload: { id: string | null } }
-  | { type: "SET_EXPANDED_GROUP"; payload: { id: string | null } }
+  | { type: "BRING_ITEM_TO_FRONT"; payload: { id: string } }
+  | { type: "SELECT_ITEM"; payload: { id: string | null } }
+  | { type: "SET_EXPANDED_STACK"; payload: { id: string | null } }
   | { type: "UPDATE_VIEWPORT"; payload: ViewportState }
   | { type: "LOAD_STATE"; payload: Partial<CanvasState> }
-  | { type: "ADD_GROUP"; payload: CardGroupData }
-  | { type: "DELETE_GROUP"; payload: { id: string } }
-  | { type: "RESET_GROUPS"; payload: { initialGroups: CardGroupData[] } }
+  | { type: "ADD_ITEM"; payload: CanvasItem }
+  | { type: "DELETE_ITEM"; payload: { id: string } }
+  | { type: "RESET_ITEMS"; payload: { initialItems: CanvasItem[] } }
   | {
       type: "UPDATE_CARD_HEIGHT";
-      payload: { groupId: string; cardId: string; height: number };
+      payload: { itemId: string; cardId: string; height: number };
     };
