@@ -3,21 +3,18 @@ import { AnimatePresence, motion } from "framer-motion";
 import { type PointerEventHandler, useEffect } from "react";
 import { ABOUT_CARD_SIZE } from "@/data/data";
 import { SPRING_PRESETS } from "@/lib/animation";
-import type { AboutData } from "@/types/canvas";
 import { ABOUT_SHEET_SIZE, AboutSheet } from "./about-sheet";
 
 interface AboutModalProps {
   isOpen: boolean;
   onClose: () => void;
   layoutId?: string;
-  data?: AboutData;
 }
 
 export const AboutModal = ({
   isOpen,
   onClose,
   layoutId = "about-card",
-  data,
 }: AboutModalProps) => {
   useEffect(() => {
     if (!isOpen) {
@@ -84,7 +81,7 @@ export const AboutModal = ({
               }}
               transition={SPRING_PRESETS.smooth}
             >
-              <AboutSheet data={data} interactive={true} />
+              <AboutSheet interactive={true} />
             </motion.div>
           </div>
 

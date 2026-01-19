@@ -99,24 +99,6 @@ const ProjectCardContentComponent = ({
           {data.description}
         </motion.p>
       )}
-
-      {data.richContent && (
-        <motion.div
-          animate={{
-            opacity: isExpanded ? 1 : 0,
-            y: isExpanded ? 0 : -8,
-            scale: isExpanded ? 1 : 0.95,
-          }}
-          className="no-pan flex-grow overflow-auto"
-          initial={false}
-          transition={{
-            ...SPRING_PRESETS.snappy,
-            delay: 0.04,
-          }}
-        >
-          {data.richContent}
-        </motion.div>
-      )}
     </div>
   );
 };

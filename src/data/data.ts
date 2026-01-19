@@ -1,4 +1,4 @@
-import type { AboutData, CanvasItem, ResumeData } from "@/types/canvas";
+import type { CanvasItem, ResumeData } from "@/types/canvas";
 
 const START_X = 120;
 const START_Y = 240;
@@ -102,10 +102,6 @@ const resumeData: ResumeData = {
   ],
 };
 
-const aboutData: AboutData = {
-  title: "Make design happen",
-};
-
 export const RESUME_CARD_SIZE = { width: 240, height: 444 };
 export const ABOUT_CARD_SIZE = { width: 240, height: 444 };
 
@@ -137,8 +133,8 @@ export const data: CanvasItem[] = [
       type: "doc",
       size: ABOUT_CARD_SIZE,
       content: {
+        //  skip parameterizing content since it's unique
         docType: "about",
-        data: aboutData,
       },
     },
   },
