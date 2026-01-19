@@ -19,7 +19,7 @@ Second, it's sad to see designs not implemented well, making good products turni
 
 Third, it's sometimes better and faster to design in code. I jump between code and figma very often based on the needs. I code to get prototypes for people to try and ship things. I Figma to explore open-ended problems, and when creativity is needed.
 
-After all, I am still a designer. Engineering is my tool to design. Just like chefs picks the right knives based on the ingredients.
+After all, I am still a designer. Engineering is my tool to design. Just like chefs picks the right knives based on the ingredients. I write more in [my blog here](https://blog.rickyzhang.me/).
 
 ## Good software should be beautiful
 
