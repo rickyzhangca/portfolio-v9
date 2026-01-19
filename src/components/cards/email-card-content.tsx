@@ -25,7 +25,7 @@ const EmailCardContentComponent = ({ data }: EmailCardContentProps) => {
 
     setTimeout(() => {
       setCopied(false);
-    }, 1000);
+    }, 700);
   };
 
   const textVariants = {
@@ -36,12 +36,14 @@ const EmailCardContentComponent = ({ data }: EmailCardContentProps) => {
     animate: {
       y: 0,
       opacity: 1,
-      transition: SPRING_PRESETS.quick,
+      scale: 1,
+      transition: SPRING_PRESETS.snappy,
     },
     exit: {
       y: "-100%",
       opacity: 0,
-      transition: SPRING_PRESETS.quick,
+      scale: 0.5,
+      transition: SPRING_PRESETS.snappy,
     },
   };
 
