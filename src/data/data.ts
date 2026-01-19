@@ -430,7 +430,7 @@ export const data: CanvasItem[] = [
         type: "project",
         size: { width: 350 },
         content: {
-          title: "A web and multi-device IoT design system",
+          title: "Web + multi-device IoT design system",
           image: "/src/assets/mosaic/ds.webp",
         },
       },
@@ -475,7 +475,7 @@ export const data: CanvasItem[] = [
         type: "project",
         size: { width: 350 },
         content: {
-          title: "Packaging design with a unified language",
+          title: "Unified packaging design",
           image: "/src/assets/mosaic/packaging.webp",
         },
       },
