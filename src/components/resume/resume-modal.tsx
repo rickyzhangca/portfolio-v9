@@ -52,7 +52,7 @@ export const ResumeModal = ({
             onPointerDown={onClose}
           >
             <motion.div
-              className="relative overflow-hidden rounded-4xl bg-white"
+              className="relative overflow-hidden bg-white"
               layoutId={layoutId}
               onPointerDown={(e) => e.stopPropagation()}
               style={{
