@@ -1,9 +1,9 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { type PointerEventHandler, useEffect } from "react";
-import { ABOUT_CARD_SIZE } from "@/data/data";
+import { ABOUT_CARD_SIZE, ABOUT_SHEET_SIZE } from "@/data/data";
 import { SPRING_PRESETS } from "@/lib/animation";
-import { ABOUT_SHEET_SIZE, AboutSheet } from "./about-sheet";
+import { AboutSheet } from "./about-sheet";
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -109,7 +109,7 @@ export const AboutModal = ({
             }}
           >
             <button
-              className="no-drag flex cursor-pointer items-center gap-2 py-4 pr-4.5 pl-6 transition-colors hover:bg-foreground1/20"
+              className="no-drag flex cursor-pointer items-center gap-2 px-6 py-4 transition hover:bg-foreground1/20"
               onClick={onClose}
               type="button"
             >

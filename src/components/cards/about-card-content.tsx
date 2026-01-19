@@ -1,5 +1,6 @@
-import { ABOUT_SHEET_SIZE, AboutSheet } from "@/components/about/about-sheet";
-import type { AboutData, DocCardContent } from "@/types/canvas";
+import { AboutSheet } from "@/components/about/about-sheet";
+import { ABOUT_SHEET_SIZE } from "@/data/data";
+import type { DocCardContent } from "@/types/canvas";
 
 const PREVIEW_WIDTH = 240;
 
@@ -12,11 +13,9 @@ interface DocCardContentProps {
 }
 
 export const AboutCardContentView = ({ data }: DocCardContentProps) => {
-  if (data.docType !== "about" || !data.data) {
+  if (data.docType !== "about") {
     return null;
   }
-
-  const aboutData = data.data as AboutData;
 
   return (
     <div className="h-full w-full overflow-hidden rounded-3xl bg-white">
@@ -31,7 +30,7 @@ export const AboutCardContentView = ({ data }: DocCardContentProps) => {
           paddingRight: PADDING_X,
         }}
       >
-        <AboutSheet data={aboutData} interactive={false} />
+        <AboutSheet interactive={false} />
       </div>
     </div>
   );

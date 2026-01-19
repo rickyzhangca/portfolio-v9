@@ -1,14 +1,10 @@
+import { RESUME_SHEET_SIZE } from "@/data/data";
 import { tw } from "@/lib/utils";
 import type { ResumeData } from "@/types/canvas";
 import { ResumeEducation } from "./resume-education";
 import { ResumeExperience } from "./resume-experience";
 import { ResumeHeader } from "./resume-header";
 import { ResumeSkills } from "./resume-skills";
-
-export const RESUME_SHEET_SIZE = {
-  width: 840,
-  height: 1600,
-} as const;
 
 interface ResumeSheetProps {
   className?: string;
@@ -30,7 +26,6 @@ export const ResumeSheet = ({
       )}
       style={{
         width: RESUME_SHEET_SIZE.width,
-        height: RESUME_SHEET_SIZE.height,
       }}
     >
       <ResumeHeader data={data?.header} />

@@ -1,7 +1,5 @@
-import {
-  RESUME_SHEET_SIZE,
-  ResumeSheet,
-} from "@/components/resume/resume-sheet";
+import { ResumeSheet } from "@/components/resume/resume-sheet";
+import { RESUME_SHEET_SIZE } from "@/data/data";
 import type { DocCardContent, ResumeData } from "@/types/canvas";
 
 const PREVIEW_WIDTH = 240;
