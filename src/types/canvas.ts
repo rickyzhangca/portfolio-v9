@@ -42,7 +42,6 @@ export interface ProjectCardContent {
     icon?: ReactNode;
   };
   image: string;
-  richContent?: React.ReactNode;
 }
 
 export interface EmailCardContent {
