@@ -148,8 +148,8 @@ export const data: CanvasItem[] = [
       type: "socials",
       size: {},
       content: {
-        linkedinUrl: "https://linkedin.com/in/rickyzhang",
-        twitterUrl: "https://twitter.com/rickyzhang",
+        linkedinUrl: "https://www.linkedin.com/in/ricky-zhang/",
+        twitterUrl: "https://x.com/rickyrickyriri",
       },
     },
   },
