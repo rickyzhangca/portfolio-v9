@@ -557,4 +557,28 @@ export const data: CanvasItem[] = [
       },
     },
   },
+  // macbook - single item
+  {
+    id: "macbook-item",
+    kind: "single",
+    position: { x: 1200, y: 800 },
+    zIndex: 3,
+    card: {
+      id: "macbook-card",
+      type: "macbook",
+      size: { width: 345, height: 300 },
+      content: {
+        stickers: [
+          {
+            src: "/src/assets/stickers/example-sticker.png",
+            description: "Example sticker",
+            x: 50,
+            y: 40,
+            width: 60,
+            height: 60,
+          },
+        ],
+      },
+    },
+  },
 ];
