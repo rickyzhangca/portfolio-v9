@@ -111,7 +111,6 @@ export const SingleCardItem = ({
           animate={{
             opacity: 1,
             scale: 1,
-            rotate: 0,
             x: 0,
             y: 0,
           }}
@@ -119,7 +118,6 @@ export const SingleCardItem = ({
           initial={{
             opacity: 0,
             scale: 0,
-            rotate: -5,
             x: 0,
             y: 0,
           }}
