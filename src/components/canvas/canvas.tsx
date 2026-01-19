@@ -101,8 +101,6 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
         return;
       }
 
-      const isPinchGesture = e.ctrlKey || e.metaKey;
-
       // Always prevent default to stop browser zoom behavior
       e.preventDefault();
 
@@ -113,35 +111,12 @@ export const Canvas = ({ initialGroups }: CanvasProps) => {
 
       const { positionX, positionY, scale } = instance.transformState;
 
-      if (isPinchGesture) {
-        // Handle pinch-to-zoom (trackpad pinch fires wheel events with ctrlKey=true)
-        // Zoom works everywhere, including over .no-pan elements (like Figma)
-
-        // Calculate zoom based on deltaY (negative = zoom in, positive = zoom out)
-        const zoomSensitivity = 0.01;
-        const zoomDelta = -e.deltaY * zoomSensitivity;
-        const newScale = Math.min(3, Math.max(0.3, scale * (1 + zoomDelta)));
-
-        // Get the mouse position relative to the container
-        const rect = container.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-
-        // Calculate the point in canvas space that should stay fixed
-        const pointXInCanvas = (mouseX - positionX) / scale;
-        const pointYInCanvas = (mouseY - positionY) / scale;
-
-        // Calculate new position so the point under cursor stays fixed
-        const newX = mouseX - pointXInCanvas * newScale;
-        const newY = mouseY - pointYInCanvas * newScale;
-
-        transformRef.current?.setTransform(newX, newY, newScale, 0);
-      } else {
-        // Handle two-finger pan (works everywhere, like Figma)
-        const newX = positionX - e.deltaX;
-        const newY = positionY - e.deltaY;
-        transformRef.current?.setTransform(newX, newY, scale, 0);
-      }
+      // Zoom disabled due to framer motion bugs inside scaled container breaking layout animations
+      // See: https://github.com/motiondivision/motion/issues/3356
+      // Only allow two-finger pan (works everywhere, like Figma)
+      const newX = positionX - e.deltaX;
+      const newY = positionY - e.deltaY;
+      transformRef.current?.setTransform(newX, newY, scale, 0);
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
