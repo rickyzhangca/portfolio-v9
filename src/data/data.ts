@@ -123,7 +123,7 @@ export const data: CanvasItem[] = [
   {
     id: "email-item",
     kind: "single",
-    position: { x: START_X + 60, y: START_Y + 80 },
+    position: { x: 180, y: 80 },
     zIndex: 1,
     card: {
       id: "email-card",
@@ -469,7 +469,7 @@ export const data: CanvasItem[] = [
   {
     id: "stickynote-item-1",
     kind: "single",
-    position: { x: START_X + 400, y: START_Y + 100 },
+    position: { x: 160, y: 160 },
     zIndex: 5,
     card: {
       id: "stickynote-card-1",
