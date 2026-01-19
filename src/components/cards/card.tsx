@@ -3,8 +3,10 @@ import type { CardData } from "@/types/canvas";
 import { CoverCardContentView } from "./cover-card-content";
 import { DocCardContentView } from "./doc-card-content";
 import { EmailCardContentView } from "./email-card-content";
+import { ProfilePicCardContentView } from "./profilepic-card-content";
 import { ProjectCardContentView } from "./project-card-content";
 import { StickyNoteCardContentView } from "./stickynote-card-content";
+import { SocialsCardContentView } from "./socials-card-content";
 
 interface CardProps {
   data: CardData;
@@ -67,6 +69,12 @@ const CardComponent = ({
     }
     if (data.type === "stickynote") {
       return <StickyNoteCardContentView data={data.content} />;
+    }
+    if (data.type === "socials") {
+      return <SocialsCardContentView data={data.content} />;
+    }
+    if (data.type === "profilepic") {
+      return <ProfilePicCardContentView data={data.content} />;
     }
     return null;
   };

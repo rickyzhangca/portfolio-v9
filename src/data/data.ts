@@ -137,6 +137,22 @@ export const data: CanvasItem[] = [
       },
     },
   },
+  // socials - single item
+  {
+    id: "socials-item",
+    kind: "single",
+    position: { x: 180, y: 200 },
+    zIndex: 1,
+    card: {
+      id: "socials-card",
+      type: "socials",
+      size: {},
+      content: {
+        linkedinUrl: "https://linkedin.com/in/rickyzhang",
+        twitterUrl: "https://twitter.com/rickyzhang",
+      },
+    },
+  },
   // wealthsimple - stack
   {
     id: "wealthsimple-stack",
@@ -479,6 +495,22 @@ export const data: CanvasItem[] = [
         content:
           "Hello! This is my portfolio. Feel free to explore my work by clicking on the company cards!",
         color: "yellow",
+      },
+    },
+  },
+  // profile pic - single item
+  {
+    id: "profilepic-item",
+    kind: "single",
+    position: { x: 180, y: 320 },
+    zIndex: 1,
+    card: {
+      id: "profilepic-card",
+      type: "profilepic",
+      size: { width: 160, height: 160 },
+      content: {
+        imageUrl: "src/assets/profile-pic/ricky.webp",
+        alt: "Profile pic",
       },
     },
   },

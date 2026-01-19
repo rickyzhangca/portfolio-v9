@@ -1,6 +1,7 @@
 import { EnvelopeSimpleIcon } from "@phosphor-icons/react";
-import { motion } from "framer-motion";
-import { memo } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { memo, useState } from "react";
+import { SPRING_PRESETS } from "@/lib/animation";
 import type { EmailCardContent } from "@/types/canvas";
 
 interface EmailCardContentProps {
@@ -8,21 +9,88 @@ interface EmailCardContentProps {
 }
 
 const EmailCardContentComponent = ({ data }: EmailCardContentProps) => {
+  const [copied, setCopied] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
   const copyEmailToClipboard = () => {
+    if (copied || isAnimating) {
+      return;
+    }
+
     // Extract email from mailto: link if present, otherwise use the URL directly
     const email = data.link.url.replace("mailto:", "");
     navigator.clipboard.writeText(email);
+    setCopied(true);
+    setIsAnimating(true);
+
+    setTimeout(() => {
+      setCopied(false);
+    }, 1000);
+  };
+
+  const textVariants = {
+    initial: {
+      y: "100%",
+      opacity: 0,
+    },
+    animate: {
+      y: 0,
+      opacity: 1,
+      transition: SPRING_PRESETS.quick,
+    },
+    exit: {
+      y: "-100%",
+      opacity: 0,
+      transition: SPRING_PRESETS.quick,
+    },
   };
 
   return (
     <div className="relative flex h-full items-center justify-center gap-1 overflow-hidden rounded-full bg-linear-to-b from-white to-background2 p-2">
-      <button
-        className="h-full rounded-full px-5 transition hover:bg-background2 active:bg-background3"
+      <motion.button
+        aria-label={
+          copied ? "Email copied to clipboard" : `Copy ${data.link.label}`
+        }
+        className="relative flex h-full items-center justify-center overflow-hidden rounded-full px-5 transition hover:bg-background2 active:bg-background3"
+        disabled={isAnimating}
         onClick={copyEmailToClipboard}
         type="button"
       >
-        {data.link.label}
-      </button>
+        <span aria-hidden="true" className="opacity-0">
+          {data.link.label}
+        </span>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <AnimatePresence
+            initial={false}
+            mode="popLayout"
+            onExitComplete={() => !copied && setIsAnimating(false)}
+          >
+            {copied ? (
+              <motion.span
+                animate="animate"
+                className="block"
+                exit="exit"
+                initial="initial"
+                key="copied"
+                variants={textVariants}
+              >
+                Copied
+              </motion.span>
+            ) : (
+              <motion.span
+                animate="animate"
+                className="block"
+                exit="exit"
+                initial="initial"
+                key="default"
+                variants={textVariants}
+              >
+                {data.link.label}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.button>
       <motion.a
         className="no-drag flex items-center justify-center rounded-full p-4 text-white transition hover:scale-110"
         href={data.link.url}

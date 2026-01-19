@@ -16,7 +16,7 @@ export interface ViewportState {
   positionY: number;
 }
 
-export type CardType = "cover" | "project" | "doc" | "stickynote" | "email";
+export type CardType = "cover" | "project" | "doc" | "stickynote" | "email" | "socials" | "profilepic";
 
 export type DocType = "resume";
 
@@ -43,6 +43,11 @@ export interface EmailCardContent {
     label: string;
     url: string;
   };
+}
+
+export interface SocialsCardContent {
+  linkedinUrl: string;
+  twitterUrl: string;
 }
 
 export interface ResumeHeader {
@@ -90,6 +95,11 @@ export interface StickyNoteCardContent {
   color?: "yellow" | "pink" | "blue" | "green" | "orange";
 }
 
+export interface ProfilePicCardContent {
+  imageUrl: string;
+  alt?: string;
+}
+
 export interface CoverCardData {
   id: string;
   type: "cover";
@@ -125,12 +135,28 @@ export interface EmailCardData {
   content: EmailCardContent;
 }
 
+export interface SocialsCardData {
+  id: string;
+  type: "socials";
+  size: Size;
+  content: SocialsCardContent;
+}
+
+export interface ProfilePicCardData {
+  id: string;
+  type: "profilepic";
+  size: Size;
+  content: ProfilePicCardContent;
+}
+
 export type CardData =
   | CoverCardData
   | ProjectCardData
   | DocCardData
   | StickyNoteCardData
-  | EmailCardData;
+  | EmailCardData
+  | SocialsCardData
+  | ProfilePicCardData;
 
 // Canvas item base properties
 export interface CanvasItemBase {
