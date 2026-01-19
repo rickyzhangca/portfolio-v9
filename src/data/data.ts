@@ -143,7 +143,7 @@ export const data: CanvasItem[] = [
   {
     id: "socials-item",
     kind: "single",
-    position: { x: 800, y: 40 },
+    position: { x: 800, y: 48 },
     zIndex: 1,
     card: {
       id: "socials-card",

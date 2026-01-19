@@ -71,7 +71,7 @@ const SocialsCardContentComponent = ({ data }: SocialsCardContentProps) => {
     <div className="relative flex h-full">
       <div
         className={tw(
-          "absolute flex items-center justify-center gap-5 py-2 pr-5 pl-2 outline outline-foreground1/60",
+          "absolute flex items-center justify-center gap-5 pt-1.5 pr-5 pb-2 pl-2 outline outline-foreground1/60",
           mode === "logi" ? "rounded-2xl" : "rounded-lg"
         )}
         style={{
