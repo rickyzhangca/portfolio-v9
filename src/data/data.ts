@@ -1,7 +1,7 @@
 import type { CanvasItem, ResumeData } from "@/types/canvas";
 
-const START_X = 160;
-const START_Y = 300;
+const START_X = 120;
+const START_Y = 240;
 
 const GAP_X = 320;
 const GAP_Y = 20;
@@ -123,7 +123,7 @@ export const data: CanvasItem[] = [
   {
     id: "email-item",
     kind: "single",
-    position: { x: 160, y: 80 },
+    position: { x: 140, y: 60 },
     zIndex: 1,
     card: {
       id: "email-card",
@@ -141,7 +141,7 @@ export const data: CanvasItem[] = [
   {
     id: "socials-item",
     kind: "single",
-    position: { x: 800, y: 80 },
+    position: { x: 800, y: 40 },
     zIndex: 1,
     card: {
       id: "socials-card",
@@ -173,7 +173,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-15",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Wealthsimple Sans rollout",
           image: "/src/assets/wealthsimple/ws-sans.webp",
@@ -182,7 +182,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-8",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Native sheets",
           image: "/src/assets/wealthsimple/native-sheet.webp",
@@ -191,7 +191,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-12",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Web rolling ticker",
           image: "/src/assets/wealthsimple/ticker.webp",
@@ -200,7 +200,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-6",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Data viz colors",
           image: "/src/assets/wealthsimple/data-viz.webp",
@@ -209,7 +209,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-14",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Redesigned securities widget",
           image: "/src/assets/wealthsimple/widget.webp",
@@ -218,7 +218,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-13",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Web chart segments + animations",
           image: "/src/assets/wealthsimple/web-chart.webp",
@@ -227,7 +227,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-7",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Home gradients",
           image: "/src/assets/wealthsimple/home-gradients.webp",
@@ -236,7 +236,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-9",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "New profile layout",
           image: "/src/assets/wealthsimple/new-profile-layout.webp",
@@ -245,7 +245,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-5",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Web dark mode",
           image: "/src/assets/wealthsimple/dark-mode.webp",
@@ -254,7 +254,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-11",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Swipeable components",
           image: "/src/assets/wealthsimple/swipeable.webp",
@@ -263,7 +263,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-10",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Web snackbar",
           image: "/src/assets/wealthsimple/snackbar.webp",
@@ -291,7 +291,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-17",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "New search & chat and Mintlify widget",
           image: "/src/assets/mintlify/chat.webp",
@@ -300,7 +300,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-18",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Editor file tree",
           image: "/src/assets/mintlify/editor.webp",
@@ -309,7 +309,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-16",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Refreshed auth and onboarding",
           image: "/src/assets/mintlify/auth.webp",
@@ -318,7 +318,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-22",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Dashboard support form",
           image: "/src/assets/mintlify/support.webp",
@@ -327,7 +327,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-19",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Custom fonts",
           image: "/src/assets/mintlify/fonts.webp",
@@ -336,7 +336,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-20",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Advanced footer",
           image: "/src/assets/mintlify/footer.webp",
@@ -345,7 +345,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-21",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Gitlab configuration",
           image: "/src/assets/mintlify/gitlab.webp",
@@ -373,7 +373,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-2",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "New internal AIOps products",
           image: "/src/assets/rbc/product.webp",
@@ -382,7 +382,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-4",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Redesigned UI for larger data volumes",
           image: "/src/assets/rbc/redesign.webp",
@@ -391,7 +391,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-3",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Internal tool for managing PySpark jobs",
           image: "/src/assets/rbc/pyspark.webp",
@@ -400,7 +400,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-1",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Mentor and judge for 2 years of Amplify",
           image: "/src/assets/rbc/amplify.webp",
@@ -428,7 +428,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-24",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "A web and multi-device IoT design system",
           image: "/src/assets/mosaic/ds.webp",
@@ -437,7 +437,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-28",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "UI for 3 new 3D printers",
           image: "/src/assets/mosaic/printers.webp",
@@ -446,7 +446,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-23",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "B2B service offerings from scratch",
           image: "/src/assets/mosaic/b2b.webp",
@@ -455,7 +455,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-26",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Refreshed icon system and pipeline",
           image: "/src/assets/mosaic/icon.webp",
@@ -464,7 +464,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-25",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "All sorts of print materials",
           image: "/src/assets/mosaic/graphic.webp",
@@ -473,7 +473,7 @@ export const data: CanvasItem[] = [
       {
         id: "project-27",
         type: "project",
-        size: { width: 420 },
+        size: { width: 350 },
         content: {
           title: "Packaging design with a unified language",
           image: "/src/assets/mosaic/packaging.webp",
@@ -521,7 +521,7 @@ export const data: CanvasItem[] = [
     card: {
       id: "profilepic-card",
       type: "profilepic",
-      size: { width: 120, height: 120 },
+      size: { width: 100, height: 100 },
       content: {
         images: [
           "src/assets/profile-pic/ricky.webp",

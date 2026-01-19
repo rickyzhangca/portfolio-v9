@@ -20,12 +20,12 @@ const ProjectCardContentComponent = ({
   const [imageLoaded, setImageLoaded] = useState(false);
 
   return (
-    <div className="flex h-full flex-col gap-2">
+    <div className="flex h-full flex-col gap-1.5">
       <div
         className={tw(
-          "overflow-hidden rounded-4xl border-4 bg-white transition-shadow",
+          "overflow-hidden rounded-4xl border-6 bg-white transition-shadow",
           isExpanded
-            ? "border-white shadow-2xl"
+            ? "border-white shadow-3xl"
             : "border-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.12)]"
         )}
       >
