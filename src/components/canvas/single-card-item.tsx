@@ -122,7 +122,11 @@ export const SingleCardItem = ({
             y: 0,
           }}
           key={cardWithSize.id}
-          layoutId={isDocCard ? "resume-card" : undefined}
+          layoutId={
+            isDocCard && item.card.type === "doc"
+              ? `${item.card.content.docType}-card`
+              : undefined
+          }
           onClick={(e) => {
             const target = e.target as HTMLElement;
             if (target.closest(".no-drag")) {

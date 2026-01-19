@@ -25,7 +25,7 @@ export type CardType =
   | "socials"
   | "profilepic";
 
-export type DocType = "resume";
+export type DocType = "resume" | "about";
 
 export interface CoverCardContent {
   company: string;
@@ -92,9 +92,13 @@ export interface ResumeData {
   skills: SkillCategory[];
 }
 
+export interface AboutData {
+  title: string;
+}
+
 export interface DocCardContent {
   docType: DocType;
-  data?: ResumeData;
+  data?: ResumeData | AboutData;
 }
 
 export interface StickyNoteCardContent {

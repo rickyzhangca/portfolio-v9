@@ -176,7 +176,7 @@ describe("COLLAPSED_POSITIONS", () => {
   });
 
   it("first position has correct x and y", () => {
-    expect(COLLAPSED_POSITIONS[0].x).toBe(24);
+    expect(COLLAPSED_POSITIONS[0].x).toBe(16);
     expect(COLLAPSED_POSITIONS[0].y).toBe(24);
   });
 

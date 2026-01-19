@@ -1,30 +1,27 @@
-import {
-  RESUME_SHEET_SIZE,
-  ResumeSheet,
-} from "@/components/resume/resume-sheet";
-import type { DocCardContent, ResumeData } from "@/types/canvas";
+import { ABOUT_SHEET_SIZE, AboutSheet } from "@/components/about/about-sheet";
+import type { AboutData, DocCardContent } from "@/types/canvas";
 
 const PREVIEW_WIDTH = 240;
 
 const PADDING_X = 64;
 
-const PREVIEW_SCALE = (PREVIEW_WIDTH - PADDING_X / 2) / RESUME_SHEET_SIZE.width;
+const PREVIEW_SCALE = (PREVIEW_WIDTH - PADDING_X / 2) / ABOUT_SHEET_SIZE.width;
 
 interface DocCardContentProps {
   data: DocCardContent;
 }
 
-export const ResumeCardContentView = ({ data }: DocCardContentProps) => {
-  if (data.docType !== "resume" || !data.data) {
+export const AboutCardContentView = ({ data }: DocCardContentProps) => {
+  if (data.docType !== "about" || !data.data) {
     return null;
   }
 
-  const resumeData = data.data as ResumeData;
+  const aboutData = data.data as AboutData;
 
   return (
     <div className="h-full w-full overflow-hidden rounded-3xl bg-white">
       <p className="mx-2 mt-2 mb-1 w-fit rounded-full bg-background2 px-5 py-2 font-medium text-foreground1/50 text-sm">
-        Resume
+        About
       </p>
       <div
         className="origin-top-left"
@@ -34,7 +31,7 @@ export const ResumeCardContentView = ({ data }: DocCardContentProps) => {
           paddingRight: PADDING_X,
         }}
       >
-        <ResumeSheet data={resumeData} interactive={false} />
+        <AboutSheet data={aboutData} interactive={false} />
       </div>
     </div>
   );
