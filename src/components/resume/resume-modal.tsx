@@ -1,6 +1,6 @@
 import { ArrowLeftIcon, FileIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect } from "react";
+import { type PointerEventHandler, useEffect } from "react";
 import { RESUME_CARD_SIZE } from "@/data/data";
 import { SPRING_PRESETS } from "@/lib/animation";
 import type { ResumeData } from "@/types/canvas";
@@ -34,6 +34,30 @@ export const ResumeModal = ({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isOpen, onClose]);
 
+  const handleBackdropPointerDown: PointerEventHandler<HTMLDivElement> = (
+    event
+  ) => {
+    // Only close when clicking the backdrop, not inside the sheet.
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
+    const container = event.currentTarget;
+    const scrollbarWidth = container.offsetWidth - container.clientWidth;
+
+    // Ignore interactions on the scrollbar gutter so scrolling doesn't close.
+    if (scrollbarWidth > 0) {
+      const rect = container.getBoundingClientRect();
+      const isScrollbarClick = event.clientX >= rect.right - scrollbarWidth;
+
+      if (isScrollbarClick) {
+        return;
+      }
+    }
+
+    onClose();
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -48,7 +72,7 @@ export const ResumeModal = ({
         >
           <div
             className="absolute inset-0 flex items-start justify-center overflow-auto pt-12 pb-24"
-            onPointerDown={onClose}
+            onPointerDown={handleBackdropPointerDown}
           >
             <motion.div
               className="relative overflow-hidden bg-white"
