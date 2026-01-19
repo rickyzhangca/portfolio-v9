@@ -74,7 +74,9 @@ export const CardStack = ({
   }, [projectsEntranceDelay]);
 
   const coverWithSize = useMemo(() => {
-    if (!stack.cover) return undefined;
+    if (!stack.cover) {
+      return undefined;
+    }
     return {
       ...stack.cover,
       size: {
@@ -276,7 +278,7 @@ export const CardStack = ({
                   ? isExpanded
                     ? offset.x
                     : collapsedPos.x
-                  : collapsedPos.x - 20,
+                  : collapsedPos.x - 12,
                 y: isExpanded ? offset.y + fanArcY : collapsedPos.y,
               }}
               className={tw("absolute top-0 left-0 will-change-transform")}
@@ -287,13 +289,7 @@ export const CardStack = ({
                 pointerEvents: isExpanded || !stack.cover ? "auto" : "none",
                 transformOrigin: "top left",
               }}
-              transition={{
-                opacity: { duration: 0 },
-                scale: SPRING_PRESETS.snappy,
-                rotate: SPRING_PRESETS.snappy,
-                x: SPRING_PRESETS.snappy,
-                y: SPRING_PRESETS.snappy,
-              }}
+              transition={SPRING_PRESETS.snappy}
             >
               <Card
                 data={card}

@@ -6,7 +6,7 @@ export const EXPAND_MAX_PER_ROW = 3;
 export const COLLAPSED_VISIBLE_COUNT = 2;
 
 export const COLLAPSED_POSITIONS = [
-  { x: 20, y: 24, rotate: 5 },
+  { x: 16, y: 24, rotate: 5 },
   { x: 32, y: 72, rotate: 0 },
 ];
 
