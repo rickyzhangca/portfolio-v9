@@ -23,7 +23,8 @@ export type CardType =
   | "stickynote"
   | "email"
   | "socials"
-  | "profilepic";
+  | "profilepic"
+  | "macbook";
 
 export type DocType = "resume" | "about";
 
@@ -110,6 +111,19 @@ export interface ProfilePicCardContent {
   alt?: string;
 }
 
+export interface MacbookSticker {
+  src: string;
+  description: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface MacbookCardContent {
+  stickers: MacbookSticker[];
+}
+
 export interface CoverCardData {
   id: string;
   type: "cover";
@@ -159,6 +173,13 @@ export interface ProfilePicCardData {
   content: ProfilePicCardContent;
 }
 
+export interface MacbookCardData {
+  id: string;
+  type: "macbook";
+  size: Size;
+  content: MacbookCardContent;
+}
+
 export type CardData =
   | CoverCardData
   | ProjectCardData
@@ -166,7 +187,8 @@ export type CardData =
   | StickyNoteCardData
   | EmailCardData
   | SocialsCardData
-  | ProfilePicCardData;
+  | ProfilePicCardData
+  | MacbookCardData;
 
 // Canvas item base properties
 export interface CanvasItemBase {

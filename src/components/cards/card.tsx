@@ -3,6 +3,7 @@ import type { CardData } from "@/types/canvas";
 import { CoverCardContentView } from "./cover-card-content";
 import { DocCardContentView } from "./doc-card-content";
 import { EmailCardContentView } from "./email-card-content";
+import { MacbookCardContentView } from "./macbook-card-content";
 import { ProfilePicCardContentView } from "./profilepic-card-content";
 import { ProjectCardContentView } from "./project-card-content";
 import { StickyNoteCardContentView } from "./stickynote-card-content";
@@ -75,6 +76,9 @@ const CardComponent = ({
     }
     if (data.type === "profilepic") {
       return <ProfilePicCardContentView data={data.content} />;
+    }
+    if (data.type === "macbook") {
+      return <MacbookCardContentView data={data.content} />;
     }
     return null;
   };
