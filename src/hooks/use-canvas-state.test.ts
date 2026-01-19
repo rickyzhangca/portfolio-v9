@@ -1,115 +1,118 @@
 import { describe, expect, it } from "vitest";
-import { createMockGroup } from "@/test-utils/test-helpers";
-import type { CanvasState, CardGroupData } from "@/types/canvas";
+import {
+  createMockStack,
+  createMockSingle,
+} from "@/test-utils/test-helpers";
+import type { CanvasItem } from "@/types/canvas";
 import { canvasReducer } from "./use-canvas-state";
 
 describe("useCanvasState - Reducer Action Coverage", () => {
-  const createMockState = (groups: CardGroupData[] = []): CanvasState => {
-    const groupsMap = new Map<string, CardGroupData>();
+  const createMockState = (items: CanvasItem[] = []) => {
+    const itemsMap = new Map<string, CanvasItem>();
     let maxZIndex = 0;
-    for (const g of groups) {
-      groupsMap.set(g.id, g);
-      maxZIndex = Math.max(maxZIndex, g.zIndex);
+    for (const item of items) {
+      itemsMap.set(item.id, item);
+      maxZIndex = Math.max(maxZIndex, item.zIndex);
     }
     return {
-      groups: groupsMap,
-      selectedGroupId: null,
-      expandedGroupId: null,
+      items: itemsMap,
+      selectedItemId: null,
+      expandedStackId: null,
       maxZIndex,
       viewportState: { scale: 1, positionX: 0, positionY: 0 },
     };
   };
 
-  describe("UPDATE_GROUP_POSITION", () => {
+  describe("UPDATE_ITEM_POSITION", () => {
     it("updates position when changed", () => {
-      const g1 = createMockGroup("g1", 0, 0);
-      const state = createMockState([g1]);
+      const i1 = createMockStack("i1", 0, 0);
+      const state = createMockState([i1]);
       const newState = canvasReducer(state, {
-        type: "UPDATE_GROUP_POSITION",
-        payload: { id: "g1", position: { x: 100, y: 100 } },
+        type: "UPDATE_ITEM_POSITION",
+        payload: { id: "i1", position: { x: 100, y: 100 } },
       });
-      expect(newState.groups.get("g1")?.position).toEqual({ x: 100, y: 100 });
+      expect(newState.items.get("i1")?.position).toEqual({ x: 100, y: 100 });
     });
 
     it("returns same state reference when position unchanged", () => {
-      const g1 = createMockGroup("g1", 0, 0);
-      const state = createMockState([g1]);
+      const i1 = createMockStack("i1", 0, 0);
+      const state = createMockState([i1]);
       const newState = canvasReducer(state, {
-        type: "UPDATE_GROUP_POSITION",
-        payload: { id: "g1", position: { x: 0, y: 0 } },
+        type: "UPDATE_ITEM_POSITION",
+        payload: { id: "i1", position: { x: 0, y: 0 } },
       });
       expect(newState).toBe(state);
     });
 
-    it("returns same state when group not found", () => {
+    it("returns same state when item not found", () => {
       const state = createMockState([]);
       const newState = canvasReducer(state, {
-        type: "UPDATE_GROUP_POSITION",
+        type: "UPDATE_ITEM_POSITION",
         payload: { id: "missing", position: { x: 10, y: 10 } },
       });
       expect(newState).toBe(state);
     });
   });
 
-  describe("BRING_GROUP_TO_FRONT", () => {
+  describe("BRING_ITEM_TO_FRONT", () => {
     it("increments zIndex and maxZIndex", () => {
-      const g1 = createMockGroup("g1", 0, 0, 1);
-      const state = createMockState([g1]);
+      const i1 = createMockStack("i1", 0, 0, 1);
+      const state = createMockState([i1]);
       const newState = canvasReducer(state, {
-        type: "BRING_GROUP_TO_FRONT",
-        payload: { id: "g1" },
+        type: "BRING_ITEM_TO_FRONT",
+        payload: { id: "i1" },
       });
-      expect(newState.groups.get("g1")?.zIndex).toBe(2);
+      expect(newState.items.get("i1")?.zIndex).toBe(2);
       expect(newState.maxZIndex).toBe(2);
     });
 
-    it("returns same state when group not found", () => {
+    it("returns same state when item not found", () => {
       const state = createMockState([]);
       const newState = canvasReducer(state, {
-        type: "BRING_GROUP_TO_FRONT",
+        type: "BRING_ITEM_TO_FRONT",
         payload: { id: "missing" },
       });
       expect(newState).toBe(state);
     });
   });
 
-  describe("SELECT_GROUP", () => {
-    it("updates selectedGroupId", () => {
+  describe("SELECT_ITEM", () => {
+    it("updates selectedItemId", () => {
       const state = createMockState([]);
       const newState = canvasReducer(state, {
-        type: "SELECT_GROUP",
-        payload: { id: "g1" },
+        type: "SELECT_ITEM",
+        payload: { id: "i1" },
       });
-      expect(newState.selectedGroupId).toBe("g1");
+      expect(newState.selectedItemId).toBe("i1");
     });
 
-    it("can set selectedGroupId to null", () => {
+    it("can set selectedItemId to null", () => {
       const state = createMockState([]);
       const newState = canvasReducer(state, {
-        type: "SELECT_GROUP",
+        type: "SELECT_ITEM",
         payload: { id: null },
       });
-      expect(newState.selectedGroupId).toBeNull();
+      expect(newState.selectedItemId).toBeNull();
     });
   });
 
-  describe("SET_EXPANDED_GROUP", () => {
-    it("updates expandedGroupId", () => {
+  describe("SET_EXPANDED_STACK", () => {
+    it("updates expandedStackId", () => {
       const state = createMockState([]);
       const newState = canvasReducer(state, {
-        type: "SET_EXPANDED_GROUP",
-        payload: { id: "g1" },
+        type: "SET_EXPANDED_STACK",
+        payload: { id: "s1" },
       });
-      expect(newState.expandedGroupId).toBe("g1");
+      expect(newState.expandedStackId).toBe("s1");
     });
 
-    it("can set expandedGroupId to null", () => {
+    it("can set expandedStackId to null", () => {
       const state = createMockState([]);
       const newState = canvasReducer(state, {
-        type: "SET_EXPANDED_GROUP",
+        type: "SET_EXPANDED_STACK",
         payload: { id: null },
       });
-      expect(newState.expandedGroupId).toBeNull();
+      expect(newState.expandedStackId).toBeNull();
     });
   });
 
@@ -131,266 +134,237 @@ describe("useCanvasState - Reducer Action Coverage", () => {
   describe("LOAD_STATE", () => {
     it("merges payload into state", () => {
       const state = createMockState([]);
-      const groupsMap = new Map();
-      groupsMap.set("g1", createMockGroup("g1", 0, 0, 5));
+      const itemsMap = new Map();
+      itemsMap.set("s1", createMockStack("s1", 0, 0, 5));
       const newState = canvasReducer(state, {
         type: "LOAD_STATE",
-        payload: { groups: groupsMap, maxZIndex: 5 },
+        payload: { items: itemsMap, maxZIndex: 5 },
       });
-      expect(newState.groups.get("g1")).toBeDefined();
+      expect(newState.items.get("s1")).toBeDefined();
       expect(newState.maxZIndex).toBe(5);
     });
 
     it("preserves existing state properties not in payload", () => {
       const state = createMockState([]);
-      state.selectedGroupId = "test";
+      state.selectedItemId = "test";
       const newState = canvasReducer(state, {
         type: "LOAD_STATE",
-        payload: { groups: new Map(), maxZIndex: 1 },
+        payload: { items: new Map(), maxZIndex: 1 },
       });
-      expect(newState.selectedGroupId).toBe("test");
+      expect(newState.selectedItemId).toBe("test");
     });
   });
 
-  describe("ADD_GROUP", () => {
-    it("adds group with incremented zIndex", () => {
-      const g1 = createMockGroup("g1", 0, 0, 1);
-      const state = createMockState([g1]);
-      const g2 = createMockGroup("g2", 100, 100, 0);
+  describe("ADD_ITEM", () => {
+    it("adds stack item with incremented zIndex", () => {
+      const s1 = createMockStack("s1", 0, 0, 1);
+      const state = createMockState([s1]);
+      const s2 = createMockStack("s2", 100, 100, 0);
       const newState = canvasReducer(state, {
-        type: "ADD_GROUP",
-        payload: g2,
+        type: "ADD_ITEM",
+        payload: s2,
       });
-      expect(newState.groups.has("g2")).toBe(true);
-      expect(newState.groups.get("g2")?.zIndex).toBe(2);
+      expect(newState.items.has("s2")).toBe(true);
+      expect(newState.items.get("s2")?.zIndex).toBe(2);
+      expect(newState.maxZIndex).toBe(2);
+    });
+
+    it("adds single item with incremented zIndex", () => {
+      const s1 = createMockSingle("s1", 0, 0, 1);
+      const state = createMockState([s1]);
+      const s2 = createMockSingle("s2", 100, 100, 0);
+      const newState = canvasReducer(state, {
+        type: "ADD_ITEM",
+        payload: s2,
+      });
+      expect(newState.items.has("s2")).toBe(true);
+      expect(newState.items.get("s2")?.zIndex).toBe(2);
       expect(newState.maxZIndex).toBe(2);
     });
   });
 
-  describe("DELETE_GROUP", () => {
-    it("removes group from groups", () => {
-      const g1 = createMockGroup("g1", 0, 0);
-      const state = createMockState([g1]);
+  describe("DELETE_ITEM", () => {
+    it("removes item from items", () => {
+      const i1 = createMockStack("i1", 0, 0);
+      const state = createMockState([i1]);
       const newState = canvasReducer(state, {
-        type: "DELETE_GROUP",
-        payload: { id: "g1" },
+        type: "DELETE_ITEM",
+        payload: { id: "i1" },
       });
-      expect(newState.groups.has("g1")).toBe(false);
+      expect(newState.items.has("i1")).toBe(false);
     });
 
-    it("clears selectedGroupId when deleted group was selected", () => {
-      const g1 = createMockGroup("g1", 0, 0);
-      const state = createMockState([g1]);
-      state.selectedGroupId = "g1";
+    it("clears selectedItemId when deleted item was selected", () => {
+      const i1 = createMockStack("i1", 0, 0);
+      const state = createMockState([i1]);
+      state.selectedItemId = "i1";
       const newState = canvasReducer(state, {
-        type: "DELETE_GROUP",
-        payload: { id: "g1" },
+        type: "DELETE_ITEM",
+        payload: { id: "i1" },
       });
-      expect(newState.selectedGroupId).toBeNull();
+      expect(newState.selectedItemId).toBeNull();
     });
 
-    it("preserves selectedGroupId when different group deleted", () => {
-      const g1 = createMockGroup("g1", 0, 0);
-      const g2 = createMockGroup("g2", 100, 100);
-      const state = createMockState([g1, g2]);
-      state.selectedGroupId = "g1";
+    it("preserves selectedItemId when different item deleted", () => {
+      const i1 = createMockStack("i1", 0, 0);
+      const i2 = createMockStack("i2", 100, 100);
+      const state = createMockState([i1, i2]);
+      state.selectedItemId = "i1";
       const newState = canvasReducer(state, {
-        type: "DELETE_GROUP",
-        payload: { id: "g2" },
+        type: "DELETE_ITEM",
+        payload: { id: "i2" },
       });
-      expect(newState.selectedGroupId).toBe("g1");
+      expect(newState.selectedItemId).toBe("i1");
     });
 
-    it("clears expandedGroupId when deleted group was expanded", () => {
-      const g1 = createMockGroup("g1", 0, 0);
-      const state = createMockState([g1]);
-      state.expandedGroupId = "g1";
+    it("clears expandedStackId when deleted stack was expanded", () => {
+      const s1 = createMockStack("s1", 0, 0);
+      const state = createMockState([s1]);
+      state.expandedStackId = "s1";
       const newState = canvasReducer(state, {
-        type: "DELETE_GROUP",
-        payload: { id: "g1" },
+        type: "DELETE_ITEM",
+        payload: { id: "s1" },
       });
-      expect(newState.expandedGroupId).toBeNull();
+      expect(newState.expandedStackId).toBeNull();
     });
 
-    it("preserves expandedGroupId when different group deleted", () => {
-      const g1 = createMockGroup("g1", 0, 0);
-      const g2 = createMockGroup("g2", 100, 100);
-      const state = createMockState([g1, g2]);
-      state.expandedGroupId = "g1";
+    it("preserves expandedStackId when different stack deleted", () => {
+      const s1 = createMockStack("s1", 0, 0);
+      const s2 = createMockStack("s2", 100, 100);
+      const state = createMockState([s1, s2]);
+      state.expandedStackId = "s1";
       const newState = canvasReducer(state, {
-        type: "DELETE_GROUP",
-        payload: { id: "g2" },
+        type: "DELETE_ITEM",
+        payload: { id: "s2" },
       });
-      expect(newState.expandedGroupId).toBe("g1");
+      expect(newState.expandedStackId).toBe("s1");
     });
   });
 
-  describe("RESET_GROUPS", () => {
-    it("restores initial group positions", () => {
-      const g1 = createMockGroup("g1", 100, 100, 1);
-      const state = createMockState([g1]);
+  describe("RESET_ITEMS", () => {
+    it("restores initial item positions", () => {
+      const s1 = createMockStack("s1", 100, 100, 1);
+      const state = createMockState([s1]);
       const modifiedState = canvasReducer(state, {
-        type: "UPDATE_GROUP_POSITION",
-        payload: { id: "g1", position: { x: 999, y: 999 } },
+        type: "UPDATE_ITEM_POSITION",
+        payload: { id: "s1", position: { x: 999, y: 999 } },
       });
       const resetState = canvasReducer(modifiedState, {
-        type: "RESET_GROUPS",
-        payload: { initialGroups: [g1] },
+        type: "RESET_ITEMS",
+        payload: { initialItems: [s1] },
       });
-      expect(resetState.groups.get("g1")?.position).toEqual({ x: 100, y: 100 });
+      expect(resetState.items.get("s1")?.position).toEqual({ x: 100, y: 100 });
     });
 
-    it("clears selectedGroupId", () => {
-      const g1 = createMockGroup("g1", 0, 0);
-      const state = createMockState([g1]);
-      state.selectedGroupId = "g1";
+    it("clears selectedItemId", () => {
+      const s1 = createMockStack("s1", 0, 0);
+      const state = createMockState([s1]);
+      state.selectedItemId = "s1";
       const resetState = canvasReducer(state, {
-        type: "RESET_GROUPS",
-        payload: { initialGroups: [g1] },
+        type: "RESET_ITEMS",
+        payload: { initialItems: [s1] },
       });
-      expect(resetState.selectedGroupId).toBeNull();
+      expect(resetState.selectedItemId).toBeNull();
     });
 
-    it("clears expandedGroupId", () => {
-      const g1 = createMockGroup("g1", 0, 0);
-      const state = createMockState([g1]);
-      state.expandedGroupId = "g1";
+    it("clears expandedStackId", () => {
+      const s1 = createMockStack("s1", 0, 0);
+      const state = createMockState([s1]);
+      state.expandedStackId = "s1";
       const resetState = canvasReducer(state, {
-        type: "RESET_GROUPS",
-        payload: { initialGroups: [g1] },
+        type: "RESET_ITEMS",
+        payload: { initialItems: [s1] },
       });
-      expect(resetState.expandedGroupId).toBeNull();
+      expect(resetState.expandedStackId).toBeNull();
     });
 
-    it("restores maxZIndex from initial groups", () => {
-      const g1 = createMockGroup("g1", 0, 0, 5);
-      const state = createMockState([g1]);
+    it("restores maxZIndex from initial items", () => {
+      const s1 = createMockStack("s1", 0, 0, 5);
+      const state = createMockState([s1]);
       const resetState = canvasReducer(state, {
-        type: "RESET_GROUPS",
-        payload: { initialGroups: [g1] },
+        type: "RESET_ITEMS",
+        payload: { initialItems: [s1] },
       });
       expect(resetState.maxZIndex).toBe(5);
     });
 
-    it("handles multiple groups", () => {
-      const g1 = createMockGroup("g1", 0, 0, 1);
-      const g2 = createMockGroup("g2", 100, 100, 2);
-      const state = createMockState([g1, g2]);
+    it("handles multiple items", () => {
+      const s1 = createMockStack("s1", 0, 0, 1);
+      const s2 = createMockStack("s2", 100, 100, 2);
+      const state = createMockState([s1, s2]);
       const resetState = canvasReducer(state, {
-        type: "RESET_GROUPS",
-        payload: { initialGroups: [g1, g2] },
+        type: "RESET_ITEMS",
+        payload: { initialItems: [s1, s2] },
       });
-      expect(resetState.groups.size).toBe(2);
+      expect(resetState.items.size).toBe(2);
+      expect(resetState.maxZIndex).toBe(2);
+    });
+
+    it("handles mixed single and stack items", () => {
+      const s1 = createMockSingle("single1", 0, 0, 1);
+      const s2 = createMockStack("stack1", 100, 100, 2);
+      const state = createMockState([s1, s2]);
+      const resetState = canvasReducer(state, {
+        type: "RESET_ITEMS",
+        payload: { initialItems: [s1, s2] },
+      });
+      expect(resetState.items.size).toBe(2);
       expect(resetState.maxZIndex).toBe(2);
     });
   });
 
   describe("UPDATE_CARD_HEIGHT", () => {
-    it("updates cover card height", () => {
-      const group = createMockGroup("g1", 0, 0);
-      group.cover = {
-        ...group.cover!,
-        id: "cover",
-        size: { width: 200, height: 200 },
-      };
-      const state = createMockState([group]);
+    it("updates cover card height in stack item", () => {
+      const stack = createMockStack("s1", 0, 0);
+      const state = createMockState([stack]);
       const newState = canvasReducer(state, {
         type: "UPDATE_CARD_HEIGHT",
-        payload: { groupId: "g1", cardId: "cover", height: 300 },
+        payload: { itemId: "s1", cardId: "s1-cover", height: 300 },
       });
-      expect(newState.groups.get("g1")?.cover?.size.height).toBe(300);
+      if (stack.kind === "stack") {
+        expect(newState.items.get("s1")?.cover?.size.height).toBe(300);
+      }
+    });
+
+    it("updates single item card height", () => {
+      const single = createMockSingle("single1", 0, 0);
+      const state = createMockState([single]);
+      const newState = canvasReducer(state, {
+        type: "UPDATE_CARD_HEIGHT",
+        payload: { itemId: "single1", cardId: "single1-card", height: 300 },
+      });
+      if (single.kind === "single") {
+        expect(newState.items.get("single1")?.card?.size.height).toBe(300);
+      }
     });
 
     it("returns same state when cover height unchanged", () => {
-      const group = createMockGroup("g1", 0, 0);
-      group.cover = {
-        ...group.cover!,
-        id: "cover",
-        size: { width: 200, height: 200 },
-      };
-      const state = createMockState([group]);
+      const stack = createMockStack("s1", 0, 0);
+      const state = createMockState([stack]);
       const newState = canvasReducer(state, {
         type: "UPDATE_CARD_HEIGHT",
-        payload: { groupId: "g1", cardId: "cover", height: 200 },
+        payload: { itemId: "s1", cardId: "s1-cover", height: 100 },
       });
       expect(newState).toBe(state);
     });
 
-    it("updates project card height", () => {
-      const group = createMockGroup("g1", 0, 0);
-      const project1 = {
-        id: "p1",
-        type: "project" as const,
-        size: { width: 100, height: 200 },
-        content: { title: "Test", description: "", image: "" },
-      };
-      group.projects = [project1];
-      const state = createMockState([group]);
-      const newState = canvasReducer(state, {
-        type: "UPDATE_CARD_HEIGHT",
-        payload: { groupId: "g1", cardId: "p1", height: 250 },
-      });
-      expect(newState.groups.get("g1")?.projects[0]?.size.height).toBe(250);
-    });
-
-    it("returns same state when project height unchanged", () => {
-      const group = createMockGroup("g1", 0, 0);
-      const project1 = {
-        id: "p1",
-        type: "project" as const,
-        size: { width: 100, height: 200 },
-        content: { title: "Test", description: "", image: "" },
-      };
-      group.projects = [project1];
-      const state = createMockState([group]);
-      const newState = canvasReducer(state, {
-        type: "UPDATE_CARD_HEIGHT",
-        payload: { groupId: "g1", cardId: "p1", height: 200 },
-      });
-      expect(newState).toBe(state);
-    });
-
-    it("returns same state when group not found", () => {
+    it("returns same state when item not found", () => {
       const state = createMockState([]);
       const newState = canvasReducer(state, {
         type: "UPDATE_CARD_HEIGHT",
-        payload: { groupId: "missing", cardId: "card", height: 300 },
+        payload: { itemId: "missing", cardId: "card", height: 300 },
       });
       expect(newState).toBe(state);
     });
 
-    it("returns same state when card not found in group", () => {
-      const group = createMockGroup("g1", 0, 0);
-      const state = createMockState([group]);
+    it("returns same state when card not found in item", () => {
+      const stack = createMockStack("s1", 0, 0);
+      const state = createMockState([stack]);
       const newState = canvasReducer(state, {
         type: "UPDATE_CARD_HEIGHT",
-        payload: { groupId: "g1", cardId: "nonexistent", height: 300 },
+        payload: { itemId: "s1", cardId: "nonexistent", height: 300 },
       });
       expect(newState).toBe(state);
-    });
-
-    it("updates correct project when multiple projects exist", () => {
-      const group = createMockGroup("g1", 0, 0);
-      const project1 = {
-        id: "p1",
-        type: "project" as const,
-        size: { width: 100, height: 200 },
-        content: { title: "Test", description: "", image: "" },
-      };
-      const project2 = {
-        id: "p2",
-        type: "project" as const,
-        size: { width: 100, height: 250 },
-        content: { title: "Test", description: "", image: "" },
-      };
-      group.projects = [project1, project2];
-      const state = createMockState([group]);
-      const newState = canvasReducer(state, {
-        type: "UPDATE_CARD_HEIGHT",
-        payload: { groupId: "g1", cardId: "p2", height: 300 },
-      });
-      expect(newState.groups.get("g1")?.projects[1]?.size.height).toBe(300);
-      expect(newState.groups.get("g1")?.projects[0]?.size.height).toBe(200);
     });
   });
 
