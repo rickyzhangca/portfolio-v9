@@ -22,7 +22,7 @@ const StickyNoteCardContentComponent = ({
   return (
     <div className="h-full w-full">
       <div className={`h-full w-full rounded-lg shadow-md ${colorClass} p-6`}>
-        <p className="whitespace-pre-wrap break-words text-gray-900">
+        <p className="wrap-break-word whitespace-pre-wrap font-hand">
           {data.content}
         </p>
       </div>
