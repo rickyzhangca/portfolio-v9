@@ -253,7 +253,9 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
       focusPointerDownRef.current = {
         clientX: event.clientX,
         clientY: event.clientY,
-        startedOutsideFocusedItem: focusedEl ? !focusedEl.contains(target) : true,
+        startedOutsideFocusedItem: focusedEl
+          ? !focusedEl.contains(target)
+          : true,
       };
     };
 
@@ -495,9 +497,11 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                         const centerX = item.position.x + cardWidth / 2;
                         const centerY = item.position.y + cardHeight / 2;
                         const targetX =
-                          window.innerWidth / 2 - centerX * state.viewportState.scale;
+                          window.innerWidth / 2 -
+                          centerX * state.viewportState.scale;
                         const targetY =
-                          window.innerHeight / 2 - centerY * state.viewportState.scale;
+                          window.innerHeight / 2 -
+                          centerY * state.viewportState.scale;
 
                         requestAnimationFrame(() => {
                           transformRef.current?.setTransform(
