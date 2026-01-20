@@ -73,9 +73,10 @@ export const CardStack = ({
     return () => clearTimeout(timer);
   }, [projectsEntranceDelay]);
 
-  const coverPointerDownRef = useRef<{ clientX: number; clientY: number } | null>(
-    null
-  );
+  const coverPointerDownRef = useRef<{
+    clientX: number;
+    clientY: number;
+  } | null>(null);
 
   const coverWithSize = useMemo(() => {
     if (!stack.cover) {
@@ -106,18 +107,18 @@ export const CardStack = ({
   );
 
   const { isDragging, handleMouseDown, currentPosition } = useDraggable({
-      position: stack.position,
-      scale,
-      disabled: dragDisabled,
-      onDragStart: () => {
-        onBringToFront();
-        onDragStart?.();
-      },
-      onDragEnd: (finalPosition) => {
-        onPositionUpdate(finalPosition);
-        onDragEnd?.();
-      },
-    });
+    position: stack.position,
+    scale,
+    disabled: dragDisabled,
+    onDragStart: () => {
+      onBringToFront();
+      onDragStart?.();
+    },
+    onDragEnd: (finalPosition) => {
+      onPositionUpdate(finalPosition);
+      onDragEnd?.();
+    },
+  });
 
   const handleCardMeasure = useCallback(
     (id: string, height: number) => {
@@ -257,8 +258,12 @@ export const CardStack = ({
               : 0;
 
           // Calculate scale factor to fit project card within cover width when collapsed
-          const coverWidth = coverWithSize?.size.width ?? card.size.width ?? 240;
-          const collapsedScale = Math.min(1, coverWidth / (card.size.width ?? 350));
+          const coverWidth =
+            coverWithSize?.size.width ?? card.size.width ?? 240;
+          const collapsedScale = Math.min(
+            1,
+            coverWidth / (card.size.width ?? 350)
+          );
 
           // When collapsed: only first 2 cards visible, others stack behind 2nd card
           const COLLAPSED_VISIBLE_COUNT = 2;
