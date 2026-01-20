@@ -525,13 +525,15 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                             // Restore to pre-auto-pan position if available
                             const savedPosition = preAutoPanPositionRef.current;
                             if (savedPosition) {
-                              transformRef.current?.setTransform(
-                                savedPosition.x,
-                                savedPosition.y,
-                                savedPosition.scale,
-                                AUTO_PAN_DURATION_MS,
-                                AUTO_PAN_EASING
-                              );
+                              requestAnimationFrame(() => {
+                                transformRef.current?.setTransform(
+                                  savedPosition.x,
+                                  savedPosition.y,
+                                  savedPosition.scale,
+                                  AUTO_PAN_DURATION_MS,
+                                  AUTO_PAN_EASING
+                                );
+                              });
                               preAutoPanPositionRef.current = null;
                             }
                             actions.setExpandedStack(null);
@@ -575,13 +577,15 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                             // Restore to pre-auto-pan position if available
                             const savedPosition = preAutoPanPositionRef.current;
                             if (savedPosition) {
-                              transformRef.current?.setTransform(
-                                savedPosition.x,
-                                savedPosition.y,
-                                savedPosition.scale,
-                                AUTO_PAN_DURATION_MS,
-                                AUTO_PAN_EASING
-                              );
+                              requestAnimationFrame(() => {
+                                transformRef.current?.setTransform(
+                                  savedPosition.x,
+                                  savedPosition.y,
+                                  savedPosition.scale,
+                                  AUTO_PAN_DURATION_MS,
+                                  AUTO_PAN_EASING
+                                );
+                              });
                               preAutoPanPositionRef.current = null;
                             }
                             actions.setExpandedStack(null);
