@@ -478,7 +478,7 @@ export const initialItems: CanvasItem[] = [
           {
             src: "/src/assets/macbook/cat.webp",
             description: "Cat sticker",
-            x: 50,
+            x: 30,
             y: 72,
             width: 327,
             height: 147,
