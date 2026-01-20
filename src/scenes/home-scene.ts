@@ -1,11 +1,11 @@
-import type { CanvasItem } from "@/types/canvas";
 import { ABOUT_CARD_SIZE } from "@/cards/about/about-data";
-import { resumeData, RESUME_CARD_SIZE } from "@/cards/resume/resume-data";
+import { RESUME_CARD_SIZE, resumeData } from "@/cards/resume/resume-data";
+import type { CanvasItem } from "@/types/canvas";
 
-const START_X = 120;
-const START_Y = 240;
+const START_X = 80;
+const START_Y = 200;
 
-const GAP_X = 320;
+const GAP_X = 300;
 const GAP_Y = 20;
 
 export const initialItems: CanvasItem[] = [
@@ -451,7 +451,7 @@ export const initialItems: CanvasItem[] = [
   {
     id: "macbook-item",
     kind: "single",
-    position: { x: 1200, y: 800 },
+    position: { x: 1200, y: 660 },
     zIndex: 3,
     card: {
       id: "macbook-card",
