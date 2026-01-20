@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useAtomValue } from "jotai";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RenderCard } from "@/cards/render-card";
 import { fanConfigAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
@@ -73,6 +73,10 @@ export const CardStack = ({
     return () => clearTimeout(timer);
   }, [projectsEntranceDelay]);
 
+  const coverPointerDownRef = useRef<{ clientX: number; clientY: number } | null>(
+    null
+  );
+
   const coverWithSize = useMemo(() => {
     if (!stack.cover) {
       return undefined;
@@ -101,8 +105,7 @@ export const CardStack = ({
     [coverWithSize, projectsWithSizes, isExpanded, fanConfig]
   );
 
-  const { isDragging, didDragRef, handleMouseDown, currentPosition } =
-    useDraggable({
+  const { isDragging, handleMouseDown, currentPosition } = useDraggable({
       position: stack.position,
       scale,
       disabled: dragDisabled,
@@ -180,19 +183,40 @@ export const CardStack = ({
               y: 0,
             }}
             key={coverWithSize.id}
-            onClick={(e) => {
+            onPointerDown={(e) => {
               const target = e.target as HTMLElement;
               if (target.closest(".no-drag")) {
+                coverPointerDownRef.current = null;
                 return;
               }
 
-              // Prevent "click after drag" from toggling the stack.
-              if (!dragDisabled && didDragRef.current) {
-                didDragRef.current = false;
+              if (e.button !== 0) {
+                coverPointerDownRef.current = null;
                 return;
               }
 
-              onToggleExpanded();
+              coverPointerDownRef.current = {
+                clientX: e.clientX,
+                clientY: e.clientY,
+              };
+            }}
+            onPointerUp={(e) => {
+              const start = coverPointerDownRef.current;
+              coverPointerDownRef.current = null;
+
+              if (!start) {
+                return;
+              }
+
+              const moved = Math.hypot(
+                e.clientX - start.clientX,
+                e.clientY - start.clientY
+              );
+
+              // Treat as a click only when the pointer didn't move (pan/drag should not toggle).
+              if (moved < 6) {
+                onToggleExpanded();
+              }
             }}
             style={{
               zIndex: (stack.cover ? 1 : 0) + projectsWithSizes.length,

@@ -64,6 +64,11 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     clientY: number;
     startedOutsideExpandedGroup: boolean;
   } | null>(null);
+  const focusPointerDownRef = useRef<{
+    clientX: number;
+    clientY: number;
+    startedOutsideFocusedItem: boolean;
+  } | null>(null);
   const preAutoPanPositionRef = useRef<{
     x: number;
     y: number;
@@ -153,6 +158,11 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     }
 
     const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0) {
+        pointerDownRef.current = null;
+        return;
+      }
+
       const target = event.target as Element | null;
       if (!target) {
         return;
@@ -215,6 +225,79 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
       window.removeEventListener("pointercancel", onPointerUp, true);
     };
   }, [state.expandedStackId, actions.setExpandedStack]);
+
+  // Unfocus the focused item when clicking outside it (but not when panning/dragging).
+  useEffect(() => {
+    const focusedItemId = state.focusedItemId;
+    if (!focusedItemId) {
+      return;
+    }
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0) {
+        focusPointerDownRef.current = null;
+        return;
+      }
+
+      const target = event.target as Element | null;
+      if (!target) {
+        return;
+      }
+
+      if (target.closest("[data-no-collapse]")) {
+        focusPointerDownRef.current = null;
+        return;
+      }
+
+      const focusedEl = groupElementsRef.current.get(focusedItemId);
+      focusPointerDownRef.current = {
+        clientX: event.clientX,
+        clientY: event.clientY,
+        startedOutsideFocusedItem: focusedEl ? !focusedEl.contains(target) : true,
+      };
+    };
+
+    const onPointerUp = (event: PointerEvent) => {
+      const start = focusPointerDownRef.current;
+      focusPointerDownRef.current = null;
+
+      if (!start?.startedOutsideFocusedItem) {
+        return;
+      }
+
+      const moved = Math.hypot(
+        event.clientX - start.clientX,
+        event.clientY - start.clientY
+      );
+
+      if (moved < 6) {
+        const savedPosition = preFocusPanPositionRef.current;
+        if (savedPosition) {
+          requestAnimationFrame(() => {
+            transformRef.current?.setTransform(
+              savedPosition.x,
+              savedPosition.y,
+              savedPosition.scale,
+              AUTO_PAN_DURATION_MS,
+              AUTO_PAN_EASING
+            );
+          });
+          preFocusPanPositionRef.current = null;
+        }
+        actions.setFocusedItem(null);
+      }
+    };
+
+    window.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("pointerup", onPointerUp, true);
+    window.addEventListener("pointercancel", onPointerUp, true);
+
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown, true);
+      window.removeEventListener("pointerup", onPointerUp, true);
+      window.removeEventListener("pointercancel", onPointerUp, true);
+    };
+  }, [state.focusedItemId, actions.setFocusedItem]);
 
   // Calculate viewport-proportional repulsion values for doc modal mode
   const getResumeRepulsionConfig = useCallback(
@@ -504,23 +587,6 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                           className="absolute cursor-pointer bg-background1"
                           exit={{ opacity: 0 }}
                           initial={{ opacity: 0 }}
-                          onClick={() => {
-                            // Restore to pre-auto-pan position if available
-                            const savedPosition = preAutoPanPositionRef.current;
-                            if (savedPosition) {
-                              requestAnimationFrame(() => {
-                                transformRef.current?.setTransform(
-                                  savedPosition.x,
-                                  savedPosition.y,
-                                  savedPosition.scale,
-                                  AUTO_PAN_DURATION_MS,
-                                  AUTO_PAN_EASING
-                                );
-                              });
-                              preAutoPanPositionRef.current = null;
-                            }
-                            actions.setExpandedStack(null);
-                          }}
                           style={{
                             zIndex: expandedGroup.zIndex - 1,
                             left: -50_000,
@@ -547,22 +613,6 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                           className="absolute cursor-pointer bg-background1"
                           exit={{ opacity: 0 }}
                           initial={{ opacity: 0 }}
-                          onClick={() => {
-                            const savedPosition = preFocusPanPositionRef.current;
-                            if (savedPosition) {
-                              requestAnimationFrame(() => {
-                                transformRef.current?.setTransform(
-                                  savedPosition.x,
-                                  savedPosition.y,
-                                  savedPosition.scale,
-                                  AUTO_PAN_DURATION_MS,
-                                  AUTO_PAN_EASING
-                                );
-                              });
-                              preFocusPanPositionRef.current = null;
-                            }
-                            actions.setFocusedItem(null);
-                          }}
                           style={{
                             zIndex: focusedItem.zIndex - 1,
                             left: -50_000,
