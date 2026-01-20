@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { StickyNoteCardContent } from "@/cards/registry";
+import { tw } from "@/lib/utils";
 
 interface StickyNoteCardProps {
   content: StickyNoteCardContent;
@@ -18,12 +19,10 @@ const StickyNoteCardComponent = ({ content }: StickyNoteCardProps) => {
             : "bg-yellow-200";
 
   return (
-    <div className="h-full w-full">
-      <div className={`h-full w-full rounded-lg shadow-md ${colorClass} p-6`}>
-        <p className="wrap-break-word whitespace-pre-wrap font-hand">
-          {content.content}
-        </p>
-      </div>
+    <div className={tw("h-full w-full rounded-sm p-4 shadow-md", colorClass)}>
+      <p className="wrap-break-word whitespace-pre-wrap font-hand text-sm">
+        {content.content}
+      </p>
     </div>
   );
 };
