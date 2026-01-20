@@ -12,6 +12,7 @@ import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { AboutModal } from "@/components/about/about-modal";
 import { ResumeModal } from "@/components/resume/resume-modal";
+import { getInteractionPolicy } from "@/cards/registry";
 import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
 import { useCanvasState } from "@/hooks/use-canvas-state";
 import {
@@ -20,7 +21,7 @@ import {
   getAutoPanTarget,
 } from "@/lib/auto-pan";
 import { computeRepulsionOffsets } from "@/lib/repulsion";
-import type { AboutData, CanvasItem, ResumeData } from "@/types/canvas";
+import type { CanvasItem } from "@/types/canvas";
 import { CanvasControls } from "./canvas-controls";
 import { CanvasItemRenderer } from "./canvas-item";
 
@@ -43,9 +44,6 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     null
   );
   const isAboutOpen = !!activeAboutItemId;
-  const activeAboutItem = activeAboutItemId
-    ? state.items.get(activeAboutItemId)
-    : null;
   const [repulsionConfig] = useAtom(repulsionConfigAtom);
   const fanConfig = useAtomValue(fanConfigAtom);
 
@@ -67,6 +65,11 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     startedOutsideExpandedGroup: boolean;
   } | null>(null);
   const preAutoPanPositionRef = useRef<{
+    x: number;
+    y: number;
+    scale: number;
+  } | null>(null);
+  const preFocusPanPositionRef = useRef<{
     x: number;
     y: number;
     scale: number;
@@ -232,6 +235,8 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
   const repulsionOffsets = useMemo(() => {
     // Stronger repulsion when Resume or About modal is active to clear the screen
     const activeDocItemId = activeResumeItemId || activeAboutItemId;
+    const repulsionSourceItemId =
+      state.expandedStackId ?? activeDocItemId ?? state.focusedItemId;
     const effectiveConfig = activeDocItemId
       ? {
           radiusPx: Math.max(
@@ -253,7 +258,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
 
     return computeRepulsionOffsets(
       state.items,
-      state.expandedStackId ?? activeDocItemId,
+      repulsionSourceItemId,
       effectiveConfig
     );
   }, [
@@ -261,6 +266,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     state.expandedStackId,
     activeResumeItemId,
     activeAboutItemId,
+    state.focusedItemId,
     repulsionConfig,
     viewportDimensions,
     getResumeRepulsionConfig,
@@ -328,9 +334,13 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                 {Array.from(state.items.values()).map((item, itemIndex) => {
                   const expandedStackId = state.expandedStackId;
                   const isExpanded = expandedStackId === item.id;
+                  const isFocused = state.focusedItemId === item.id;
 
                   // Dimming is now handled by a global overlay
-                  const dragDisabled = expandedStackId !== null || isResumeOpen;
+                  const dragDisabled =
+                    expandedStackId !== null ||
+                    isResumeOpen ||
+                    state.focusedItemId !== null;
                   const repulsionOffset = repulsionOffsets.get(item.id) ?? {
                     x: 0,
                     y: 0,
@@ -340,6 +350,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                     <CanvasItemRenderer
                       dragDisabled={dragDisabled}
                       isExpanded={isExpanded}
+                      isFocused={isFocused}
                       item={item}
                       itemIndex={itemIndex}
                       key={item.id}
@@ -347,18 +358,73 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                       onCardHeightMeasured={(cardId, height) =>
                         actions.updateCardHeight(item.id, cardId, height)
                       }
-                      onDocClick={() => {
-                        if (
-                          item.kind === "single" &&
-                          item.card.type === "doc"
-                        ) {
+                      onActivate={() => {
+                        if (item.kind !== "single") {
+                          return;
+                        }
+
+                        const policy = getInteractionPolicy(item.card.kind);
+
+                        if (policy.activate === "open-modal") {
                           actions.bringItemToFront(item.id);
-                          if (item.card.content.docType === "resume") {
+                          if (item.card.kind === "resume") {
                             setActiveResumeItemId(item.id);
-                          } else if (item.card.content.docType === "about") {
+                          } else if (item.card.kind === "about") {
                             setActiveAboutItemId(item.id);
                           }
+                          return;
                         }
+
+                        if (policy.activate !== "toggle-focus") {
+                          return;
+                        }
+
+                        // Toggle macbook focus: scale card + auto-pan to center, then restore on close.
+                        if (state.focusedItemId === item.id) {
+                          const savedPosition = preFocusPanPositionRef.current;
+                          if (savedPosition) {
+                            requestAnimationFrame(() => {
+                              transformRef.current?.setTransform(
+                                savedPosition.x,
+                                savedPosition.y,
+                                savedPosition.scale,
+                                AUTO_PAN_DURATION_MS,
+                                AUTO_PAN_EASING
+                              );
+                            });
+                            preFocusPanPositionRef.current = null;
+                          }
+                          actions.setFocusedItem(null);
+                          return;
+                        }
+
+                        actions.setFocusedItem(item.id);
+                        actions.bringItemToFront(item.id);
+
+                        preFocusPanPositionRef.current = {
+                          x: state.viewportState.positionX,
+                          y: state.viewportState.positionY,
+                          scale: state.viewportState.scale,
+                        };
+
+                        const cardWidth = item.card.size.width ?? 0;
+                        const cardHeight = item.card.size.height ?? 360;
+                        const centerX = item.position.x + cardWidth / 2;
+                        const centerY = item.position.y + cardHeight / 2;
+                        const targetX =
+                          window.innerWidth / 2 - centerX * state.viewportState.scale;
+                        const targetY =
+                          window.innerHeight / 2 - centerY * state.viewportState.scale;
+
+                        requestAnimationFrame(() => {
+                          transformRef.current?.setTransform(
+                            targetX,
+                            targetY,
+                            state.viewportState.scale,
+                            AUTO_PAN_DURATION_MS,
+                            AUTO_PAN_EASING
+                          );
+                        });
                       }}
                       onDragEnd={() => setIsPanningDisabled(false)}
                       onDragStart={() => setIsPanningDisabled(true)}
@@ -466,6 +532,48 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                       );
                     })()}
                 </AnimatePresence>
+
+                <AnimatePresence>
+                  {state.focusedItemId &&
+                    (() => {
+                      const focusedItem = state.items.get(state.focusedItemId);
+                      if (!(focusedItem && focusedItem.kind === "single")) {
+                        return null;
+                      }
+
+                      return (
+                        <motion.div
+                          animate={{ opacity: 0.8 }}
+                          className="absolute cursor-pointer bg-background1"
+                          exit={{ opacity: 0 }}
+                          initial={{ opacity: 0 }}
+                          onClick={() => {
+                            const savedPosition = preFocusPanPositionRef.current;
+                            if (savedPosition) {
+                              requestAnimationFrame(() => {
+                                transformRef.current?.setTransform(
+                                  savedPosition.x,
+                                  savedPosition.y,
+                                  savedPosition.scale,
+                                  AUTO_PAN_DURATION_MS,
+                                  AUTO_PAN_EASING
+                                );
+                              });
+                              preFocusPanPositionRef.current = null;
+                            }
+                            actions.setFocusedItem(null);
+                          }}
+                          style={{
+                            zIndex: focusedItem.zIndex - 1,
+                            left: -50_000,
+                            top: -50_000,
+                            width: 50_000 * 2,
+                            height: 50_000 * 2,
+                          }}
+                        />
+                      );
+                    })()}
+                </AnimatePresence>
               </TransformComponent>
 
               <CanvasControls
@@ -480,22 +588,14 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
         <ResumeModal
           data={
             activeResumeItem?.kind === "single" &&
-            activeResumeItem.card.type === "doc" &&
-            activeResumeItem.card.content.docType === "resume"
-              ? (activeResumeItem.card.content.data as ResumeData)
+            activeResumeItem.card.kind === "resume"
+              ? activeResumeItem.card.content
               : undefined
           }
           isOpen={isResumeOpen}
           onClose={() => setActiveResumeItemId(null)}
         />
         <AboutModal
-          data={
-            activeAboutItem?.kind === "single" &&
-            activeAboutItem.card.type === "doc" &&
-            activeAboutItem.card.content.docType === "about"
-              ? (activeAboutItem.card.content.data as AboutData)
-              : undefined
-          }
           isOpen={isAboutOpen}
           onClose={() => setActiveAboutItemId(null)}
         />

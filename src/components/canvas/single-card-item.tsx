@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useCallback, useMemo, useState } from "react";
-import { Card } from "@/components/cards/card";
+import { getInteractionPolicy } from "@/cards/registry";
+import { RenderCard } from "@/cards/render-card";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { tw } from "@/lib/utils";
@@ -9,6 +10,7 @@ import type { CanvasSingleItem, Position } from "@/types/canvas";
 interface SingleCardItemProps {
   item: CanvasSingleItem;
   scale: number;
+  isFocused: boolean;
   dragDisabled: boolean;
   repulsionOffset: Position;
   onBringToFront: () => void;
@@ -16,13 +18,14 @@ interface SingleCardItemProps {
   onDragStart?: () => void;
   onDragEnd?: () => void;
   onCardHeightMeasured?: (cardId: string, height: number) => void;
-  onDocClick?: () => void;
+  onActivate?: () => void;
   setRootRef?: (el: HTMLDivElement | null) => void;
 }
 
 export const SingleCardItem = ({
   item,
   scale,
+  isFocused,
   dragDisabled,
   repulsionOffset,
   onBringToFront,
@@ -30,7 +33,7 @@ export const SingleCardItem = ({
   onDragStart,
   onDragEnd,
   onCardHeightMeasured,
-  onDocClick,
+  onActivate,
   setRootRef,
 }: SingleCardItemProps) => {
   const [measuredHeight, setMeasuredHeight] = useState<number | undefined>(
@@ -45,7 +48,7 @@ export const SingleCardItem = ({
         height: measuredHeight ?? item.card.size.height,
       },
     };
-  }, [item.card, measuredHeight]);
+  }, [item.card, measuredHeight]) as typeof item.card;
 
   const { isDragging, didDragRef, handleMouseDown, currentPosition } =
     useDraggable({
@@ -73,7 +76,12 @@ export const SingleCardItem = ({
     [measuredHeight, onCardHeightMeasured, item.card.id]
   );
 
-  const isDocCard = item.card.type === "doc";
+  const interactionPolicy = getInteractionPolicy(item.card.kind);
+  const isActivatable = interactionPolicy.activate !== "none";
+  const focusScale =
+    interactionPolicy.activate === "toggle-focus"
+      ? (interactionPolicy.focusScale ?? 1)
+      : 1;
 
   return (
     <motion.div
@@ -110,7 +118,7 @@ export const SingleCardItem = ({
         <motion.div
           animate={{
             opacity: 1,
-            scale: 1,
+            scale: isFocused ? focusScale : 1,
             x: 0,
             y: 0,
           }}
@@ -123,8 +131,8 @@ export const SingleCardItem = ({
           }}
           key={cardWithSize.id}
           layoutId={
-            isDocCard && item.card.type === "doc"
-              ? `${item.card.content.docType}-card`
+            item.card.kind === "resume" || item.card.kind === "about"
+              ? `${item.card.kind}-card`
               : undefined
           }
           onClick={(e) => {
@@ -139,8 +147,8 @@ export const SingleCardItem = ({
               return;
             }
 
-            if (isDocCard && onDocClick) {
-              onDocClick();
+            if (isActivatable && onActivate) {
+              onActivate();
             }
           }}
           style={{
@@ -149,9 +157,9 @@ export const SingleCardItem = ({
           }}
           transition={SPRING_PRESETS.snappy}
         >
-          <Card
+          <RenderCard
+            card={cardWithSize}
             className="shadow-none hover:shadow-none"
-            data={cardWithSize}
             onMeasure={handleCardMeasure}
           />
         </motion.div>

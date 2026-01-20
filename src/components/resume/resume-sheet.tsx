@@ -1,6 +1,6 @@
-import { RESUME_SHEET_SIZE } from "@/data/data";
+import { RESUME_SHEET_SIZE } from "@/cards/resume/resume-data";
+import type { ResumeData } from "@/cards/types";
 import { tw } from "@/lib/utils";
-import type { ResumeData } from "@/types/canvas";
 import { ResumeEducation } from "./resume-education";
 import { ResumeExperience } from "./resume-experience";
 import { ResumeHeader } from "./resume-header";

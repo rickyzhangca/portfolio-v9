@@ -96,6 +96,10 @@ export const canvasReducer = (
           state.expandedStackId === action.payload.id
             ? null
             : state.expandedStackId,
+        focusedItemId:
+          state.focusedItemId === action.payload.id
+            ? null
+            : state.focusedItemId,
       };
     }
 
@@ -114,6 +118,7 @@ export const canvasReducer = (
         maxZIndex,
         selectedItemId: null,
         expandedStackId: null,
+        focusedItemId: null,
       };
     }
 
@@ -179,6 +184,10 @@ export const canvasReducer = (
       return { ...state, items: newItems };
     }
 
+    case "SET_FOCUSED_ITEM": {
+      return { ...state, focusedItemId: action.payload.id };
+    }
+
     default:
       return state;
   }
@@ -194,6 +203,7 @@ export const useCanvasState = (initialItems: CanvasItem[] = []) => {
     expandedStackId: null,
     maxZIndex: initialItems.length,
     viewportState: initialViewportState,
+    focusedItemId: null,
   });
 
   // Initialize with provided items on mount
@@ -263,6 +273,10 @@ export const useCanvasState = (initialItems: CanvasItem[] = []) => {
     []
   );
 
+  const setFocusedItem = useCallback((id: string | null) => {
+    dispatch({ type: "SET_FOCUSED_ITEM", payload: { id } });
+  }, []);
+
   return {
     state,
     actions: {
@@ -275,6 +289,7 @@ export const useCanvasState = (initialItems: CanvasItem[] = []) => {
       deleteItem,
       resetItems,
       updateCardHeight,
+      setFocusedItem,
     },
   };
 };

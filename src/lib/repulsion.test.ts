@@ -1,24 +1,25 @@
 import { describe, expect, it } from "vitest";
-import type { CardGroupData } from "@/types/canvas";
+import type { CanvasStackItem } from "@/types/canvas";
 import { computeRepulsionOffsets } from "./repulsion";
 
-// Helper to create minimal mock groups
+// Helper to create minimal mock stack items
 const createMockGroup = (
   id: string,
   x: number,
   y: number,
   size = { width: 200, height: 200 }
-): CardGroupData => ({
+): CanvasStackItem => ({
   id,
   position: { x, y },
   zIndex: 1,
+  kind: "stack",
   cover: {
     id: `${id}-cover`,
-    type: "company",
+    kind: "cover",
     size,
     content: { company: "Test", image: "" },
   },
-  projects: [],
+  stack: [],
 });
 
 describe("computeRepulsionOffsets", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMockStack, createMockSingle } from "@/test-utils/test-helpers";
+import { createMockSingle, createMockStack } from "@/test-utils/test-helpers";
 import type { CanvasItem } from "@/types/canvas";
 import { canvasReducer } from "./use-canvas-state";
 
@@ -17,6 +17,7 @@ describe("useCanvasState - Reducer Action Coverage", () => {
       expandedStackId: null,
       maxZIndex,
       viewportState: { scale: 1, positionX: 0, positionY: 0 },
+      focusedItemId: null,
     };
   };
 
@@ -113,6 +114,26 @@ describe("useCanvasState - Reducer Action Coverage", () => {
     });
   });
 
+  describe("SET_FOCUSED_ITEM", () => {
+    it("updates focusedItemId", () => {
+      const state = createMockState([]);
+      const newState = canvasReducer(state, {
+        type: "SET_FOCUSED_ITEM",
+        payload: { id: "i1" },
+      });
+      expect(newState.focusedItemId).toBe("i1");
+    });
+
+    it("can set focusedItemId to null", () => {
+      const state = createMockState([]);
+      const newState = canvasReducer(state, {
+        type: "SET_FOCUSED_ITEM",
+        payload: { id: null },
+      });
+      expect(newState.focusedItemId).toBeNull();
+    });
+  });
+
   describe("UPDATE_VIEWPORT", () => {
     it("updates viewportState", () => {
       const state = createMockState([]);
@@ -143,8 +164,8 @@ describe("useCanvasState - Reducer Action Coverage", () => {
 
     it("preserves existing state properties not in payload", () => {
       const state = createMockState([]);
-      state.selectedItemId = "test";
-      const newState = canvasReducer(state, {
+      const stateWithSelection = { ...state, selectedItemId: "test" };
+      const newState = canvasReducer(stateWithSelection, {
         type: "LOAD_STATE",
         payload: { items: new Map(), maxZIndex: 1 },
       });
@@ -194,8 +215,11 @@ describe("useCanvasState - Reducer Action Coverage", () => {
     it("clears selectedItemId when deleted item was selected", () => {
       const i1 = createMockStack("i1", 0, 0);
       const state = createMockState([i1]);
-      state.selectedItemId = "i1";
-      const newState = canvasReducer(state, {
+      const stateWithSelection = {
+        ...state,
+        selectedItemId: "i1" as string | null,
+      };
+      const newState = canvasReducer(stateWithSelection, {
         type: "DELETE_ITEM",
         payload: { id: "i1" },
       });
@@ -206,8 +230,11 @@ describe("useCanvasState - Reducer Action Coverage", () => {
       const i1 = createMockStack("i1", 0, 0);
       const i2 = createMockStack("i2", 100, 100);
       const state = createMockState([i1, i2]);
-      state.selectedItemId = "i1";
-      const newState = canvasReducer(state, {
+      const stateWithSelection = {
+        ...state,
+        selectedItemId: "i1" as string | null,
+      };
+      const newState = canvasReducer(stateWithSelection, {
         type: "DELETE_ITEM",
         payload: { id: "i2" },
       });
@@ -217,8 +244,11 @@ describe("useCanvasState - Reducer Action Coverage", () => {
     it("clears expandedStackId when deleted stack was expanded", () => {
       const s1 = createMockStack("s1", 0, 0);
       const state = createMockState([s1]);
-      state.expandedStackId = "s1";
-      const newState = canvasReducer(state, {
+      const stateWithExpansion = {
+        ...state,
+        expandedStackId: "s1" as string | null,
+      };
+      const newState = canvasReducer(stateWithExpansion, {
         type: "DELETE_ITEM",
         payload: { id: "s1" },
       });
@@ -229,12 +259,29 @@ describe("useCanvasState - Reducer Action Coverage", () => {
       const s1 = createMockStack("s1", 0, 0);
       const s2 = createMockStack("s2", 100, 100);
       const state = createMockState([s1, s2]);
-      state.expandedStackId = "s1";
-      const newState = canvasReducer(state, {
+      const stateWithExpansion = {
+        ...state,
+        expandedStackId: "s1" as string | null,
+      };
+      const newState = canvasReducer(stateWithExpansion, {
         type: "DELETE_ITEM",
         payload: { id: "s2" },
       });
       expect(newState.expandedStackId).toBe("s1");
+    });
+
+    it("clears focusedItemId when deleted item was focused", () => {
+      const i1 = createMockStack("i1", 0, 0);
+      const state = createMockState([i1]);
+      const stateWithFocus = {
+        ...state,
+        focusedItemId: "i1" as string | null,
+      };
+      const newState = canvasReducer(stateWithFocus, {
+        type: "DELETE_ITEM",
+        payload: { id: "i1" },
+      });
+      expect(newState.focusedItemId).toBeNull();
     });
   });
 
@@ -256,8 +303,8 @@ describe("useCanvasState - Reducer Action Coverage", () => {
     it("clears selectedItemId", () => {
       const s1 = createMockStack("s1", 0, 0);
       const state = createMockState([s1]);
-      state.selectedItemId = "s1";
-      const resetState = canvasReducer(state, {
+      const modifiedState = { ...state, selectedItemId: "s1" as string | null };
+      const resetState = canvasReducer(modifiedState, {
         type: "RESET_ITEMS",
         payload: { initialItems: [s1] },
       });
@@ -267,12 +314,29 @@ describe("useCanvasState - Reducer Action Coverage", () => {
     it("clears expandedStackId", () => {
       const s1 = createMockStack("s1", 0, 0);
       const state = createMockState([s1]);
-      state.expandedStackId = "s1";
-      const resetState = canvasReducer(state, {
+      const modifiedState = {
+        ...state,
+        expandedStackId: "s1" as string | null,
+      };
+      const resetState = canvasReducer(modifiedState, {
         type: "RESET_ITEMS",
         payload: { initialItems: [s1] },
       });
       expect(resetState.expandedStackId).toBeNull();
+    });
+
+    it("clears focusedItemId", () => {
+      const s1 = createMockStack("s1", 0, 0);
+      const state = createMockState([s1]);
+      const modifiedState = {
+        ...state,
+        focusedItemId: "s1" as string | null,
+      };
+      const resetState = canvasReducer(modifiedState, {
+        type: "RESET_ITEMS",
+        payload: { initialItems: [s1] },
+      });
+      expect(resetState.focusedItemId).toBeNull();
     });
 
     it("restores maxZIndex from initial items", () => {
@@ -319,7 +383,10 @@ describe("useCanvasState - Reducer Action Coverage", () => {
         payload: { itemId: "s1", cardId: "s1-cover", height: 300 },
       });
       if (stack.kind === "stack") {
-        expect(newState.items.get("s1")?.cover?.size.height).toBe(300);
+        const s1 = newState.items.get("s1");
+        if (s1?.kind === "stack") {
+          expect(s1.cover?.size.height).toBe(300);
+        }
       }
     });
 
@@ -331,7 +398,10 @@ describe("useCanvasState - Reducer Action Coverage", () => {
         payload: { itemId: "single1", cardId: "single1-card", height: 300 },
       });
       if (single.kind === "single") {
-        expect(newState.items.get("single1")?.card?.size.height).toBe(300);
+        const single1 = newState.items.get("single1");
+        if (single1?.kind === "single") {
+          expect(single1.card?.size.height).toBe(300);
+        }
       }
     });
 

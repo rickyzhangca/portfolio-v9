@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Card } from "@/components/cards/card";
+import { RenderCard } from "@/cards/render-card";
 import { fanConfigAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
 import type { CanvasStackItem, Position } from "@/types/canvas";
@@ -180,7 +180,6 @@ export const CardStack = ({
               y: 0,
             }}
             key={coverWithSize.id}
-            layoutId={coverWithSize.type === "doc" ? "resume-card" : undefined}
             onClick={(e) => {
               const target = e.target as HTMLElement;
               if (target.closest(".no-drag")) {
@@ -201,33 +200,24 @@ export const CardStack = ({
             }}
             transition={{ ...SPRING_PRESETS.snappy, delay: coverEntranceDelay }}
           >
-            {coverWithSize.type === "doc" &&
-            coverWithSize.content.docType === "resume" ? (
-              <Card
+            <div
+              style={{
+                maskImage: CARD_MASK_DATA_URI,
+                WebkitMaskImage: CARD_MASK_DATA_URI,
+                maskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
+                WebkitMaskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
+                maskRepeat: "no-repeat",
+                WebkitMaskRepeat: "no-repeat",
+                maskPosition: "center",
+                WebkitMaskPosition: "center",
+              }}
+            >
+              <RenderCard
+                card={coverWithSize}
                 className="shadow-none hover:shadow-none"
-                data={coverWithSize}
                 onMeasure={(h) => handleCardMeasure(coverWithSize.id, h)}
               />
-            ) : (
-              <div
-                style={{
-                  maskImage: CARD_MASK_DATA_URI,
-                  WebkitMaskImage: CARD_MASK_DATA_URI,
-                  maskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
-                  WebkitMaskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
-                  maskRepeat: "no-repeat",
-                  WebkitMaskRepeat: "no-repeat",
-                  maskPosition: "center",
-                  WebkitMaskPosition: "center",
-                }}
-              >
-                <Card
-                  className="shadow-none hover:shadow-none"
-                  data={coverWithSize}
-                  onMeasure={(h) => handleCardMeasure(coverWithSize.id, h)}
-                />
-              </div>
-            )}
+            </div>
           </motion.div>
         )}
         {projectsWithSizes.map((card, index) => {
@@ -243,8 +233,8 @@ export const CardStack = ({
               : 0;
 
           // Calculate scale factor to fit project card within cover width when collapsed
-          const coverWidth = coverWithSize?.size.width ?? card.size.width;
-          const collapsedScale = Math.min(1, coverWidth / card.size.width);
+          const coverWidth = coverWithSize?.size.width ?? card.size.width ?? 240;
+          const collapsedScale = Math.min(1, coverWidth / (card.size.width ?? 350));
 
           // When collapsed: only first 2 cards visible, others stack behind 2nd card
           const COLLAPSED_VISIBLE_COUNT = 2;
@@ -291,8 +281,8 @@ export const CardStack = ({
               }}
               transition={SPRING_PRESETS.snappy}
             >
-              <Card
-                data={card}
+              <RenderCard
+                card={card}
                 isExpanded={isExpanded}
                 onMeasure={(h) => handleCardMeasure(card.id, h)}
                 priority={index < 2}

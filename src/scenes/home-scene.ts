@@ -1,4 +1,6 @@
-import type { CanvasItem, ResumeData } from "@/types/canvas";
+import type { CanvasItem } from "@/types/canvas";
+import { ABOUT_CARD_SIZE } from "@/cards/about/about-data";
+import { resumeData, RESUME_CARD_SIZE } from "@/cards/resume/resume-data";
 
 const START_X = 120;
 const START_Y = 240;
@@ -6,113 +8,7 @@ const START_Y = 240;
 const GAP_X = 320;
 const GAP_Y = 20;
 
-const resumeData: ResumeData = {
-  header: {
-    name: "Ricky Zhang",
-    website: "https://rickyzhang.me",
-    email: "ricky.zhang@queensu.ca",
-    phone: "+1 647-514-6238",
-  },
-  education: {
-    logo: "/src/assets/resume/queens.webp",
-    degree: "BCH in Cognitive Science",
-    institution: "Queen's University",
-    years: "2017-2021",
-    description:
-      "Learned computer science, artificial intelligence, psychology, linguistics",
-  },
-  experiences: [
-    {
-      company: "Wealthsimple",
-      logo: "/src/assets/resume/wealthsimple.webp",
-      title: "Design Engineer, Design Systems",
-      caption: "09/2024 - Current",
-      description: [
-        "Led front-end implementation of the web app dark mode, partnering with design and product teams to ship a polished experience",
-        "Introduced the dynamic gradients to the mobile app for delightful experience",
-        "Built new swipeable component used across the app for consistent interactions",
-        "Learned and shipped Android native sheets and new iOS home screen widgets",
-        "Maintaining and expanding the design system across web and mobile",
-      ],
-    },
-    {
-      company: "Mintlify",
-      logo: "/src/assets/resume/mintlify.webp",
-      title: "Design Engineer",
-      caption: "06/2024 - 09/2024",
-      description: [
-        "Shipped new search & chat designs and Mintlify widget",
-        "Brought custom fonts, advanced footer, and Gitlab integration to users",
-        "Built the redesigns for auth flows, onboarding, and support forms",
-      ],
-    },
-    {
-      company: "RBC",
-      logo: "/src/assets/resume/rbc.webp",
-      title: "UX Engineer",
-      caption: "02/2023 - 06/2024",
-      description: [
-        "Owned product design and front-end for 4 AIOps products end-to-end",
-        "Defined UI and experience strategy, implemented features to scale 2 ML products to consume complex data and serve multiple times more teams",
-        "On the side, built a internal dev tool for data engineers managing PySpark jobs",
-      ],
-    },
-    {
-      company: "Mosaic Manufacturing",
-      logo: "/src/assets/resume/mosaic.webp",
-      title: "Product Designer",
-      caption: "05/2021 - 02/2023",
-      description: [
-        "Architected a scalable and multi-device design system with 64% less components (launched in Dec 2022)",
-        "Led design and helped building an overhaul to the web app to deliver better user experience (launched in Apr 2022)",
-        "Designed the B2B solutions with insights from exploratory user research on over 20 high-value customers",
-        "Built the front-end for two 3D printers (shipped in Jan 2023)",
-        "Designed materials for marketing, branding, packaging, fund raising, events",
-      ],
-    },
-    {
-      company: "Mosaic Manufacturing",
-      logo: "/src/assets/resume/mosaic.webp",
-      title: "UI Designer/Developer",
-      caption:
-        "05/2020 - 08/2020 Intern\u00a0\u00a0\u00a0 10/2020 - 04/2021 Part-time",
-      description: [
-        "Designed the interface and experience of Palette 3, a 3D printing hardware, from concepts to hi-fi prototypes (shipped in Sep 2021)",
-        "Crafted the interface and experience from scratch for two 3D printers",
-      ],
-    },
-  ],
-  skills: [
-    {
-      category: "Design",
-      skills: ["Design systems", "High fidelity", "Vector tools"],
-    },
-    {
-      category: "Front-end",
-      skills: [
-        "React, React Native, TypeScript",
-        "Components composition",
-        "Prototyping",
-      ],
-    },
-    {
-      category: "Domains",
-      skills: ["Fintech", "Dev tools", "IT and operations"],
-    },
-  ],
-};
-
-export const RESUME_CARD_SIZE = { width: 240, height: 440 };
-export const RESUME_SHEET_SIZE = {
-  width: 840,
-};
-
-export const ABOUT_CARD_SIZE = { width: 240, height: 420 };
-export const ABOUT_SHEET_SIZE = {
-  width: 840,
-};
-
-export const data: CanvasItem[] = [
+export const initialItems: CanvasItem[] = [
   // resume - single item
   {
     id: "resume-item",
@@ -121,12 +17,9 @@ export const data: CanvasItem[] = [
     zIndex: 1,
     card: {
       id: "resume-card",
-      type: "doc",
+      kind: "resume",
       size: RESUME_CARD_SIZE,
-      content: {
-        docType: "resume",
-        data: resumeData,
-      },
+      content: resumeData,
     },
   },
   // about - single item
@@ -137,12 +30,9 @@ export const data: CanvasItem[] = [
     zIndex: 1,
     card: {
       id: "about-card",
-      type: "doc",
+      kind: "about",
       size: ABOUT_CARD_SIZE,
-      content: {
-        //  skip parameterizing content since it's unique
-        docType: "about",
-      },
+      content: {}, // About is markdown-driven
     },
   },
   // email - single item
@@ -153,7 +43,7 @@ export const data: CanvasItem[] = [
     zIndex: 1,
     card: {
       id: "email-card",
-      type: "email",
+      kind: "email",
       size: {},
       content: {
         link: {
@@ -171,7 +61,7 @@ export const data: CanvasItem[] = [
     zIndex: 1,
     card: {
       id: "socials-card",
-      type: "socials",
+      kind: "socials",
       size: {},
       content: {
         linkedinUrl: "https://www.linkedin.com/in/ricky-zhang/",
@@ -187,7 +77,7 @@ export const data: CanvasItem[] = [
     zIndex: 2,
     cover: {
       id: "wealthsimple-cover",
-      type: "cover",
+      kind: "cover",
       size: { width: 240, height: 340 },
       content: {
         company: "Wealthsimple",
@@ -198,7 +88,7 @@ export const data: CanvasItem[] = [
     stack: [
       {
         id: "project-15",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Wealthsimple Sans rollout",
@@ -207,7 +97,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-8",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Native sheets",
@@ -216,7 +106,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-12",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Web rolling ticker",
@@ -225,7 +115,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-6",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Data viz colors",
@@ -234,7 +124,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-14",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Redesigned securities widget",
@@ -243,7 +133,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-13",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Web chart segments + animations",
@@ -252,7 +142,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-7",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Home gradients",
@@ -261,7 +151,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-9",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "New profile layout",
@@ -270,7 +160,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-5",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Web dark mode",
@@ -279,7 +169,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-11",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Swipeable components",
@@ -288,7 +178,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-10",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Web snackbar",
@@ -305,7 +195,7 @@ export const data: CanvasItem[] = [
     zIndex: 3,
     cover: {
       id: "mintlify-cover",
-      type: "cover",
+      kind: "cover",
       size: { width: 240, height: 340 },
       content: {
         company: "Mintlify",
@@ -316,7 +206,7 @@ export const data: CanvasItem[] = [
     stack: [
       {
         id: "project-17",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "New search & chat and Mintlify widget",
@@ -325,7 +215,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-18",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Editor file tree",
@@ -334,7 +224,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-16",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Refreshed auth and onboarding",
@@ -343,7 +233,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-22",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Dashboard support form",
@@ -352,7 +242,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-19",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Custom fonts",
@@ -361,7 +251,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-20",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Advanced footer",
@@ -370,7 +260,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-21",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Gitlab configuration",
@@ -387,7 +277,7 @@ export const data: CanvasItem[] = [
     zIndex: 1,
     cover: {
       id: "rbc-cover",
-      type: "cover",
+      kind: "cover",
       size: { width: 240, height: 340 },
       content: {
         company: "RBC",
@@ -398,7 +288,7 @@ export const data: CanvasItem[] = [
     stack: [
       {
         id: "project-2",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "New internal AIOps products",
@@ -407,7 +297,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-4",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Redesigned UI for larger data volumes",
@@ -416,7 +306,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-3",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Internal tool for managing PySpark jobs",
@@ -425,7 +315,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-1",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Mentor and judge for 2 years of Amplify",
@@ -442,7 +332,7 @@ export const data: CanvasItem[] = [
     zIndex: 4,
     cover: {
       id: "mosaic-cover",
-      type: "cover",
+      kind: "cover",
       size: { width: 240, height: 340 },
       content: {
         company: "Mosaic",
@@ -453,7 +343,7 @@ export const data: CanvasItem[] = [
     stack: [
       {
         id: "project-24",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Web + multi-device IoT design system",
@@ -462,7 +352,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-28",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "UI for 3 new 3D printers",
@@ -471,7 +361,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-23",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "B2B service offerings from scratch",
@@ -480,7 +370,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-26",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Refreshed icon system and pipeline",
@@ -489,7 +379,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-25",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "All sorts of print materials",
@@ -498,7 +388,7 @@ export const data: CanvasItem[] = [
       },
       {
         id: "project-27",
-        type: "project",
+        kind: "project",
         size: { width: 350 },
         content: {
           title: "Unified packaging design",
@@ -515,7 +405,7 @@ export const data: CanvasItem[] = [
     zIndex: 5,
     card: {
       id: "stickynote-card-1",
-      type: "stickynote",
+      kind: "stickynote",
       size: { width: 240 },
       content: {
         content: "Fun projects",
@@ -530,7 +420,7 @@ export const data: CanvasItem[] = [
     zIndex: 5,
     card: {
       id: "swag-collection",
-      type: "stickynote",
+      kind: "stickynote",
       size: { width: 240 },
       content: {
         content: "Swag collection",
@@ -546,7 +436,7 @@ export const data: CanvasItem[] = [
     zIndex: 1,
     card: {
       id: "profilepic-card",
-      type: "profilepic",
+      kind: "profilepic",
       size: { width: 100, height: 100 },
       content: {
         images: [
@@ -565,7 +455,7 @@ export const data: CanvasItem[] = [
     zIndex: 3,
     card: {
       id: "macbook-card",
-      type: "macbook",
+      kind: "macbook",
       size: { width: 345, height: 300 },
       content: {
         stickers: [
