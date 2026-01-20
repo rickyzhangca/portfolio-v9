@@ -13,6 +13,9 @@ export const AUTO_PAN_EASING = "easeInOutCubic";
 
 const CONTENT_WIDTH = 300;
 const CONTENT_GAP = 24;
+// Keep these in sync with `src/components/groups/fun-project-group.tsx`.
+const FUN_STACK_CONTENT_CARD_HEIGHT = 120;
+const FUN_STACK_VERTICAL_GAP = 16;
 
 interface BoundingBox {
   minX: number;
@@ -91,13 +94,21 @@ const getExpandedBoundingBox = (
  */
 const getFunStackExpandedBoundingBox = (
   cardWidth: number,
-  cardHeight: number
+  cardHeight: number,
+  itemsCount: number
 ): BoundingBox => {
+  const listHeight =
+    itemsCount > 0
+      ? itemsCount * FUN_STACK_CONTENT_CARD_HEIGHT +
+        (itemsCount - 1) * FUN_STACK_VERTICAL_GAP
+      : 0;
+
   return {
     minX: 0,
     minY: 0,
     maxX: cardWidth + CONTENT_GAP + CONTENT_WIDTH,
-    maxY: cardHeight,
+    // Content cards fly out to the right and stack vertically starting at y=0.
+    maxY: Math.max(cardHeight, listHeight),
   };
 };
 
@@ -288,7 +299,11 @@ export const getFunStackAutoPanTarget = (
   const cardHeight = funStack.card.size.height ?? 360;
 
   // Calculate bounding box of expanded content (card + gap + content panel)
-  const expandedBbox = getFunStackExpandedBoundingBox(cardWidth, cardHeight);
+  const expandedBbox = getFunStackExpandedBoundingBox(
+    cardWidth,
+    cardHeight,
+    funStack.card.content.items.length
+  );
 
   // Get current visible viewport in canvas coordinates
   const visibleViewport = getVisibleViewport(
