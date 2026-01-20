@@ -1,7 +1,7 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { type PointerEventHandler, useEffect } from "react";
-import { ABOUT_CARD_SIZE, ABOUT_SHEET_SIZE } from "@/data/data";
+import { ABOUT_CARD_SIZE, ABOUT_SHEET_SIZE } from "@/cards/about/about-data";
 import { SPRING_PRESETS } from "@/lib/animation";
 import { AboutSheet } from "./about-sheet";
 

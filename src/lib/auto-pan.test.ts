@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_FAN_CONFIG } from "@/lib/fan";
-import { createMockCard, createMockStack } from "@/test-utils/test-helpers";
+import {
+  createMockCard,
+  createMockCover,
+  createMockStack,
+} from "@/test-utils/test-helpers";
 import { getAutoPanTarget } from "./auto-pan";
 
 describe("getAutoPanTarget - content fits viewport", () => {
   it("returns null when expanded stack with cover and stack fits within viewport", () => {
-    const cover = createMockCard("cover", 200, 300);
+    const cover = createMockCover("cover", 200, 300);
     const stack = [
       createMockCard("p1", 100, 150),
       createMockCard("p2", 100, 150),
@@ -24,7 +28,7 @@ describe("getAutoPanTarget - content fits viewport", () => {
   });
 
   it("returns null when content fits within viewport", () => {
-    const cover = createMockCard("cover", 100, 100);
+    const cover = createMockCover("cover", 100, 100);
     const stackItem = createMockStack("s1", 400, 400, 1, cover, []);
 
     const result = getAutoPanTarget(
@@ -39,7 +43,7 @@ describe("getAutoPanTarget - content fits viewport", () => {
   });
 
   it("returns null when content fits with small scale", () => {
-    const cover = createMockCard("cover", 100, 100);
+    const cover = createMockCover("cover", 100, 100);
     const stackItem = createMockStack("s1", 100, 100, 1, cover, []);
 
     const result = getAutoPanTarget(
@@ -75,7 +79,7 @@ describe("getAutoPanTarget - content fits viewport", () => {
 
 describe("getAutoPanTarget - content overflows viewport", () => {
   it("returns null when content fits within viewport with some margins", () => {
-    const cover = createMockCard("cover", 500, 300);
+    const cover = createMockCover("cover", 500, 300);
     const stackItem = createMockStack("s1", 800, 100, 1, cover, []);
 
     const result = getAutoPanTarget(
@@ -92,7 +96,7 @@ describe("getAutoPanTarget - content overflows viewport", () => {
   });
 
   it("returns margin transform when content exceeds viewport horizontally", () => {
-    const cover = createMockCard("cover", 2400, 300);
+    const cover = createMockCover("cover", 2400, 300);
     const stackItem = createMockStack("s1", 0, 100, 1, cover, []);
 
     const result = getAutoPanTarget(
@@ -111,7 +115,7 @@ describe("getAutoPanTarget - content overflows viewport", () => {
   });
 
   it("returns transform accounting for rotated card bounding boxes", () => {
-    const cover = createMockCard("cover", 200, 300);
+    const cover = createMockCover("cover", 200, 300);
     const project1 = createMockCard("p1", 400, 200);
     const project2 = createMockCard("p2", 400, 200);
     const project3 = createMockCard("p3", 400, 200);
@@ -133,7 +137,7 @@ describe("getAutoPanTarget - content overflows viewport", () => {
   });
 
   it("handles large number of projects with fan arc offsets", () => {
-    const cover = createMockCard("cover", 240, 340);
+    const cover = createMockCover("cover", 240, 340);
     const projects = Array.from({ length: 12 }, (_, i) =>
       createMockCard(`p${i}`, 420, 280)
     );
@@ -151,7 +155,7 @@ describe("getAutoPanTarget - content overflows viewport", () => {
   });
 
   it("handles stacks positioned far from viewport origin", () => {
-    const cover = createMockCard("cover", 200, 200);
+    const cover = createMockCover("cover", 200, 200);
     const stackItem = createMockStack("s1", 5000, 5000, 1, cover, []);
 
     const result = getAutoPanTarget(
@@ -168,7 +172,7 @@ describe("getAutoPanTarget - content overflows viewport", () => {
   });
 
   it("handles large scale values when content fits", () => {
-    const cover = createMockCard("cover", 300, 200);
+    const cover = createMockCover("cover", 300, 200);
     const stackItem = createMockStack("s1", 400, 300, 1, cover, []);
 
     const result = getAutoPanTarget(
@@ -187,7 +191,7 @@ describe("getAutoPanTarget - content overflows viewport", () => {
   });
 
   it("converts screen bounds to canvas coordinates with positive position", () => {
-    const cover = createMockCard("cover", 300, 200);
+    const cover = createMockCover("cover", 300, 200);
     const stackItem = createMockStack("s1", 400, 300, 1, cover, []);
 
     const result = getAutoPanTarget(
@@ -206,7 +210,7 @@ describe("getAutoPanTarget - content overflows viewport", () => {
   });
 
   it("returns null when content with projects fits within viewport", () => {
-    const cover = createMockCard("cover", 200, 800);
+    const cover = createMockCover("cover", 200, 800);
     const projects = [createMockCard("p1", 300, 400)];
     const stackItem = createMockStack("s1", 500, 200, 1, cover, projects);
 
@@ -224,7 +228,7 @@ describe("getAutoPanTarget - content overflows viewport", () => {
   });
 
   it("returns null when content fits within viewport bounds", () => {
-    const cover = createMockCard("cover", 1000, 200);
+    const cover = createMockCover("cover", 1000, 200);
     const projects = [createMockCard("p1", 300, 300)];
     const stackItem = createMockStack("s1", 200, 400, 1, cover, projects);
 
@@ -242,7 +246,7 @@ describe("getAutoPanTarget - content overflows viewport", () => {
   });
 
   it("uses margin transform when content exceeds available space in both directions", () => {
-    const cover = createMockCard("cover", 1800, 800);
+    const cover = createMockCover("cover", 1800, 800);
     const stackItem = createMockStack("s1", 500, 400, 1, cover, []);
 
     const result = getAutoPanTarget(

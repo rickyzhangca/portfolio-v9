@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CardData } from "@/types/canvas";
+import type { CardInstance } from "@/cards/types";
 import {
   COLLAPSED_POSITIONS,
   getOffsets,
@@ -8,9 +8,9 @@ import {
 } from "./card-layout";
 import { DEFAULT_FAN_CONFIG } from "./fan";
 
-const createMockCard = (id: string, width = 100, height = 100): CardData => ({
+const createMockCard = (id: string, width = 100, height = 100): CardInstance => ({
   id,
-  type: "project",
+  kind: "project",
   size: { width, height },
   content: { title: "Test", description: "Test", image: "" },
 });
@@ -24,7 +24,7 @@ describe("getOffsets", () => {
     ];
 
     const offsets = getOffsets(
-      {} as CardData,
+      {} as CardInstance,
       projects,
       false,
       DEFAULT_FAN_CONFIG

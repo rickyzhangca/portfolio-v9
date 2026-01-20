@@ -1,4 +1,4 @@
-import type { ResumeHeader as ResumeHeaderData } from "@/types/canvas";
+import type { ResumeHeader as ResumeHeaderData } from "@/cards/types";
 
 interface ResumeHeaderProps {
   data?: ResumeHeaderData;

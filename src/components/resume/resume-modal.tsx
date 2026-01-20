@@ -1,9 +1,12 @@
 import { ArrowLeftIcon, FileIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { type PointerEventHandler, useEffect } from "react";
-import { RESUME_CARD_SIZE, RESUME_SHEET_SIZE } from "@/data/data";
+import {
+  RESUME_CARD_SIZE,
+  RESUME_SHEET_SIZE,
+} from "@/cards/resume/resume-data";
+import type { ResumeData } from "@/cards/types";
 import { SPRING_PRESETS } from "@/lib/animation";
-import type { ResumeData } from "@/types/canvas";
 import { ResumeSheet } from "./resume-sheet";
 
 interface ResumeModalProps {

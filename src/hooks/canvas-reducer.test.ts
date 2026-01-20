@@ -16,6 +16,7 @@ const createMockState = (items: CanvasStackItem[] = []): CanvasState => {
     expandedStackId: null,
     maxZIndex,
     viewportState: { scale: 1, positionX: 0, positionY: 0 },
+    focusedItemId: null,
   };
 };
 
@@ -32,7 +33,7 @@ const createMockStack = (
   zIndex,
   cover: {
     id: "c",
-    type: "cover",
+    kind: "cover",
     size: { width: 100 },
     content: { company: "C", image: "" },
   },

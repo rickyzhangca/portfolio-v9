@@ -1,4 +1,4 @@
-import type { ResumeEducation as ResumeEducationData } from "@/types/canvas";
+import type { ResumeEducation as ResumeEducationData } from "@/cards/types";
 
 interface ResumeEducationProps {
   data?: ResumeEducationData;

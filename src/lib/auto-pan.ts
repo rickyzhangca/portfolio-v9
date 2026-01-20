@@ -45,6 +45,7 @@ const getExpandedBoundingBox = (
 
     const offset = offsets[i];
     const cardHeight = card.size.height ?? 360;
+    const cardWidth = card.size.width ?? 350;
 
     // For expanded cards, calculate rotation based on position in row
     // Row 0: first 3 cards get 0.5, 1.0, 1.5 deg rotation
@@ -53,7 +54,7 @@ const getExpandedBoundingBox = (
     const rotationDeg = (colIndex + 1) * fanConfig.rotateStepDeg;
 
     const { width: bboxWidth, height: bboxHeight } = getRotatedBoundingBox(
-      card.size.width,
+      cardWidth,
       cardHeight,
       rotationDeg
     );

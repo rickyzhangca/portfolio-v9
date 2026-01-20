@@ -7,6 +7,7 @@ interface CanvasItemRendererProps {
   itemIndex: number;
   scale: number;
   isExpanded: boolean;
+  isFocused: boolean;
   dragDisabled: boolean;
   repulsionOffset: Position;
   onBringToFront: () => void;
@@ -15,7 +16,7 @@ interface CanvasItemRendererProps {
   onDragStart?: () => void;
   onDragEnd?: () => void;
   onCardHeightMeasured?: (cardId: string, height: number) => void;
-  onDocClick?: () => void;
+  onActivate?: () => void;
   setRootRef?: (el: HTMLDivElement | null) => void;
 }
 
@@ -24,6 +25,7 @@ export function CanvasItemRenderer({
   itemIndex,
   scale,
   isExpanded,
+  isFocused,
   dragDisabled,
   repulsionOffset,
   onBringToFront,
@@ -32,13 +34,14 @@ export function CanvasItemRenderer({
   onDragStart,
   onDragEnd,
   onCardHeightMeasured,
-  onDocClick,
+  onActivate,
   setRootRef,
 }: CanvasItemRendererProps) {
   if (item.kind === "single") {
     return (
       <SingleCardItem
         dragDisabled={dragDisabled}
+        isFocused={isFocused}
         item={item}
         scale={scale}
         repulsionOffset={repulsionOffset}
@@ -47,7 +50,7 @@ export function CanvasItemRenderer({
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
         onCardHeightMeasured={onCardHeightMeasured}
-        onDocClick={onDocClick}
+        onActivate={onActivate}
         setRootRef={setRootRef}
       />
     );
