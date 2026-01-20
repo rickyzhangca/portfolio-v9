@@ -461,7 +461,7 @@ export const initialItems: CanvasItem[] = [
         stickers: [
           {
             src: "/src/assets/macbook/anime.webp",
-            description: "Anime sticker",
+            description: "I'm a seasoned anime fan",
             x: 12,
             y: 36,
             width: 88,
@@ -469,7 +469,7 @@ export const initialItems: CanvasItem[] = [
           },
           {
             src: "/src/assets/macbook/badminton.webp",
-            description: "Badminton sticker",
+            description: "I love playing badminton!",
             x: 84,
             y: 26,
             width: 120,
@@ -477,7 +477,7 @@ export const initialItems: CanvasItem[] = [
           },
           {
             src: "/src/assets/macbook/cat.webp",
-            description: "Cat sticker",
+            description: "I love a lovely  long-hair grey cat",
             x: 30,
             y: 72,
             width: 327,
@@ -485,7 +485,7 @@ export const initialItems: CanvasItem[] = [
           },
           {
             src: "/src/assets/macbook/game.webp",
-            description: "Game sticker",
+            description: "I play a lot of Cities: Skylines 2",
             x: 36,
             y: 24,
             width: 185,
@@ -493,7 +493,7 @@ export const initialItems: CanvasItem[] = [
           },
           {
             src: "/src/assets/macbook/hackathon.webp",
-            description: "Hackathon sticker",
+            description: "I love hackthons, sometimes as a judge too",
             x: 85,
             y: 60,
             width: 120,
@@ -501,7 +501,7 @@ export const initialItems: CanvasItem[] = [
           },
           {
             src: "/src/assets/macbook/marathon.webp",
-            description: "Marathon sticker",
+            description: "I have ran 7 marathons since 2023",
             x: 60,
             y: 28,
             width: 215,
@@ -509,7 +509,7 @@ export const initialItems: CanvasItem[] = [
           },
           {
             src: "/src/assets/macbook/turtle.webp",
-            description: "Turtle sticker",
+            description: "Two turtlees are enjoying the sun bath next to me",
             x: 72,
             y: 74,
             width: 109,
