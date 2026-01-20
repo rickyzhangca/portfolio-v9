@@ -189,7 +189,7 @@ const MacbookCardComponent = ({
                   ? "-12px -12px"
                   : "calc(100% + 12px) -12px",
             }}
-            transition={{ type: "spring", bounce: 0.4, duration: 0.48 }}
+            transition={{ type: "spring", bounce: 0.24, duration: 0.48 }}
           >
             <div
               className={tw(
