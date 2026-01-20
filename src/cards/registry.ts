@@ -88,6 +88,17 @@ export interface MacbookCardContent {
   stickers: MacbookSticker[];
 }
 
+export interface FunProjectItem {
+  icon: string; // Placeholder icon (e.g., emoji or color)
+  title: string;
+  blurb: string;
+  link?: string;
+}
+
+export interface FunProjectCardContent {
+  items: FunProjectItem[];
+}
+
 // Resume types (moved from canvas.ts)
 export interface ResumeHeader {
   name: string;
@@ -190,6 +201,11 @@ export interface MacbookCardInstance extends BaseCardInstance {
   content: MacbookCardContent;
 }
 
+export interface FunProjectCardInstance extends BaseCardInstance {
+  kind: "funproject";
+  content: FunProjectCardContent;
+}
+
 /**
  * Union of all card instances
  */
@@ -202,7 +218,8 @@ export type CardInstance =
   | SocialsCardInstance
   | StickyNoteCardInstance
   | ProfilePicCardInstance
-  | MacbookCardInstance;
+  | MacbookCardInstance
+  | FunProjectCardInstance;
 
 /**
  * Card kind union type
@@ -310,6 +327,13 @@ export const CARD_REGISTRY: Readonly<Record<CardKind, LazyCardDefinition>> =
         activate: "toggle-focus",
         drag: "full",
         focusScale: 2,
+      },
+    },
+    funproject: {
+      kind: "funproject",
+      interactionPolicy: {
+        activate: "none",
+        drag: "full",
       },
     },
   } as const);

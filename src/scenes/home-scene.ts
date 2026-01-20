@@ -519,4 +519,68 @@ export const initialItems: CanvasItem[] = [
       },
     },
   },
+  // fun projects - funstack
+  {
+    id: "fun-projects-stack",
+    kind: "funstack",
+    position: { x: 640, y: 1080 },
+    zIndex: 6,
+    card: {
+      id: "fun-projects-card",
+      kind: "funproject",
+      size: { width: 240 },
+      content: {
+        items: [
+          {
+            icon: "🎮",
+            title: "Game Dev Experiment",
+            blurb: "Built a small 2D platformer using Godot engine",
+            link: "https://github.com",
+          },
+          {
+            icon: "🎨",
+            title: "Design Tool",
+            blurb: "A simple SVG editor with React and Canvas API",
+            link: "https://github.com",
+          },
+          {
+            icon: "📱",
+            title: "Mobile App",
+            blurb: "Created a habit tracker with React Native",
+            link: "https://github.com",
+          },
+          {
+            icon: "🤖",
+            title: "AI Chatbot",
+            blurb: "Experimented with fine-tuning language models",
+            link: "https://github.com",
+          },
+          {
+            icon: "🎵",
+            title: "Music Visualizer",
+            blurb: "Real-time audio visualization with Web Audio API",
+            link: "https://github.com",
+          },
+          {
+            icon: "📊",
+            title: "Data Viz Library",
+            blurb: "Custom charting library built with D3.js",
+            link: "https://github.com",
+          },
+          {
+            icon: "🌐",
+            title: "Browser Extension",
+            blurb: "Productivity tool for managing tabs and bookmarks",
+            link: "https://github.com",
+          },
+          {
+            icon: "🔧",
+            title: "Dev Tools",
+            blurb: "Collection of CLI utilities for web development",
+            link: "https://github.com",
+          },
+        ],
+      },
+    },
+  },
 ];

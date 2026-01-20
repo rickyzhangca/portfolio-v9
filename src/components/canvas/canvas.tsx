@@ -10,9 +10,9 @@ import {
 } from "react";
 import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import { getInteractionPolicy } from "@/cards/registry";
 import { AboutModal } from "@/components/about/about-modal";
 import { ResumeModal } from "@/components/resume/resume-modal";
-import { getInteractionPolicy } from "@/cards/registry";
 import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
 import { useCanvasState } from "@/hooks/use-canvas-state";
 import {
@@ -439,10 +439,6 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                       item={item}
                       itemIndex={itemIndex}
                       key={item.id}
-                      onBringToFront={() => actions.bringItemToFront(item.id)}
-                      onCardHeightMeasured={(cardId, height) =>
-                        actions.updateCardHeight(item.id, cardId, height)
-                      }
                       onActivate={() => {
                         if (item.kind !== "single") {
                           return;
@@ -513,6 +509,10 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                           );
                         });
                       }}
+                      onBringToFront={() => actions.bringItemToFront(item.id)}
+                      onCardHeightMeasured={(cardId, height) =>
+                        actions.updateCardHeight(item.id, cardId, height)
+                      }
                       onDragEnd={() => setIsPanningDisabled(false)}
                       onDragStart={() => setIsPanningDisabled(true)}
                       onPositionUpdate={(position) =>
@@ -545,6 +545,55 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                           const panTarget = getAutoPanTarget(
                             item,
                             fanConfig,
+                            state.viewportState,
+                            window.innerWidth,
+                            window.innerHeight
+                          );
+
+                          if (panTarget) {
+                            // Save current position before auto-panning
+                            preAutoPanPositionRef.current = {
+                              x: state.viewportState.positionX,
+                              y: state.viewportState.positionY,
+                              scale: state.viewportState.scale,
+                            };
+                            requestAnimationFrame(() => {
+                              transformRef.current?.setTransform(
+                                panTarget.x,
+                                panTarget.y,
+                                panTarget.scale,
+                                AUTO_PAN_DURATION_MS,
+                                AUTO_PAN_EASING
+                              );
+                            });
+                          }
+                        }
+
+                        // Fun stack items can expand/collapse
+                        if (item.kind === "funstack") {
+                          if (isExpanded) {
+                            // Restore to pre-auto-pan position if available
+                            const savedPosition = preAutoPanPositionRef.current;
+                            if (savedPosition) {
+                              transformRef.current?.setTransform(
+                                savedPosition.x,
+                                savedPosition.y,
+                                savedPosition.scale,
+                                AUTO_PAN_DURATION_MS,
+                                AUTO_PAN_EASING
+                              );
+                              preAutoPanPositionRef.current = null;
+                            }
+                            actions.setExpandedStack(null);
+                            return;
+                          }
+
+                          actions.bringItemToFront(item.id);
+                          actions.setExpandedStack(item.id);
+
+                          // Check if auto-pan is needed
+                          const panTarget = getFunStackAutoPanTarget(
+                            item,
                             state.viewportState,
                             window.innerWidth,
                             window.innerHeight

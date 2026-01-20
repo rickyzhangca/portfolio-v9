@@ -27,6 +27,13 @@ const getItemCenter = (item: CanvasItem): Position => {
       y: item.position.y + (card?.size.height ?? 360) / 2,
     };
   }
+  if (item.kind === "funstack") {
+    const card = item.card;
+    return {
+      x: item.position.x + (card?.size.width ?? 240) / 2,
+      y: item.position.y + (card?.size.height ?? 360) / 2,
+    };
+  }
   // Stack item
   const cover = item.cover;
   return {

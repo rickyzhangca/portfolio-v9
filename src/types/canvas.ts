@@ -2,6 +2,7 @@
 import type {
   CardInstance,
   CoverCardInstance,
+  FunProjectCardInstance,
   ProjectCardInstance,
 } from "@/cards/types";
 
@@ -43,7 +44,16 @@ export interface CanvasStackItem extends CanvasItemBase {
   stack: ProjectCardInstance[];
 }
 
-export type CanvasItem = CanvasSingleItem | CanvasStackItem;
+// Fun stack item (fun project card that expands to show 8 items)
+export interface CanvasFunStackItem extends CanvasItemBase {
+  kind: "funstack";
+  card: FunProjectCardInstance;
+}
+
+export type CanvasItem =
+  | CanvasSingleItem
+  | CanvasStackItem
+  | CanvasFunStackItem;
 
 export interface CanvasState {
   items: Map<string, CanvasItem>;
@@ -74,16 +84,21 @@ export type CanvasAction =
   | { type: "SET_FOCUSED_ITEM"; payload: { id: string | null } };
 
 // Re-export commonly used card types for convenience
+// Legacy exports for backward compatibility during migration
+// TODO: Remove these once all files are migrated
 export type {
   AboutCardContent,
   AboutCardInstance,
   BaseCardInstance,
+  CardData,
   CardInstance,
   CardKind,
   CoverCardContent,
   CoverCardInstance,
   EmailCardContent,
   EmailCardInstance,
+  FunProjectCardContent,
+  FunProjectCardInstance,
   MacbookCardContent,
   MacbookCardInstance,
   MacbookSticker,
@@ -98,7 +113,3 @@ export type {
   StickyNoteCardContent,
   StickyNoteCardInstance,
 } from "@/cards/types";
-
-// Legacy exports for backward compatibility during migration
-// TODO: Remove these once all files are migrated
-export type { CardData } from "@/cards/types";
