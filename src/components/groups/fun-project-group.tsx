@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { RenderCard } from "@/cards/render-card";
 import { useDraggable } from "@/hooks/use-draggable";
@@ -9,6 +9,8 @@ import type { CanvasFunStackItem, Position } from "@/types/canvas";
 const CONTENT_WIDTH = 300;
 const CONTENT_GAP = 24;
 const STAGGER_DELAY = 0.05;
+const VERTICAL_GAP = 16;
+const CONTENT_CARD_HEIGHT = 120; // Estimated height for each content card
 
 interface FunProjectGroupProps {
   item: CanvasFunStackItem;
@@ -114,6 +116,7 @@ export const FunProjectGroup = ({
         initial={false}
         transition={isDragging ? TRANSITIONS.none : SPRING_PRESETS.quick}
       >
+        {/* Main card with icons */}
         <motion.div
           className="absolute top-0 left-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.16)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
           onPointerDown={(e) => {
@@ -153,6 +156,7 @@ export const FunProjectGroup = ({
           }}
           style={{
             pointerEvents: "auto",
+            zIndex: item.card.content.items.length,
           }}
         >
           <RenderCard
@@ -162,55 +166,54 @@ export const FunProjectGroup = ({
           />
         </motion.div>
 
-        {/* Right-side content panel when expanded */}
-        <AnimatePresence>
-          {isExpanded && (
+        {/* Content cards that fly out to the right */}
+        {item.card.content.items.map((funItem, index) => {
+          const cardWidth = cardWithSize.size.width ?? 240;
+
+          // Calculate position: stack vertically, offset to the right
+          const offsetY = index * (CONTENT_CARD_HEIGHT + VERTICAL_GAP);
+          const offsetX = cardWidth + CONTENT_GAP;
+
+          return (
             <motion.div
-              animate={{ opacity: 1 }}
-              className="pointer-events-auto absolute top-0"
-              exit={{ opacity: 0 }}
-              initial={{ opacity: 0 }}
-              style={{
-                left: (cardWithSize.size.width ?? 240) + CONTENT_GAP,
-                width: CONTENT_WIDTH,
+              animate={{
+                opacity: isExpanded ? 1 : 0,
+                scale: isExpanded ? 1 : 0.8,
+                x: isExpanded ? offsetX : 0,
+                y: isExpanded ? offsetY : 0,
               }}
-              transition={TRANSITIONS.opacity}
+              className="absolute top-0 left-0 will-change-transform"
+              initial={false}
+              key={index}
+              style={{
+                zIndex: item.card.content.items.length - index - 1,
+                pointerEvents: isExpanded ? "auto" : "none",
+              }}
+              transition={{
+                ...SPRING_PRESETS.snappy,
+                delay: isExpanded ? index * STAGGER_DELAY : 0,
+              }}
             >
-              <div className="space-y-4">
-                {item.card.content.items.map((funItem, index) => (
-                  <motion.div
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl bg-white p-4 shadow-lg"
-                    exit={{ opacity: 0, y: -10 }}
-                    initial={{ opacity: 0, y: -10 }}
-                    key={index}
-                    transition={{
-                      ...SPRING_PRESETS.snappy,
-                      delay: index * STAGGER_DELAY,
-                    }}
+              <div
+                className="rounded-2xl bg-white p-4 shadow-lg"
+                style={{ width: CONTENT_WIDTH }}
+              >
+                <h3 className="mb-2 font-semibold text-lg">{funItem.title}</h3>
+                <p className="mb-3 text-gray-600 text-sm">{funItem.blurb}</p>
+                {funItem.link && (
+                  <a
+                    className="text-blue-600 text-sm underline hover:text-blue-800"
+                    href={funItem.link}
+                    rel="noopener noreferrer"
+                    target="_blank"
                   >
-                    <h3 className="mb-2 font-semibold text-lg">
-                      {funItem.title}
-                    </h3>
-                    <p className="mb-3 text-gray-600 text-sm">
-                      {funItem.blurb}
-                    </p>
-                    {funItem.link && (
-                      <a
-                        className="text-blue-600 text-sm underline hover:text-blue-800"
-                        href={funItem.link}
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
-                        View Project →
-                      </a>
-                    )}
-                  </motion.div>
-                ))}
+                    View Project →
+                  </a>
+                )}
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
+          );
+        })}
       </motion.div>
     </motion.div>
   );
