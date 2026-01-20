@@ -8,7 +8,11 @@ import {
 } from "./card-layout";
 import { DEFAULT_FAN_CONFIG } from "./fan";
 
-const createMockCard = (id: string, width = 100, height = 100): CardInstance => ({
+const createMockCard = (
+  id: string,
+  width = 100,
+  height = 100
+): CardInstance => ({
   id,
   kind: "project",
   size: { width, height },

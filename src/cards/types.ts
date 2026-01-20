@@ -44,7 +44,12 @@ export type {
 
 export type { CardDefinition, LazyCardDefinition } from "./registry";
 
-export { CARD_REGISTRY, getInteractionPolicy, hasActivationType, isCardKind } from "./registry";
+export {
+  CARD_REGISTRY,
+  getInteractionPolicy,
+  hasActivationType,
+  isCardKind,
+} from "./registry";
 
 // Legacy type alias for backward compatibility during migration
 // TODO: Remove this once all files are migrated to CardInstance
