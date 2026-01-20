@@ -15,7 +15,10 @@ interface StickerTooltipState {
   stickerSrc: string;
   x: number;
   y: number;
+  side: "left" | "right";
 }
+
+const TOOLTIP_WIDTH_THRESHOLD = 200;
 
 const MacbookCardComponent = ({
   content,
@@ -31,9 +34,20 @@ const MacbookCardComponent = ({
       return null;
     }
 
+    const spaceOnRight = window.innerWidth - event.clientX;
+    const side: "left" | "right" =
+      spaceOnRight < TOOLTIP_WIDTH_THRESHOLD ? "left" : "right";
+
+    const offset = 12;
+    const x =
+      side === "right"
+        ? event.clientX - rect.left + offset
+        : event.clientX - rect.left - offset;
+
     return {
-      x: event.clientX - rect.left + 12,
-      y: event.clientY - rect.top + 12,
+      x,
+      y: event.clientY - rect.top + offset,
+      side,
     };
   }, []);
 
@@ -150,19 +164,41 @@ const MacbookCardComponent = ({
       <AnimatePresence>
         {isFocused && tooltip && (
           <motion.div
-            animate={{ opacity: 1, scale: 1 }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              x: tooltip.side === "left" ? "-100%" : 0,
+            }}
             className="pointer-events-none absolute top-0 left-0 z-10"
-            exit={{ opacity: 0, scale: 0 }}
-            initial={{ opacity: 0, scale: 0 }}
+            exit={{
+              opacity: 0,
+              scale: 0,
+              x: tooltip.side === "left" ? "-100%" : 0,
+            }}
+            initial={{
+              opacity: 0,
+              scale: 0,
+              x: tooltip.side === "left" ? "-100%" : 0,
+            }}
             key={tooltip.stickerSrc}
             style={{
               left: tooltip.x,
               top: tooltip.y,
-              transformOrigin: "-12px -12px",
+              transformOrigin:
+                tooltip.side === "right"
+                  ? "-12px -12px"
+                  : "calc(100% + 12px) -12px",
             }}
             transition={{ type: "spring", bounce: 0.4, duration: 0.48 }}
           >
-            <div className="text-nowrap rounded-b-full rounded-tr-full bg-background1 px-4 py-3 shadow-lg outline outline-border">
+            <div
+              className={tw(
+                "text-nowrap bg-background1 px-4 py-3 shadow-lg outline outline-border",
+                tooltip.side === "right"
+                  ? "rounded-b-full rounded-tr-full"
+                  : "rounded-b-full rounded-tl-full"
+              )}
+            >
               {tooltip.description}
             </div>
           </motion.div>
