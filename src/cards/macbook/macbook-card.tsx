@@ -154,15 +154,15 @@ const MacbookCardComponent = ({
             className="pointer-events-none absolute top-0 left-0 z-10"
             exit={{ opacity: 0, scale: 0 }}
             initial={{ opacity: 0, scale: 0 }}
-            key="tooltip"
+            key={tooltip.stickerSrc}
             style={{
               left: tooltip.x,
               top: tooltip.y,
               transformOrigin: "-12px -12px",
             }}
-            transition={{ type: "spring", bounce: 0.35, duration: 0.5 }}
+            transition={{ type: "spring", bounce: 0.4, duration: 0.48 }}
           >
-            <div className="text-nowrap rounded-b-full rounded-tr-full bg-background1 px-4 py-3 outline outline-border backdrop-blur-sm">
+            <div className="text-nowrap rounded-b-full rounded-tr-full bg-background1 px-4 py-3 shadow-lg outline outline-border">
               {tooltip.description}
             </div>
           </motion.div>
