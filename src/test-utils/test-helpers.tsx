@@ -1,21 +1,33 @@
 import { render } from "@testing-library/react";
 import { vi } from "vitest";
 import type {
-  CanvasSingleItem,
-  CanvasStackItem,
-  CardData,
-} from "@/types/canvas";
+  CardInstance,
+  CoverCardInstance,
+  ProjectCardInstance,
+} from "@/cards/types";
+import type { CanvasSingleItem, CanvasStackItem } from "@/types/canvas";
 import { MockProvider } from "./mock-provider";
 
 export const createMockCard = (
   id: string,
   width = 100,
   height = 100
-): CardData => ({
+): ProjectCardInstance => ({
   id,
-  type: "project",
+  kind: "project",
   size: { width, height },
   content: { title: "Test", description: "Test", image: "" },
+});
+
+export const createMockCover = (
+  id: string,
+  width = 100,
+  height = 100
+): CoverCardInstance => ({
+  id,
+  kind: "cover",
+  size: { width, height },
+  content: { company: "Test Company", image: "" },
 });
 
 export const createMockStack = (
@@ -23,8 +35,8 @@ export const createMockStack = (
   x = 0,
   y = 0,
   zIndex = 1,
-  cover?: CardData,
-  stack?: CardData[]
+  cover?: CoverCardInstance,
+  stack?: ProjectCardInstance[]
 ): CanvasStackItem => ({
   id,
   kind: "stack",
@@ -34,10 +46,10 @@ export const createMockStack = (
     cover ??
     ({
       id: `${id}-cover`,
-      type: "cover",
+      kind: "cover",
       size: { width: 100, height: 100 },
       content: { company: "Test Company", image: "" },
-    } satisfies CardData),
+    } satisfies CoverCardInstance),
   stack: stack ?? [],
 });
 
@@ -46,7 +58,7 @@ export const createMockSingle = (
   x = 0,
   y = 0,
   zIndex = 1,
-  card?: CardData
+  card?: CardInstance
 ): CanvasSingleItem => ({
   id,
   kind: "single",
@@ -56,10 +68,26 @@ export const createMockSingle = (
     card ??
     ({
       id: `${id}-card`,
-      type: "doc",
+      kind: "resume",
       size: { width: 100, height: 100 },
-      content: { docType: "resume" },
-    } satisfies CardData),
+      content: {
+        header: {
+          name: "Test",
+          website: "https://test.com",
+          email: "test@test.com",
+          phone: "+1 234 567 8900",
+        },
+        education: {
+          logo: "/test.png",
+          degree: "Test Degree",
+          institution: "Test Institution",
+          years: "2020-2024",
+          description: "Test description",
+        },
+        experiences: [],
+        skills: [],
+      },
+    } satisfies CardInstance),
 });
 
 // Alias for backward compatibility

@@ -1,4 +1,4 @@
-import type { Experience } from "@/types/canvas";
+import type { Experience } from "@/cards/types";
 
 interface ResumeExperienceProps {
   data?: Experience[];

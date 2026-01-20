@@ -1,4 +1,9 @@
-import type { ReactNode } from "react";
+// Import card types from the card system
+import type {
+  CardInstance,
+  CoverCardInstance,
+  ProjectCardInstance,
+} from "@/cards/types";
 
 export interface Position {
   x: number;
@@ -16,180 +21,6 @@ export interface ViewportState {
   positionY: number;
 }
 
-export type CardType =
-  | "cover"
-  | "project"
-  | "doc"
-  | "stickynote"
-  | "email"
-  | "socials"
-  | "profilepic"
-  | "macbook";
-
-export type DocType = "resume" | "about";
-
-export interface CoverCardContent {
-  company: string;
-  title?: string;
-  image: string;
-}
-
-export interface ProjectCardContent {
-  title: string;
-  description?: string;
-  link?: {
-    label?: string;
-    url: string;
-    icon?: ReactNode;
-  };
-  image: string;
-}
-
-export interface EmailCardContent {
-  link: {
-    label: string;
-    url: string;
-  };
-}
-
-export interface SocialsCardContent {
-  linkedinUrl: string;
-  twitterUrl: string;
-}
-
-export interface ResumeHeader {
-  name: string;
-  website: string;
-  email: string;
-  phone: string;
-}
-
-export interface ResumeEducation {
-  logo: string;
-  degree: string;
-  institution: string;
-  years: string;
-  description: string;
-}
-
-export interface Experience {
-  company: string;
-  logo: string;
-  title: string;
-  caption: string;
-  description: string[];
-}
-
-export interface SkillCategory {
-  category: string;
-  skills: string[];
-}
-
-export interface ResumeData {
-  header: ResumeHeader;
-  education: ResumeEducation;
-  experiences: Experience[];
-  skills: SkillCategory[];
-}
-
-export interface AboutData {
-  title: string;
-}
-
-export interface DocCardContent {
-  docType: DocType;
-  data?: ResumeData | AboutData;
-}
-
-export interface StickyNoteCardContent {
-  content: string;
-  color?: "yellow" | "pink" | "blue" | "green" | "orange";
-}
-
-export interface ProfilePicCardContent {
-  images: string[];
-  alt?: string;
-}
-
-export interface MacbookSticker {
-  src: string;
-  description: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export interface MacbookCardContent {
-  stickers: MacbookSticker[];
-}
-
-export interface CoverCardData {
-  id: string;
-  type: "cover";
-  size: Size;
-  content: CoverCardContent;
-}
-
-export interface ProjectCardData {
-  id: string;
-  type: "project";
-  size: Size;
-  content: ProjectCardContent;
-}
-
-export interface DocCardData {
-  id: string;
-  type: "doc";
-  size: Size;
-  content: DocCardContent;
-}
-
-export interface StickyNoteCardData {
-  id: string;
-  type: "stickynote";
-  size: Size;
-  content: StickyNoteCardContent;
-}
-
-export interface EmailCardData {
-  id: string;
-  type: "email";
-  size: Size;
-  content: EmailCardContent;
-}
-
-export interface SocialsCardData {
-  id: string;
-  type: "socials";
-  size: Size;
-  content: SocialsCardContent;
-}
-
-export interface ProfilePicCardData {
-  id: string;
-  type: "profilepic";
-  size: Size;
-  content: ProfilePicCardContent;
-}
-
-export interface MacbookCardData {
-  id: string;
-  type: "macbook";
-  size: Size;
-  content: MacbookCardContent;
-}
-
-export type CardData =
-  | CoverCardData
-  | ProjectCardData
-  | DocCardData
-  | StickyNoteCardData
-  | EmailCardData
-  | SocialsCardData
-  | ProfilePicCardData
-  | MacbookCardData;
-
 // Canvas item base properties
 export interface CanvasItemBase {
   id: string;
@@ -200,14 +31,16 @@ export interface CanvasItemBase {
 // Single card item (standalone card like resume, contact, doc)
 export interface CanvasSingleItem extends CanvasItemBase {
   kind: "single";
-  card: CardData;
+  card: CardInstance;
 }
 
-// Stack item (cover + 1+ cards in the stack)
+// Stack item (cover + 1+ project cards)
+// Since stacks are projects-only, the cover must be a cover card
+// and the stack must be an array of project cards
 export interface CanvasStackItem extends CanvasItemBase {
   kind: "stack";
-  cover: CardData;
-  stack: CardData[];
+  cover: CoverCardInstance;
+  stack: ProjectCardInstance[];
 }
 
 export type CanvasItem = CanvasSingleItem | CanvasStackItem;
@@ -218,6 +51,7 @@ export interface CanvasState {
   expandedStackId: string | null;
   maxZIndex: number;
   viewportState: ViewportState;
+  focusedItemId: string | null; // For Macbook zoom toggle
 }
 
 export type CanvasAction =
@@ -236,4 +70,35 @@ export type CanvasAction =
   | {
       type: "UPDATE_CARD_HEIGHT";
       payload: { itemId: string; cardId: string; height: number };
-    };
+    }
+  | { type: "SET_FOCUSED_ITEM"; payload: { id: string | null } };
+
+// Re-export commonly used card types for convenience
+export type {
+  AboutCardContent,
+  AboutCardInstance,
+  BaseCardInstance,
+  CardInstance,
+  CardKind,
+  CoverCardContent,
+  CoverCardInstance,
+  EmailCardContent,
+  EmailCardInstance,
+  MacbookCardContent,
+  MacbookCardInstance,
+  MacbookSticker,
+  ProfilePicCardContent,
+  ProfilePicCardInstance,
+  ProjectCardContent,
+  ProjectCardInstance,
+  ResumeCardInstance,
+  ResumeData,
+  SocialsCardContent,
+  SocialsCardInstance,
+  StickyNoteCardContent,
+  StickyNoteCardInstance,
+} from "@/cards/types";
+
+// Legacy exports for backward compatibility during migration
+// TODO: Remove these once all files are migrated
+export type { CardData } from "@/cards/types";

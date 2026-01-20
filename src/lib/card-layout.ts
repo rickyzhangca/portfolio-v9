@@ -1,5 +1,5 @@
 import type { FanConfig } from "@/lib/fan";
-import type { CardData } from "@/types/canvas";
+import type { CardInstance } from "@/types/canvas";
 
 export const STACK_OFFSET_PX = 6;
 export const EXPAND_MAX_PER_ROW = 3;
@@ -26,8 +26,8 @@ export const getRotatedBoundingBox = (
 };
 
 export const getOffsets = (
-  cover: CardData | undefined,
-  projects: CardData[],
+  cover: CardInstance | undefined,
+  projects: CardInstance[],
   expanded: boolean,
   fanConfig: FanConfig
 ) => {
@@ -68,13 +68,14 @@ export const getOffsets = (
     }
 
     const cardHeight = card.size.height ?? 360;
+    const cardWidth = card.size.width ?? 350;
     const rotationDeg = (col + 1) * fanConfig.rotateStepDeg;
     const { width: bboxWidth, height: bboxHeight } = getRotatedBoundingBox(
-      card.size.width,
+      cardWidth,
       cardHeight,
       rotationDeg
     );
-    const extraWidth = bboxWidth - card.size.width;
+    const extraWidth = bboxWidth - cardWidth;
 
     if (hasPrevInRow) {
       // Prevent rotated cards from visually colliding by widening the gap
@@ -85,7 +86,7 @@ export const getOffsets = (
 
     offsets[index] = { x, y };
     rowMaxHeight = Math.max(rowMaxHeight, (cardHeight + bboxHeight) / 2);
-    prevWidth = card.size.width;
+    prevWidth = cardWidth;
     prevExtraWidth = extraWidth;
     hasPrevInRow = true;
     col += 1;
