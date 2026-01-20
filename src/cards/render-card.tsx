@@ -1,11 +1,12 @@
 import { memo, useLayoutEffect, useRef } from "react";
-import type { CardInstance } from "@/cards/registry";
 import { AboutCard } from "@/cards/about/about-card";
 import { CoverCard } from "@/cards/cover/cover-card";
 import { EmailCard } from "@/cards/email/email-card";
+import { FunProjectCard } from "@/cards/fun-project/fun-project-card";
 import { MacbookCard } from "@/cards/macbook/macbook-card";
 import { ProfilePicCard } from "@/cards/profilepic/profilepic-card";
 import { ProjectCard } from "@/cards/project/project-card";
+import type { CardInstance } from "@/cards/registry";
 import { ResumeCard } from "@/cards/resume/resume-card";
 import { SocialsCard } from "@/cards/socials/socials-card";
 import { StickyNoteCard } from "@/cards/stickynote/stickynote-card";
@@ -83,6 +84,14 @@ const RenderCardComponent = ({
         return <ProfilePicCard content={card.content} />;
       case "macbook":
         return <MacbookCard content={card.content} isFocused={isFocused} />;
+      case "funproject":
+        return (
+          <FunProjectCard
+            content={card.content}
+            isExpanded={isExpanded}
+            onMeasure={onMeasure}
+          />
+        );
       default: {
         // Exhaustiveness check - if we get here, we have a bug
         const _exhaustive: never = card;
