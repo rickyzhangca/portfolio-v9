@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "framer-motion";
 import type { PointerEvent } from "react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { MacbookCardContent } from "@/cards/registry";
@@ -146,19 +147,27 @@ const MacbookCardComponent = ({
           width={sticker.width}
         />
       ))}
-      {isFocused && tooltip && (
-        <div
-          className="pointer-events-none absolute top-0 left-0 z-10"
-          style={{
-            left: tooltip.x,
-            top: tooltip.y,
-          }}
-        >
-          <div className="text-nowrap rounded-b-full rounded-tr-full bg-background1 px-4 py-3 outline outline-border backdrop-blur-sm">
-            {tooltip.description}
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {isFocused && tooltip && (
+          <motion.div
+            animate={{ opacity: 1, scale: 1 }}
+            className="pointer-events-none absolute top-0 left-0 z-10"
+            exit={{ opacity: 0, scale: 0 }}
+            initial={{ opacity: 0, scale: 0 }}
+            key="tooltip"
+            style={{
+              left: tooltip.x,
+              top: tooltip.y,
+              transformOrigin: "-12px -12px",
+            }}
+            transition={{ type: "spring", bounce: 0.35, duration: 0.5 }}
+          >
+            <div className="text-nowrap rounded-b-full rounded-tr-full bg-background1 px-4 py-3 outline outline-border backdrop-blur-sm">
+              {tooltip.description}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
