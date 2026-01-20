@@ -5,7 +5,37 @@ import {
   createMockCover,
   createMockStack,
 } from "@/test-utils/test-helpers";
-import { getAutoPanTarget } from "./auto-pan";
+import type { CanvasFunStackItem } from "@/types/canvas";
+import { getAutoPanTarget, getFunStackAutoPanTarget } from "./auto-pan";
+
+const createMockFunStack = (
+  id: string,
+  x: number,
+  y: number,
+  zIndex = 1,
+  cardWidth = 240,
+  cardHeight = 360,
+  itemsCount = 8
+): CanvasFunStackItem => {
+  return {
+    id,
+    kind: "funstack",
+    position: { x, y },
+    zIndex,
+    card: {
+      id: `${id}-card`,
+      kind: "funproject",
+      size: { width: cardWidth, height: cardHeight },
+      content: {
+        items: Array.from({ length: itemsCount }, (_, index) => ({
+          icon: "x",
+          title: `Item ${index}`,
+          blurb: "Blurb",
+        })),
+      },
+    },
+  };
+};
 
 describe("getAutoPanTarget - content fits viewport", () => {
   it("returns null when expanded stack with cover and stack fits within viewport", () => {
@@ -261,5 +291,53 @@ describe("getAutoPanTarget - content overflows viewport", () => {
     // Both dimensions exceed viewport, so both use margin transform
     expect(result?.x).toBeCloseTo(-440, 5);
     expect(result?.y).toBeCloseTo(-260, 5);
+  });
+});
+
+describe("getFunStackAutoPanTarget", () => {
+  it("returns null when expanded fun stack content fits within viewport", () => {
+    const funStack = createMockFunStack("f1", 100, 100, 1, 240, 360, 2);
+
+    const result = getFunStackAutoPanTarget(
+      funStack,
+      { scale: 1, positionX: 0, positionY: 0 },
+      1920,
+      1080
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it("centers horizontally but uses margin vertically when content is too tall to center", () => {
+    // 8 items => estimated list height 1072px (taller than 1080 - 2*margin).
+    const funStack = createMockFunStack("f2", 1800, 800, 1, 240, 360, 8);
+
+    const result = getFunStackAutoPanTarget(
+      funStack,
+      { scale: 1, positionX: 0, positionY: 0 },
+      1920,
+      1080
+    );
+
+    expect(result).not.toBeNull();
+    // Width fits, so X uses centering; height doesn't fit, so Y uses margin.
+    // contentCenterX = groupX + (0 + 564)/2 = 1800 + 282 = 2082
+    expect(result?.x).toBe(1920 / 2 - 2082);
+    expect(result?.y).toBe(40 - 800);
+  });
+
+  it("uses margin transform when zoomed in enough that content can't be centered", () => {
+    const funStack = createMockFunStack("f3", 0, 0, 1, 240, 360, 1);
+
+    const result = getFunStackAutoPanTarget(
+      funStack,
+      { scale: 4, positionX: 0, positionY: 0 },
+      1920,
+      1080
+    );
+
+    expect(result).not.toBeNull();
+    expect(result?.x).toBe(40);
+    expect(result?.y).toBe(40);
   });
 });

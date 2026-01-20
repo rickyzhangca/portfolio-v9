@@ -19,6 +19,7 @@ import {
   AUTO_PAN_DURATION_MS,
   AUTO_PAN_EASING,
   getAutoPanTarget,
+  getFunStackAutoPanTarget,
 } from "@/lib/auto-pan";
 import { computeRepulsionOffsets } from "@/lib/repulsion";
 import type { CanvasItem } from "@/types/canvas";
