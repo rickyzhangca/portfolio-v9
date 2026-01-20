@@ -82,6 +82,37 @@ export const SingleCardItem = ({
     interactionPolicy.activate === "toggle-focus"
       ? (interactionPolicy.focusScale ?? 1)
       : 1;
+  const shouldRenderFocusHiRes =
+    interactionPolicy.activate === "toggle-focus" && focusScale > 1;
+
+  const baseWidth = cardWithSize.size.width ?? 0;
+  const baseHeight = cardWithSize.size.height ?? 0;
+  const hiResCard = shouldRenderFocusHiRes
+    ? ({
+        ...cardWithSize,
+        size: {
+          ...cardWithSize.size,
+          width: baseWidth * focusScale,
+          height: baseHeight * focusScale,
+        },
+      } satisfies typeof cardWithSize)
+    : cardWithSize;
+
+  // When scaling up via `transform: scale(...)`, browsers may decode images at the
+  // element's untransformed layout size (which can look blurry when scaled up).
+  // For focusable cards, render at the "focused" layout size and scale down when
+  // unfocused so the image stays crisp at full focus scale.
+  const focusRenderScale = shouldRenderFocusHiRes
+    ? isFocused
+      ? 1
+      : 1 / focusScale
+    : 1;
+  const focusOffsetX = shouldRenderFocusHiRes
+    ? -((baseWidth * focusScale - baseWidth) / 2)
+    : 0;
+  const focusOffsetY = shouldRenderFocusHiRes
+    ? -((baseHeight * focusScale - baseHeight) / 2)
+    : 0;
 
   return (
     <motion.div
@@ -118,16 +149,20 @@ export const SingleCardItem = ({
         <motion.div
           animate={{
             opacity: 1,
-            scale: isFocused ? focusScale : 1,
-            x: 0,
-            y: 0,
+            scale: shouldRenderFocusHiRes
+              ? focusRenderScale
+              : isFocused
+                ? focusScale
+                : 1,
+            x: focusOffsetX,
+            y: focusOffsetY,
           }}
           className="absolute top-0 left-0 drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
           initial={{
             opacity: 0,
             scale: 0,
-            x: 0,
-            y: 0,
+            x: focusOffsetX,
+            y: focusOffsetY,
           }}
           key={cardWithSize.id}
           layoutId={
@@ -158,9 +193,9 @@ export const SingleCardItem = ({
           transition={SPRING_PRESETS.snappy}
         >
           <RenderCard
-            card={cardWithSize}
+            card={hiResCard}
             className="shadow-none hover:shadow-none"
-            onMeasure={handleCardMeasure}
+            onMeasure={shouldRenderFocusHiRes ? undefined : handleCardMeasure}
           />
         </motion.div>
       </motion.div>
