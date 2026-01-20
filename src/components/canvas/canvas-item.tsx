@@ -1,6 +1,7 @@
-import type { CanvasItem, Position } from "@/types/canvas";
-import { CardStack } from "@/components/groups/card-group";
 import { SingleCardItem } from "@/components/canvas/single-card-item";
+import { CardStack } from "@/components/groups/card-group";
+import { FunProjectGroup } from "@/components/groups/fun-project-group";
+import type { CanvasItem, Position } from "@/types/canvas";
 
 interface CanvasItemRendererProps {
   item: CanvasItem;
@@ -43,14 +44,33 @@ export function CanvasItemRenderer({
         dragDisabled={dragDisabled}
         isFocused={isFocused}
         item={item}
-        scale={scale}
-        repulsionOffset={repulsionOffset}
-        onBringToFront={onBringToFront}
-        onPositionUpdate={onPositionUpdate}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-        onCardHeightMeasured={onCardHeightMeasured}
         onActivate={onActivate}
+        onBringToFront={onBringToFront}
+        onCardHeightMeasured={onCardHeightMeasured}
+        onDragEnd={onDragEnd}
+        onDragStart={onDragStart}
+        onPositionUpdate={onPositionUpdate}
+        repulsionOffset={repulsionOffset}
+        scale={scale}
+        setRootRef={setRootRef}
+      />
+    );
+  }
+
+  if (item.kind === "funstack") {
+    return (
+      <FunProjectGroup
+        dragDisabled={dragDisabled}
+        isExpanded={isExpanded}
+        item={item}
+        onBringToFront={onBringToFront}
+        onCardHeightMeasured={onCardHeightMeasured}
+        onDragEnd={onDragEnd}
+        onDragStart={onDragStart}
+        onPositionUpdate={onPositionUpdate}
+        onToggleExpanded={onToggleExpanded}
+        repulsionOffset={repulsionOffset}
+        scale={scale}
         setRootRef={setRootRef}
       />
     );
@@ -61,17 +81,17 @@ export function CanvasItemRenderer({
     <CardStack
       dragDisabled={dragDisabled}
       isExpanded={isExpanded}
+      onBringToFront={onBringToFront}
+      onCardHeightMeasured={onCardHeightMeasured}
+      onDragEnd={onDragEnd}
+      onDragStart={onDragStart}
+      onPositionUpdate={onPositionUpdate}
+      onToggleExpanded={onToggleExpanded}
+      repulsionOffset={repulsionOffset}
+      scale={scale}
+      setRootRef={setRootRef}
       stack={item}
       stackIndex={itemIndex}
-      scale={scale}
-      repulsionOffset={repulsionOffset}
-      onBringToFront={onBringToFront}
-      onToggleExpanded={onToggleExpanded}
-      onPositionUpdate={onPositionUpdate}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      onCardHeightMeasured={onCardHeightMeasured}
-      setRootRef={setRootRef}
     />
   );
 }

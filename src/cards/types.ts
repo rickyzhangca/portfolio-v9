@@ -6,43 +6,46 @@
 import type { CardInstance } from "./registry";
 
 export type {
-  // Interaction policy types
-  ActivationType,
-  DragPolicy,
-  InteractionPolicy,
   // Card content types
   AboutCardContent,
+  // Card instance types
+  AboutCardInstance,
+  // Interaction policy types
+  ActivationType,
+  BaseCardInstance,
+  // Utility types
+  CardContentByKind,
+  CardDefinition,
+  CardInstance,
+  CardKind,
   CoverCardContent,
+  CoverCardInstance,
+  DragPolicy,
   EmailCardContent,
+  EmailCardInstance,
+  Experience,
+  FunProjectCardContent,
+  FunProjectCardInstance,
+  FunProjectItem,
+  InteractionPolicy,
+  LazyCardDefinition,
   MacbookCardContent,
+  MacbookCardInstance,
   MacbookSticker,
-  ProjectCardContent,
   ProfilePicCardContent,
+  ProfilePicCardInstance,
+  ProjectCardContent,
+  ProjectCardInstance,
+  ResumeCardInstance,
   ResumeData,
   ResumeEducation,
   ResumeHeader,
   SkillCategory,
   SocialsCardContent,
-  StickyNoteCardContent,
-  Experience,
-  // Card instance types
-  AboutCardInstance,
-  BaseCardInstance,
-  CardInstance,
-  CardKind,
-  CoverCardInstance,
-  EmailCardInstance,
-  MacbookCardInstance,
-  ProfilePicCardInstance,
-  ProjectCardInstance,
-  ResumeCardInstance,
   SocialsCardInstance,
+  StickyNoteCardContent,
   StickyNoteCardInstance,
-  // Utility types
-  CardContentByKind,
 } from "./registry";
-
-export type { CardDefinition, LazyCardDefinition } from "./registry";
 
 export {
   CARD_REGISTRY,

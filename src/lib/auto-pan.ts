@@ -1,10 +1,18 @@
 import { getOffsets, getRotatedBoundingBox } from "@/lib/card-layout";
 import type { FanConfig } from "@/lib/fan";
-import type { CanvasStackItem, CardData, ViewportState } from "@/types/canvas";
+import type {
+  CanvasFunStackItem,
+  CanvasStackItem,
+  CardData,
+  ViewportState,
+} from "@/types/canvas";
 
 export const AUTO_PAN_MARGIN = 40;
 export const AUTO_PAN_DURATION_MS = 360;
 export const AUTO_PAN_EASING = "easeInOutCubic";
+
+const CONTENT_WIDTH = 300;
+const CONTENT_GAP = 24;
 
 interface BoundingBox {
   minX: number;
@@ -75,6 +83,22 @@ const getExpandedBoundingBox = (
   }
 
   return { minX, minY, maxX, maxY };
+};
+
+/**
+ * Calculate the bounding box of expanded fun stack content.
+ * Includes the card + gap + content panel width.
+ */
+const getFunStackExpandedBoundingBox = (
+  cardWidth: number,
+  cardHeight: number
+): BoundingBox => {
+  return {
+    minX: 0,
+    minY: 0,
+    maxX: cardWidth + CONTENT_GAP + CONTENT_WIDTH,
+    maxY: cardHeight,
+  };
 };
 
 /**
@@ -234,6 +258,72 @@ export const getAutoPanTarget = (
 
   const centeredTransform = calculateCenteredTransform(
     stack.position,
+    expandedBbox,
+    viewportState.scale,
+    windowWidth,
+    windowHeight
+  );
+
+  // Use centered transform for axes that fit, margin transform for axes that don't
+  const result = {
+    x: canCenter.horizontal ? centeredTransform.x : marginTransform.x,
+    y: canCenter.vertical ? centeredTransform.y : marginTransform.y,
+    scale: viewportState.scale,
+  };
+
+  return result;
+};
+
+/**
+ * Auto-pan helper for fun project stack.
+ * Similar to getAutoPanTarget but accounts for the card + right-side content panel.
+ */
+export const getFunStackAutoPanTarget = (
+  funStack: CanvasFunStackItem,
+  viewportState: ViewportState,
+  windowWidth: number,
+  windowHeight: number
+): { x: number; y: number; scale: number } | null => {
+  const cardWidth = funStack.card.size.width ?? 240;
+  const cardHeight = funStack.card.size.height ?? 360;
+
+  // Calculate bounding box of expanded content (card + gap + content panel)
+  const expandedBbox = getFunStackExpandedBoundingBox(cardWidth, cardHeight);
+
+  // Get current visible viewport in canvas coordinates
+  const visibleViewport = getVisibleViewport(
+    viewportState,
+    windowWidth,
+    windowHeight
+  );
+
+  if (
+    !doesExpandedContentOverflow(
+      funStack.position,
+      expandedBbox,
+      visibleViewport
+    )
+  ) {
+    return null; // Content fits, no pan needed
+  }
+
+  const canCenter = canCenterContent(
+    expandedBbox,
+    viewportState.scale,
+    windowWidth,
+    windowHeight,
+    AUTO_PAN_MARGIN
+  );
+
+  // Calculate both potential transforms
+  const marginTransform = calculateMarginTransform(
+    funStack.position,
+    viewportState.scale,
+    AUTO_PAN_MARGIN
+  );
+
+  const centeredTransform = calculateCenteredTransform(
+    funStack.position,
     expandedBbox,
     viewportState.scale,
     windowWidth,

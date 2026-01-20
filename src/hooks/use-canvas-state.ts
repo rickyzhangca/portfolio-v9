@@ -146,6 +146,21 @@ export const canvasReducer = (
         return state;
       }
 
+      if (item.kind === "funstack") {
+        // Fun stack item: update the card directly
+        if (item.card.id === cardId && item.card.size.height !== height) {
+          newItems.set(itemId, {
+            ...item,
+            card: {
+              ...item.card,
+              size: { ...item.card.size, height },
+            },
+          });
+          return { ...state, items: newItems };
+        }
+        return state;
+      }
+
       // Stack item: check cover and stack cards
       if (item.cover.id === cardId) {
         if (item.cover.size.height === height) {
