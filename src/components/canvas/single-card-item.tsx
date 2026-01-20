@@ -195,6 +195,7 @@ export const SingleCardItem = ({
           <RenderCard
             card={hiResCard}
             className="shadow-none hover:shadow-none"
+            isFocused={isFocused}
             onMeasure={shouldRenderFocusHiRes ? undefined : handleCardMeasure}
           />
         </motion.div>

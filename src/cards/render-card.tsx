@@ -14,6 +14,7 @@ interface RenderCardProps {
   card: CardInstance;
   className?: string;
   isExpanded?: boolean;
+  isFocused?: boolean;
   onMeasure?: (height: number) => void;
   priority?: boolean;
 }
@@ -26,6 +27,7 @@ const RenderCardComponent = ({
   card,
   className,
   isExpanded = true,
+  isFocused = false,
   onMeasure,
   priority,
 }: RenderCardProps) => {
@@ -80,7 +82,7 @@ const RenderCardComponent = ({
       case "profilepic":
         return <ProfilePicCard content={card.content} />;
       case "macbook":
-        return <MacbookCard content={card.content} />;
+        return <MacbookCard content={card.content} isFocused={isFocused} />;
       default: {
         // Exhaustiveness check - if we get here, we have a bug
         const _exhaustive: never = card;
