@@ -611,7 +611,7 @@ export const initialItems: CanvasItem[] = [
       kind: "swagcover",
       size: { width: 180, height: 180 },
       content: {
-        content: "My Swag Collection",
+        content: "My swag collection",
         color: "blue",
       },
     },
