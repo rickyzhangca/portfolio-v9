@@ -92,6 +92,12 @@ import swag90 from "./90.webp";
 import swag91 from "./91.webp";
 import swag92 from "./92.webp";
 import swag93 from "./93.webp";
+import swag94 from "./94.webp";
+import swag95 from "./95.webp";
+import swag96 from "./96.webp";
+import swag97 from "./97.webp";
+import swag98 from "./98.webp";
+import swag99 from "./99.webp";
 
 const swags: { src: string; label: string; caption?: string }[] = [
   {
@@ -563,6 +569,36 @@ const swags: { src: string; label: string; caption?: string }[] = [
     src: swag93,
     label: "Notion Toronto Community Meetup Aug 2024",
     caption: "Notion",
+  },
+  {
+    src: swag94,
+    label: "Notion Toronto Community Meetup Aug 2024",
+    caption: "Notion",
+  },
+  {
+    src: swag95,
+    label: "Figma Make-a-Thon",
+    caption: "Figma @ Waterloo",
+  },
+  {
+    src: swag96,
+    label: "Figma Make-a-Thon",
+    caption: "Figma @ Waterloo",
+  },
+  {
+    src: swag97,
+    label: "Notion Toronto Community Meetup Dec 2025",
+    caption: "Notion",
+  },
+  {
+    src: swag98,
+    label: "Figma Make-a-Thon",
+    caption: "Figma @ Waterloo",
+  },
+  {
+    src: swag99,
+    label: "Figma Make-a-Thon",
+    caption: "Figma @ Waterloo",
   },
 ];
 
