@@ -2,6 +2,7 @@ import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { type PointerEventHandler, useEffect } from "react";
 import { ABOUT_CARD_SIZE, ABOUT_SHEET_SIZE } from "@/cards/about/about-data";
+import { AnalyticsEvents, track } from "@/lib/analytics";
 import { SPRING_PRESETS } from "@/lib/animation";
 import { AboutSheet } from "./about-sheet";
 
@@ -23,6 +24,10 @@ export const AboutModal = ({
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        track(AnalyticsEvents.MODAL_CLOSE, {
+          modal_type: "about",
+          close_method: "keyboard",
+        });
         onClose();
       }
     };
@@ -50,6 +55,10 @@ export const AboutModal = ({
       }
     }
 
+    track(AnalyticsEvents.MODAL_CLOSE, {
+      modal_type: "about",
+      close_method: "outside_click",
+    });
     onClose();
   };
 
@@ -110,7 +119,13 @@ export const AboutModal = ({
           >
             <button
               className="no-drag flex cursor-pointer items-center gap-2 px-6 py-4 transition hover:bg-foreground1/20"
-              onClick={onClose}
+              onClick={() => {
+                track(AnalyticsEvents.MODAL_CLOSE, {
+                  modal_type: "about",
+                  close_method: "button",
+                });
+                onClose();
+              }}
               type="button"
             >
               <ArrowLeftIcon size={20} weight="bold" />

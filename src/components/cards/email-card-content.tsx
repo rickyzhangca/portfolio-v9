@@ -1,6 +1,7 @@
 import { EnvelopeSimpleIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { memo, useState } from "react";
+import { AnalyticsEvents, track } from "@/lib/analytics";
 import { SPRING_PRESETS } from "@/lib/animation";
 import type { EmailCardContent } from "@/types/canvas";
 
@@ -20,6 +21,7 @@ const EmailCardContentComponent = ({ data }: EmailCardContentProps) => {
     // Extract email from mailto: link if present, otherwise use the URL directly
     const email = data.link.url.replace("mailto:", "");
     navigator.clipboard.writeText(email);
+    track(AnalyticsEvents.EMAIL_COPY, { success: true });
     setCopied(true);
     setIsAnimating(true);
 
@@ -96,6 +98,7 @@ const EmailCardContentComponent = ({ data }: EmailCardContentProps) => {
       <motion.a
         className="no-drag flex items-center justify-center rounded-full p-4 text-white transition hover:scale-110"
         href={data.link.url}
+        onClick={() => track(AnalyticsEvents.EMAIL_OPEN, { method: "mailto" })}
         rel="noopener noreferrer"
         style={{
           background:
