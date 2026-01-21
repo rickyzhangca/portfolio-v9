@@ -1,15 +1,15 @@
 import { motion } from "framer-motion";
 import { useCallback, useMemo, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
 import { RenderCard } from "@/cards/render-card";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { tw } from "@/lib/utils";
 import type { CanvasFunStackItem, Position } from "@/types/canvas";
+import { MarkdownRenderer } from "../markdown-renderer";
 
 const CONTENT_WIDTH = 640;
 const CONTENT_GAP = 24;
-const STAGGER_DELAY = 0.05;
+const STAGGER_DELAY = 0.1;
 const VERTICAL_GAP = 16;
 const CONTENT_CARD_HEIGHT = 120; // Fallback height estimate before measurement
 
@@ -217,10 +217,10 @@ export const FunProjectGroup = ({
               animate={{
                 opacity: isExpanded ? 1 : 0,
                 scale: isExpanded ? 1 : 0.8,
-                x: isExpanded ? offsetX : 0,
-                y: isExpanded ? offsetY : 0,
+                x: offsetX,
+                y: offsetY,
               }}
-              className="absolute top-0 left-0 will-change-transform"
+              className="absolute top-0 left-0 origin-top-left will-change-transform"
               initial={false}
               key={index}
               style={{
@@ -229,11 +229,11 @@ export const FunProjectGroup = ({
               }}
               transition={{
                 ...SPRING_PRESETS.snappy,
-                delay: isExpanded ? index * STAGGER_DELAY : 0,
+                delay: index * STAGGER_DELAY,
               }}
             >
               <div
-                className="flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-2xl"
+                className="flex flex-col gap-5 rounded-3xl bg-background2 p-6 outline outline-border"
                 ref={contentCardRef}
                 style={{ width: CONTENT_WIDTH }}
               >
@@ -241,53 +241,33 @@ export const FunProjectGroup = ({
                   <span className="font-semibold text-xl">{funItem.title}</span>
                   <span
                     className={tw(
-                      "inline-block rounded-full px-2.5 py-1 font-medium text-xs",
+                      "inline-block rounded-full px-2.5 py-1 font-medium text-xs outline",
                       funItem.status === "Active" &&
-                        "bg-green-100 text-green-700",
+                        "bg-green-500/10 text-green-700 outline-green-700/30",
                       funItem.status === "Maintaining" &&
-                        "bg-blue-100 text-blue-700",
+                        "bg-blue-500/10 text-blue-700 outline-blue-700/30",
                       funItem.status === "Archived" &&
-                        "bg-gray-100 text-gray-700"
+                        "bg-gray-500/10 text-gray-700 outline-gray-700/30"
                     )}
                   >
                     {funItem.status}
                   </span>
                 </p>
 
-                {/* Preview image */}
                 {funItem.image && (
                   <img
                     alt={funItem.title}
-                    className="w-full rounded-lg"
+                    className="w-full rounded-md outline outline-border"
                     height={200}
                     src={funItem.image}
                     width={380}
                   />
                 )}
 
-                {/* Markdown description or blurb */}
-                <div className="prose prose-sm max-w-none text-gray-600 text-sm">
-                  {funItem.description ? (
-                    <ReactMarkdown
-                      components={{
-                        a: ({ node, ...props }) => (
-                          <a
-                            {...props}
-                            className="text-blue-600 underline hover:text-blue-800"
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          />
-                        ),
-                      }}
-                    >
-                      {funItem.description}
-                    </ReactMarkdown>
-                  ) : (
-                    <p>{funItem.blurb}</p>
-                  )}
+                <div className="prose prose-sm max-w-none text-foreground1/80">
+                  <MarkdownRenderer content={funItem.description} />
                 </div>
 
-                {/* External link */}
                 {funItem.link && (
                   <a
                     className="text-blue-600 text-sm underline hover:text-blue-800"

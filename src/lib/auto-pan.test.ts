@@ -30,7 +30,10 @@ const createMockFunStack = (
         items: Array.from({ length: itemsCount }, (_, index) => ({
           icon: "x",
           title: `Item ${index}`,
-          blurb: "Blurb",
+          description: "Description",
+          link: "https://example.com",
+          status: "Active",
+          image: "https://example.com/image.png",
         })),
       },
     },
