@@ -161,7 +161,26 @@ export const canvasReducer = (
         return state;
       }
 
-      // Stack item: check cover and stack cards
+      if (item.kind === "swagstack") {
+        // Swag stack item: update the cover card
+        if (item.cover.id === cardId && item.cover.size.height !== height) {
+          newItems.set(itemId, {
+            ...item,
+            cover: {
+              ...item.cover,
+              size: { ...item.cover.size, height },
+            },
+          });
+          return { ...state, items: newItems };
+        }
+        return state;
+      }
+
+      // Stack item (kind === "stack"): check cover and stack cards
+      if (item.kind !== "stack") {
+        return state;
+      }
+
       if (item.cover.id === cardId) {
         if (item.cover.size.height === height) {
           return state; // No change needed

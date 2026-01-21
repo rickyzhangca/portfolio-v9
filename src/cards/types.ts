@@ -45,6 +45,8 @@ export type {
   SocialsCardInstance,
   StickyNoteCardContent,
   StickyNoteCardInstance,
+  SwagCoverCardContent,
+  SwagCoverCardInstance,
 } from "./registry";
 
 export {

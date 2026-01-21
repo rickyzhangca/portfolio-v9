@@ -566,4 +566,4 @@ const swags: { src: string; label: string; caption?: string }[] = [
   },
 ];
 
-const shuffledSwags = shuffle(swags);
+export const shuffledSwags = shuffle(swags);

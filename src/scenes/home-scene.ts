@@ -1,5 +1,6 @@
 import { ABOUT_CARD_SIZE } from "@/cards/about/about-data";
 import { RESUME_CARD_SIZE, resumeData } from "@/cards/resume/resume-data";
+import { shuffledSwags } from "@/assets/swag/swag";
 import type { CanvasItem } from "@/types/canvas";
 
 const START_X = 80;
@@ -613,5 +614,22 @@ export const initialItems: CanvasItem[] = [
         ],
       },
     },
+  },
+  // swag collection - swagstack
+  {
+    id: "swag-stack",
+    kind: "swagstack",
+    position: { x: 1200, y: 200 },
+    zIndex: 7,
+    cover: {
+      id: "swag-cover",
+      kind: "swagcover",
+      size: { width: 240, height: 160 },
+      content: {
+        content: "My Swag Collection",
+        color: "yellow",
+      },
+    },
+    swags: shuffledSwags,
   },
 ];

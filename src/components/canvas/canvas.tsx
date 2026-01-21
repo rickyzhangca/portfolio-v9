@@ -680,6 +680,77 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                             });
                           }
                         }
+
+                        // Swag stack items can expand/collapse
+                        if (item.kind === "swagstack") {
+                          if (isExpanded) {
+                            // Restore to pre-auto-pan position if available
+                            const savedPosition = preAutoPanPositionRef.current;
+                            if (savedPosition) {
+                              requestAnimationFrame(() => {
+                                transformRef.current?.setTransform(
+                                  savedPosition.x,
+                                  savedPosition.y,
+                                  savedPosition.scale,
+                                  AUTO_PAN_DURATION_MS,
+                                  AUTO_PAN_EASING
+                                );
+                              });
+                              preAutoPanPositionRef.current = null;
+                            }
+                            actions.setExpandedStack(null);
+                            return;
+                          }
+
+                          actions.bringItemToFront(item.id);
+                          actions.setExpandedStack(item.id);
+
+                          // Check if auto-pan is needed
+                          const coverWidth = item.cover.size.width ?? 240;
+                          const gridCols = 6;
+                          const swagItemSize = 180;
+                          const gridGap = 16;
+                          const swagCount = item.swags.length;
+                          const rows = Math.ceil(swagCount / gridCols);
+                          const totalWidth = coverWidth + 40 + gridCols * (swagItemSize + gridGap);
+                          const totalHeight = rows * (swagItemSize + gridGap);
+                          const itemRight = item.position.x + totalWidth;
+                          const itemBottom = item.position.y + totalHeight;
+                          const viewportRight = (window.innerWidth - state.viewportState.positionX) / state.viewportState.scale;
+                          const viewportBottom = (window.innerHeight - state.viewportState.positionY) / state.viewportState.scale;
+
+                          let panTarget: { x: number; y: number; scale: number } | null = null;
+                          if (itemRight > viewportRight || itemBottom > viewportBottom) {
+                            const centerX = item.position.x + totalWidth / 2;
+                            const centerY = item.position.y + totalHeight / 2;
+                            const targetX =
+                              window.innerWidth / 2 -
+                              centerX * state.viewportState.scale;
+                            const targetY =
+                              window.innerHeight / 2 -
+                              centerY * state.viewportState.scale;
+
+                            panTarget = { x: targetX, y: targetY, scale: state.viewportState.scale };
+                          }
+
+                          if (panTarget) {
+                            // Save current position before auto-panning
+                            preAutoPanPositionRef.current = {
+                              x: state.viewportState.positionX,
+                              y: state.viewportState.positionY,
+                              scale: state.viewportState.scale,
+                            };
+                            requestAnimationFrame(() => {
+                              transformRef.current?.setTransform(
+                                panTarget.x,
+                                panTarget.y,
+                                panTarget.scale,
+                                AUTO_PAN_DURATION_MS,
+                                AUTO_PAN_EASING
+                              );
+                            });
+                          }
+                        }
                       }}
                       repulsionOffset={repulsionOffset}
                       scale={scale}
