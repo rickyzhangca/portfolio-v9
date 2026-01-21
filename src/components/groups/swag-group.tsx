@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
 import { useAtomValue } from "jotai";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { fanConfigAtom } from "@/context/atoms";
 import { RenderCard } from "@/cards/render-card";
+import { fanConfigAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { tw } from "@/lib/utils";
@@ -10,7 +10,13 @@ import type { CanvasSwagStackItem, Position } from "@/types/canvas";
 
 const SWAG_ITEM_SIZE = 180;
 const GRID_COLUMNS = 6;
-const STAGGER_DELAY = 0.04;
+const STAGGER_DELAY = 0.01;
+
+// Collapsed positions for swag items (stacked under cover)
+const COLLAPSED_POSITIONS = [
+  { x: 16, y: 24, rotate: 5 },
+  { x: 32, y: 72, rotate: 0 },
+];
 
 interface SwagGroupProps {
   item: CanvasSwagStackItem;
@@ -71,22 +77,29 @@ export const SwagGroup = ({
       const row = Math.floor(index / GRID_COLUMNS);
       const colInRow = index % GRID_COLUMNS;
 
-      // Base position using fanConfig gaps
+      // Expanded position: grid layout with fan effect
       const baseX = coverWidth + fanConfig.expandGapPx;
-      const x = baseX + colInRow * (SWAG_ITEM_SIZE + fanConfig.expandGapPx);
-      const y = row * (SWAG_ITEM_SIZE + fanConfig.expandRowGapPx);
+      const expandedX =
+        baseX + colInRow * (SWAG_ITEM_SIZE + fanConfig.expandGapPx);
+      const expandedY = row * (SWAG_ITEM_SIZE + fanConfig.expandRowGapPx);
 
       // Fan effect calculations (same as card-group)
-      const fanRotate = isExpanded
-        ? (colInRow + 1) * fanConfig.rotateStepDeg
-        : 0;
-      const fanArcY = isExpanded
-        ? (colInRow + 1) ** 2 * fanConfig.arcStepPx
-        : 0;
+      const fanRotate = (colInRow + 1) * fanConfig.rotateStepDeg;
+      const fanArcY = (colInRow + 1) ** 2 * fanConfig.arcStepPx;
 
-      return { x, y, fanRotate, fanArcY };
+      // Collapsed position: stacked under cover
+      const collapsedPos = COLLAPSED_POSITIONS[Math.min(index, 1)];
+
+      return {
+        expandedX,
+        expandedY: expandedY + fanArcY,
+        collapsedX: collapsedPos.x,
+        collapsedY: collapsedPos.y,
+        collapsedRotate: collapsedPos.rotate,
+        fanRotate,
+      };
     },
-    [coverWidth, isExpanded, fanConfig]
+    [coverWidth, fanConfig]
   );
 
   const { isDragging, handleMouseDown, currentPosition } = useDraggable({
@@ -206,21 +219,26 @@ export const SwagGroup = ({
         {/* Swag items in grid */}
         {item.swags.map((swag, index) => {
           const offset = getSwagOffset(index);
+          const COLLAPSED_VISIBLE_COUNT = 2;
+          const isHiddenWhenCollapsed =
+            !isExpanded && index >= COLLAPSED_VISIBLE_COUNT;
 
           return (
             <motion.div
               animate={{
-                opacity: isExpanded ? 1 : 0,
-                scale: isExpanded ? 1 : 0.8,
-                x: offset.x,
-                y: offset.y + offset.fanArcY,
-                rotate: offset.fanRotate,
+                opacity: isHiddenWhenCollapsed ? 0 : 1,
+                scale: isExpanded ? 1 : 0.5,
+                x: isExpanded ? offset.expandedX : offset.collapsedX,
+                y: isExpanded ? offset.expandedY : offset.collapsedY,
+                rotate: isExpanded ? offset.fanRotate : offset.collapsedRotate,
               }}
               className="absolute top-0 left-0 origin-top-left will-change-transform"
               initial={{
                 opacity: 0,
-                scale: 0.8,
-                rotate: 0,
+                scale: 0.5,
+                x: offset.collapsedX,
+                y: offset.collapsedY,
+                rotate: offset.collapsedRotate,
               }}
               key={index}
               style={{
@@ -228,23 +246,45 @@ export const SwagGroup = ({
                 zIndex: item.swags.length - index - 1,
                 pointerEvents: isExpanded ? "auto" : "none",
               }}
-              transition={{
-                ...SPRING_PRESETS.snappy,
-                delay: index * STAGGER_DELAY,
-              }}
+              transition={
+                isExpanded
+                  ? {
+                      opacity: {
+                        ...SPRING_PRESETS.snappy,
+                        delay: index * STAGGER_DELAY * 1.5,
+                      },
+                      scale: {
+                        ...SPRING_PRESETS.snappy,
+                        delay: index * STAGGER_DELAY * 1.5,
+                      },
+                      x: {
+                        ...SPRING_PRESETS.snappy,
+                        delay: index * STAGGER_DELAY,
+                      },
+                      y: {
+                        ...SPRING_PRESETS.snappy,
+                        delay: index * STAGGER_DELAY,
+                      },
+                      rotate: {
+                        ...SPRING_PRESETS.snappy,
+                        delay: index * STAGGER_DELAY,
+                      },
+                    }
+                  : SPRING_PRESETS.quick
+              }
             >
-              <div className="flex h-full flex-col gap-2 rounded-2xl bg-background2 p-3 outline outline-border">
+              <div className="flex h-full flex-col gap-2">
                 <img
                   alt={swag.label}
-                  className="aspect-[3/2] w-full rounded-md border border-border object-cover"
+                  className="aspect-3/2 w-full object-contain"
                   height={120}
                   src={swag.src}
                   width={180}
                 />
                 <div className="flex flex-col gap-0.5">
-                  <p className="truncate font-semibold text-sm">{swag.label}</p>
+                  <p className="">{swag.label}</p>
                   {swag.caption && (
-                    <p className="truncate text-foreground2/70 text-xs">
+                    <p className="truncate text-foreground2 text-sm">
                       {swag.caption}
                     </p>
                   )}
