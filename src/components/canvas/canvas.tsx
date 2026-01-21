@@ -713,27 +713,57 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                           const swagCount = item.swags.length;
                           const rows = Math.ceil(swagCount / gridCols);
                           const totalWidth = coverWidth + 40 + gridCols * (swagItemSize + gridGap);
-                          const totalHeight = rows * (swagItemSize + gridGap);
-                          const itemRight = item.position.x + totalWidth;
-                          const itemBottom = item.position.y + totalHeight;
-                          const viewportRight = (window.innerWidth - state.viewportState.positionX) / state.viewportState.scale;
-                          const viewportBottom = (window.innerHeight - state.viewportState.positionY) / state.viewportState.scale;
+                          // Height: items + gaps between rows (last row has no trailing gap)
+                          const totalHeight = rows * swagItemSize + Math.max(0, rows - 1) * gridGap;
+                          const margin = 40;
 
-                          let panTarget: { x: number; y: number; scale: number } | null = null;
-                          if (itemRight > viewportRight || itemBottom > viewportBottom) {
+                          // Get current visible viewport in canvas coordinates
+                          const viewportMinX = (0 - state.viewportState.positionX) / state.viewportState.scale;
+                          const viewportMinY = (0 - state.viewportState.positionY) / state.viewportState.scale;
+                          const viewportMaxX = (window.innerWidth - state.viewportState.positionX) / state.viewportState.scale;
+                          const viewportMaxY = (window.innerHeight - state.viewportState.positionY) / state.viewportState.scale;
+
+                          // Content bounds (swag grid starts at same y as cover)
+                          const contentMinX = item.position.x;
+                          const contentMinY = item.position.y;
+                          const contentMaxX = item.position.x + totalWidth;
+                          const contentMaxY = item.position.y + totalHeight;
+
+                          // Check if content overflows viewport
+                          const overflows =
+                            contentMinX < viewportMinX ||
+                            contentMinY < viewportMinY ||
+                            contentMaxX > viewportMaxX ||
+                            contentMaxY > viewportMaxY;
+
+                          if (overflows) {
+                            // Check if content can be centered (fits with margins)
+                            const contentWidth = totalWidth * state.viewportState.scale;
+                            const contentHeight = totalHeight * state.viewportState.scale;
+                            const availableWidth = window.innerWidth - margin * 2;
+                            const availableHeight = window.innerHeight - margin * 2;
+
+                            const canCenterHorizontal = contentWidth <= availableWidth;
+                            const canCenterVertical = contentHeight <= availableHeight;
+
+                            // Calculate transforms
                             const centerX = item.position.x + totalWidth / 2;
                             const centerY = item.position.y + totalHeight / 2;
-                            const targetX =
-                              window.innerWidth / 2 -
-                              centerX * state.viewportState.scale;
-                            const targetY =
-                              window.innerHeight / 2 -
-                              centerY * state.viewportState.scale;
 
-                            panTarget = { x: targetX, y: targetY, scale: state.viewportState.scale };
-                          }
+                            const centeredX = window.innerWidth / 2 - centerX * state.viewportState.scale;
+                            const centeredY = window.innerHeight / 2 - centerY * state.viewportState.scale;
 
-                          if (panTarget) {
+                            const marginX = margin - item.position.x * state.viewportState.scale;
+                            const marginY = margin - item.position.y * state.viewportState.scale;
+
+                            // Use centered for axes that fit, margin for axes that don't
+                            // If horizontal space is insufficient, pin to top-left for stable layout
+                            const panTarget: { x: number; y: number; scale: number } = {
+                              x: canCenterHorizontal ? centeredX : marginX,
+                              y: canCenterHorizontal && canCenterVertical ? centeredY : marginY,
+                              scale: state.viewportState.scale,
+                            };
+
                             // Save current position before auto-panning
                             preAutoPanPositionRef.current = {
                               x: state.viewportState.positionX,

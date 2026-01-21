@@ -1,6 +1,6 @@
+import { shuffledSwags } from "@/assets/swag/swag";
 import { ABOUT_CARD_SIZE } from "@/cards/about/about-data";
 import { RESUME_CARD_SIZE, resumeData } from "@/cards/resume/resume-data";
-import { shuffledSwags } from "@/assets/swag/swag";
 import type { CanvasItem } from "@/types/canvas";
 
 const START_X = 80;
@@ -398,21 +398,6 @@ export const initialItems: CanvasItem[] = [
       },
     ],
   },
-  {
-    id: "stickynote-item",
-    kind: "single",
-    position: { x: 920, y: 800 },
-    zIndex: 5,
-    card: {
-      id: "stickynote-card",
-      kind: "stickynote",
-      size: { width: 240 },
-      content: {
-        content: "Swag collection",
-        color: "blue",
-      },
-    },
-  },
   // profile pic - single item
   {
     id: "profilepic-item",
@@ -619,12 +604,12 @@ export const initialItems: CanvasItem[] = [
   {
     id: "swag-stack",
     kind: "swagstack",
-    position: { x: 1200, y: 200 },
+    position: { x: 860, y: 1000 },
     zIndex: 7,
     cover: {
       id: "swag-cover",
       kind: "swagcover",
-      size: { width: 240, height: 160 },
+      size: { width: 180, height: 180 },
       content: {
         content: "My Swag Collection",
         color: "yellow",
