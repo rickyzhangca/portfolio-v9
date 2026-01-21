@@ -23,6 +23,10 @@ export const useDraggable = ({
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   const didDragRef = useRef(false);
 
+  // RAF-throttle drag offset updates
+  const rafRef = useRef<number | null>(null);
+  const pendingOffsetRef = useRef<Position | null>(null);
+
   const handleMouseDown = useCallback(
     (e: React.MouseEvent | React.TouchEvent) => {
       if (disabled) {
@@ -44,6 +48,7 @@ export const useDraggable = ({
       setDragOffset({ x: 0, y: 0 });
       dragStartPos.current = { x: clientX, y: clientY };
       didDragRef.current = false;
+      pendingOffsetRef.current = null;
 
       onDragStart?.();
     },
@@ -70,25 +75,44 @@ export const useDraggable = ({
       const deltaX = rawDeltaX / scale;
       const deltaY = rawDeltaY / scale;
 
-      // Update local offset (no global state update)
-      setDragOffset({ x: deltaX, y: deltaY });
+      // Store in ref and RAF-throttle state updates
+      pendingOffsetRef.current = { x: deltaX, y: deltaY };
+      if (rafRef.current === null) {
+        rafRef.current = requestAnimationFrame(() => {
+          const pending = pendingOffsetRef.current;
+          if (pending) {
+            setDragOffset(pending);
+          }
+          rafRef.current = null;
+        });
+      }
     },
     [isDragging, scale, clickThreshold]
   );
 
   const handleMouseUp = useCallback(() => {
+    // Cancel any pending RAF update
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+
     if (isDragging && dragStartPos.current) {
       setIsDragging(false);
 
+      // Use pending offset if available, otherwise use current dragOffset
+      const finalOffset = pendingOffsetRef.current ?? dragOffset;
+
       // Calculate final position
       const finalPosition = {
-        x: position.x + dragOffset.x,
-        y: position.y + dragOffset.y,
+        x: position.x + finalOffset.x,
+        y: position.y + finalOffset.y,
       };
 
       // Reset offset
       setDragOffset({ x: 0, y: 0 });
       dragStartPos.current = null;
+      pendingOffsetRef.current = null;
 
       // Only update global state once at the end
       onDragEnd?.(finalPosition);

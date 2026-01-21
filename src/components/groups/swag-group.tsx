@@ -231,13 +231,15 @@ export const SwagGroup = ({
           />
         </motion.div>
 
-        {/* Swag items in grid */}
+        {/* Swag items in grid - only render visible items when collapsed */}
         {item.swags.map((swag, index) => {
-          const offset = getSwagOffset(index);
+          // Only render first N items when collapsed, all items when expanded
           const COLLAPSED_VISIBLE_COUNT = 6;
-          const isHiddenWhenCollapsed =
-            !isExpanded && index >= COLLAPSED_VISIBLE_COUNT;
+          if (!isExpanded && index >= COLLAPSED_VISIBLE_COUNT) {
+            return null;
+          }
 
+          const offset = getSwagOffset(index);
           const collapsedTransition = hasMounted
             ? SPRING_PRESETS.quick
             : {
@@ -248,7 +250,7 @@ export const SwagGroup = ({
           return (
             <motion.div
               animate={{
-                opacity: isHiddenWhenCollapsed ? 0 : 1,
+                opacity: 1,
                 scale: isExpanded ? 1.05 : 0.6,
                 x: isExpanded ? offset.expandedX : offset.collapsedX,
                 y: isExpanded ? offset.expandedY : offset.collapsedY,
@@ -300,7 +302,9 @@ export const SwagGroup = ({
                   <img
                     alt={swag.label}
                     className="aspect-3/2 w-full object-contain"
+                    decoding="async"
                     height={120}
+                    loading="lazy"
                     src={swag.src}
                     width={180}
                   />
