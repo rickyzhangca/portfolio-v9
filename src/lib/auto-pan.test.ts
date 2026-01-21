@@ -31,7 +31,7 @@ const createMockFunStack = (
           icon: "x",
           title: `Item ${index}`,
           description: "Description",
-          link: "https://example.com",
+          link: { url: "https://example.com" },
           status: "Active",
           image: "https://example.com/image.png",
         })),
