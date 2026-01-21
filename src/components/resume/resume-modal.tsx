@@ -74,13 +74,12 @@ export const ResumeModal = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          animate={{ opacity: 1 }}
+          animate={{ opacity: 1, transition: { duration: 0.24 } }}
           aria-modal="true"
           className="fixed inset-0 z-50 bg-white"
-          exit={{ opacity: 0, transition: { duration: 0.32, delay: 0.12 } }}
+          exit={{ opacity: 0, transition: { duration: 0.32, delay: 0.24 } }}
           initial={{ opacity: 0 }}
           role="dialog"
-          transition={{ duration: 0.32 }}
         >
           <div
             className="absolute inset-0 flex items-start justify-center overflow-auto pt-12 pb-24"
