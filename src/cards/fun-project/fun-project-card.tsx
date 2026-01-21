@@ -38,7 +38,7 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
           // biome-ignore lint/correctness/useImageSize: auto sizes
           <img
             alt={item.title}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover drop-shadow-[0_4px_8px_rgba(0,0,0,0.08)]"
             key={item.title}
             src={item.icon}
           />
