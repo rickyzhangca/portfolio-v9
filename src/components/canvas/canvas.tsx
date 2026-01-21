@@ -302,6 +302,64 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     };
   }, [state.focusedItemId, actions.setFocusedItem]);
 
+  // Handle ESC key to close expanded stacks and focused items
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Don't close if interaction is locked (modals are open)
+      if (isInteractionLockedRef.current) {
+        return;
+      }
+
+      if (e.key !== "Escape") {
+        return;
+      }
+
+      // Priority: close expanded stack first, then focused item
+      if (state.expandedStackId) {
+        const savedPosition = preAutoPanPositionRef.current;
+        if (savedPosition) {
+          requestAnimationFrame(() => {
+            transformRef.current?.setTransform(
+              savedPosition.x,
+              savedPosition.y,
+              savedPosition.scale,
+              AUTO_PAN_DURATION_MS,
+              AUTO_PAN_EASING
+            );
+          });
+          preAutoPanPositionRef.current = null;
+        }
+        actions.setExpandedStack(null);
+      } else if (state.focusedItemId) {
+        const savedPosition = preFocusPanPositionRef.current;
+        if (savedPosition) {
+          requestAnimationFrame(() => {
+            transformRef.current?.setTransform(
+              savedPosition.x,
+              savedPosition.y,
+              savedPosition.scale,
+              AUTO_PAN_DURATION_MS,
+              AUTO_PAN_EASING
+            );
+          });
+          preFocusPanPositionRef.current = null;
+        }
+        actions.setFocusedItem(null);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [
+    state.expandedStackId,
+    state.focusedItemId,
+    actions.setExpandedStack,
+    actions.setFocusedItem,
+  ]);
+
   // Calculate viewport-proportional repulsion values for doc modal mode
   const getResumeRepulsionConfig = useCallback(
     (viewportWidth: number, viewportHeight: number) => {
