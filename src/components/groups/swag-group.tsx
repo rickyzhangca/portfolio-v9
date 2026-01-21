@@ -19,8 +19,12 @@ const STAGGER_DELAY = 0.01;
 
 // Collapsed positions for swag items (stacked under cover)
 const COLLAPSED_POSITIONS = [
-  { x: 140, y: 16, rotate: 10 },
-  { x: 145, y: 72, rotate: 0 },
+  { x: 30, y: -40, rotate: 10 },
+  { x: 60, y: -40, rotate: 0 },
+  { x: 120, y: -20, rotate: -5 },
+  { x: 140, y: 20, rotate: 5 },
+  { x: 130, y: 60, rotate: -3 },
+  { x: 120, y: 100, rotate: 3 },
 ];
 
 interface SwagGroupProps {
@@ -93,7 +97,7 @@ export const SwagGroup = ({
       const fanArcY = (colInRow + 1) ** 2 * fanConfig.arcStepPx;
 
       // Collapsed position: stacked under cover
-      const collapsedPos = COLLAPSED_POSITIONS[Math.min(index, 1)];
+      const collapsedPos = COLLAPSED_POSITIONS[Math.min(index, 5)];
 
       return {
         expandedX,
@@ -224,7 +228,7 @@ export const SwagGroup = ({
         {/* Swag items in grid */}
         {item.swags.map((swag, index) => {
           const offset = getSwagOffset(index);
-          const COLLAPSED_VISIBLE_COUNT = 2;
+          const COLLAPSED_VISIBLE_COUNT = 6;
           const isHiddenWhenCollapsed =
             !isExpanded && index >= COLLAPSED_VISIBLE_COUNT;
 
