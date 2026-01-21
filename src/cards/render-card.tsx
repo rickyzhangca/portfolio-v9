@@ -89,6 +89,7 @@ const RenderCardComponent = ({
           <FunProjectCard
             content={card.content}
             isExpanded={isExpanded}
+            isFocused={isFocused}
             onMeasure={onMeasure}
           />
         );

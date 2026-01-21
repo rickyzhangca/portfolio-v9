@@ -450,22 +450,22 @@ const Paopao = () => (
 );
 
 export const More = () => (
-    <PageLayout>
-      <HeaderCard
-        subtitle="I spent most of my free time on side projects that speak for my passion. It's a way to build without constraints from work, and a freedom to explore latest ideas and techs."
-        title="My fun projects"
-      />
-      <div className="flex flex-col gap-2">
-        <KiboUI />
-        <SVGOUI />
-        <Spellbook />
-        <Fprints />
-        <FigKiwiToolbox />
-        <AppleSummarySlides />
-        <MirrorActualSize />
-        <Slides />
-        <OcticonsExtended />
-        <Paopao />
-      </div>
-    </PageLayout>
-  );
+  <PageLayout>
+    <HeaderCard
+      subtitle="I spent most of my free time on side projects that speak for my passion. It's a way to build without constraints from work, and a freedom to explore latest ideas and techs."
+      title="My fun projects"
+    />
+    <div className="flex flex-col gap-2">
+      <KiboUI />
+      <SVGOUI />
+      <Spellbook />
+      <Fprints />
+      <FigKiwiToolbox />
+      <AppleSummarySlides />
+      <MirrorActualSize />
+      <Slides />
+      <OcticonsExtended />
+      <Paopao />
+    </div>
+  </PageLayout>
+);
