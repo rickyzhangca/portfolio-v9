@@ -12,7 +12,7 @@ export const AUTO_PAN_DURATION_MS = 360;
 export const AUTO_PAN_EASING = "easeInOutCubic";
 
 // Keep this in sync with `src/components/groups/fun-project-group.tsx`.
-const CONTENT_WIDTH = 640;
+const CONTENT_WIDTH = 680;
 const CONTENT_GAP = 24;
 // Keep these in sync with `src/components/groups/fun-project-group.tsx`.
 const FUN_STACK_CONTENT_CARD_HEIGHT = 120;

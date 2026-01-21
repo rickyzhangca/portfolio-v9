@@ -1,5 +1,7 @@
 import ReactMarkdown from "react-markdown";
 
+const VIDEO_EXTENSIONS_REGEX = /\.(mov|mp4|webm)$/i;
+
 interface MarkdownRendererProps {
   content: string;
 }
@@ -45,6 +47,31 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
             {children}
           </a>
         ),
+        img: ({ src, alt }) => {
+          const isVideo = src?.match(VIDEO_EXTENSIONS_REGEX);
+
+          if (isVideo) {
+            return (
+              <video
+                className="my-4 w-full rounded-lg outline outline-border"
+                controls
+                loop
+                muted
+                playsInline
+                src={src as string}
+              />
+            );
+          }
+
+          return (
+            // biome-ignore lint/correctness/useImageSize: auto sizing
+            <img
+              alt={alt as string}
+              className="my-4 w-full rounded-lg outline outline-border"
+              src={src as string}
+            />
+          );
+        },
       }}
     >
       {content}
