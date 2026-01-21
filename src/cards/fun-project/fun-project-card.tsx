@@ -27,7 +27,12 @@ const getShadowStyle = (intensity: number): string => {
 
 export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
   (
-    { content, isExpanded: _isExpanded = false, isFocused: _isFocused = false, onMeasure },
+    {
+      content,
+      isExpanded: _isExpanded = false,
+      isFocused: _isFocused = false,
+      onMeasure,
+    },
     ref
   ) => {
     const cardRef = useRef<HTMLDivElement>(null);
