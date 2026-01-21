@@ -6,6 +6,7 @@ import {
   RESUME_SHEET_SIZE,
 } from "@/cards/resume/resume-data";
 import type { ResumeData } from "@/cards/types";
+import { AnalyticsEvents, track } from "@/lib/analytics";
 import { SPRING_PRESETS } from "@/lib/animation";
 import { ResumeSheet } from "./resume-sheet";
 
@@ -29,6 +30,10 @@ export const ResumeModal = ({
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        track(AnalyticsEvents.MODAL_CLOSE, {
+          modal_type: "resume",
+          close_method: "keyboard",
+        });
         onClose();
       }
     };
@@ -58,6 +63,10 @@ export const ResumeModal = ({
       }
     }
 
+    track(AnalyticsEvents.MODAL_CLOSE, {
+      modal_type: "resume",
+      close_method: "outside_click",
+    });
     onClose();
   };
 
@@ -119,7 +128,13 @@ export const ResumeModal = ({
           >
             <button
               className="no-drag flex cursor-pointer items-center gap-2 py-4 pr-4.5 pl-6 transition-colors hover:bg-foreground1/20"
-              onClick={onClose}
+              onClick={() => {
+                track(AnalyticsEvents.MODAL_CLOSE, {
+                  modal_type: "resume",
+                  close_method: "button",
+                });
+                onClose();
+              }}
               type="button"
             >
               <ArrowLeftIcon size={20} weight="bold" />
