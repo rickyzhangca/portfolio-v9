@@ -1,6 +1,7 @@
 import { SingleCardItem } from "@/components/canvas/single-card-item";
 import { CardStack } from "@/components/groups/card-group";
 import { FunProjectGroup } from "@/components/groups/fun-project-group";
+import { SwagGroup } from "@/components/groups/swag-group";
 import type { CanvasItem, Position } from "@/types/canvas";
 
 interface CanvasItemRendererProps {
@@ -72,6 +73,26 @@ export function CanvasItemRenderer({
         repulsionOffset={repulsionOffset}
         scale={scale}
         setRootRef={setRootRef}
+      />
+    );
+  }
+
+  if (item.kind === "swagstack") {
+    return (
+      <SwagGroup
+        dragDisabled={dragDisabled}
+        isExpanded={isExpanded}
+        item={item}
+        onBringToFront={onBringToFront}
+        onCardHeightMeasured={onCardHeightMeasured}
+        onDragEnd={onDragEnd}
+        onDragStart={onDragStart}
+        onPositionUpdate={onPositionUpdate}
+        onToggleExpanded={onToggleExpanded}
+        repulsionOffset={repulsionOffset}
+        scale={scale}
+        setRootRef={setRootRef}
+        stackIndex={itemIndex}
       />
     );
   }

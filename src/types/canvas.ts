@@ -4,6 +4,7 @@ import type {
   CoverCardInstance,
   FunProjectCardInstance,
   ProjectCardInstance,
+  SwagCoverCardInstance,
 } from "@/cards/types";
 
 export interface Position {
@@ -14,6 +15,12 @@ export interface Position {
 export interface Size {
   width?: number;
   height?: number;
+}
+
+export interface SwagItem {
+  src: string;
+  label: string;
+  caption?: string;
 }
 
 export interface ViewportState {
@@ -50,10 +57,18 @@ export interface CanvasFunStackItem extends CanvasItemBase {
   card: FunProjectCardInstance;
 }
 
+// Swag stack item (swag cover that expands to show swag items in grid)
+export interface CanvasSwagStackItem extends CanvasItemBase {
+  kind: "swagstack";
+  cover: SwagCoverCardInstance;
+  swags: SwagItem[];
+}
+
 export type CanvasItem =
   | CanvasSingleItem
   | CanvasStackItem
-  | CanvasFunStackItem;
+  | CanvasFunStackItem
+  | CanvasSwagStackItem;
 
 export interface CanvasState {
   items: Map<string, CanvasItem>;

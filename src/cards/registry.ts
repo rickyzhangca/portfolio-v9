@@ -75,6 +75,11 @@ export interface ProfilePicCardContent {
   alt?: string;
 }
 
+export interface SwagCoverCardContent {
+  content: string; // "My Swag Collection"
+  color?: "yellow" | "pink" | "blue" | "green" | "orange";
+}
+
 export interface MacbookSticker {
   src: string;
   description: string;
@@ -212,6 +217,11 @@ export interface FunProjectCardInstance extends BaseCardInstance {
   content: FunProjectCardContent;
 }
 
+export interface SwagCoverCardInstance extends BaseCardInstance {
+  kind: "swagcover";
+  content: SwagCoverCardContent;
+}
+
 /**
  * Union of all card instances
  */
@@ -225,7 +235,8 @@ export type CardInstance =
   | StickyNoteCardInstance
   | ProfilePicCardInstance
   | MacbookCardInstance
-  | FunProjectCardInstance;
+  | FunProjectCardInstance
+  | SwagCoverCardInstance;
 
 /**
  * Card kind union type
@@ -337,6 +348,13 @@ export const CARD_REGISTRY: Readonly<Record<CardKind, LazyCardDefinition>> =
     },
     funproject: {
       kind: "funproject",
+      interactionPolicy: {
+        activate: "none",
+        drag: "full",
+      },
+    },
+    swagcover: {
+      kind: "swagcover",
       interactionPolicy: {
         activate: "none",
         drag: "full",
