@@ -113,7 +113,7 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
               }}
               src={item.icon}
               style={{ filter: shadow }}
-              transition={SPRING_PRESETS.quick}
+              transition={SPRING_PRESETS.smooth}
             />
           );
         })}
