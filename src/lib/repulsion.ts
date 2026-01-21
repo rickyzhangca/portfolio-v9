@@ -14,7 +14,7 @@ export interface RepulsionConfig {
 
 export const DEFAULT_REPULSION_CONFIG: RepulsionConfig = {
   radiusPx: 1400,
-  strengthPx: 200,
+  strengthPx: 300,
 };
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
