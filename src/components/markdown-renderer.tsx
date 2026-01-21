@@ -1,6 +1,6 @@
-import { lazy } from "react";
 import ReactMarkdown from "react-markdown";
 import { tw } from "@/lib/utils";
+import { CodeHighlighter } from "./code-highlighter";
 
 const LANGUAGE_REGEX = /language-(\w+)/;
 const VIDEO_EXTENSIONS_REGEX = /\.(mov|mp4|webm)$/i;
@@ -8,9 +8,6 @@ const VIDEO_EXTENSIONS_REGEX = /\.(mov|mp4|webm)$/i;
 interface MarkdownRendererProps {
   content: string;
 }
-
-// Lazy-load CodeHighlighter to defer loading react-shiki until code blocks are rendered
-const CodeHighlighter = lazy(() => import("./code-highlighter"));
 
 export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
   return (
