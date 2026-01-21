@@ -190,7 +190,7 @@ export const SingleCardItem = ({
             zIndex: 1,
             pointerEvents: "auto",
           }}
-          transition={SPRING_PRESETS.snappy}
+          transition={{ ...SPRING_PRESETS.smooth, delay: 0.12 }}
         >
           <RenderCard
             card={hiResCard}

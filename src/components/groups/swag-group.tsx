@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useAtomValue } from "jotai";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { RenderCard } from "@/cards/render-card";
 import {
   Tooltip,
@@ -61,11 +61,17 @@ export const SwagGroup = ({
   const [measuredHeight, setMeasuredHeight] = useState<number | undefined>(
     item.cover.size.height
   );
+  const [hasMounted, setHasMounted] = useState(false);
 
   const cardPointerDownRef = useRef<{
     clientX: number;
     clientY: number;
   } | null>(null);
+
+  // Track initial mount for animation delays
+  useLayoutEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const fanConfig = useAtomValue(fanConfigAtom);
 
@@ -232,6 +238,13 @@ export const SwagGroup = ({
           const isHiddenWhenCollapsed =
             !isExpanded && index >= COLLAPSED_VISIBLE_COUNT;
 
+          const collapsedTransition = hasMounted
+            ? SPRING_PRESETS.quick
+            : {
+                ...SPRING_PRESETS.snappy,
+                delay: 0.4 + stackIndex * 0.05 + index * 0.02,
+              };
+
           return (
             <motion.div
               animate={{
@@ -279,7 +292,7 @@ export const SwagGroup = ({
                         delay: index * STAGGER_DELAY,
                       },
                     }
-                  : SPRING_PRESETS.quick
+                  : collapsedTransition
               }
             >
               <Tooltip>
