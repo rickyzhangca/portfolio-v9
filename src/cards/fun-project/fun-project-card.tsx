@@ -49,6 +49,11 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
     );
     const [hasMounted, setHasMounted] = useState(false);
 
+    // Cache icon rects to avoid layout reads on every pointermove
+    const iconRectsRef = useRef<Map<number, DOMRect>>(new Map());
+    const rafRef = useRef<number | null>(null);
+    const pendingEffectsRef = useRef<Map<number, IconLiftEffect> | null>(null);
+
     useLayoutEffect(() => {
       setHasMounted(true);
     }, []);
@@ -64,14 +69,40 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
       handleMeasure();
     }, [handleMeasure]);
 
+    // Update icon rect cache on mount and when icons change
+    useLayoutEffect(() => {
+      const rects = new Map<number, DOMRect>();
+      for (const [index, element] of iconRefs.current.entries()) {
+        const rect = element.getBoundingClientRect();
+        rects.set(index, rect);
+      }
+      iconRectsRef.current = rects;
+    });
+
+    // Set up ResizeObserver to update icon rects when layout changes
+    useEffect(() => {
+      const observers = new Map<number, ResizeObserver>();
+
+      for (const [index, element] of iconRefs.current.entries()) {
+        const observer = new ResizeObserver(() => {
+          const rect = element.getBoundingClientRect();
+          iconRectsRef.current.set(index, rect);
+        });
+        observer.observe(element);
+        observers.set(index, observer);
+      }
+
+      return () => {
+        for (const observer of observers.values()) {
+          observer.disconnect();
+        }
+      };
+    }, []);
+
     const handlePointerMove = useCallback(
       (event: PointerEvent<HTMLDivElement>) => {
-        // Get bounding rects for all icons
-        const iconRects = new Map<number, DOMRect>();
-        for (const [index, element] of iconRefs.current.entries()) {
-          const rect = element.getBoundingClientRect();
-          iconRects.set(index, rect);
-        }
+        // Use cached rects instead of querying DOM on every move
+        const iconRects = iconRectsRef.current;
 
         // Compute lift effects based on pointer position
         const effects = computeMagneticLift(
@@ -79,12 +110,30 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
           event.clientY,
           iconRects
         );
-        setLiftEffects(effects);
+
+        // RAF-throttle state updates to avoid React updates on every event
+        pendingEffectsRef.current = effects;
+        if (rafRef.current === null) {
+          rafRef.current = requestAnimationFrame(() => {
+            const pending = pendingEffectsRef.current;
+            if (pending) {
+              setLiftEffects(pending);
+              pendingEffectsRef.current = null;
+            }
+            rafRef.current = null;
+          });
+        }
       },
       []
     );
 
     const handlePointerLeave = useCallback(() => {
+      // Cancel any pending RAF update
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      pendingEffectsRef.current = null;
       setLiftEffects(new Map());
     }, []);
 
