@@ -397,29 +397,13 @@ export const initialItems: CanvasItem[] = [
       },
     ],
   },
-  // sticky note - single item
   {
-    id: "stickynote-item-1",
-    kind: "single",
-    position: { x: 640, y: 800 },
-    zIndex: 5,
-    card: {
-      id: "stickynote-card-1",
-      kind: "stickynote",
-      size: { width: 240 },
-      content: {
-        content: "Fun projects",
-        color: "green",
-      },
-    },
-  },
-  {
-    id: "stickynote-item-2",
+    id: "stickynote-item",
     kind: "single",
     position: { x: 920, y: 800 },
     zIndex: 5,
     card: {
-      id: "swag-collection",
+      id: "stickynote-card",
       kind: "stickynote",
       size: { width: 240 },
       content: {
