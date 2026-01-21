@@ -89,10 +89,13 @@ export interface MacbookCardContent {
 }
 
 export interface FunProjectItem {
-  icon: string; // Placeholder icon (e.g., emoji or color)
-  title: string;
-  blurb: string;
-  link?: string;
+  icon: string; // Icon for grid display
+  title: string; // Project title
+  blurb: string; // Short summary (for tooltips or brief views)
+  description?: string; // Full markdown description with hyperlinks
+  link?: string; // Primary project link
+  status?: "Active" | "Maintaining" | "Archived"; // Project status
+  image?: string; // Preview image path
 }
 
 export interface FunProjectCardContent {

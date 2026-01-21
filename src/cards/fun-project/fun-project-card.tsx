@@ -8,7 +8,7 @@ interface FunProjectCardProps {
 }
 
 export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
-  ({ content, isExpanded = false, onMeasure }, ref) => {
+  ({ content, isExpanded: _isExpanded = false, onMeasure }, ref) => {
     const cardRef = useRef<HTMLDivElement>(null);
 
     const handleMeasure = useCallback(() => {
