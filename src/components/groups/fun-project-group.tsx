@@ -7,7 +7,7 @@ import { tw } from "@/lib/utils";
 import type { CanvasFunStackItem, Position } from "@/types/canvas";
 import { MarkdownRenderer } from "../markdown-renderer";
 
-const CONTENT_WIDTH = 640;
+const CONTENT_WIDTH = 680;
 const CONTENT_GAP = 24;
 const STAGGER_DELAY = 0.1;
 const VERTICAL_GAP = 16;
