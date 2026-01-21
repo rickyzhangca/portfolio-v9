@@ -11,7 +11,8 @@ export const AUTO_PAN_MARGIN = 40;
 export const AUTO_PAN_DURATION_MS = 360;
 export const AUTO_PAN_EASING = "easeInOutCubic";
 
-const CONTENT_WIDTH = 300;
+// Keep this in sync with `src/components/groups/fun-project-group.tsx`.
+const CONTENT_WIDTH = 640;
 const CONTENT_GAP = 24;
 // Keep these in sync with `src/components/groups/fun-project-group.tsx`.
 const FUN_STACK_CONTENT_CARD_HEIGHT = 120;
@@ -345,10 +346,15 @@ export const getFunStackAutoPanTarget = (
     windowHeight
   );
 
-  // Use centered transform for axes that fit, margin transform for axes that don't
+  // If horizontal space is insufficient, prefer a stable "reading" layout:
+  // pin the expanded content to the top-left (with margin), even if it could be
+  // vertically centered.
   const result = {
     x: canCenter.horizontal ? centeredTransform.x : marginTransform.x,
-    y: canCenter.vertical ? centeredTransform.y : marginTransform.y,
+    y:
+      canCenter.horizontal && canCenter.vertical
+        ? centeredTransform.y
+        : marginTransform.y,
     scale: viewportState.scale,
   };
 
