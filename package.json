@@ -21,6 +21,7 @@
     "@tailwindcss/vite": "^4.1.18",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "fast-shuffle": "^6.1.1",
     "framer-motion": "^12.27.5",
     "jotai": "^2.16.2",
     "react": "^19.2.3",
