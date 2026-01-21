@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
+import { useAtomValue } from "jotai";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { fanConfigAtom } from "@/context/atoms";
 import { RenderCard } from "@/cards/render-card";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
@@ -8,7 +10,6 @@ import type { CanvasSwagStackItem, Position } from "@/types/canvas";
 
 const SWAG_ITEM_SIZE = 180;
 const GRID_COLUMNS = 6;
-const GRID_GAP = 16;
 const STAGGER_DELAY = 0.04;
 
 interface SwagGroupProps {
@@ -51,6 +52,8 @@ export const SwagGroup = ({
     clientY: number;
   } | null>(null);
 
+  const fanConfig = useAtomValue(fanConfigAtom);
+
   const cardWithSize = useMemo(() => {
     return {
       ...item.cover,
@@ -63,17 +66,27 @@ export const SwagGroup = ({
 
   const coverWidth = cardWithSize.size.width ?? 240;
 
-  const getSwagPosition = useCallback(
+  const getSwagOffset = useCallback(
     (index: number) => {
       const row = Math.floor(index / GRID_COLUMNS);
-      const col = index % GRID_COLUMNS;
+      const colInRow = index % GRID_COLUMNS;
 
-      return {
-        x: coverWidth + 40 + col * (SWAG_ITEM_SIZE + GRID_GAP),
-        y: row * (SWAG_ITEM_SIZE + GRID_GAP),
-      };
+      // Base position using fanConfig gaps
+      const baseX = coverWidth + fanConfig.expandGapPx;
+      const x = baseX + colInRow * (SWAG_ITEM_SIZE + fanConfig.expandGapPx);
+      const y = row * (SWAG_ITEM_SIZE + fanConfig.expandRowGapPx);
+
+      // Fan effect calculations (same as card-group)
+      const fanRotate = isExpanded
+        ? (colInRow + 1) * fanConfig.rotateStepDeg
+        : 0;
+      const fanArcY = isExpanded
+        ? (colInRow + 1) ** 2 * fanConfig.arcStepPx
+        : 0;
+
+      return { x, y, fanRotate, fanArcY };
     },
-    [coverWidth]
+    [coverWidth, isExpanded, fanConfig]
   );
 
   const { isDragging, handleMouseDown, currentPosition } = useDraggable({
@@ -192,20 +205,22 @@ export const SwagGroup = ({
 
         {/* Swag items in grid */}
         {item.swags.map((swag, index) => {
-          const position = getSwagPosition(index);
+          const offset = getSwagOffset(index);
 
           return (
             <motion.div
               animate={{
                 opacity: isExpanded ? 1 : 0,
                 scale: isExpanded ? 1 : 0.8,
-                x: position.x,
-                y: position.y,
+                x: offset.x,
+                y: offset.y + offset.fanArcY,
+                rotate: offset.fanRotate,
               }}
               className="absolute top-0 left-0 origin-top-left will-change-transform"
               initial={{
                 opacity: 0,
                 scale: 0.8,
+                rotate: 0,
               }}
               key={index}
               style={{
