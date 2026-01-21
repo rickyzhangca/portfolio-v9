@@ -74,10 +74,13 @@ export const ResumeModal = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          animate={{ opacity: 1, transition: { duration: 0.24 } }}
+          animate={{ opacity: 1, transition: SPRING_PRESETS.smooth }}
           aria-modal="true"
           className="fixed inset-0 z-50 bg-white"
-          exit={{ opacity: 0, transition: { duration: 0.32, delay: 0.24 } }}
+          exit={{
+            opacity: 0,
+            transition: { ...SPRING_PRESETS.smooth, delay: 0.24 },
+          }}
           initial={{ opacity: 0 }}
           role="dialog"
         >
