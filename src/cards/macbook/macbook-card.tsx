@@ -3,7 +3,7 @@ import type { PointerEvent } from "react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { MacbookCardContent } from "@/cards/registry";
 import { tw } from "@/lib/utils";
-import macbookImage from "/src/assets/macbook/macbook.webp";
+import macbookImage from "@/assets/macbook/macbook.webp";
 
 interface MacbookCardProps {
   content: MacbookCardContent;

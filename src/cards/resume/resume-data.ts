@@ -1,3 +1,8 @@
+import queensLogo from "@/assets/resume/queens.webp";
+import wealthsimpleResumeLogo from "@/assets/resume/wealthsimple.webp";
+import mintlifyResumeLogo from "@/assets/resume/mintlify.webp";
+import rbcResumeLogo from "@/assets/resume/rbc.webp";
+import mosaicResumeLogo from "@/assets/resume/mosaic.webp";
 import type { ResumeData } from "@/cards/registry";
 
 export const resumeData: ResumeData = {
@@ -8,7 +13,7 @@ export const resumeData: ResumeData = {
     phone: "+1 647-514-6238",
   },
   education: {
-    logo: "/src/assets/resume/queens.webp",
+    logo: queensLogo,
     degree: "BCH in Cognitive Science",
     institution: "Queen's University",
     years: "2017-2021",
@@ -18,7 +23,7 @@ export const resumeData: ResumeData = {
   experiences: [
     {
       company: "Wealthsimple",
-      logo: "/src/assets/resume/wealthsimple.webp",
+      logo: wealthsimpleResumeLogo,
       title: "Design Engineer, Design Systems",
       caption: "09/2024 - Current",
       description: [
@@ -31,7 +36,7 @@ export const resumeData: ResumeData = {
     },
     {
       company: "Mintlify",
-      logo: "/src/assets/resume/mintlify.webp",
+      logo: mintlifyResumeLogo,
       title: "Design Engineer",
       caption: "06/2024 - 09/2024",
       description: [
@@ -42,7 +47,7 @@ export const resumeData: ResumeData = {
     },
     {
       company: "RBC",
-      logo: "/src/assets/resume/rbc.webp",
+      logo: rbcResumeLogo,
       title: "UX Engineer",
       caption: "02/2023 - 06/2024",
       description: [
@@ -53,7 +58,7 @@ export const resumeData: ResumeData = {
     },
     {
       company: "Mosaic Manufacturing",
-      logo: "/src/assets/resume/mosaic.webp",
+      logo: mosaicResumeLogo,
       title: "Product Designer",
       caption: "05/2021 - 02/2023",
       description: [
@@ -66,7 +71,7 @@ export const resumeData: ResumeData = {
     },
     {
       company: "Mosaic Manufacturing",
-      logo: "/src/assets/resume/mosaic.webp",
+      logo: mosaicResumeLogo,
       title: "UI Designer/Developer",
       caption:
         "05/2020 - 08/2020 Intern\u00a0\u00a0\u00a0 10/2020 - 04/2021 Part-time",
