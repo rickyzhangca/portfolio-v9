@@ -1,5 +1,6 @@
 import { ArrowUUpLeftIcon, SlidersHorizontalIcon } from "@phosphor-icons/react";
 import { useState } from "react";
+import { AnalyticsEvents, track } from "@/lib/analytics";
 import { CanvasControlButton } from "./canvas-control-button";
 import { CanvasControlPanel } from "./canvas-control-panel";
 
@@ -17,6 +18,8 @@ export const CanvasControls = ({
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const handleReset = () => {
+    track(AnalyticsEvents.CANVAS_VIEW_RESET, { zoom_level: 1 });
+    track(AnalyticsEvents.CANVAS_POSITION_RESET);
     onReset();
     onResetPositions();
   };

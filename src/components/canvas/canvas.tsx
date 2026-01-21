@@ -15,6 +15,7 @@ import { AboutModal } from "@/components/about/about-modal";
 import { ResumeModal } from "@/components/resume/resume-modal";
 import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
 import { useCanvasState } from "@/hooks/use-canvas-state";
+import { AnalyticsEvents, track } from "@/lib/analytics";
 import {
   AUTO_PAN_DURATION_MS,
   AUTO_PAN_EASING,
@@ -213,6 +214,10 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
           preAutoPanPositionRef.current = null;
         }
         actions.setExpandedStack(null);
+        track(AnalyticsEvents.STACK_CLOSE, {
+          stack_type: state.expandedStackId,
+          close_method: "outside_click",
+        });
       }
     };
 
@@ -330,6 +335,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
           preAutoPanPositionRef.current = null;
         }
         actions.setExpandedStack(null);
+        track(AnalyticsEvents.KEYBOARD_ESCAPE, { context: "stack" });
       } else if (state.focusedItemId) {
         const savedPosition = preFocusPanPositionRef.current;
         if (savedPosition) {
@@ -345,6 +351,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
           preFocusPanPositionRef.current = null;
         }
         actions.setFocusedItem(null);
+        track(AnalyticsEvents.KEYBOARD_ESCAPE, { context: "macbook" });
       }
     };
 
@@ -509,8 +516,10 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                           actions.bringItemToFront(item.id);
                           if (item.card.kind === "resume") {
                             setActiveResumeItemId(item.id);
+                            track(AnalyticsEvents.RESUME_VIEW);
                           } else if (item.card.kind === "about") {
                             setActiveAboutItemId(item.id);
+                            track(AnalyticsEvents.ABOUT_VIEW);
                           }
                           return;
                         }
@@ -535,11 +544,17 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                             preFocusPanPositionRef.current = null;
                           }
                           actions.setFocusedItem(null);
+                          track(AnalyticsEvents.MACBOOK_ZOOM, {
+                            direction: "out",
+                          });
                           return;
                         }
 
                         actions.setFocusedItem(item.id);
                         actions.bringItemToFront(item.id);
+                        track(AnalyticsEvents.MACBOOK_ZOOM, {
+                          direction: "in",
+                        });
 
                         preFocusPanPositionRef.current = {
                           x: state.viewportState.positionX,
@@ -712,16 +727,31 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                           const gridGap = 16;
                           const swagCount = item.swags.length;
                           const rows = Math.ceil(swagCount / gridCols);
-                          const totalWidth = coverWidth + 40 + gridCols * (swagItemSize + gridGap);
+                          const totalWidth =
+                            coverWidth +
+                            40 +
+                            gridCols * (swagItemSize + gridGap);
                           // Height: items + gaps between rows (last row has no trailing gap)
-                          const totalHeight = rows * swagItemSize + Math.max(0, rows - 1) * gridGap;
+                          const totalHeight =
+                            rows * swagItemSize +
+                            Math.max(0, rows - 1) * gridGap;
                           const margin = 40;
 
                           // Get current visible viewport in canvas coordinates
-                          const viewportMinX = (0 - state.viewportState.positionX) / state.viewportState.scale;
-                          const viewportMinY = (0 - state.viewportState.positionY) / state.viewportState.scale;
-                          const viewportMaxX = (window.innerWidth - state.viewportState.positionX) / state.viewportState.scale;
-                          const viewportMaxY = (window.innerHeight - state.viewportState.positionY) / state.viewportState.scale;
+                          const viewportMinX =
+                            (0 - state.viewportState.positionX) /
+                            state.viewportState.scale;
+                          const viewportMinY =
+                            (0 - state.viewportState.positionY) /
+                            state.viewportState.scale;
+                          const viewportMaxX =
+                            (window.innerWidth -
+                              state.viewportState.positionX) /
+                            state.viewportState.scale;
+                          const viewportMaxY =
+                            (window.innerHeight -
+                              state.viewportState.positionY) /
+                            state.viewportState.scale;
 
                           // Content bounds (swag grid starts at same y as cover)
                           const contentMinX = item.position.x;
@@ -738,29 +768,50 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
 
                           if (overflows) {
                             // Check if content can be centered (fits with margins)
-                            const contentWidth = totalWidth * state.viewportState.scale;
-                            const contentHeight = totalHeight * state.viewportState.scale;
-                            const availableWidth = window.innerWidth - margin * 2;
-                            const availableHeight = window.innerHeight - margin * 2;
+                            const contentWidth =
+                              totalWidth * state.viewportState.scale;
+                            const contentHeight =
+                              totalHeight * state.viewportState.scale;
+                            const availableWidth =
+                              window.innerWidth - margin * 2;
+                            const availableHeight =
+                              window.innerHeight - margin * 2;
 
-                            const canCenterHorizontal = contentWidth <= availableWidth;
-                            const canCenterVertical = contentHeight <= availableHeight;
+                            const canCenterHorizontal =
+                              contentWidth <= availableWidth;
+                            const canCenterVertical =
+                              contentHeight <= availableHeight;
 
                             // Calculate transforms
                             const centerX = item.position.x + totalWidth / 2;
                             const centerY = item.position.y + totalHeight / 2;
 
-                            const centeredX = window.innerWidth / 2 - centerX * state.viewportState.scale;
-                            const centeredY = window.innerHeight / 2 - centerY * state.viewportState.scale;
+                            const centeredX =
+                              window.innerWidth / 2 -
+                              centerX * state.viewportState.scale;
+                            const centeredY =
+                              window.innerHeight / 2 -
+                              centerY * state.viewportState.scale;
 
-                            const marginX = margin - item.position.x * state.viewportState.scale;
-                            const marginY = margin - item.position.y * state.viewportState.scale;
+                            const marginX =
+                              margin -
+                              item.position.x * state.viewportState.scale;
+                            const marginY =
+                              margin -
+                              item.position.y * state.viewportState.scale;
 
                             // Use centered for axes that fit, margin for axes that don't
                             // If horizontal space is insufficient, pin to top-left for stable layout
-                            const panTarget: { x: number; y: number; scale: number } = {
+                            const panTarget: {
+                              x: number;
+                              y: number;
+                              scale: number;
+                            } = {
                               x: canCenterHorizontal ? centeredX : marginX,
-                              y: canCenterHorizontal && canCenterVertical ? centeredY : marginY,
+                              y:
+                                canCenterHorizontal && canCenterVertical
+                                  ? centeredY
+                                  : marginY,
                               scale: state.viewportState.scale,
                             };
 

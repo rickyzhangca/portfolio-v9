@@ -1,6 +1,7 @@
 import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { memo, useState } from "react";
+import { AnalyticsEvents, track } from "@/lib/analytics";
 import { SPRING_PRESETS } from "@/lib/animation";
 import { tw } from "@/lib/utils";
 import type { ProjectCardContent } from "@/types/canvas";
@@ -67,6 +68,13 @@ const ProjectCardContentComponent = ({
             <a
               className="no-drag flex items-center gap-1 text-accent"
               href={data.link.url}
+              onClick={() =>
+                track(AnalyticsEvents.PROJECT_LINK_CLICK, {
+                  company: "unknown",
+                  project_name: data.title,
+                  link_type: data.link?.label ?? "external",
+                })
+              }
               rel="noopener noreferrer"
               target="_blank"
             >

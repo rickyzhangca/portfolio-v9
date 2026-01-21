@@ -1,4 +1,5 @@
 import { memo, type ReactNode, useState } from "react";
+import { AnalyticsEvents, track } from "@/lib/analytics";
 import { tw } from "@/lib/utils";
 import type { SocialsCardContent } from "@/types/canvas";
 
@@ -58,10 +59,13 @@ const SocialsCardContentComponent = ({ data }: SocialsCardContentProps) => {
   const [mode, setMode] = useState<"logi" | "apple">("logi");
 
   const toggleMode = () => {
-    setMode((prev) => (prev === "logi" ? "apple" : "logi"));
+    const newMode = mode === "logi" ? "apple" : "logi";
+    setMode(newMode);
+    track(AnalyticsEvents.SOCIALS_TOGGLE, { mode: newMode });
   };
 
-  const handleLinkClick = (url: string) => {
+  const handleLinkClick = (url: string, platform: "linkedin" | "twitter") => {
+    track(AnalyticsEvents.SOCIAL_LINK_CLICK, { platform });
     setTimeout(() => {
       window.open(url, "_blank");
     }, 400);
@@ -85,7 +89,7 @@ const SocialsCardContentComponent = ({ data }: SocialsCardContentProps) => {
         <div className="flex gap-2">
           <button
             className="cursor-pointer focus:outline-none"
-            onClick={() => handleLinkClick(data.linkedinUrl)}
+            onClick={() => handleLinkClick(data.linkedinUrl, "linkedin")}
             type="button"
           >
             <Key mode={mode}>
@@ -107,7 +111,7 @@ const SocialsCardContentComponent = ({ data }: SocialsCardContentProps) => {
 
           <button
             className="cursor-pointer focus:outline-none"
-            onClick={() => handleLinkClick(data.twitterUrl)}
+            onClick={() => handleLinkClick(data.twitterUrl, "twitter")}
             type="button"
           >
             <Key mode={mode}>
