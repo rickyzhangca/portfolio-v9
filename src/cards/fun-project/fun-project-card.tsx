@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { forwardRef, useCallback, useEffect, useRef } from "react";
 import type { FunProjectCardContent } from "@/cards/types";
 import { SPRING_PRESETS } from "@/lib/animation";
+import { tw } from "@/lib/utils";
 
 interface FunProjectCardProps {
   content: FunProjectCardContent;
@@ -11,7 +12,7 @@ interface FunProjectCardProps {
 
 const CARD_WIDTH = 240;
 const ICON_SIZE = 48;
-const GAP = 16;
+const ICON_STAGGER = 0.03;
 
 export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
   ({ content, isExpanded = false, onMeasure }, ref) => {
@@ -28,13 +29,9 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
       handleMeasure();
     }, [handleMeasure, isExpanded]);
 
-    // Grid: 4x2 layout
-    // List: 1x8 layout (vertical)
-    const gridCols = isExpanded ? 1 : 4;
-
     return (
-      <div
-        className="relative overflow-hidden rounded-[32px] bg-white"
+      <motion.div
+        className="relative origin-top-left overflow-hidden rounded-[32px] bg-white"
         ref={(el) => {
           cardRef.current = el;
           if (typeof ref === "function") {
@@ -44,32 +41,39 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
           }
         }}
         style={{
-          width: CARD_WIDTH,
+          // Keep the expanded list anchored to the collapsed top-left corner.
+          width: isExpanded ? ICON_SIZE : CARD_WIDTH,
         }}
+        transition={SPRING_PRESETS.snappy}
+        layout
       >
-        <div
-          className="grid p-4"
-          style={{
-            gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
-            gap: GAP,
-          }}
+        <motion.div
+          className={tw(
+            // Flex-wrap avoids CSS grid layout quirks with Framer Motion layout animations.
+            "flex gap-4",
+            isExpanded ? "flex-col items-start p-0" : "flex-row flex-wrap p-0"
+          )}
+          layout
         >
           {content.items.map((item, index) => (
             <motion.div
               className="flex items-center justify-center rounded-lg bg-gray-200"
-              key={index}
-              layout
-              style={{
-                width: ICON_SIZE,
-                height: ICON_SIZE,
+              key={item.title}
+              layout="position"
+              style={{ width: ICON_SIZE, height: ICON_SIZE }}
+              // 48px icon tiles: in collapsed mode, the card width (240) fits 4 icons + 3 gaps exactly.
+              transition={{
+                ...SPRING_PRESETS.snappy,
+                delay:
+                  (isExpanded ? index : content.items.length - 1 - index) *
+                  ICON_STAGGER,
               }}
-              transition={SPRING_PRESETS.snappy}
             >
               <div className="text-2xl">{item.icon}</div>
             </motion.div>
           ))}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     );
   }
 );
