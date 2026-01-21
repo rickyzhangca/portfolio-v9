@@ -21,7 +21,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "fast-shuffle": "^6.1.1",
-    "framer-motion": "^12.27.5",
+    "framer-motion": "^12.28.1",
     "jotai": "^2.16.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
