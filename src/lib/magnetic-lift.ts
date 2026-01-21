@@ -9,8 +9,8 @@ export interface MagneticLiftConfig {
 
 export const DEFAULT_MAGNETIC_LIFT_CONFIG: MagneticLiftConfig = {
   radiusPx: 180,
-  maxLiftPx: 16,
-  shadowIntensity: 2,
+  maxLiftPx: 32,
+  shadowIntensity: 1.5,
 };
 
 export interface IconLiftEffect {
