@@ -1,5 +1,9 @@
 import ReactMarkdown from "react-markdown";
+import { tw } from "@/lib/utils";
 
+import { CodeHighlighter } from "./code-highlighter";
+
+const LANGUAGE_REGEX = /language-(\w+)/;
 const VIDEO_EXTENSIONS_REGEX = /\.(mov|mp4|webm)$/i;
 
 interface MarkdownRendererProps {
@@ -71,6 +75,41 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
               src={src as string}
             />
           );
+        },
+        code: ({ className, children, ...props }) => {
+          const match = LANGUAGE_REGEX.exec(className || "");
+          const isInline = !match;
+
+          if (isInline) {
+            return (
+              <code
+                className={tw(
+                  "rounded-md bg-background3 px-1.5 py-0.5 font-mono text-accent text-xs"
+                )}
+                {...props}
+              >
+                {children}
+              </code>
+            );
+          }
+
+          return <code {...props}>{children}</code>;
+        },
+        pre: ({ children }) => {
+          const codeElement = children as React.ReactElement;
+          const codeProps = codeElement?.props as
+            | { children?: string; className?: string }
+            | undefined;
+          const codeString = codeProps?.children;
+          const className = codeProps?.className || "";
+          const languageMatch = LANGUAGE_REGEX.exec(className);
+          const language = languageMatch?.[1] || "text";
+
+          if (typeof codeString !== "string") {
+            return <pre>{children}</pre>;
+          }
+
+          return <CodeHighlighter code={codeString} language={language} />;
         },
       }}
     >
