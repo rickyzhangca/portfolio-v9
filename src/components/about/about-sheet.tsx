@@ -1,7 +1,7 @@
 import { ABOUT_SHEET_SIZE } from "@/cards/about/about-data";
 import aboutContent from "@/content/about.md?raw";
 import { tw } from "@/lib/utils";
-import { MarkdownRenderer } from "./markdown-renderer";
+import { MarkdownRenderer } from "../markdown-renderer";
 
 interface AboutSheetProps {
   className?: string;
