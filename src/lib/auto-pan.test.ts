@@ -324,8 +324,8 @@ describe("getFunStackAutoPanTarget", () => {
 
     expect(result).not.toBeNull();
     // Width fits, so X uses centering; height doesn't fit, so Y uses margin.
-    // contentCenterX = groupX + (0 + 564)/2 = 1800 + 282 = 2082
-    expect(result?.x).toBe(1920 / 2 - 2082);
+    // contentCenterX = groupX + (0 + 904)/2 = 1800 + 452 = 2252
+    expect(result?.x).toBe(1920 / 2 - 2252);
     expect(result?.y).toBe(40 - 800);
   });
 
@@ -342,5 +342,21 @@ describe("getFunStackAutoPanTarget", () => {
     expect(result).not.toBeNull();
     expect(result?.x).toBe(40);
     expect(result?.y).toBe(40);
+  });
+
+  it("uses top-left margin when content is too wide to center, even if height could be centered", () => {
+    const funStack = createMockFunStack("f4", 0, 400, 1, 240, 360, 1);
+
+    const result = getFunStackAutoPanTarget(
+      funStack,
+      { scale: 1, positionX: 0, positionY: 0 },
+      800,
+      1080
+    );
+
+    expect(result).not.toBeNull();
+    // Not enough horizontal space -> pin to top-left margin (both axes).
+    expect(result?.x).toBe(40);
+    expect(result?.y).toBe(40 - 400);
   });
 });
