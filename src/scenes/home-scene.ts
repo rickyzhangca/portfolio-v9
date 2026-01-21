@@ -532,52 +532,98 @@ export const initialItems: CanvasItem[] = [
       content: {
         items: [
           {
-            icon: "/src/assets/fun-projects/icons/apple.webp",
-            title: "Apple",
-            blurb: "Experimented with Apple's ecosystem and development tools",
-            link: "https://github.com",
+            icon: "/src/assets/fun-projects/icons/kibo.webp",
+            title: "Kibo UI",
+            blurb: "Contributing components to open source component library",
+            description:
+              "I love building components. So I'm enjoying creating components for the open source component library [Kibo UI](https://www.kibo-ui.com/) by Vercel's engineer [Hayden Bleasel](https://twitter.com/haydenbleasel). More to come!",
+            status: "Active",
+            link: "https://www.kibo-ui.com/",
+          },
+          {
+            icon: "/src/assets/fun-projects/icons/svgo.webp",
+            title: "SVGOUI",
+            blurb: "UI for SVG optimizer tool",
+            description:
+              "SVGOUI is a UI for SVG optimizer tool [SVGO](https://github.com/svg/svgo). Comparing to the predecessor [SVGOMG](https://github.com/interlace-app/svgui), it runs on newer SVGO core and modern front-end stacks, has a more friendly UI, and packs a number of quality of life features.",
+            status: "Maintaining",
+            image: "/src/assets/fun-projects/temp/more/svgoui.webp",
+            link: "https://svgoui.pages.dev/",
           },
           {
             icon: "/src/assets/fun-projects/icons/fprints.webp",
-            title: "Fingerprints",
-            blurb: "Biometric authentication exploration and security research",
-            link: "https://github.com",
-          },
-          {
-            icon: "/src/assets/fun-projects/icons/kibo.webp",
-            title: "Kibo",
-            blurb: "Interactive project built with modern web technologies",
-            link: "https://github.com",
-          },
-          {
-            icon: "/src/assets/fun-projects/icons/kiwi.webp",
-            title: "Kiwi",
-            blurb: "Creative coding experiment with fruit-inspired design",
-            link: "https://github.com",
-          },
-          {
-            icon: "/src/assets/fun-projects/icons/paopao.webp",
-            title: "Paopao",
-            blurb: "Fun animation project with playful interactions",
-            link: "https://github.com",
-          },
-          {
-            icon: "/src/assets/fun-projects/icons/slides.webp",
-            title: "Slides",
-            blurb: "Presentation tool with smooth transitions",
-            link: "https://github.com",
+            title: "Fprints",
+            blurb: "Factorio blueprint sharing platform",
+            description:
+              "[Factorio](https://store.steampowered.com/app/427520/Factorio/) is a factory-building game where you design and build your own factories. Players can build complex layouts and share via encoded strings - blueprints. I created [Fprints](https://fprints.xyz). A platform where players can publish their blueprints and find inspiration from others. It now has over 152K visits, 550+ users, and stores nearly 400 blueprints.",
+            status: "Maintaining",
+            image: "/src/assets/fun-projects/temp/more/fprints.webp",
+            link: "https://fprints.xyz",
           },
           {
             icon: "/src/assets/fun-projects/icons/spellbook.webp",
             title: "Spellbook",
-            blurb: "Magical reference guide for developers",
-            link: "https://github.com",
+            blurb: "Platform for sharing AI image generation prompts",
+            description:
+              "ChatGPT 4o's image generation capability had a huge leap forward in early 2025. Prompting was much easier than diffusion models. So I created [Spellbook](https://spellbook-space.pages.dev/). It collects some very helpful prompts that my friends and I are still using today.",
+            status: "Active",
+            image: "/src/assets/fun-projects/temp/more/spellbook.webp",
+            link: "https://spellbook.space",
           },
           {
-            icon: "/src/assets/fun-projects/icons/svgo.webp",
-            title: "SVGO",
-            blurb: "SVG optimization tool integration",
-            link: "https://github.com",
+            icon: "/src/assets/fun-projects/icons/figkiwi.webp",
+            title: "fig-kiwi-toolbox",
+            blurb: "Tool for decoding Figma clipboard data",
+            description:
+              "In 2023, I had a vision of creating a tool that would help both designers and developers to make and maintain design system. Due to the closed ecosystem in Figma's nature, the first step I took was to crack how Figma encodes and decodes the data. And [fig-kiwi-toolbox](https://github.com/interlace-app/fig-kiwi-toolbox) was born. It reads and decodes the Figma data you have in the clipboard into JSON.",
+            status: "Archived",
+            image: "/src/assets/fun-projects/temp/more/fig-kiwi.webp",
+            link: "https://github.com/interlace-app/fig-kiwi-toolbox",
+          },
+          {
+            icon: "/src/assets/fun-projects/icons/mirror.webp",
+            title: "Mirror Actual Size",
+            blurb: "Figma plugin for actual size mirroring",
+            description:
+              "[Figma Mirror](https://www.figma.com/mirror) is a useful tool for previewing and interacting with designs, but it always scales the content to fit the screen. This can be problematic when designing for IoT devices with different screen sizes. To solve this issue, I created the Mirror Actual Size plugin for Figma. The plugin has become an essential tool and has gained over 3.8k installs on the Figma Community.",
+            status: "Maintaining",
+            link: "https://www.figma.com/community/plugin/989887108667938748/mirror-actual-size",
+          },
+          {
+            icon: "/src/assets/fun-projects/icons/slides.webp",
+            title: "Slides",
+            blurb: "Figma plugin for presentation controls",
+            description:
+              "Many designers [create slide decks with Figma](https://www.figma.com/mirror), including myself. However, one limitation of Figma is that it does not have built-in controls for advancing or going back through the slides. To make Figma a more practical presentation solution, I created the Slides plugin. This plugin automatically adds or updates the forward and backward interactions to the frames that the user selects. In 2024, Figma officially announced native Figma Slides (and broke my plugin...). It has been a great ride!",
+            status: "Archived",
+            link: "https://www.figma.com/community/plugin/1050766825375940133/slides",
+          },
+          {
+            icon: "/src/assets/fun-projects/icons/apple-slides.webp",
+            title: "Apple summary slides",
+            blurb: "Collection of Apple event Bento slides",
+            description:
+              "In September 2019, Apple introduced a new visual language called Bento for use in their events, which is characterized by a series of well-organized summary slides. In response to this demand, I created a collection of Bento summary slides that is accessible on [web](https://apple-summary-slides.vercel.app/) and [Figma](https://www.figma.com/community/file/1150817983915754582). This collection has allowed over 14K designers and 30K visitors to easily access and get inspirations from the slides.",
+            status: "Active",
+            link: "https://apple-summary-slides.vercel.app/",
+          },
+          {
+            icon: "/src/assets/fun-projects/icons/octicons.webp",
+            title: "Octicons Extended",
+            blurb: "Expanded icon collection based on GitHub's Octicons",
+            description:
+              "As a side project, I created octicons-extended, a growing collection of icons that allows designers and developers to bring more variety to their use of octicons by GitHub. I have made it available in the Figma community, created a Node and React build, as well as a website that allows users to quickly access the full iconset and copy SVG files.",
+            status: "Archived",
+          },
+          {
+            icon: "/src/assets/fun-projects/icons/paopao.webp",
+            title: "Paopao Stickers",
+            blurb: "Vectorized Chinese meme stickers",
+            description:
+              "The Paopao stickers are a popular and well-known set of stickers in mainland China, and they have been used to create countless memes. However, they were only available at a low resolution of 32x32 until... I vectorized each single Paopao sticker with vector tools in Figma! Users can duplicate the stickers in the [Figma Community](https://www.figma.com/community/file/1070232689050503920) or [add the sticker set to Telegram](https://t.me/addstickers/tieba_paopao/).",
+            status: "Maintaining",
+            image: "/src/assets/fun-projects/temp/more/paopao.webp",
+            link: "https://www.figma.com/community/file/1070232689050503920",
           },
         ],
       },
