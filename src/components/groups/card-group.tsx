@@ -106,6 +106,28 @@ export const CardStack = ({
     [coverWithSize, projectsWithSizes, isExpanded, fanConfig]
   );
 
+  const [isPeeking, setIsPeeking] = useState(false);
+  const peekTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerPeek = useCallback(() => {
+    if (peekTimeoutRef.current) {
+      clearTimeout(peekTimeoutRef.current);
+    }
+    setIsPeeking(true);
+    peekTimeoutRef.current = setTimeout(() => {
+      setIsPeeking(false);
+    }, 200);
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (peekTimeoutRef.current) {
+        clearTimeout(peekTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const { isDragging, handleMouseDown, currentPosition } = useDraggable({
     position: stack.position,
     scale,
@@ -184,6 +206,7 @@ export const CardStack = ({
               y: 0,
             }}
             key={coverWithSize.id}
+            onHoverStart={triggerPeek}
             onPointerDown={(e) => {
               const target = e.target as HTMLElement;
               if (target.closest(".no-drag")) {
@@ -276,6 +299,25 @@ export const CardStack = ({
 
           const collapsedPos = COLLAPSED_POSITIONS[Math.min(index, 1)];
 
+          // Jig effect when hovering cover
+          // Card 1 (index 0): Move right 24px, up 4px, rotate +5deg
+          // Card 2 (index 1): Move right 28px, down 8px, rotate -4deg
+          let jigX = 0;
+          let jigY = 0;
+          let jigRotate = 0;
+
+          if (isPeeking && index < 2) {
+            if (index === 0) {
+              jigX = 12;
+              jigY = -8;
+              jigRotate = 0;
+            } else {
+              jigX = 4;
+              jigY = 8;
+              jigRotate = 0;
+            }
+          }
+
           // Calculate collapsed opacity - hidden cards get 0, visible cards get gradual reduction
           const collapsedOpacity = isHiddenWhenCollapsed ? 0 : 1;
 
@@ -292,13 +334,15 @@ export const CardStack = ({
                     : collapsedScale *
                       Math.max(0.94, 1 - (collapsedScaleIndex + 1) * 0.02)
                   : collapsedScale * 0.5,
-                rotate: isExpanded ? fanRotate : collapsedPos.rotate,
+                rotate: isExpanded
+                  ? fanRotate
+                  : collapsedPos.rotate + jigRotate,
                 x: showProjects
                   ? isExpanded
                     ? offset.x
-                    : collapsedPos.x
+                    : collapsedPos.x + jigX
                   : collapsedPos.x - 12,
-                y: isExpanded ? offset.y + fanArcY : collapsedPos.y,
+                y: isExpanded ? offset.y + fanArcY : collapsedPos.y + jigY,
               }}
               className={tw("absolute top-0 left-0 will-change-transform")}
               initial={false}
