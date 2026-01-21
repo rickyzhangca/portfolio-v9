@@ -1,3 +1,4 @@
+import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { RenderCard } from "@/cards/render-card";
@@ -238,8 +239,18 @@ export const FunProjectGroup = ({
                 ref={contentCardRef}
                 style={{ width: CONTENT_WIDTH }}
               >
-                <p className="flex items-center gap-2">
-                  <span className="font-semibold text-xl">{funItem.title}</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <img
+                      alt={funItem.title}
+                      height={36}
+                      src={funItem.icon}
+                      width={40}
+                    />
+                    <span className="font-semibold text-xl">
+                      {funItem.title}
+                    </span>
+                  </div>
                   <span
                     className={tw(
                       "inline-block rounded-full px-2.5 py-1 font-medium text-xs outline",
@@ -253,7 +264,7 @@ export const FunProjectGroup = ({
                   >
                     {funItem.status}
                   </span>
-                </p>
+                </div>
 
                 {funItem.image && (
                   <img
@@ -271,15 +282,21 @@ export const FunProjectGroup = ({
 
                 {funItem.link && (
                   <a
-                    className="relative w-full rounded-full bg-background3 px-6 py-3 text-center text-foreground1 outline outline-border"
-                    href={funItem.link}
+                    className="relative flex w-full items-center justify-center gap-3 rounded-full bg-linear-to-b from-background3 to-background4 px-6 py-3 text-center text-foreground1 shadow outline outline-border transition hover:from-background4 hover:shadow-md"
+                    href={funItem.link.url}
                     rel="noopener noreferrer"
                     target="_blank"
                   >
-                    <span className="absolute -top-3 -right-3 rounded-full bg-background4">
-                      aaa
-                    </span>
                     View
+                    {funItem.link.type
+                      ? ` on ${funItem.link.type === "Figma" ? "Figma" : "GitHub"}`
+                      : ""}
+                    {funItem.link.count && (
+                      <span className="flex items-center gap-0.5 text-foreground2">
+                        <ArrowUpRightIcon />
+                        {funItem.link.count}
+                      </span>
+                    )}
                   </a>
                 )}
               </div>

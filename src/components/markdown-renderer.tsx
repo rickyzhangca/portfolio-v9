@@ -15,16 +15,18 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
     <ReactMarkdown
       components={{
         h1: ({ children }) => (
-          <h1 className="mb-8 font-medium text-5xl">{children}</h1>
+          <h1 className="not-last:mb-8 font-medium text-5xl">{children}</h1>
         ),
         h2: ({ children }) => (
-          <h2 className="mt-5 mb-4 font-medium text-2xl">{children}</h2>
+          <h2 className="mt-5 not-last:mb-4 font-medium text-2xl">
+            {children}
+          </h2>
         ),
         h3: ({ children }) => (
-          <h3 className="mt-4 mb-3 font-medium text-lg">{children}</h3>
+          <h3 className="mt-4 not-last:mb-3 font-medium text-lg">{children}</h3>
         ),
         p: ({ children }) => (
-          <p className="mb-3 text-foreground1/80">{children}</p>
+          <p className="not-last:mb-3 text-foreground1/80">{children}</p>
         ),
         ul: ({ children }) => (
           <ul className="my-4 list-inside list-disc space-y-2">{children}</ul>
@@ -34,7 +36,7 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
           <strong className="font-semibold">{children}</strong>
         ),
         blockquote: ({ children }) => (
-          <blockquote className="mt-3 mb-6 flex w-full items-center gap-1.5">
+          <blockquote className="mt-3 not-last:mb-6 flex w-full items-center gap-1.5">
             <div className="h-full w-1.5 rounded-full bg-accent" />
             <div className="flex-1 rounded-xl bg-accent/8 px-4 pt-3">
               {children}
@@ -57,7 +59,7 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
           if (isVideo) {
             return (
               <video
-                className="my-4 w-full rounded-lg outline outline-border"
+                className="mt-4 not-last:mb-4 w-full rounded-lg outline outline-border"
                 controls
                 loop
                 muted
@@ -71,7 +73,7 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
             // biome-ignore lint/correctness/useImageSize: auto sizing
             <img
               alt={alt as string}
-              className="my-4 w-full rounded-lg outline outline-border"
+              className="mt-4 not-last:mb-4 w-full rounded-lg outline outline-border"
               src={src as string}
             />
           );

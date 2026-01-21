@@ -92,7 +92,11 @@ export interface FunProjectItem {
   icon: string;
   title: string;
   description: string;
-  link?: string;
+  link?: {
+    url: string;
+    type?: string;
+    count?: number;
+  };
   status: "Active" | "Maintaining" | "Archived";
   image?: string;
 }
