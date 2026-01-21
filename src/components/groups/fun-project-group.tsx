@@ -118,7 +118,7 @@ export const FunProjectGroup = ({
       >
         {/* Main card with icons */}
         <motion.div
-          className="absolute top-0 left-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.16)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
+          className="absolute top-0 left-0 drop-shadow-[0_4px_8px_rgba(0,0,0,0.08)] transition-[filter] will-change-transform hover:drop-shadow-[0_6px_10px_rgba(0,0,0,0.1)]"
           onPointerDown={(e) => {
             const target = e.target as HTMLElement;
             if (target.closest(".no-drag")) {
