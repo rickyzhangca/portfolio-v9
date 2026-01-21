@@ -1,6 +1,13 @@
 import { motion } from "framer-motion";
 import type { PointerEvent } from "react";
-import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import type { FunProjectCardContent } from "@/cards/types";
 import { SPRING_PRESETS } from "@/lib/animation";
 import { computeMagneticLift, type IconLiftEffect } from "@/lib/magnetic-lift";
@@ -40,6 +47,11 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
     const [liftEffects, setLiftEffects] = useState<Map<number, IconLiftEffect>>(
       new Map()
     );
+    const [hasMounted, setHasMounted] = useState(false);
+
+    useLayoutEffect(() => {
+      setHasMounted(true);
+    }, []);
 
     const handleMeasure = useCallback(() => {
       if (cardRef.current && onMeasure) {
@@ -97,27 +109,33 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
           const shadow = getShadowStyle(shadowIntensity);
 
           return (
-            // biome-ignore lint/correctness/useImageSize: auto sizes
-            <motion.img
-              alt={item.title}
-              animate={{ y, scale: 1, opacity: 1 }}
-              className="h-full w-full object-cover"
+            <motion.div
+              animate={hasMounted ? { scale: 1, opacity: 1 } : undefined}
               initial={{ scale: 0, opacity: 0 }}
               key={item.title}
-              ref={(el) => {
-                if (el) {
-                  iconRefs.current.set(index, el);
-                } else {
-                  iconRefs.current.delete(index);
-                }
-              }}
-              src={item.icon}
-              style={{ filter: shadow }}
               transition={{
                 ...SPRING_PRESETS.quick,
                 delay: 0.48 + index * 0.02,
               }}
-            />
+            >
+              {/* biome-ignore lint/correctness/useImageSize: auto sizes */}
+              <motion.img
+                alt={item.title}
+                animate={{ y }}
+                className="h-full w-full object-cover"
+                initial={false}
+                ref={(el) => {
+                  if (el) {
+                    iconRefs.current.set(index, el);
+                  } else {
+                    iconRefs.current.delete(index);
+                  }
+                }}
+                src={item.icon}
+                style={{ filter: shadow }}
+                transition={SPRING_PRESETS.quick}
+              />
+            </motion.div>
           );
         })}
       </div>
