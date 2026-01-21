@@ -10,6 +10,7 @@ import type { CardInstance } from "@/cards/registry";
 import { ResumeCard } from "@/cards/resume/resume-card";
 import { SocialsCard } from "@/cards/socials/socials-card";
 import { StickyNoteCard } from "@/cards/stickynote/stickynote-card";
+import { SwagCoverCard } from "@/cards/swag-cover/swag-cover-card";
 
 interface RenderCardProps {
   card: CardInstance;
@@ -93,6 +94,8 @@ const RenderCardComponent = ({
             onMeasure={onMeasure}
           />
         );
+      case "swagcover":
+        return <SwagCoverCard content={card.content} />;
       default: {
         // Exhaustiveness check - if we get here, we have a bug
         const _exhaustive: never = card;
