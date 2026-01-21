@@ -79,7 +79,7 @@ export const ResumeModal = ({
           className="fixed inset-0 z-50 bg-white"
           exit={{
             opacity: 0,
-            transition: { ...SPRING_PRESETS.smooth, delay: 0.24 },
+            transition: { ...SPRING_PRESETS.smooth, delay: 0.2 },
           }}
           initial={{ opacity: 0 }}
           role="dialog"
