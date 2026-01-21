@@ -6,7 +6,7 @@ interface CodeHighlighterProps {
   language?: string;
 }
 
-const CodeHighlighterInternal = memo(
+export const CodeHighlighter = memo(
   ({ code, language = "text" }: CodeHighlighterProps) => {
     return (
       <div className="my-4 overflow-x-auto rounded-lg text-sm outline outline-border">
@@ -23,8 +23,3 @@ const CodeHighlighterInternal = memo(
     );
   }
 );
-
-CodeHighlighterInternal.displayName = "CodeHighlighter";
-
-// Default export for lazy loading
-export default CodeHighlighterInternal;
