@@ -27,7 +27,7 @@ const getShadowStyle = (intensity: number): string => {
 
 export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
   (
-    { content, isExpanded: _isExpanded = false, isFocused = false, onMeasure },
+    { content, isExpanded: _isExpanded = false, isFocused: _isFocused = false, onMeasure },
     ref
   ) => {
     const cardRef = useRef<HTMLDivElement>(null);
@@ -47,19 +47,8 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
       handleMeasure();
     }, [handleMeasure]);
 
-    // Reset lift effects when focus is lost
-    useEffect(() => {
-      if (!isFocused && liftEffects.size > 0) {
-        setLiftEffects(new Map());
-      }
-    }, [isFocused, liftEffects.size]);
-
     const handlePointerMove = useCallback(
       (event: PointerEvent<HTMLDivElement>) => {
-        if (!isFocused) {
-          return;
-        }
-
         // Get bounding rects for all icons
         const iconRects = new Map<number, DOMRect>();
         for (const [index, element] of iconRefs.current.entries()) {
@@ -75,7 +64,7 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
         );
         setLiftEffects(effects);
       },
-      [isFocused]
+      []
     );
 
     const handlePointerLeave = useCallback(() => {
