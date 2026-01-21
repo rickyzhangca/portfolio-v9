@@ -612,7 +612,7 @@ export const initialItems: CanvasItem[] = [
       size: { width: 180, height: 180 },
       content: {
         content: "My Swag Collection",
-        color: "yellow",
+        color: "blue",
       },
     },
     swags: shuffledSwags,
