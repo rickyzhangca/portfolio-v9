@@ -100,9 +100,9 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
             // biome-ignore lint/correctness/useImageSize: auto sizes
             <motion.img
               alt={item.title}
-              animate={{ y }}
+              animate={{ y, scale: 1, opacity: 1 }}
               className="h-full w-full object-cover"
-              initial={false}
+              initial={{ scale: 0, opacity: 0 }}
               key={item.title}
               ref={(el) => {
                 if (el) {
@@ -113,7 +113,10 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
               }}
               src={item.icon}
               style={{ filter: shadow }}
-              transition={SPRING_PRESETS.smooth}
+              transition={{
+                ...SPRING_PRESETS.quick,
+                delay: 0.48 + index * 0.02,
+              }}
             />
           );
         })}

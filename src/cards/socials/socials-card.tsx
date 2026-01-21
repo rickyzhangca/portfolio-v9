@@ -1,6 +1,6 @@
 import { memo, type ReactNode, useState } from "react";
-import { tw } from "@/lib/utils";
 import type { SocialsCardContent } from "@/cards/registry";
+import { tw } from "@/lib/utils";
 
 const Key = ({
   mode,
