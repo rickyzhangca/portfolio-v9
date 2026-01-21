@@ -531,14 +531,9 @@ const swags: { src: string; label: string; caption?: string }[] = [
     caption: "Hack the North",
   },
   {
-    src: swag86,
+    src: swag87,
     label: "Pantones & Patio 2022",
     caption: "DesignX",
-  },
-  {
-    src: swag87,
-    label: "Founder Mode Live: AI Startups & Scaling Lessons",
-    caption: "Rootly",
   },
   {
     src: swag88,
