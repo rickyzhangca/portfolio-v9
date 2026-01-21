@@ -271,11 +271,14 @@ export const FunProjectGroup = ({
 
                 {funItem.link && (
                   <a
-                    className="w-full rounded-full bg-background3 px-6 py-3 text-center text-foreground1 outline outline-border"
+                    className="relative w-full rounded-full bg-background3 px-6 py-3 text-center text-foreground1 outline outline-border"
                     href={funItem.link}
                     rel="noopener noreferrer"
                     target="_blank"
                   >
+                    <span className="absolute -top-3 -right-3 rounded-full bg-background4">
+                      aaa
+                    </span>
                     View
                   </a>
                 )}
