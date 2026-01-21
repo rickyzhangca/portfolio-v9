@@ -38,7 +38,7 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
         blockquote: ({ children }) => (
           <blockquote className="mt-3 not-last:mb-6 flex w-full items-center gap-1.5">
             <div className="h-full w-1.5 rounded-full bg-accent" />
-            <div className="flex-1 rounded-xl bg-accent/8 px-4 pt-3">
+            <div className="flex-1 rounded-xl bg-accent/8 px-4 py-3">
               {children}
             </div>
           </blockquote>
