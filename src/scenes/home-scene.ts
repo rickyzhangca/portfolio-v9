@@ -519,7 +519,7 @@ export const initialItems: CanvasItem[] = [
             icon: "/src/assets/fun-projects/icons/kibo.webp",
             title: "Kibo UI",
             description:
-              "I love building components. So I'm enjoying creating components for the open source component library [Kibo UI](https://www.kibo-ui.com/) by Vercel's engineer [Hayden Bleasel](https://twitter.com/haydenbleasel). More to come!",
+              "I love design engineering, design systems and building components. So I'm enjoying creating components for the open source component library [Kibo UI](https://www.kibo-ui.com/) created by Vercel's engineer [Hayden Bleasel](https://twitter.com/haydenbleasel). More to come!",
             status: "Active",
             link: "https://www.kibo-ui.com/",
           },
@@ -527,7 +527,7 @@ export const initialItems: CanvasItem[] = [
             icon: "/src/assets/fun-projects/icons/svgo.webp",
             title: "SVGOUI",
             description:
-              "SVGOUI is a UI for SVG optimizer tool [SVGO](https://github.com/svg/svgo). Comparing to the predecessor [SVGOMG](https://github.com/interlace-app/svgui), it runs on newer SVGO core and modern front-end stacks, has a more friendly UI, and packs a number of quality of life features.",
+              "When building the credit card component for Kibo UI, I had to deal with a number of credit card network icon SVGs. So I build a UI for SVGO to optimize them so I can publish them to [`react-card-network-icons`](https://www.npmjs.com/package/react-card-network-icons).\n\nSVGOUI is a UI for SVG optimizer tool [SVGO](https://github.com/svg/svgo). Comparing to the predecessor [SVGOMG](https://github.com/interlace-app/svgui), it runs on newer SVGO core and modern front-end stacks, has a more friendly UI, and packs a number of quality of life features.\n\nYou can try it out [here](https://svgoui.pages.dev/).",
             status: "Maintaining",
             image: "/src/assets/fun-projects/temp/more/svgoui.webp",
             link: "https://svgoui.pages.dev/",
@@ -536,7 +536,7 @@ export const initialItems: CanvasItem[] = [
             icon: "/src/assets/fun-projects/icons/fprints.webp",
             title: "Fprints",
             description:
-              "[Factorio](https://store.steampowered.com/app/427520/Factorio/) is a factory-building game where you design and build your own factories. Players can build complex layouts and share via encoded strings - blueprints. I created [Fprints](https://fprints.xyz). A platform where players can publish their blueprints and find inspiration from others. It now has over 152K visits, 550+ users, and stores nearly 400 blueprints.",
+              "[Factorio](https://store.steampowered.com/app/427520/Factorio/) is a factory-building game where you design and build your own factories. Players can build complex layouts and share via encoded strings - blueprints.\n\nI created [Fprints](https://fprints.xyz). A platform where players can publish their blueprints and find inspiration from others. It now has over 152K visits, 550+ users, and stores nearly 400 blueprints.",
             status: "Maintaining",
             image: "/src/assets/fun-projects/temp/more/fprints.webp",
             link: "https://fprints.xyz",
@@ -545,7 +545,7 @@ export const initialItems: CanvasItem[] = [
             icon: "/src/assets/fun-projects/icons/spellbook.webp",
             title: "Spellbook",
             description:
-              "ChatGPT 4o's image generation capability had a huge leap forward in early 2025. Prompting was much easier than diffusion models. So I created [Spellbook](https://spellbook-space.pages.dev/). It collects some very helpful prompts that my friends and I are still using today.",
+              "ChatGPT 4o's image generation capability had a huge leap forward in early 2025. It is better than ever on understanding prompts and adhering to instructions (that is written in natural language).\n\nSo I created [Spellbook](https://spellbook.space). A platform for people to share and grab prompts that really work - guaranteed to reliably generate images in a well defined style for any given subject.",
             status: "Active",
             image: "/src/assets/fun-projects/temp/more/spellbook.webp",
             link: "https://spellbook.space",
@@ -554,7 +554,7 @@ export const initialItems: CanvasItem[] = [
             icon: "/src/assets/fun-projects/icons/kiwi.webp",
             title: "fig-kiwi-toolbox",
             description:
-              "In 2023, I had a vision of creating a tool that would help both designers and developers to make and maintain design system. Due to the closed ecosystem in Figma's nature, the first step I took was to crack how Figma encodes and decodes the data. And [fig-kiwi-toolbox](https://github.com/interlace-app/fig-kiwi-toolbox) was born. It reads and decodes the Figma data you have in the clipboard into JSON.",
+              "In 2023, I had a vision of creating a tool that would help both designers and developers to make and maintain design system. Due to the closed ecosystem in Figma's nature, the first step I took was to crack how Figma encodes and decodes the data. So people can easily import/export/copy & paste component between tools.\n\nAnd [fig-kiwi-toolbox](https://github.com/interlace-app/fig-kiwi-toolbox) was born. It reads and decodes the Figma data you have in the clipboard into JSON. The toolbox is greatly inspired by Sketch team's Figma file importer and have inspired many other developers on Reddit.",
             status: "Archived",
             image: "/src/assets/fun-projects/temp/more/fig-kiwi.webp",
             link: "https://github.com/interlace-app/fig-kiwi-toolbox",
@@ -563,7 +563,7 @@ export const initialItems: CanvasItem[] = [
             icon: "/src/assets/fun-projects/icons/mirror.webp",
             title: "Mirror Actual Size",
             description:
-              "[Figma Mirror](https://www.figma.com/mirror) is a useful tool for previewing and interacting with designs, but it always scales the content to fit the screen. This can be problematic when designing for IoT devices with different screen sizes. To solve this issue, I created the Mirror Actual Size plugin for Figma. The plugin has become an essential tool and has gained over 3.8k installs on the Figma Community.",
+              '[Figma Mirror](https://www.figma.com/mirror) is a useful tool for previewing and interacting with designs, but it has a major limitation: it always scales the content to fit the screen. This can be problematic when designing for IoT devices with different screen sizes, or when creating print materials. At Mosaic, we encountered this problem regularly, which made it difficult to properly prototype and test our designs.\n\nTo solve this issue, I created the Mirror Actual Size plugin for Figma. This plugin adds a wrapper to the content, which ensures that it is displayed at its actual size when mirrored to a device. For example, a business card will be shown at its actual size of 3.5" x 2.0" on an iPad, rather than being scaled to fill the screen.\n\nThe Mirror Actual Size plugin has become an essential tool for us at Mosaic, and it has also gained over 3.2k installs on the Figma Community without any marketing efforts. It has proven to be a valuable addition to Figma Mirror, and we have received positive feedback from users who have tried it.',
             status: "Maintaining",
             link: "https://www.figma.com/community/plugin/989887108667938748/mirror-actual-size",
           },
@@ -571,7 +571,7 @@ export const initialItems: CanvasItem[] = [
             icon: "/src/assets/fun-projects/icons/slides.webp",
             title: "Slides",
             description:
-              "Many designers [create slide decks with Figma](https://www.figma.com/mirror), including myself. However, one limitation of Figma is that it does not have built-in controls for advancing or going back through the slides. To make Figma a more practical presentation solution, I created the Slides plugin. This plugin automatically adds or updates the forward and backward interactions to the frames that the user selects. In 2024, Figma officially announced native Figma Slides (and broke my plugin...). It has been a great ride!",
+              "Many designers [create slide decks with Figma](https://www.figma.com/mirror), including myself. However, one limitation of Figma is that it does not have built-in controls for advancing or going back through the slides. This means that designers have to manually add these interactions, which can be time-consuming, especially for decks with many slides. Furthermore, when slides are re-ordered, it is easy to forget to update the interactions, which can lead to problems when presenting.\n\nTo make Figma a more practical presentation solution, I created the Slides plugin. This plugin automatically adds or updates the forward and backward interactions to the frames that the user selects.\n\nThis saves time and ensures that the interactions are always up-to-date, even when slides are re-ordered. It makes Figma the most **practical presentation solution**. In 2024, Figma officially announced native Figma Slides (and broke Slides...). It has been a great ride!",
             status: "Archived",
             link: "https://www.figma.com/community/plugin/1050766825375940133/slides",
           },
@@ -579,7 +579,7 @@ export const initialItems: CanvasItem[] = [
             icon: "/src/assets/fun-projects/icons/apple.webp",
             title: "Apple summary slides",
             description:
-              "In September 2019, Apple introduced a new visual language called Bento for use in their events, which is characterized by a series of well-organized summary slides. In response to this demand, I created a collection of Bento summary slides that is accessible on [web](https://apple-summary-slides.vercel.app/) and [Figma](https://www.figma.com/community/file/1150817983915754582). This collection has allowed over 14K designers and 30K visitors to easily access and get inspirations from the slides.",
+              "In September 2019, Apple introduced a new visual language called Bento for use in their events, which is characterized by a series of well-organized summary slides. The design community has embraced this style, and many people have asked for a collection of these summary slides.\n\nIn response to this demand, I created a collection of Bento summary slides that is accessible on [web](https://apple-summary-slides.vercel.app/) and Figma. This collection has allowed over 14K designers and 30K visitors to easily access and get inspirations from the slides.\n\nAnd the community has loved it!",
             status: "Active",
             link: "https://apple-summary-slides.vercel.app/",
           },
@@ -587,14 +587,14 @@ export const initialItems: CanvasItem[] = [
             icon: "/src/assets/fun-projects/icons/octicons.webp",
             title: "Octicons Extended",
             description:
-              "As a side project, I created octicons-extended, a growing collection of icons that allows designers and developers to bring more variety to their use of octicons by GitHub. I have made it available in the Figma community, created a Node and React build, as well as a website that allows users to quickly access the full iconset and copy SVG files.",
+              "As a side project, I created octicons-extended, a growing collection of icons that allows designers and developers to bring more variety to their use of octicons by GitHub.\n\nGitHub's original octicons inspired our [icon system refresh](https://old.rickyzhang.me/) at Mosaic, but we found that it has limited coverage because it is tailored to GitHub's specific needs. With octicons-extended, I aim to expand the icon selection and empower more users.\n\nAs a designer and developer, I believe that both groups should have easy access to octicons-extended and be able to use it in their work. To make it accessible to a wide audience, I have made it available in the Figma community, where it is organized and easy to use.\n\nI have also created a Node and React build, as well as a website that allows users to quickly access the full iconset and copy SVG files. By providing these tools, I hope to make octicons-extended a valuable resource for designers and developers alike.\n\nTo reduce the friction of switching from octicons to octicons-extended, octicons-extended fully includes the original octicons and two packages share the same usage.\n\n```typescript\n// using original octicons\nimport { ZapIcon } from '@primer/octicons-react';\n// switching to octicons-extended\nimport { ZapIcon } from 'octicons-extended-react';\n```",
             status: "Archived",
           },
           {
             icon: "/src/assets/fun-projects/icons/paopao.webp",
             title: "Paopao Stickers",
             description:
-              "The Paopao stickers are a popular and well-known set of stickers in mainland China, and they have been used to create countless memes. However, they were only available at a low resolution of 32x32 until... I vectorized each single Paopao sticker with vector tools in Figma! Users can duplicate the stickers in the [Figma Community](https://www.figma.com/community/file/1070232689050503920) or [add the sticker set to Telegram](https://t.me/addstickers/tieba_paopao/).",
+              "The Paopao stickers are a popular and well-known set of stickers in mainland China, and they have been used to create countless memes. However, they were only available at a low resolution of 32x32 until... \n\nI vectorized each single Paopao sticker with vector tools in Figma! It enables us to remix for even more funny memes. Users can duplicate the stickers in the Figma Community or [add the sticker set to Telegram](https://t.me/addstickers/tieba_paopao/).",
             status: "Maintaining",
             image: "/src/assets/fun-projects/temp/more/paopao.webp",
             link: "https://www.figma.com/community/file/1070232689050503920",
