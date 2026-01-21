@@ -271,12 +271,12 @@ export const FunProjectGroup = ({
 
                 {funItem.link && (
                   <a
-                    className="text-blue-600 text-sm underline hover:text-blue-800"
+                    className="w-full rounded-full bg-background3 px-6 py-3 text-center text-foreground1 outline outline-border"
                     href={funItem.link}
                     rel="noopener noreferrer"
                     target="_blank"
                   >
-                    View Project →
+                    View
                   </a>
                 )}
               </div>
