@@ -528,7 +528,7 @@ export const initialItems: CanvasItem[] = [
     card: {
       id: "fun-projects-card",
       kind: "funproject",
-      size: { width: 324 },
+      size: { width: 360 },
       content: {
         items: [
           {
@@ -571,7 +571,7 @@ export const initialItems: CanvasItem[] = [
             link: "https://spellbook.space",
           },
           {
-            icon: "/src/assets/fun-projects/icons/figkiwi.webp",
+            icon: "/src/assets/fun-projects/icons/kiwi.webp",
             title: "fig-kiwi-toolbox",
             blurb: "Tool for decoding Figma clipboard data",
             description:
@@ -599,7 +599,7 @@ export const initialItems: CanvasItem[] = [
             link: "https://www.figma.com/community/plugin/1050766825375940133/slides",
           },
           {
-            icon: "/src/assets/fun-projects/icons/apple-slides.webp",
+            icon: "/src/assets/fun-projects/icons/apple.webp",
             title: "Apple summary slides",
             blurb: "Collection of Apple event Bento slides",
             description:

@@ -11,7 +11,7 @@ const CONTENT_WIDTH = 640;
 const CONTENT_GAP = 24;
 const STAGGER_DELAY = 0.05;
 const VERTICAL_GAP = 16;
-const CONTENT_CARD_HEIGHT = 120; // Estimated height for each content card
+const CONTENT_CARD_HEIGHT = 120; // Fallback height estimate before measurement
 
 interface FunProjectGroupProps {
   item: CanvasFunStackItem;
@@ -45,6 +45,9 @@ export const FunProjectGroup = ({
   const [measuredHeight, setMeasuredHeight] = useState<number | undefined>(
     item.card.size.height
   );
+  const [contentCardHeights, setContentCardHeights] = useState<
+    Record<number, number>
+  >({});
 
   const cardPointerDownRef = useRef<{
     clientX: number;
@@ -83,6 +86,18 @@ export const FunProjectGroup = ({
       }
     },
     [measuredHeight, onCardHeightMeasured, item.card.id]
+  );
+
+  const handleContentCardMeasure = useCallback(
+    (index: number, height: number) => {
+      setContentCardHeights((prev) => {
+        if (prev[index] === height) {
+          return prev; // Prevent unnecessary re-renders
+        }
+        return { ...prev, [index]: height };
+      });
+    },
+    []
   );
 
   return (
@@ -171,9 +186,31 @@ export const FunProjectGroup = ({
         {item.card.content.items.map((funItem, index) => {
           const cardWidth = cardWithSize.size.width ?? 240;
 
-          // Calculate position: stack vertically, offset to the right
-          const offsetY = index * (CONTENT_CARD_HEIGHT + VERTICAL_GAP);
+          // Calculate cumulative offset using measured heights
+          let offsetY = 0;
+          for (let i = 0; i < index; i++) {
+            const measuredHeight = contentCardHeights[i] ?? CONTENT_CARD_HEIGHT;
+            offsetY += measuredHeight + VERTICAL_GAP;
+          }
           const offsetX = cardWidth + CONTENT_GAP;
+
+          const contentCardRef = (el: HTMLDivElement | null) => {
+            if (!el) {
+              return;
+            }
+
+            const observer = new ResizeObserver((entries) => {
+              for (const entry of entries) {
+                if (entry.borderBoxSize) {
+                  const height = entry.borderBoxSize[0].blockSize;
+                  handleContentCardMeasure(index, height);
+                }
+              }
+            });
+
+            observer.observe(el);
+            return () => observer.disconnect();
+          };
 
           return (
             <motion.div
@@ -197,6 +234,7 @@ export const FunProjectGroup = ({
             >
               <div
                 className="flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-2xl"
+                ref={contentCardRef}
                 style={{ width: CONTENT_WIDTH }}
               >
                 <p className="flex items-center gap-2">

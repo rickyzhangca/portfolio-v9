@@ -24,7 +24,7 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
 
     return (
       <div
-        className="grid grid-cols-4 gap-2"
+        className="grid grid-cols-5 gap-2"
         ref={(el) => {
           cardRef.current = el;
           if (typeof ref === "function") {
@@ -35,13 +35,12 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
         }}
       >
         {content.items.map((item) => (
+          // biome-ignore lint/correctness/useImageSize: auto sizes
           <img
             alt={item.title}
             className="h-full w-full object-cover"
-            height={64}
             key={item.title}
             src={item.icon}
-            width={64}
           />
         ))}
       </div>
