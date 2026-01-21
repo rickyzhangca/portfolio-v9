@@ -14,8 +14,8 @@ const STAGGER_DELAY = 0.01;
 
 // Collapsed positions for swag items (stacked under cover)
 const COLLAPSED_POSITIONS = [
-  { x: 16, y: 24, rotate: 5 },
-  { x: 32, y: 72, rotate: 0 },
+  { x: 140, y: 16, rotate: 10 },
+  { x: 145, y: 72, rotate: 0 },
 ];
 
 interface SwagGroupProps {
@@ -227,7 +227,7 @@ export const SwagGroup = ({
             <motion.div
               animate={{
                 opacity: isHiddenWhenCollapsed ? 0 : 1,
-                scale: isExpanded ? 1 : 0.5,
+                scale: isExpanded ? 1 : 0.6,
                 x: isExpanded ? offset.expandedX : offset.collapsedX,
                 y: isExpanded ? offset.expandedY : offset.collapsedY,
                 rotate: isExpanded ? offset.fanRotate : offset.collapsedRotate,
@@ -235,7 +235,7 @@ export const SwagGroup = ({
               className="absolute top-0 left-0 origin-top-left will-change-transform"
               initial={{
                 opacity: 0,
-                scale: 0.5,
+                scale: 0.6,
                 x: offset.collapsedX,
                 y: offset.collapsedY,
                 rotate: offset.collapsedRotate,
