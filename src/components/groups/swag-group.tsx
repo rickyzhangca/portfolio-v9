@@ -2,6 +2,11 @@ import { motion } from "framer-motion";
 import { useAtomValue } from "jotai";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { RenderCard } from "@/cards/render-card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { fanConfigAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
@@ -227,7 +232,7 @@ export const SwagGroup = ({
             <motion.div
               animate={{
                 opacity: isHiddenWhenCollapsed ? 0 : 1,
-                scale: isExpanded ? 1 : 0.6,
+                scale: isExpanded ? 1.05 : 0.6,
                 x: isExpanded ? offset.expandedX : offset.collapsedX,
                 y: isExpanded ? offset.expandedY : offset.collapsedY,
                 rotate: isExpanded ? offset.fanRotate : offset.collapsedRotate,
@@ -240,7 +245,7 @@ export const SwagGroup = ({
                 y: offset.collapsedY,
                 rotate: offset.collapsedRotate,
               }}
-              key={index}
+              key={swag.src}
               style={{
                 width: SWAG_ITEM_SIZE,
                 zIndex: item.swags.length - index - 1,
@@ -273,23 +278,23 @@ export const SwagGroup = ({
                   : SPRING_PRESETS.quick
               }
             >
-              <div className="flex h-full flex-col gap-2">
-                <img
-                  alt={swag.label}
-                  className="aspect-3/2 w-full object-contain"
-                  height={120}
-                  src={swag.src}
-                  width={180}
-                />
-                <div className="flex flex-col gap-0.5">
-                  <p className="">{swag.label}</p>
+              <Tooltip>
+                <TooltipTrigger className="cursor-help border-0 bg-transparent p-0">
+                  <img
+                    alt={swag.label}
+                    className="aspect-3/2 w-full object-contain"
+                    height={120}
+                    src={swag.src}
+                    width={180}
+                  />
+                </TooltipTrigger>
+                <TooltipContent className="items-center text-center">
+                  <p>{swag.label}</p>
                   {swag.caption && (
-                    <p className="truncate text-foreground2 text-sm">
-                      {swag.caption}
-                    </p>
+                    <p className="text-foreground2">{swag.caption}</p>
                   )}
-                </div>
-              </div>
+                </TooltipContent>
+              </Tooltip>
             </motion.div>
           );
         })}
