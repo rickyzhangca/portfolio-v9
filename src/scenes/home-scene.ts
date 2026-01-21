@@ -507,7 +507,7 @@ export const initialItems: CanvasItem[] = [
   {
     id: "fun-projects-stack",
     kind: "funstack",
-    position: { x: 640, y: 1080 },
+    position: { x: 700, y: 700 },
     zIndex: 6,
     card: {
       id: "fun-projects-card",
