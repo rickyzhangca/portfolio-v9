@@ -125,27 +125,14 @@ export const ResumeModal = ({
               <ArrowLeftIcon size={20} weight="bold" />
             </button>
             <div className="h-8 w-px bg-white/20" />
-            <button
+            <a
               className="no-drag flex cursor-pointer items-center gap-2 py-4 pr-7 pl-5 font-medium transition-colors hover:bg-foreground1/20"
-              onClick={async () => {
-                const response = await fetch(
-                  "https://pub-3ee435ae80734e37ae79feba48ee0594.r2.dev/RickyZhang_Resume.pdf"
-                );
-                const blob = await response.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "RickyZhang_Resume.pdf";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              }}
-              type="button"
+              download="RickyZhang_Resume.pdf"
+              href="/RickyZhang_Resume.pdf"
             >
               <FileIcon size={20} weight="bold" />
               Download PDF
-            </button>
+            </a>
           </motion.div>
         </motion.div>
       )}
