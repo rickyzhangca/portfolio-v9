@@ -178,6 +178,7 @@ export const FunProjectGroup = ({
           <RenderCard
             card={cardWithSize}
             isExpanded={isExpanded}
+            isFocused={isExpanded}
             onMeasure={handleCardMeasure}
           />
         </motion.div>
