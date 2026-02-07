@@ -7,14 +7,14 @@ interface StickyNoteCardProps {
 }
 
 const StickyNoteCardComponent = ({ content }: StickyNoteCardProps) => {
-  const colorMap: Record<StickyNoteCardContent["color"], string> = {
+  const colorMap: Record<NonNullable<StickyNoteCardContent["color"]>, string> = {
     pink: "bg-pink-200",
     blue: "bg-blue-200",
     green: "bg-green-200",
     orange: "bg-orange-200",
     yellow: "bg-yellow-200",
   };
-  const colorClass = colorMap[content.color];
+  const colorClass = colorMap[content.color ?? "yellow"];
 
   return (
     <div className={tw("h-full w-full rounded-sm p-4 shadow-md", colorClass)}>
