@@ -21,9 +21,7 @@ const MarkdownVideo = ({ src, alt }: MarkdownVideoProps) => {
   const [isReady, setIsReady] = useState(false);
 
   return (
-    <span
-      className="relative mt-4 not-last:mb-4 w-full overflow-hidden rounded-lg outline outline-border"
-    >
+    <span className="relative mt-4 not-last:mb-4 w-full">
       <span
         aria-hidden={true}
         className="absolute inset-0 bg-background3 transition-opacity"
@@ -32,23 +30,26 @@ const MarkdownVideo = ({ src, alt }: MarkdownVideoProps) => {
       <video
         aria-label={alt}
         autoPlay
-        className="h-full w-full transition-opacity"
-        controls
+        className="h-full w-full outline outline-border/50 transition-opacity"
         loop
         muted
-        onLoadedData={() => {
-          setIsReady(true);
-        }}
         onLoadedMetadata={(event) => {
           const { videoWidth, videoHeight } = event.currentTarget;
           if (videoWidth > 0 && videoHeight > 0) {
             setAspectRatio(`${videoWidth / videoHeight}`);
           }
         }}
+        onPlaying={() => {
+          setIsReady(true);
+        }}
         playsInline
         preload="auto"
         src={src}
-        style={{ aspectRatio, opacity: isReady ? 1 : 0 }}
+        style={{
+          borderRadius: 12,
+          aspectRatio,
+          opacity: isReady ? 1 : 0,
+        }}
       />
     </span>
   );
