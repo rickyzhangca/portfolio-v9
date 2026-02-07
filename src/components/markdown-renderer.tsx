@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import { tw } from "@/lib/utils";
 
 const LANGUAGE_REGEX = /language-(\w+)/;
-const VIDEO_EXTENSIONS_REGEX = /\.(mov|mp4|webm)$/i;
+const VIDEO_EXTENSIONS_REGEX = /\.(mov|mp4|webm)(?:[?#].*)?$/i;
 const DEFAULT_VIDEO_ASPECT_RATIO = "16 / 9";
 const LazyCodeHighlighter = lazy(() =>
   import("./code-highlighter").then((module) => ({
@@ -18,26 +18,39 @@ interface MarkdownVideoProps {
 
 const MarkdownVideo = ({ src, alt }: MarkdownVideoProps) => {
   const [aspectRatio, setAspectRatio] = useState(DEFAULT_VIDEO_ASPECT_RATIO);
+  const [isReady, setIsReady] = useState(false);
 
   return (
-    <video
-      aria-label={alt}
-      autoPlay
-      className="mt-4 not-last:mb-4 w-full rounded-lg bg-background3 outline outline-border"
-      controls
-      loop
-      muted
-      onLoadedMetadata={(event) => {
-        const { videoWidth, videoHeight } = event.currentTarget;
-        if (videoWidth > 0 && videoHeight > 0) {
-          setAspectRatio(`${videoWidth / videoHeight}`);
-        }
-      }}
-      playsInline
-      preload="auto"
-      src={src}
-      style={{ aspectRatio }}
-    />
+    <span
+      className="relative mt-4 not-last:mb-4 w-full overflow-hidden rounded-lg outline outline-border"
+    >
+      <span
+        aria-hidden={true}
+        className="absolute inset-0 bg-background3 transition-opacity"
+        style={{ opacity: isReady ? 0 : 1 }}
+      />
+      <video
+        aria-label={alt}
+        autoPlay
+        className="h-full w-full transition-opacity"
+        controls
+        loop
+        muted
+        onLoadedData={() => {
+          setIsReady(true);
+        }}
+        onLoadedMetadata={(event) => {
+          const { videoWidth, videoHeight } = event.currentTarget;
+          if (videoWidth > 0 && videoHeight > 0) {
+            setAspectRatio(`${videoWidth / videoHeight}`);
+          }
+        }}
+        playsInline
+        preload="auto"
+        src={src}
+        style={{ aspectRatio, opacity: isReady ? 1 : 0 }}
+      />
+    </span>
   );
 };
 
