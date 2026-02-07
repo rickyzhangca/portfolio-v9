@@ -224,7 +224,7 @@ export const FunProjectGroup = ({
               }}
               className="absolute top-0 left-0 origin-top-left will-change-transform"
               initial={false}
-              key={index}
+              key={funItem.title}
               style={{
                 zIndex: item.card.content.items.length - index - 1,
                 pointerEvents: isExpanded ? "auto" : "none",

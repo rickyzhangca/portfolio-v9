@@ -230,7 +230,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
       window.removeEventListener("pointerup", onPointerUp, true);
       window.removeEventListener("pointercancel", onPointerUp, true);
     };
-  }, [state.expandedStackId, actions.setExpandedStack]);
+  }, [state.expandedStackId, actions]);
 
   // Unfocus the focused item when clicking outside it (but not when panning/dragging).
   useEffect(() => {
@@ -305,7 +305,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
       window.removeEventListener("pointerup", onPointerUp, true);
       window.removeEventListener("pointercancel", onPointerUp, true);
     };
-  }, [state.focusedItemId, actions.setFocusedItem]);
+  }, [state.focusedItemId, actions]);
 
   // Handle ESC key to close expanded stacks and focused items
   useEffect(() => {
@@ -360,12 +360,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [
-    state.expandedStackId,
-    state.focusedItemId,
-    actions.setExpandedStack,
-    actions.setFocusedItem,
-  ]);
+  }, [state.expandedStackId, state.focusedItemId, actions]);
 
   // Calculate viewport-proportional repulsion values for doc modal mode
   const getResumeRepulsionConfig = useCallback(

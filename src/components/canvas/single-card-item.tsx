@@ -102,11 +102,12 @@ export const SingleCardItem = ({
   // element's untransformed layout size (which can look blurry when scaled up).
   // For focusable cards, render at the "focused" layout size and scale down when
   // unfocused so the image stays crisp at full focus scale.
-  const focusRenderScale = shouldRenderFocusHiRes
-    ? isFocused
-      ? 1
-      : 1 / focusScale
-    : 1;
+  const focusRenderScale = (() => {
+    if (!shouldRenderFocusHiRes) {
+      return 1;
+    }
+    return isFocused ? 1 : 1 / focusScale;
+  })();
   const focusOffsetX = shouldRenderFocusHiRes
     ? -((baseWidth * focusScale - baseWidth) / 2)
     : 0;
@@ -149,11 +150,12 @@ export const SingleCardItem = ({
         <motion.div
           animate={{
             opacity: 1,
-            scale: shouldRenderFocusHiRes
-              ? focusRenderScale
-              : isFocused
-                ? focusScale
-                : 1,
+            scale: (() => {
+              if (shouldRenderFocusHiRes) {
+                return focusRenderScale;
+              }
+              return isFocused ? focusScale : 1;
+            })(),
             x: focusOffsetX,
             y: focusOffsetY,
           }}

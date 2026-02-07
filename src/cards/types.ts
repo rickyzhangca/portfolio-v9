@@ -47,6 +47,7 @@ export type {
   SwagCoverCardInstance,
 } from "./registry";
 
+// biome-ignore lint/performance/noBarrelFile: Intentional barrel file for organized exports
 export {
   CARD_REGISTRY,
   getCardKinds,
