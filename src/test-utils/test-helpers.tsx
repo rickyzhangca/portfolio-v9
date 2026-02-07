@@ -3,9 +3,16 @@ import { vi } from "vitest";
 import type {
   CardInstance,
   CoverCardInstance,
+  FunProjectCardInstance,
   ProjectCardInstance,
+  SwagCoverCardInstance,
 } from "@/cards/types";
-import type { CanvasSingleItem, CanvasStackItem } from "@/types/canvas";
+import type {
+  CanvasFunStackItem,
+  CanvasSingleItem,
+  CanvasStackItem,
+  CanvasSwagStackItem,
+} from "@/types/canvas";
 import { MockProvider } from "./mock-provider";
 
 export const createMockCard = (
@@ -92,6 +99,58 @@ export const createMockSingle = (
 
 // Alias for backward compatibility
 export const createMockGroup = createMockStack;
+
+export const createMockFunStack = (
+  id: string,
+  x = 0,
+  y = 0,
+  zIndex = 1,
+  card?: FunProjectCardInstance
+): CanvasFunStackItem => ({
+  id,
+  kind: "funstack",
+  position: { x, y },
+  zIndex,
+  card:
+    card ??
+    ({
+      id: `${id}-card`,
+      kind: "funproject",
+      size: { width: 100, height: 100 },
+      content: {
+        items: [
+          {
+            icon: "test-icon",
+            title: "Test Project",
+            description: "A test fun project",
+            status: "Active",
+          },
+        ],
+      },
+    } satisfies FunProjectCardInstance),
+});
+
+export const createMockSwagStack = (
+  id: string,
+  x = 0,
+  y = 0,
+  zIndex = 1,
+  cover?: SwagCoverCardInstance
+): CanvasSwagStackItem => ({
+  id,
+  kind: "swagstack",
+  position: { x, y },
+  zIndex,
+  cover:
+    cover ??
+    ({
+      id: `${id}-cover`,
+      kind: "swagcover",
+      size: { width: 100, height: 100 },
+      content: { content: "My Swag Collection", color: "yellow" },
+    } satisfies SwagCoverCardInstance),
+  swags: [],
+});
 
 export const createMockMouseEvent = (
   _x: number,
