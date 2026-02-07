@@ -11,17 +11,19 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
+  state: State = {
     hasError: false,
   };
 
-  public static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(_error: Error, _errorInfo: ErrorInfo) {}
+  componentDidCatch(_error: Error, _errorInfo: ErrorInfo) {
+    // Error logging is handled externally
+  }
 
-  public render() {
+  render() {
     if (this.state.hasError) {
       return (
         this.props.fallback || (

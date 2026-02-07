@@ -359,25 +359,48 @@ export const CardStack = ({
           // Calculate collapsed scale based on index (for visible cards)
           const collapsedScaleIndex = isHiddenWhenCollapsed ? 1 : index;
 
+          // Compute animation values to avoid nested ternaries
+          const opacity = (() => {
+            if (!showProjects) {
+              return 0;
+            }
+            return isExpanded ? 1 : collapsedOpacity;
+          })();
+
+          const scale = (() => {
+            if (!showProjects) {
+              return collapsedScale * 0.5;
+            }
+            if (isExpanded) {
+              return 1;
+            }
+            return (
+              collapsedScale *
+              Math.max(0.94, 1 - (collapsedScaleIndex + 1) * 0.02)
+            );
+          })();
+
+          const rotate = isExpanded
+            ? fanRotate
+            : collapsedPos.rotate + jigRotate;
+
+          const x = (() => {
+            if (!showProjects) {
+              return collapsedPos.x - 12;
+            }
+            return isExpanded ? offset.x : collapsedPos.x + jigX;
+          })();
+
+          const y = isExpanded ? offset.y + fanArcY : collapsedPos.y + jigY;
+
           return (
             <motion.div
               animate={{
-                opacity: showProjects ? (isExpanded ? 1 : collapsedOpacity) : 0,
-                scale: showProjects
-                  ? isExpanded
-                    ? 1
-                    : collapsedScale *
-                      Math.max(0.94, 1 - (collapsedScaleIndex + 1) * 0.02)
-                  : collapsedScale * 0.5,
-                rotate: isExpanded
-                  ? fanRotate
-                  : collapsedPos.rotate + jigRotate,
-                x: showProjects
-                  ? isExpanded
-                    ? offset.x
-                    : collapsedPos.x + jigX
-                  : collapsedPos.x - 12,
-                y: isExpanded ? offset.y + fanArcY : collapsedPos.y + jigY,
+                opacity,
+                scale,
+                rotate,
+                x,
+                y,
               }}
               className={tw("absolute top-0 left-0 will-change-transform")}
               initial={false}
