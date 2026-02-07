@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { SingleCardItem } from "@/components/canvas/single-card-item";
 import { CardStack } from "@/components/groups/card-group";
 import { FunProjectGroup } from "@/components/groups/fun-project-group";
@@ -22,7 +23,7 @@ interface CanvasItemRendererProps {
   setRootRef?: (el: HTMLDivElement | null) => void;
 }
 
-export function CanvasItemRenderer({
+const CanvasItemRendererComponent = ({
   item,
   itemIndex,
   scale,
@@ -38,7 +39,7 @@ export function CanvasItemRenderer({
   onCardHeightMeasured,
   onActivate,
   setRootRef,
-}: CanvasItemRendererProps) {
+}: CanvasItemRendererProps) => {
   if (item.kind === "single") {
     return (
       <SingleCardItem
@@ -115,4 +116,6 @@ export function CanvasItemRenderer({
       stackIndex={itemIndex}
     />
   );
-}
+};
+
+export const CanvasItemRenderer = memo(CanvasItemRendererComponent);

@@ -23,7 +23,7 @@ import {
   getFunStackAutoPanTarget,
 } from "@/lib/auto-pan";
 import { computeRepulsionOffsets } from "@/lib/repulsion";
-import type { CanvasItem } from "@/types/canvas";
+import type { CanvasItem, ViewportState } from "@/types/canvas";
 import { CanvasControls } from "./canvas-controls";
 import { CanvasItemRenderer } from "./canvas-item";
 
@@ -31,8 +31,19 @@ interface CanvasProps {
   initialItems: CanvasItem[];
 }
 
+const ZERO_OFFSET = { x: 0, y: 0 } as const;
+
 export const Canvas = ({ initialItems }: CanvasProps) => {
   const { state, actions } = useCanvasState(initialItems);
+  const {
+    bringItemToFront,
+    resetItems,
+    setExpandedStack,
+    setFocusedItem,
+    updateCardHeight,
+    updateItemPosition,
+    updateViewport,
+  } = actions;
   const [isPanningDisabled, setIsPanningDisabled] = useState(false);
   const [scale, setScale] = useState(1);
   const [activeResumeItemId, setActiveResumeItemId] = useState<string | null>(
@@ -81,9 +92,32 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     y: number;
     scale: number;
   } | null>(null);
+  const viewportStateRef = useRef(state.viewportState);
+  const wheelCommitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const itemsRef = useRef(state.items);
+  const expandedStackIdRef = useRef(state.expandedStackId);
+  const focusedItemIdRef = useRef(state.focusedItemId);
 
   const initialItemsRef = useRef(initialItems);
   initialItemsRef.current = initialItems;
+  itemsRef.current = state.items;
+  expandedStackIdRef.current = state.expandedStackId;
+  focusedItemIdRef.current = state.focusedItemId;
+
+  const syncViewportState = useCallback((viewport: ViewportState) => {
+    viewportStateRef.current = viewport;
+    setScale((prev) => (prev === viewport.scale ? prev : viewport.scale));
+  }, []);
+
+  const commitViewportState = useCallback(() => {
+    updateViewport(viewportStateRef.current);
+  }, [updateViewport]);
+
+  useEffect(() => {
+    syncViewportState(state.viewportState);
+  }, [state.viewportState, syncViewportState]);
 
   useEffect(() => {
     isInteractionLockedRef.current = isResumeOpen || isAboutOpen;
@@ -135,11 +169,29 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
       const newX = positionX - e.deltaX;
       const newY = positionY - e.deltaY;
       transformRef.current?.setTransform(newX, newY, scale, 0);
+      syncViewportState({
+        scale,
+        positionX: newX,
+        positionY: newY,
+      });
+
+      if (wheelCommitTimeoutRef.current) {
+        clearTimeout(wheelCommitTimeoutRef.current);
+      }
+      wheelCommitTimeoutRef.current = setTimeout(() => {
+        commitViewportState();
+      }, 80);
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
-    return () => container.removeEventListener("wheel", handleWheel);
-  }, []);
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+      if (wheelCommitTimeoutRef.current) {
+        clearTimeout(wheelCommitTimeoutRef.current);
+        wheelCommitTimeoutRef.current = null;
+      }
+    };
+  }, [commitViewportState, syncViewportState]);
 
   const registerGroupElement = useCallback(
     (id: string, el: HTMLDivElement | null) => {
@@ -213,7 +265,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
           });
           preAutoPanPositionRef.current = null;
         }
-        actions.setExpandedStack(null);
+        setExpandedStack(null);
         track(AnalyticsEvents.STACK_CLOSE, {
           stack_type: state.expandedStackId,
           close_method: "outside_click",
@@ -230,7 +282,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
       window.removeEventListener("pointerup", onPointerUp, true);
       window.removeEventListener("pointercancel", onPointerUp, true);
     };
-  }, [state.expandedStackId, actions]);
+  }, [setExpandedStack, state.expandedStackId]);
 
   // Unfocus the focused item when clicking outside it (but not when panning/dragging).
   useEffect(() => {
@@ -292,7 +344,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
           });
           preFocusPanPositionRef.current = null;
         }
-        actions.setFocusedItem(null);
+        setFocusedItem(null);
       }
     };
 
@@ -305,7 +357,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
       window.removeEventListener("pointerup", onPointerUp, true);
       window.removeEventListener("pointercancel", onPointerUp, true);
     };
-  }, [state.focusedItemId, actions]);
+  }, [setFocusedItem, state.focusedItemId]);
 
   // Handle ESC key to close expanded stacks and focused items
   useEffect(() => {
@@ -334,7 +386,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
           });
           preAutoPanPositionRef.current = null;
         }
-        actions.setExpandedStack(null);
+        setExpandedStack(null);
         track(AnalyticsEvents.KEYBOARD_ESCAPE, { context: "stack" });
       } else if (state.focusedItemId) {
         const savedPosition = preFocusPanPositionRef.current;
@@ -350,7 +402,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
           });
           preFocusPanPositionRef.current = null;
         }
-        actions.setFocusedItem(null);
+        setFocusedItem(null);
         track(AnalyticsEvents.KEYBOARD_ESCAPE, { context: "macbook" });
       }
     };
@@ -360,7 +412,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [state.expandedStackId, state.focusedItemId, actions]);
+  }, [setExpandedStack, setFocusedItem, state.expandedStackId, state.focusedItemId]);
 
   // Calculate viewport-proportional repulsion values for doc modal mode
   const getResumeRepulsionConfig = useCallback(
@@ -443,6 +495,419 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     return false;
   }, [state.items]);
 
+  const restorePreAutoPan = useCallback(() => {
+    const savedPosition = preAutoPanPositionRef.current;
+    if (!savedPosition) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      transformRef.current?.setTransform(
+        savedPosition.x,
+        savedPosition.y,
+        savedPosition.scale,
+        AUTO_PAN_DURATION_MS,
+        AUTO_PAN_EASING
+      );
+    });
+    preAutoPanPositionRef.current = null;
+  }, []);
+
+  const restorePreFocusPan = useCallback(() => {
+    const savedPosition = preFocusPanPositionRef.current;
+    if (!savedPosition) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      transformRef.current?.setTransform(
+        savedPosition.x,
+        savedPosition.y,
+        savedPosition.scale,
+        AUTO_PAN_DURATION_MS,
+        AUTO_PAN_EASING
+      );
+    });
+    preFocusPanPositionRef.current = null;
+  }, []);
+
+  const handleActivateItemById = useCallback(
+    (id: string) => {
+      const item = itemsRef.current.get(id);
+      if (!(item && item.kind === "single")) {
+        return;
+      }
+
+      const policy = getInteractionPolicy(item.card.kind);
+
+      if (policy.activate === "open-modal") {
+        bringItemToFront(item.id);
+        if (item.card.kind === "resume") {
+          setActiveResumeItemId(item.id);
+          track(AnalyticsEvents.RESUME_VIEW);
+        } else if (item.card.kind === "about") {
+          setActiveAboutItemId(item.id);
+          track(AnalyticsEvents.ABOUT_VIEW);
+        }
+        return;
+      }
+
+      if (policy.activate !== "toggle-focus") {
+        return;
+      }
+
+      // Toggle macbook focus: scale card + auto-pan to center, then restore on close.
+      if (focusedItemIdRef.current === item.id) {
+        restorePreFocusPan();
+        setFocusedItem(null);
+        track(AnalyticsEvents.MACBOOK_ZOOM, {
+          direction: "out",
+        });
+        return;
+      }
+
+      setFocusedItem(item.id);
+      bringItemToFront(item.id);
+      track(AnalyticsEvents.MACBOOK_ZOOM, {
+        direction: "in",
+      });
+
+      const viewportState = viewportStateRef.current;
+      preFocusPanPositionRef.current = {
+        x: viewportState.positionX,
+        y: viewportState.positionY,
+        scale: viewportState.scale,
+      };
+
+      const cardWidth = item.card.size.width ?? 0;
+      const cardHeight = item.card.size.height ?? 360;
+      const centerX = item.position.x + cardWidth / 2;
+      const centerY = item.position.y + cardHeight / 2;
+      const targetX = window.innerWidth / 2 - centerX * viewportState.scale;
+      const targetY = window.innerHeight / 2 - centerY * viewportState.scale;
+
+      requestAnimationFrame(() => {
+        transformRef.current?.setTransform(
+          targetX,
+          targetY,
+          viewportState.scale,
+          AUTO_PAN_DURATION_MS,
+          AUTO_PAN_EASING
+        );
+      });
+    },
+    [bringItemToFront, restorePreFocusPan, setFocusedItem]
+  );
+
+  const handleToggleExpandedById = useCallback(
+    (id: string) => {
+      const item = itemsRef.current.get(id);
+      if (!(item && item.kind !== "single")) {
+        return;
+      }
+
+      const isExpanded = expandedStackIdRef.current === item.id;
+      const viewportState = viewportStateRef.current;
+
+      // Stack items can expand/collapse
+      if (item.kind === "stack") {
+        if (isExpanded) {
+          restorePreAutoPan();
+          setExpandedStack(null);
+          return;
+        }
+
+        bringItemToFront(item.id);
+        setExpandedStack(item.id);
+
+        // Check if auto-pan is needed
+        const panTarget = getAutoPanTarget(
+          item,
+          fanConfig,
+          viewportState,
+          window.innerWidth,
+          window.innerHeight
+        );
+
+        if (panTarget) {
+          // Save current position before auto-panning
+          preAutoPanPositionRef.current = {
+            x: viewportState.positionX,
+            y: viewportState.positionY,
+            scale: viewportState.scale,
+          };
+          requestAnimationFrame(() => {
+            transformRef.current?.setTransform(
+              panTarget.x,
+              panTarget.y,
+              panTarget.scale,
+              AUTO_PAN_DURATION_MS,
+              AUTO_PAN_EASING
+            );
+          });
+        }
+        return;
+      }
+
+      // Fun stack items can expand/collapse
+      if (item.kind === "funstack") {
+        if (isExpanded) {
+          restorePreAutoPan();
+          setExpandedStack(null);
+          return;
+        }
+
+        bringItemToFront(item.id);
+        setExpandedStack(item.id);
+
+        // Check if auto-pan is needed
+        const panTarget = getFunStackAutoPanTarget(
+          item,
+          viewportState,
+          window.innerWidth,
+          window.innerHeight
+        );
+
+        if (panTarget) {
+          // Save current position before auto-panning
+          preAutoPanPositionRef.current = {
+            x: viewportState.positionX,
+            y: viewportState.positionY,
+            scale: viewportState.scale,
+          };
+          requestAnimationFrame(() => {
+            transformRef.current?.setTransform(
+              panTarget.x,
+              panTarget.y,
+              panTarget.scale,
+              AUTO_PAN_DURATION_MS,
+              AUTO_PAN_EASING
+            );
+          });
+        }
+        return;
+      }
+
+      // Swag stack items can expand/collapse
+      if (isExpanded) {
+        restorePreAutoPan();
+        setExpandedStack(null);
+        return;
+      }
+
+      bringItemToFront(item.id);
+      setExpandedStack(item.id);
+
+      // Check if auto-pan is needed
+      const coverWidth = item.cover.size.width ?? 240;
+      const gridCols = 6;
+      const swagItemSize = 180;
+      const gridGap = 16;
+      const swagCount = item.swags.length;
+      const rows = Math.ceil(swagCount / gridCols);
+      const totalWidth = coverWidth + 40 + gridCols * (swagItemSize + gridGap);
+      // Height: items + gaps between rows (last row has no trailing gap)
+      const totalHeight = rows * swagItemSize + Math.max(0, rows - 1) * gridGap;
+      const margin = 40;
+
+      // Get current visible viewport in canvas coordinates
+      const viewportMinX = (0 - viewportState.positionX) / viewportState.scale;
+      const viewportMinY = (0 - viewportState.positionY) / viewportState.scale;
+      const viewportMaxX =
+        (window.innerWidth - viewportState.positionX) / viewportState.scale;
+      const viewportMaxY =
+        (window.innerHeight - viewportState.positionY) / viewportState.scale;
+
+      // Content bounds (swag grid starts at same y as cover)
+      const contentMinX = item.position.x;
+      const contentMinY = item.position.y;
+      const contentMaxX = item.position.x + totalWidth;
+      const contentMaxY = item.position.y + totalHeight;
+
+      // Check if content overflows viewport
+      const overflows =
+        contentMinX < viewportMinX ||
+        contentMinY < viewportMinY ||
+        contentMaxX > viewportMaxX ||
+        contentMaxY > viewportMaxY;
+
+      if (!overflows) {
+        return;
+      }
+
+      // Check if content can be centered (fits with margins)
+      const contentWidth = totalWidth * viewportState.scale;
+      const contentHeight = totalHeight * viewportState.scale;
+      const availableWidth = window.innerWidth - margin * 2;
+      const availableHeight = window.innerHeight - margin * 2;
+
+      const canCenterHorizontal = contentWidth <= availableWidth;
+      const canCenterVertical = contentHeight <= availableHeight;
+
+      // Calculate transforms
+      const centerX = item.position.x + totalWidth / 2;
+      const centerY = item.position.y + totalHeight / 2;
+
+      const centeredX = window.innerWidth / 2 - centerX * viewportState.scale;
+      const centeredY = window.innerHeight / 2 - centerY * viewportState.scale;
+
+      const marginX = margin - item.position.x * viewportState.scale;
+      const marginY = margin - item.position.y * viewportState.scale;
+
+      // Use centered for axes that fit, margin for axes that don't
+      // If horizontal space is insufficient, pin to top-left for stable layout
+      const panTarget: {
+        x: number;
+        y: number;
+        scale: number;
+      } = {
+        x: canCenterHorizontal ? centeredX : marginX,
+        y: canCenterHorizontal && canCenterVertical ? centeredY : marginY,
+        scale: viewportState.scale,
+      };
+
+      // Save current position before auto-panning
+      preAutoPanPositionRef.current = {
+        x: viewportState.positionX,
+        y: viewportState.positionY,
+        scale: viewportState.scale,
+      };
+      requestAnimationFrame(() => {
+        transformRef.current?.setTransform(
+          panTarget.x,
+          panTarget.y,
+          panTarget.scale,
+          AUTO_PAN_DURATION_MS,
+          AUTO_PAN_EASING
+        );
+      });
+    },
+    [bringItemToFront, fanConfig, restorePreAutoPan, setExpandedStack]
+  );
+
+  const setRootRefCallbacksRef = useRef(
+    new Map<string, (el: HTMLDivElement | null) => void>()
+  );
+  const bringToFrontCallbacksRef = useRef(new Map<string, () => void>());
+  const activateCallbacksRef = useRef(new Map<string, () => void>());
+  const toggleExpandedCallbacksRef = useRef(new Map<string, () => void>());
+  const positionUpdateCallbacksRef = useRef(
+    new Map<string, (position: { x: number; y: number }) => void>()
+  );
+  const cardHeightCallbacksRef = useRef(
+    new Map<string, (cardId: string, height: number) => void>()
+  );
+
+  const getSetRootRefCallback = useCallback(
+    (id: string) => {
+      let callback = setRootRefCallbacksRef.current.get(id);
+      if (!callback) {
+        callback = (el: HTMLDivElement | null) => {
+          registerGroupElement(id, el);
+        };
+        setRootRefCallbacksRef.current.set(id, callback);
+      }
+      return callback;
+    },
+    [registerGroupElement]
+  );
+
+  const getBringToFrontCallback = useCallback(
+    (id: string) => {
+      let callback = bringToFrontCallbacksRef.current.get(id);
+      if (!callback) {
+        callback = () => {
+          bringItemToFront(id);
+        };
+        bringToFrontCallbacksRef.current.set(id, callback);
+      }
+      return callback;
+    },
+    [bringItemToFront]
+  );
+
+  const getActivateCallback = useCallback(
+    (id: string) => {
+      let callback = activateCallbacksRef.current.get(id);
+      if (!callback) {
+        callback = () => {
+          handleActivateItemById(id);
+        };
+        activateCallbacksRef.current.set(id, callback);
+      }
+      return callback;
+    },
+    [handleActivateItemById]
+  );
+
+  const getToggleExpandedCallback = useCallback(
+    (id: string) => {
+      let callback = toggleExpandedCallbacksRef.current.get(id);
+      if (!callback) {
+        callback = () => {
+          handleToggleExpandedById(id);
+        };
+        toggleExpandedCallbacksRef.current.set(id, callback);
+      }
+      return callback;
+    },
+    [handleToggleExpandedById]
+  );
+
+  const getPositionUpdateCallback = useCallback(
+    (id: string) => {
+      let callback = positionUpdateCallbacksRef.current.get(id);
+      if (!callback) {
+        callback = (position) => {
+          updateItemPosition(id, position);
+        };
+        positionUpdateCallbacksRef.current.set(id, callback);
+      }
+      return callback;
+    },
+    [updateItemPosition]
+  );
+
+  const getCardHeightCallback = useCallback(
+    (id: string) => {
+      let callback = cardHeightCallbacksRef.current.get(id);
+      if (!callback) {
+        callback = (cardId, height) => {
+          updateCardHeight(id, cardId, height);
+        };
+        cardHeightCallbacksRef.current.set(id, callback);
+      }
+      return callback;
+    },
+    [updateCardHeight]
+  );
+
+  const handleDragStart = useCallback(() => {
+    setIsPanningDisabled(true);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setIsPanningDisabled(false);
+  }, []);
+
+  useEffect(() => {
+    const validIds = new Set(state.items.keys());
+    const prune = <T,>(map: Map<string, T>) => {
+      for (const id of map.keys()) {
+        if (!validIds.has(id)) {
+          map.delete(id);
+        }
+      }
+    };
+
+    prune(setRootRefCallbacksRef.current);
+    prune(bringToFrontCallbacksRef.current);
+    prune(activateCallbacksRef.current);
+    prune(toggleExpandedCallbacksRef.current);
+    prune(positionUpdateCallbacksRef.current);
+    prune(cardHeightCallbacksRef.current);
+  }, [state.items]);
+
   return (
     <LayoutGroup>
       <div className="h-screen w-screen overflow-hidden" ref={containerRef}>
@@ -454,12 +919,27 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
           maxScale={3}
           minScale={0.3}
           onTransformed={(ref: ReactZoomPanPinchRef) => {
-            setScale(ref.state.scale);
-            actions.updateViewport({
+            syncViewportState({
               scale: ref.state.scale,
               positionX: ref.state.positionX,
               positionY: ref.state.positionY,
             });
+          }}
+          onPanningStop={(ref: ReactZoomPanPinchRef) => {
+            syncViewportState({
+              scale: ref.state.scale,
+              positionX: ref.state.positionX,
+              positionY: ref.state.positionY,
+            });
+            commitViewportState();
+          }}
+          onZoomStop={(ref: ReactZoomPanPinchRef) => {
+            syncViewportState({
+              scale: ref.state.scale,
+              positionX: ref.state.positionX,
+              positionY: ref.state.positionY,
+            });
+            commitViewportState();
           }}
           panning={{
             disabled: isPanningDisabled || isResumeOpen,
@@ -487,10 +967,8 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                     expandedStackId !== null ||
                     isResumeOpen ||
                     state.focusedItemId !== null;
-                  const repulsionOffset = repulsionOffsets.get(item.id) ?? {
-                    x: 0,
-                    y: 0,
-                  };
+                  const repulsionOffset =
+                    repulsionOffsets.get(item.id) ?? ZERO_OFFSET;
 
                   return (
                     <CanvasItemRenderer
@@ -500,337 +978,16 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                       item={item}
                       itemIndex={itemIndex}
                       key={item.id}
-                      onActivate={() => {
-                        if (item.kind !== "single") {
-                          return;
-                        }
-
-                        const policy = getInteractionPolicy(item.card.kind);
-
-                        if (policy.activate === "open-modal") {
-                          actions.bringItemToFront(item.id);
-                          if (item.card.kind === "resume") {
-                            setActiveResumeItemId(item.id);
-                            track(AnalyticsEvents.RESUME_VIEW);
-                          } else if (item.card.kind === "about") {
-                            setActiveAboutItemId(item.id);
-                            track(AnalyticsEvents.ABOUT_VIEW);
-                          }
-                          return;
-                        }
-
-                        if (policy.activate !== "toggle-focus") {
-                          return;
-                        }
-
-                        // Toggle macbook focus: scale card + auto-pan to center, then restore on close.
-                        if (state.focusedItemId === item.id) {
-                          const savedPosition = preFocusPanPositionRef.current;
-                          if (savedPosition) {
-                            requestAnimationFrame(() => {
-                              transformRef.current?.setTransform(
-                                savedPosition.x,
-                                savedPosition.y,
-                                savedPosition.scale,
-                                AUTO_PAN_DURATION_MS,
-                                AUTO_PAN_EASING
-                              );
-                            });
-                            preFocusPanPositionRef.current = null;
-                          }
-                          actions.setFocusedItem(null);
-                          track(AnalyticsEvents.MACBOOK_ZOOM, {
-                            direction: "out",
-                          });
-                          return;
-                        }
-
-                        actions.setFocusedItem(item.id);
-                        actions.bringItemToFront(item.id);
-                        track(AnalyticsEvents.MACBOOK_ZOOM, {
-                          direction: "in",
-                        });
-
-                        preFocusPanPositionRef.current = {
-                          x: state.viewportState.positionX,
-                          y: state.viewportState.positionY,
-                          scale: state.viewportState.scale,
-                        };
-
-                        const cardWidth = item.card.size.width ?? 0;
-                        const cardHeight = item.card.size.height ?? 360;
-                        const centerX = item.position.x + cardWidth / 2;
-                        const centerY = item.position.y + cardHeight / 2;
-                        const targetX =
-                          window.innerWidth / 2 -
-                          centerX * state.viewportState.scale;
-                        const targetY =
-                          window.innerHeight / 2 -
-                          centerY * state.viewportState.scale;
-
-                        requestAnimationFrame(() => {
-                          transformRef.current?.setTransform(
-                            targetX,
-                            targetY,
-                            state.viewportState.scale,
-                            AUTO_PAN_DURATION_MS,
-                            AUTO_PAN_EASING
-                          );
-                        });
-                      }}
-                      onBringToFront={() => actions.bringItemToFront(item.id)}
-                      onCardHeightMeasured={(cardId, height) =>
-                        actions.updateCardHeight(item.id, cardId, height)
-                      }
-                      onDragEnd={() => setIsPanningDisabled(false)}
-                      onDragStart={() => setIsPanningDisabled(true)}
-                      onPositionUpdate={(position) =>
-                        actions.updateItemPosition(item.id, position)
-                      }
-                      onToggleExpanded={() => {
-                        // Stack items can expand/collapse
-                        if (item.kind === "stack") {
-                          if (isExpanded) {
-                            // Restore to pre-auto-pan position if available
-                            const savedPosition = preAutoPanPositionRef.current;
-                            if (savedPosition) {
-                              requestAnimationFrame(() => {
-                                transformRef.current?.setTransform(
-                                  savedPosition.x,
-                                  savedPosition.y,
-                                  savedPosition.scale,
-                                  AUTO_PAN_DURATION_MS,
-                                  AUTO_PAN_EASING
-                                );
-                              });
-                              preAutoPanPositionRef.current = null;
-                            }
-                            actions.setExpandedStack(null);
-                            return;
-                          }
-
-                          actions.bringItemToFront(item.id);
-                          actions.setExpandedStack(item.id);
-
-                          // Check if auto-pan is needed
-                          const panTarget = getAutoPanTarget(
-                            item,
-                            fanConfig,
-                            state.viewportState,
-                            window.innerWidth,
-                            window.innerHeight
-                          );
-
-                          if (panTarget) {
-                            // Save current position before auto-panning
-                            preAutoPanPositionRef.current = {
-                              x: state.viewportState.positionX,
-                              y: state.viewportState.positionY,
-                              scale: state.viewportState.scale,
-                            };
-                            requestAnimationFrame(() => {
-                              transformRef.current?.setTransform(
-                                panTarget.x,
-                                panTarget.y,
-                                panTarget.scale,
-                                AUTO_PAN_DURATION_MS,
-                                AUTO_PAN_EASING
-                              );
-                            });
-                          }
-                        }
-
-                        // Fun stack items can expand/collapse
-                        if (item.kind === "funstack") {
-                          if (isExpanded) {
-                            // Restore to pre-auto-pan position if available
-                            const savedPosition = preAutoPanPositionRef.current;
-                            if (savedPosition) {
-                              requestAnimationFrame(() => {
-                                transformRef.current?.setTransform(
-                                  savedPosition.x,
-                                  savedPosition.y,
-                                  savedPosition.scale,
-                                  AUTO_PAN_DURATION_MS,
-                                  AUTO_PAN_EASING
-                                );
-                              });
-                              preAutoPanPositionRef.current = null;
-                            }
-                            actions.setExpandedStack(null);
-                            return;
-                          }
-
-                          actions.bringItemToFront(item.id);
-                          actions.setExpandedStack(item.id);
-
-                          // Check if auto-pan is needed
-                          const panTarget = getFunStackAutoPanTarget(
-                            item,
-                            state.viewportState,
-                            window.innerWidth,
-                            window.innerHeight
-                          );
-
-                          if (panTarget) {
-                            // Save current position before auto-panning
-                            preAutoPanPositionRef.current = {
-                              x: state.viewportState.positionX,
-                              y: state.viewportState.positionY,
-                              scale: state.viewportState.scale,
-                            };
-                            requestAnimationFrame(() => {
-                              transformRef.current?.setTransform(
-                                panTarget.x,
-                                panTarget.y,
-                                panTarget.scale,
-                                AUTO_PAN_DURATION_MS,
-                                AUTO_PAN_EASING
-                              );
-                            });
-                          }
-                        }
-
-                        // Swag stack items can expand/collapse
-                        if (item.kind === "swagstack") {
-                          if (isExpanded) {
-                            // Restore to pre-auto-pan position if available
-                            const savedPosition = preAutoPanPositionRef.current;
-                            if (savedPosition) {
-                              requestAnimationFrame(() => {
-                                transformRef.current?.setTransform(
-                                  savedPosition.x,
-                                  savedPosition.y,
-                                  savedPosition.scale,
-                                  AUTO_PAN_DURATION_MS,
-                                  AUTO_PAN_EASING
-                                );
-                              });
-                              preAutoPanPositionRef.current = null;
-                            }
-                            actions.setExpandedStack(null);
-                            return;
-                          }
-
-                          actions.bringItemToFront(item.id);
-                          actions.setExpandedStack(item.id);
-
-                          // Check if auto-pan is needed
-                          const coverWidth = item.cover.size.width ?? 240;
-                          const gridCols = 6;
-                          const swagItemSize = 180;
-                          const gridGap = 16;
-                          const swagCount = item.swags.length;
-                          const rows = Math.ceil(swagCount / gridCols);
-                          const totalWidth =
-                            coverWidth +
-                            40 +
-                            gridCols * (swagItemSize + gridGap);
-                          // Height: items + gaps between rows (last row has no trailing gap)
-                          const totalHeight =
-                            rows * swagItemSize +
-                            Math.max(0, rows - 1) * gridGap;
-                          const margin = 40;
-
-                          // Get current visible viewport in canvas coordinates
-                          const viewportMinX =
-                            (0 - state.viewportState.positionX) /
-                            state.viewportState.scale;
-                          const viewportMinY =
-                            (0 - state.viewportState.positionY) /
-                            state.viewportState.scale;
-                          const viewportMaxX =
-                            (window.innerWidth -
-                              state.viewportState.positionX) /
-                            state.viewportState.scale;
-                          const viewportMaxY =
-                            (window.innerHeight -
-                              state.viewportState.positionY) /
-                            state.viewportState.scale;
-
-                          // Content bounds (swag grid starts at same y as cover)
-                          const contentMinX = item.position.x;
-                          const contentMinY = item.position.y;
-                          const contentMaxX = item.position.x + totalWidth;
-                          const contentMaxY = item.position.y + totalHeight;
-
-                          // Check if content overflows viewport
-                          const overflows =
-                            contentMinX < viewportMinX ||
-                            contentMinY < viewportMinY ||
-                            contentMaxX > viewportMaxX ||
-                            contentMaxY > viewportMaxY;
-
-                          if (overflows) {
-                            // Check if content can be centered (fits with margins)
-                            const contentWidth =
-                              totalWidth * state.viewportState.scale;
-                            const contentHeight =
-                              totalHeight * state.viewportState.scale;
-                            const availableWidth =
-                              window.innerWidth - margin * 2;
-                            const availableHeight =
-                              window.innerHeight - margin * 2;
-
-                            const canCenterHorizontal =
-                              contentWidth <= availableWidth;
-                            const canCenterVertical =
-                              contentHeight <= availableHeight;
-
-                            // Calculate transforms
-                            const centerX = item.position.x + totalWidth / 2;
-                            const centerY = item.position.y + totalHeight / 2;
-
-                            const centeredX =
-                              window.innerWidth / 2 -
-                              centerX * state.viewportState.scale;
-                            const centeredY =
-                              window.innerHeight / 2 -
-                              centerY * state.viewportState.scale;
-
-                            const marginX =
-                              margin -
-                              item.position.x * state.viewportState.scale;
-                            const marginY =
-                              margin -
-                              item.position.y * state.viewportState.scale;
-
-                            // Use centered for axes that fit, margin for axes that don't
-                            // If horizontal space is insufficient, pin to top-left for stable layout
-                            const panTarget: {
-                              x: number;
-                              y: number;
-                              scale: number;
-                            } = {
-                              x: canCenterHorizontal ? centeredX : marginX,
-                              y:
-                                canCenterHorizontal && canCenterVertical
-                                  ? centeredY
-                                  : marginY,
-                              scale: state.viewportState.scale,
-                            };
-
-                            // Save current position before auto-panning
-                            preAutoPanPositionRef.current = {
-                              x: state.viewportState.positionX,
-                              y: state.viewportState.positionY,
-                              scale: state.viewportState.scale,
-                            };
-                            requestAnimationFrame(() => {
-                              transformRef.current?.setTransform(
-                                panTarget.x,
-                                panTarget.y,
-                                panTarget.scale,
-                                AUTO_PAN_DURATION_MS,
-                                AUTO_PAN_EASING
-                              );
-                            });
-                          }
-                        }
-                      }}
+                      onActivate={getActivateCallback(item.id)}
+                      onBringToFront={getBringToFrontCallback(item.id)}
+                      onCardHeightMeasured={getCardHeightCallback(item.id)}
+                      onDragEnd={handleDragEnd}
+                      onDragStart={handleDragStart}
+                      onPositionUpdate={getPositionUpdateCallback(item.id)}
+                      onToggleExpanded={getToggleExpandedCallback(item.id)}
                       repulsionOffset={repulsionOffset}
                       scale={scale}
-                      setRootRef={(el) => registerGroupElement(item.id, el)}
+                      setRootRef={getSetRootRefCallback(item.id)}
                     />
                   );
                 })}
@@ -892,7 +1049,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
               <CanvasControls
                 isResetDisabled={isViewportReset && !arePositionsModified}
                 onReset={() => resetTransform()}
-                onResetPositions={() => actions.resetItems()}
+                onResetPositions={resetItems}
               />
             </>
           )}

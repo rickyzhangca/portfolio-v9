@@ -1,15 +1,20 @@
+import { lazy, memo, Suspense, type ReactElement } from "react";
 import ReactMarkdown from "react-markdown";
 import { tw } from "@/lib/utils";
-import { CodeHighlighter } from "./code-highlighter";
 
 const LANGUAGE_REGEX = /language-(\w+)/;
 const VIDEO_EXTENSIONS_REGEX = /\.(mov|mp4|webm)$/i;
+const LazyCodeHighlighter = lazy(() =>
+  import("./code-highlighter").then((module) => ({
+    default: module.CodeHighlighter,
+  }))
+);
 
 interface MarkdownRendererProps {
   content: string;
 }
 
-export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
+const MarkdownRendererComponent = ({ content }: MarkdownRendererProps) => {
   return (
     <ReactMarkdown
       components={{
@@ -63,6 +68,7 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
                 loop
                 muted
                 playsInline
+                preload="none"
                 src={src as string}
               />
             );
@@ -73,6 +79,8 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
             <img
               alt={alt as string}
               className="mt-4 not-last:mb-4 w-full rounded-lg outline outline-border"
+              decoding="async"
+              loading="lazy"
               src={src as string}
             />
           );
@@ -97,7 +105,7 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
           return <code {...props}>{children}</code>;
         },
         pre: ({ children }) => {
-          const codeElement = children as React.ReactElement;
+          const codeElement = children as ReactElement;
           const codeProps = codeElement?.props as
             | { children?: string; className?: string }
             | undefined;
@@ -110,7 +118,11 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
             return <pre>{children}</pre>;
           }
 
-          return <CodeHighlighter code={codeString} language={language} />;
+          return (
+            <Suspense fallback={<pre>{children}</pre>}>
+              <LazyCodeHighlighter code={codeString} language={language} />
+            </Suspense>
+          );
         },
       }}
     >
@@ -118,3 +130,5 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
     </ReactMarkdown>
   );
 };
+
+export const MarkdownRenderer = memo(MarkdownRendererComponent);
