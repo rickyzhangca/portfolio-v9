@@ -4,6 +4,7 @@ import type { FanConfig } from "@/lib/fan";
 import type {
   CanvasFunStackItem,
   CanvasStackItem,
+  CanvasSwagStackItem,
   ViewportState,
 } from "@/types/canvas";
 
@@ -53,7 +54,9 @@ const getExpandedBoundingBox = (
   // Calculate bounds for each stack card at its fanned offset
   for (let i = 0; i < stack.length; i++) {
     const card = stack[i];
-    if (!card) continue;
+    if (!card) {
+      continue;
+    }
 
     const offset = offsets[i];
     const cardHeight = card.size.height ?? 360;
@@ -349,6 +352,109 @@ export const getFunStackAutoPanTarget = (
   // If horizontal space is insufficient, prefer a stable "reading" layout:
   // pin the expanded content to the top-left (with margin), even if it could be
   // vertically centered.
+  const result = {
+    x: canCenter.horizontal ? centeredTransform.x : marginTransform.x,
+    y:
+      canCenter.horizontal && canCenter.vertical
+        ? centeredTransform.y
+        : marginTransform.y,
+    scale: viewportState.scale,
+  };
+
+  return result;
+};
+
+/**
+ * Calculate bounding box for expanded swag stack content.
+ * Includes the cover + gap + swag grid.
+ */
+const getSwagStackExpandedBoundingBox = (
+  coverWidth: number,
+  swagCount: number,
+  gridCols: number,
+  swagItemSize: number,
+  gridGap: number
+): BoundingBox => {
+  const rows = Math.ceil(swagCount / gridCols);
+  const totalWidth = coverWidth + 40 + gridCols * (swagItemSize + gridGap);
+  // Height: items + gaps between rows (last row has no trailing gap)
+  const totalHeight = rows * swagItemSize + Math.max(0, rows - 1) * gridGap;
+
+  return {
+    minX: 0,
+    minY: 0,
+    maxX: totalWidth,
+    maxY: totalHeight,
+  };
+};
+
+/**
+ * Auto-pan helper for swag stack.
+ * Similar to other stacks but accounts for the swag grid layout.
+ */
+export const getSwagStackAutoPanTarget = (
+  swagStack: CanvasSwagStackItem,
+  viewportState: ViewportState,
+  windowWidth: number,
+  windowHeight: number,
+  options?: {
+    gridCols?: number;
+    swagItemSize?: number;
+    gridGap?: number;
+  }
+): { x: number; y: number; scale: number } | null => {
+  const coverWidth = swagStack.cover.size.width ?? 240;
+  const gridCols = options?.gridCols ?? 6;
+  const swagItemSize = options?.swagItemSize ?? 180;
+  const gridGap = options?.gridGap ?? 16;
+
+  const expandedBbox = getSwagStackExpandedBoundingBox(
+    coverWidth,
+    swagStack.swags.length,
+    gridCols,
+    swagItemSize,
+    gridGap
+  );
+
+  // Get current visible viewport in canvas coordinates
+  const visibleViewport = getVisibleViewport(
+    viewportState,
+    windowWidth,
+    windowHeight
+  );
+
+  if (
+    !doesExpandedContentOverflow(
+      swagStack.position,
+      expandedBbox,
+      visibleViewport
+    )
+  ) {
+    return null;
+  }
+
+  const canCenter = canCenterContent(
+    expandedBbox,
+    viewportState.scale,
+    windowWidth,
+    windowHeight,
+    AUTO_PAN_MARGIN
+  );
+
+  const marginTransform = calculateMarginTransform(
+    swagStack.position,
+    viewportState.scale,
+    AUTO_PAN_MARGIN
+  );
+
+  const centeredTransform = calculateCenteredTransform(
+    swagStack.position,
+    expandedBbox,
+    viewportState.scale,
+    windowWidth,
+    windowHeight
+  );
+
   const result = {
     x: canCenter.horizontal ? centeredTransform.x : marginTransform.x,
     y:
