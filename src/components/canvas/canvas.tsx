@@ -412,7 +412,12 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [setExpandedStack, setFocusedItem, state.expandedStackId, state.focusedItemId]);
+  }, [
+    setExpandedStack,
+    setFocusedItem,
+    state.expandedStackId,
+    state.focusedItemId,
+  ]);
 
   // Calculate viewport-proportional repulsion values for doc modal mode
   const getResumeRepulsionConfig = useCallback(
@@ -918,13 +923,6 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
           limitToBounds={false}
           maxScale={3}
           minScale={0.3}
-          onTransformed={(ref: ReactZoomPanPinchRef) => {
-            syncViewportState({
-              scale: ref.state.scale,
-              positionX: ref.state.positionX,
-              positionY: ref.state.positionY,
-            });
-          }}
           onPanningStop={(ref: ReactZoomPanPinchRef) => {
             syncViewportState({
               scale: ref.state.scale,
@@ -932,6 +930,13 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
               positionY: ref.state.positionY,
             });
             commitViewportState();
+          }}
+          onTransformed={(ref: ReactZoomPanPinchRef) => {
+            syncViewportState({
+              scale: ref.state.scale,
+              positionX: ref.state.positionX,
+              positionY: ref.state.positionY,
+            });
           }}
           onZoomStop={(ref: ReactZoomPanPinchRef) => {
             syncViewportState({
