@@ -13,7 +13,7 @@ describe("MarkdownRenderer", () => {
     expect(video.getAttribute("preload")).toBe("auto");
     expect(video.autoplay).toBe(true);
     expect(video.style.aspectRatio).toBe("16 / 9");
-    expect(video.getAttribute("poster")).not.toBeNull();
+    expect(video.style.opacity).toBe("0");
   });
 
   it("updates video aspect ratio after metadata loads", () => {
@@ -35,5 +35,31 @@ describe("MarkdownRenderer", () => {
     fireEvent.loadedMetadata(video);
 
     expect(video.style.aspectRatio).toBe("1.7777777777777777 / 1");
+  });
+
+  it("reveals video after first frame is loaded", () => {
+    const { container } = render(
+      <MarkdownRenderer content={"![Demo Video](/demo.mov)"} />
+    );
+
+    const video = container.querySelector("video") as HTMLVideoElement | null;
+    expect(video).not.toBeNull();
+    expect(video.style.opacity).toBe("0");
+
+    fireEvent.loadedData(video);
+
+    expect(video.style.opacity).toBe("1");
+  });
+
+  it("treats video URLs with query params as videos", () => {
+    const { container } = render(
+      <MarkdownRenderer content={"![Demo Video](/demo.mov?t=1770448620687)"} />
+    );
+
+    const video = container.querySelector("video");
+    const image = container.querySelector("img");
+
+    expect(video).not.toBeNull();
+    expect(image).toBeNull();
   });
 });
