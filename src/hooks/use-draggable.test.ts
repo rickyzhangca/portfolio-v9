@@ -1,14 +1,42 @@
 import { act, renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createMockMouseEvent,
   createMockTouchEvent,
 } from "@/test-utils/test-helpers";
 import { useDraggable } from "./use-draggable";
 
+let nextRafId = 1;
+const rafCallbacks = new Map<number, FrameRequestCallback>();
+
+const flushRaf = () => {
+  const callbacks = Array.from(rafCallbacks.values());
+  rafCallbacks.clear();
+  for (const callback of callbacks) {
+    callback(0);
+  }
+};
+
 describe("useDraggable", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    nextRafId = 1;
+    rafCallbacks.clear();
+
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      const id = nextRafId++;
+      rafCallbacks.set(id, callback);
+      return id;
+    });
+
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+      rafCallbacks.delete(id);
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("initializes with dragging state false", () => {
@@ -108,6 +136,10 @@ describe("useDraggable", () => {
       window.dispatchEvent(moveEvent);
     });
 
+    act(() => {
+      flushRaf();
+    });
+
     expect(result.current.currentPosition.x).toBe(50);
     expect(result.current.currentPosition.y).toBe(50);
   });
@@ -130,6 +162,10 @@ describe("useDraggable", () => {
         clientY: 200,
       });
       window.dispatchEvent(moveEvent);
+    });
+
+    act(() => {
+      flushRaf();
     });
 
     expect(result.current.currentPosition.x).toBe(50);
@@ -291,6 +327,10 @@ describe("useDraggable", () => {
       window.dispatchEvent(moveEvent);
     });
 
+    act(() => {
+      flushRaf();
+    });
+
     expect(result.current.currentPosition.x).toBe(50);
     expect(result.current.currentPosition.y).toBe(50);
   });
@@ -313,6 +353,10 @@ describe("useDraggable", () => {
         clientY: 140,
       });
       window.dispatchEvent(moveEvent);
+    });
+
+    act(() => {
+      flushRaf();
     });
 
     expect(result.current.currentPosition.x).toBe(30);
@@ -360,6 +404,10 @@ describe("useDraggable", () => {
       window.dispatchEvent(moveEvent);
     });
 
+    act(() => {
+      flushRaf();
+    });
+
     expect(result.current.currentPosition).toEqual({ x: 50, y: 50 });
 
     act(() => {
@@ -389,6 +437,10 @@ describe("useDraggable", () => {
         touches: [{ clientX: 150, clientY: 150 } as unknown as Touch],
       } as TouchEventInit);
       window.dispatchEvent(touchMoveEvent);
+    });
+
+    act(() => {
+      flushRaf();
     });
 
     expect(result.current.currentPosition.x).toBe(50);

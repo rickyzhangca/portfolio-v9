@@ -324,8 +324,8 @@ describe("getFunStackAutoPanTarget", () => {
 
     expect(result).not.toBeNull();
     // Width fits, so X uses centering; height doesn't fit, so Y uses margin.
-    // contentCenterX = groupX + (0 + 904)/2 = 1800 + 452 = 2252
-    expect(result?.x).toBe(1920 / 2 - 2252);
+    // contentCenterX = groupX + (0 + 944) / 2 = 1800 + 472 = 2272
+    expect(result?.x).toBe(1920 / 2 - 2272);
     expect(result?.y).toBe(40 - 800);
   });
 
