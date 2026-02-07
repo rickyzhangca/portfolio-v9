@@ -1,3 +1,4 @@
+import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
   createMockFunStack,
@@ -6,7 +7,7 @@ import {
   createMockSwagStack,
 } from "@/test-utils/test-helpers";
 import type { CanvasItem } from "@/types/canvas";
-import { canvasReducer } from "./use-canvas-state";
+import { canvasReducer, useCanvasState } from "./use-canvas-state";
 
 describe("useCanvasState - Reducer Action Coverage", () => {
   const createMockState = (items: CanvasItem[] = []) => {
@@ -151,6 +152,15 @@ describe("useCanvasState - Reducer Action Coverage", () => {
         positionX: 100,
         positionY: 200,
       });
+    });
+
+    it("returns same state reference when viewport values are unchanged", () => {
+      const state = createMockState([]);
+      const newState = canvasReducer(state, {
+        type: "UPDATE_VIEWPORT",
+        payload: { scale: 1, positionX: 0, positionY: 0 },
+      });
+      expect(newState).toBe(state);
     });
   });
 
@@ -536,5 +546,29 @@ describe("useCanvasState - Reducer Action Coverage", () => {
       });
       expect(newState).toBe(state);
     });
+  });
+});
+
+describe("useCanvasState - Actions Identity", () => {
+  it("keeps actions object stable across unrelated state updates", () => {
+    const initialItems = [createMockStack("s1", 0, 0)];
+    const { result } = renderHook(() => useCanvasState(initialItems));
+    const initialActions = result.current.actions;
+
+    act(() => {
+      result.current.actions.setExpandedStack("s1");
+    });
+    expect(result.current.actions).toBe(initialActions);
+
+    act(() => {
+      result.current.actions.setFocusedItem("s1");
+    });
+    expect(result.current.actions).toBe(initialActions);
+
+    act(() => {
+      result.current.actions.setExpandedStack(null);
+      result.current.actions.setFocusedItem(null);
+    });
+    expect(result.current.actions).toBe(initialActions);
   });
 });

@@ -35,10 +35,6 @@ export default defineConfig({
               test: /react-zoom-pan-pinch/,
             },
             {
-              name: "markdown",
-              test: /react-markdown|react-shiki/,
-            },
-            {
               name: "vendor",
               test: /react|react-dom|jotai/,
             },

@@ -1,18 +1,30 @@
 import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
-import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { RenderCard } from "@/cards/render-card";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { tw } from "@/lib/utils";
 import type { CanvasFunStackItem, Position } from "@/types/canvas";
-import { MarkdownRenderer } from "../markdown-renderer";
 
 const CONTENT_WIDTH = 680;
 const CONTENT_GAP = 24;
 const STAGGER_DELAY = 0.1;
 const VERTICAL_GAP = 16;
 const CONTENT_CARD_HEIGHT = 120; // Fallback height estimate before measurement
+const MarkdownRenderer = lazy(() =>
+  import("../markdown-renderer").then((module) => ({
+    default: module.MarkdownRenderer,
+  }))
+);
 
 interface FunProjectGroupProps {
   item: CanvasFunStackItem;
@@ -49,6 +61,10 @@ export const FunProjectGroup = ({
   const [contentCardHeights, setContentCardHeights] = useState<
     Record<number, number>
   >({});
+  const contentCardElementsRef = useRef(new Map<number, HTMLDivElement>());
+  const contentCardRefCallbacksRef = useRef(
+    new Map<number, (el: HTMLDivElement | null) => void>()
+  );
 
   const cardPointerDownRef = useRef<{
     clientX: number;
@@ -100,6 +116,57 @@ export const FunProjectGroup = ({
     },
     []
   );
+
+  const getContentCardRefCallback = useCallback((index: number) => {
+    let callback = contentCardRefCallbacksRef.current.get(index);
+    if (!callback) {
+      callback = (el: HTMLDivElement | null) => {
+        if (el) {
+          contentCardElementsRef.current.set(index, el);
+        } else {
+          contentCardElementsRef.current.delete(index);
+        }
+      };
+      contentCardRefCallbacksRef.current.set(index, callback);
+    }
+    return callback;
+  }, []);
+
+  useEffect(() => {
+    if (!isExpanded) {
+      return;
+    }
+
+    const observers = new Map<number, ResizeObserver>();
+    for (const [index, element] of contentCardElementsRef.current.entries()) {
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.borderBoxSize) {
+            const height = entry.borderBoxSize[0].blockSize;
+            handleContentCardMeasure(index, height);
+          }
+        }
+      });
+      observer.observe(element);
+      observers.set(index, observer);
+    }
+
+    return () => {
+      for (const observer of observers.values()) {
+        observer.disconnect();
+      }
+    };
+  }, [isExpanded, item.card.content.items.length, handleContentCardMeasure]);
+
+  const contentCardOffsets = useMemo(() => {
+    let offsetY = 0;
+    return item.card.content.items.map((_, index) => {
+      const currentOffset = offsetY;
+      const measuredHeight = contentCardHeights[index] ?? CONTENT_CARD_HEIGHT;
+      offsetY += measuredHeight + VERTICAL_GAP;
+      return currentOffset;
+    });
+  }, [item.card.content.items, contentCardHeights]);
 
   return (
     <motion.div
@@ -185,34 +252,11 @@ export const FunProjectGroup = ({
         </motion.div>
 
         {/* Content cards that fly out to the right */}
-        {item.card.content.items.map((funItem, index) => {
+        {isExpanded &&
+          item.card.content.items.map((funItem, index) => {
           const cardWidth = cardWithSize.size.width ?? 240;
-
-          // Calculate cumulative offset using measured heights
-          let offsetY = 0;
-          for (let i = 0; i < index; i++) {
-            const measuredHeight = contentCardHeights[i] ?? CONTENT_CARD_HEIGHT;
-            offsetY += measuredHeight + VERTICAL_GAP;
-          }
+          const offsetY = contentCardOffsets[index] ?? 0;
           const offsetX = cardWidth + CONTENT_GAP;
-
-          const contentCardRef = (el: HTMLDivElement | null) => {
-            if (!el) {
-              return;
-            }
-
-            const observer = new ResizeObserver((entries) => {
-              for (const entry of entries) {
-                if (entry.borderBoxSize) {
-                  const height = entry.borderBoxSize[0].blockSize;
-                  handleContentCardMeasure(index, height);
-                }
-              }
-            });
-
-            observer.observe(el);
-            return () => observer.disconnect();
-          };
 
           return (
             <motion.div
@@ -236,7 +280,7 @@ export const FunProjectGroup = ({
             >
               <div
                 className="flex flex-col gap-5 rounded-3xl bg-background2 p-6 outline outline-border"
-                ref={contentCardRef}
+                ref={getContentCardRefCallback(index)}
                 style={{ width: CONTENT_WIDTH }}
               >
                 <div className="flex items-center gap-3">
@@ -277,7 +321,9 @@ export const FunProjectGroup = ({
                 )}
 
                 <div className="prose prose-sm max-w-none text-foreground1/80">
-                  <MarkdownRenderer content={funItem.description} />
+                  <Suspense fallback={null}>
+                    <MarkdownRenderer content={funItem.description} />
+                  </Suspense>
                 </div>
 
                 {funItem.link && (
