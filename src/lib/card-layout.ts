@@ -1,5 +1,5 @@
+import type { CardInstance } from "@/cards/types";
 import type { FanConfig } from "@/lib/fan";
-import type { CardInstance } from "@/types/canvas";
 
 export const STACK_OFFSET_PX = 6;
 export const EXPAND_MAX_PER_ROW = 3;

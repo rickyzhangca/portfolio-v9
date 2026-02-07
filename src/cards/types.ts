@@ -3,8 +3,6 @@
  * This file re-exports types from the registry for convenience.
  */
 
-import type { CardInstance } from "./registry";
-
 export type {
   // Card content types
   AboutCardContent,
@@ -51,11 +49,8 @@ export type {
 
 export {
   CARD_REGISTRY,
+  getCardKinds,
   getInteractionPolicy,
   hasActivationType,
   isCardKind,
 } from "./registry";
-
-// Legacy type alias for backward compatibility during migration
-// TODO: Remove this once all files are migrated to CardInstance
-export type CardData = CardInstance;
