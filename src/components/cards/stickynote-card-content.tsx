@@ -13,14 +13,14 @@ interface StickyNoteCardContentProps {
 const StickyNoteCardContentComponent = ({
   data,
 }: StickyNoteCardContentProps) => {
-  const colorMap: Record<StickyNoteCardContent["color"], string> = {
+  const colorMap: Record<NonNullable<StickyNoteCardContent["color"]>, string> = {
     pink: "bg-pink-200",
     blue: "bg-blue-200",
     green: "bg-green-200",
     orange: "bg-orange-200",
     yellow: "bg-yellow-200",
   };
-  const colorClass = colorMap[data.color];
+  const colorClass = colorMap[data.color ?? "yellow"];
 
   return (
     <div className="h-full w-full">

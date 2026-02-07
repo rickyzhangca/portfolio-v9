@@ -2,14 +2,22 @@ import { fireEvent, render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { MarkdownRenderer } from "./markdown-renderer";
 
+const getVideoElement = (container: HTMLElement): HTMLVideoElement => {
+  const video = container.querySelector("video");
+  expect(video).not.toBeNull();
+  if (!(video instanceof HTMLVideoElement)) {
+    throw new TypeError("Expected a rendered HTMLVideoElement");
+  }
+  return video;
+};
+
 describe("MarkdownRenderer", () => {
   it("renders video markdown with autoplay defaults and hidden controls", () => {
     const { container } = render(
       <MarkdownRenderer content={"![Demo Video](/demo.mov)"} />
     );
 
-    const video = container.querySelector("video") as HTMLVideoElement | null;
-    expect(video).not.toBeNull();
+    const video = getVideoElement(container);
     expect(video.getAttribute("preload")).toBe("auto");
     expect(video.autoplay).toBe(true);
     expect(video.controls).toBe(false);
@@ -22,8 +30,7 @@ describe("MarkdownRenderer", () => {
       <MarkdownRenderer content={"![Demo Video](/demo.mov)"} />
     );
 
-    const video = container.querySelector("video") as HTMLVideoElement | null;
-    expect(video).not.toBeNull();
+    const video = getVideoElement(container);
     Object.defineProperty(video, "videoWidth", {
       value: 1920,
       configurable: true,
@@ -43,8 +50,7 @@ describe("MarkdownRenderer", () => {
       <MarkdownRenderer content={"![Demo Video](/demo.mov)"} />
     );
 
-    const video = container.querySelector("video") as HTMLVideoElement | null;
-    expect(video).not.toBeNull();
+    const video = getVideoElement(container);
     expect(video.style.opacity).toBe("0");
 
     fireEvent.loadedData(video);
