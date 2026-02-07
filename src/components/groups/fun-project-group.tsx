@@ -323,7 +323,6 @@ export const FunProjectGroup = ({
         {/* Main card with icons */}
         <motion.div
           className="absolute top-0 left-0"
-          onPointerEnter={prewarmMarkdownRenderer}
           onPointerDown={(e) => {
             const target = e.target as HTMLElement;
             if (target.closest(".no-drag")) {
@@ -341,6 +340,7 @@ export const FunProjectGroup = ({
               clientY: e.clientY,
             };
           }}
+          onPointerEnter={prewarmMarkdownRenderer}
           onPointerUp={(e) => {
             const start = cardPointerDownRef.current;
             cardPointerDownRef.current = null;
