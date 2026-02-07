@@ -1,5 +1,10 @@
+/**
+ * @deprecated This component is no longer used. Card implementations have moved to src/cards/<kind>/
+ * See src/cards/README.md for the current architecture.
+ */
+
 import { memo } from "react";
-import type { MacbookCardContent } from "@/types/canvas";
+import type { MacbookCardContent } from "@/cards/types";
 import macbookImage from "@/assets/macbook/macbook.webp";
 
 interface MacbookCardContentProps {

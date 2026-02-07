@@ -98,33 +98,5 @@ export type CanvasAction =
     }
   | { type: "SET_FOCUSED_ITEM"; payload: { id: string | null } };
 
-// Re-export commonly used card types for convenience
-// Legacy exports for backward compatibility during migration
-// TODO: Remove these once all files are migrated
-export type {
-  AboutCardContent,
-  AboutCardInstance,
-  BaseCardInstance,
-  CardData,
-  CardInstance,
-  CardKind,
-  CoverCardContent,
-  CoverCardInstance,
-  EmailCardContent,
-  EmailCardInstance,
-  FunProjectCardContent,
-  FunProjectCardInstance,
-  MacbookCardContent,
-  MacbookCardInstance,
-  MacbookSticker,
-  ProfilePicCardContent,
-  ProfilePicCardInstance,
-  ProjectCardContent,
-  ProjectCardInstance,
-  ResumeCardInstance,
-  ResumeData,
-  SocialsCardContent,
-  SocialsCardInstance,
-  StickyNoteCardContent,
-  StickyNoteCardInstance,
-} from "@/cards/types";
+// Card types are exported from @/cards/types
+// Import directly from there to maintain clean dependency direction
