@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createMockSingle, createMockStack } from "@/test-utils/test-helpers";
+import {
+  createMockFunStack,
+  createMockSingle,
+  createMockStack,
+  createMockSwagStack,
+} from "@/test-utils/test-helpers";
 import type { CanvasItem } from "@/types/canvas";
 import { canvasReducer } from "./use-canvas-state";
 
@@ -430,6 +435,93 @@ describe("useCanvasState - Reducer Action Coverage", () => {
       const newState = canvasReducer(state, {
         type: "UPDATE_CARD_HEIGHT",
         payload: { itemId: "s1", cardId: "nonexistent", height: 300 },
+      });
+      expect(newState).toBe(state);
+    });
+
+    it("updates stack card height in stack item", () => {
+      const stackCard = {
+        id: "stack-card-1",
+        kind: "project" as const,
+        size: { width: 100, height: 100 },
+        content: { title: "Test", image: "" },
+      };
+      const stack = createMockStack("s1", 0, 0, 1, undefined, [stackCard]);
+      const state = createMockState([stack]);
+      const newState = canvasReducer(state, {
+        type: "UPDATE_CARD_HEIGHT",
+        payload: { itemId: "s1", cardId: "stack-card-1", height: 300 },
+      });
+
+      const s1 = newState.items.get("s1");
+      expect(s1?.kind).toBe("stack");
+      if (s1?.kind === "stack") {
+        expect(s1.stack[0]?.size.height).toBe(300);
+      }
+    });
+
+    it("updates funstack card height", () => {
+      const funstack = createMockFunStack("fun1", 0, 0);
+      const state = createMockState([funstack]);
+      const newState = canvasReducer(state, {
+        type: "UPDATE_CARD_HEIGHT",
+        payload: { itemId: "fun1", cardId: "fun1-card", height: 300 },
+      });
+
+      const fun1 = newState.items.get("fun1");
+      expect(fun1?.kind).toBe("funstack");
+      if (fun1?.kind === "funstack") {
+        expect(fun1.card.size.height).toBe(300);
+      }
+    });
+
+    it("updates swagstack cover height", () => {
+      const swagstack = createMockSwagStack("swag1", 0, 0);
+      const state = createMockState([swagstack]);
+      const newState = canvasReducer(state, {
+        type: "UPDATE_CARD_HEIGHT",
+        payload: { itemId: "swag1", cardId: "swag1-cover", height: 300 },
+      });
+
+      const swag1 = newState.items.get("swag1");
+      expect(swag1?.kind).toBe("swagstack");
+      if (swag1?.kind === "swagstack") {
+        expect(swag1.cover.size.height).toBe(300);
+      }
+    });
+
+    it("returns same state when funstack card height unchanged", () => {
+      const funstack = createMockFunStack("fun1", 0, 0);
+      const state = createMockState([funstack]);
+      const newState = canvasReducer(state, {
+        type: "UPDATE_CARD_HEIGHT",
+        payload: { itemId: "fun1", cardId: "fun1-card", height: 100 },
+      });
+      expect(newState).toBe(state);
+    });
+
+    it("returns same state when swagstack cover height unchanged", () => {
+      const swagstack = createMockSwagStack("swag1", 0, 0);
+      const state = createMockState([swagstack]);
+      const newState = canvasReducer(state, {
+        type: "UPDATE_CARD_HEIGHT",
+        payload: { itemId: "swag1", cardId: "swag1-cover", height: 100 },
+      });
+      expect(newState).toBe(state);
+    });
+
+    it("returns same state when stack card height unchanged", () => {
+      const stackCard = {
+        id: "stack-card-1",
+        kind: "project" as const,
+        size: { width: 100, height: 100 },
+        content: { title: "Test", image: "" },
+      };
+      const stack = createMockStack("s1", 0, 0, 1, undefined, [stackCard]);
+      const state = createMockState([stack]);
+      const newState = canvasReducer(state, {
+        type: "UPDATE_CARD_HEIGHT",
+        payload: { itemId: "s1", cardId: "stack-card-1", height: 100 },
       });
       expect(newState).toBe(state);
     });
