@@ -55,7 +55,9 @@ export const track = (
   eventName: AnalyticsEventName,
   properties?: Record<string, unknown>
 ) => {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") {
+    return;
+  }
 
   const umami = (
     window as unknown as {

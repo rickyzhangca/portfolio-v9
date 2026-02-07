@@ -147,7 +147,7 @@ export interface ResumeData {
 }
 
 // About card type (minimal, markdown-driven)
-export type AboutCardContent = {};
+export type AboutCardContent = Record<string, never>;
 
 // ============================================================================
 // Card Definition Types
@@ -382,8 +382,8 @@ export function hasActivationType(
 /**
  * Get all card kinds
  */
-export function getCardKinds(): ReadonlyArray<CardKind> {
-  return Object.keys(CARD_REGISTRY) as ReadonlyArray<CardKind>;
+export function getCardKinds(): readonly CardKind[] {
+  return Object.keys(CARD_REGISTRY) as readonly CardKind[];
 }
 
 /**
