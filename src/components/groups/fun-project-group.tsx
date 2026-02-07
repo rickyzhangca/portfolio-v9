@@ -1,8 +1,8 @@
 import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import {
-  Suspense,
   lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -68,12 +68,12 @@ export const FunProjectGroup = ({
   const contentCardRefCallbacksRef = useRef(
     new Map<number, (el: HTMLDivElement | null) => void>()
   );
-  const measurementSettleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
-  const measurementMaxWaitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
+  const measurementSettleTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const measurementMaxWaitTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   const cardPointerDownRef = useRef<{
     clientX: number;
@@ -237,7 +237,12 @@ export const FunProjectGroup = ({
     measurementSettleTimeoutRef.current = setTimeout(() => {
       setIsContentLayoutReady(true);
     }, MEASUREMENT_SETTLE_MS);
-  }, [allContentCardsMeasured, isContentLayoutReady, isExpanded, contentCardHeights]);
+  }, [
+    allContentCardsMeasured,
+    isContentLayoutReady,
+    isExpanded,
+    contentCardHeights,
+  ]);
 
   return (
     <motion.div
@@ -325,108 +330,112 @@ export const FunProjectGroup = ({
         {/* Content cards that fly out to the right */}
         {isExpanded &&
           item.card.content.items.map((funItem, index) => {
-          const cardWidth = cardWithSize.size.width ?? 240;
-          const offsetY = contentCardOffsets[index] ?? 0;
-          const offsetX = cardWidth + CONTENT_GAP;
-          const shouldAnimateContent = isExpanded && isContentLayoutReady;
+            const cardWidth = cardWithSize.size.width ?? 240;
+            const offsetY = contentCardOffsets[index] ?? 0;
+            const offsetX = cardWidth + CONTENT_GAP;
+            const shouldAnimateContent = isExpanded && isContentLayoutReady;
 
-          return (
-            <motion.div
-              animate={{
-                opacity: shouldAnimateContent ? 1 : 0,
-                scale: shouldAnimateContent ? 1 : 0.8,
-                x: offsetX,
-                y: offsetY,
-              }}
-              className="absolute top-0 left-0 origin-top-left will-change-transform"
-              initial={false}
-              key={funItem.title}
-              data-fun-content-card-index={index}
-              style={{
-                zIndex: item.card.content.items.length - index - 1,
-                pointerEvents: shouldAnimateContent ? "auto" : "none",
-                visibility: shouldAnimateContent ? "visible" : "hidden",
-              }}
-              transition={
-                shouldAnimateContent
-                  ? {
-                      ...SPRING_PRESETS.snappy,
-                      delay: index * STAGGER_DELAY,
-                    }
-                  : TRANSITIONS.none
-              }
-            >
-              <div
-                className="flex flex-col gap-5 rounded-3xl bg-background2 p-6 outline outline-border"
-                ref={getContentCardRefCallback(index)}
-                style={{ width: CONTENT_WIDTH }}
+            return (
+              <motion.div
+                animate={{
+                  opacity: shouldAnimateContent ? 1 : 0,
+                  scale: shouldAnimateContent ? 1 : 0.8,
+                  x: offsetX,
+                  y: offsetY,
+                }}
+                className="absolute top-0 left-0 origin-top-left will-change-transform"
+                data-fun-content-card-index={index}
+                initial={false}
+                key={funItem.title}
+                style={{
+                  zIndex: item.card.content.items.length - index - 1,
+                  pointerEvents: shouldAnimateContent ? "auto" : "none",
+                  visibility: shouldAnimateContent ? "visible" : "hidden",
+                }}
+                transition={
+                  shouldAnimateContent
+                    ? {
+                        ...SPRING_PRESETS.snappy,
+                        delay: index * STAGGER_DELAY,
+                        opacity: {
+                          ...SPRING_PRESETS.snappy,
+                          delay: index * STAGGER_DELAY * 1.2,
+                        },
+                      }
+                    : TRANSITIONS.none
+                }
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <img
-                      alt={funItem.title}
-                      height={36}
-                      src={funItem.icon}
-                      width={40}
-                    />
-                    <span className="font-semibold text-xl">
-                      {funItem.title}
+                <div
+                  className="flex flex-col gap-5 rounded-3xl bg-background2 p-6 outline outline-border"
+                  ref={getContentCardRefCallback(index)}
+                  style={{ width: CONTENT_WIDTH }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <img
+                        alt={funItem.title}
+                        height={36}
+                        src={funItem.icon}
+                        width={40}
+                      />
+                      <span className="font-semibold text-xl">
+                        {funItem.title}
+                      </span>
+                    </div>
+                    <span
+                      className={tw(
+                        "inline-block rounded-full px-2.5 py-1 font-medium text-xs outline",
+                        funItem.status === "Active" &&
+                          "bg-green-500/10 text-green-700 outline-green-700/30",
+                        funItem.status === "Maintaining" &&
+                          "bg-blue-500/10 text-blue-700 outline-blue-700/30",
+                        funItem.status === "Archived" &&
+                          "bg-gray-500/10 text-gray-700 outline-gray-700/30"
+                      )}
+                    >
+                      {funItem.status}
                     </span>
                   </div>
-                  <span
-                    className={tw(
-                      "inline-block rounded-full px-2.5 py-1 font-medium text-xs outline",
-                      funItem.status === "Active" &&
-                        "bg-green-500/10 text-green-700 outline-green-700/30",
-                      funItem.status === "Maintaining" &&
-                        "bg-blue-500/10 text-blue-700 outline-blue-700/30",
-                      funItem.status === "Archived" &&
-                        "bg-gray-500/10 text-gray-700 outline-gray-700/30"
-                    )}
-                  >
-                    {funItem.status}
-                  </span>
+
+                  {funItem.image && (
+                    <img
+                      alt={funItem.title}
+                      className="w-full rounded-md outline outline-border"
+                      height={200}
+                      src={funItem.image}
+                      width={380}
+                    />
+                  )}
+
+                  <div className="prose prose-sm max-w-none text-foreground1/80">
+                    <Suspense fallback={null}>
+                      <MarkdownRenderer content={funItem.description} />
+                    </Suspense>
+                  </div>
+
+                  {funItem.link && (
+                    <a
+                      className="relative flex w-full items-center justify-center gap-3 rounded-full bg-linear-to-b from-background3 to-background4 px-6 py-3 text-center text-foreground1 shadow outline outline-border transition hover:from-background4 hover:shadow-md"
+                      href={funItem.link.url}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      View
+                      {funItem.link.type
+                        ? ` on ${funItem.link.type === "Figma" ? "Figma" : "GitHub"}`
+                        : ""}
+                      {funItem.link.count && (
+                        <span className="flex items-center gap-0.5 text-foreground2">
+                          <ArrowUpRightIcon />
+                          {funItem.link.count}
+                        </span>
+                      )}
+                    </a>
+                  )}
                 </div>
-
-                {funItem.image && (
-                  <img
-                    alt={funItem.title}
-                    className="w-full rounded-md outline outline-border"
-                    height={200}
-                    src={funItem.image}
-                    width={380}
-                  />
-                )}
-
-                <div className="prose prose-sm max-w-none text-foreground1/80">
-                  <Suspense fallback={null}>
-                    <MarkdownRenderer content={funItem.description} />
-                  </Suspense>
-                </div>
-
-                {funItem.link && (
-                  <a
-                    className="relative flex w-full items-center justify-center gap-3 rounded-full bg-linear-to-b from-background3 to-background4 px-6 py-3 text-center text-foreground1 shadow outline outline-border transition hover:from-background4 hover:shadow-md"
-                    href={funItem.link.url}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    View
-                    {funItem.link.type
-                      ? ` on ${funItem.link.type === "Figma" ? "Figma" : "GitHub"}`
-                      : ""}
-                    {funItem.link.count && (
-                      <span className="flex items-center gap-0.5 text-foreground2">
-                        <ArrowUpRightIcon />
-                        {funItem.link.count}
-                      </span>
-                    )}
-                  </a>
-                )}
-              </div>
-            </motion.div>
-          );
-        })}
+              </motion.div>
+            );
+          })}
       </motion.div>
     </motion.div>
   );
