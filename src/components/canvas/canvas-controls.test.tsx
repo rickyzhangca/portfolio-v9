@@ -1,5 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+
+vi.mock("./canvas-control-panel", () => ({
+  CanvasControlPanel: () => <div>Repulsion</div>,
+}));
+
 import { CanvasControls } from "./canvas-controls";
 
 describe("CanvasControls", () => {
