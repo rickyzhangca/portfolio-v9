@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import type {
   CanvasAction,
   CanvasItem,
@@ -62,6 +62,13 @@ export const canvasReducer = (
     }
 
     case "UPDATE_VIEWPORT": {
+      if (
+        state.viewportState.scale === action.payload.scale &&
+        state.viewportState.positionX === action.payload.positionX &&
+        state.viewportState.positionY === action.payload.positionY
+      ) {
+        return state;
+      }
       return { ...state, viewportState: action.payload };
     }
 
@@ -311,9 +318,8 @@ export const useCanvasState = (initialItems: CanvasItem[] = []) => {
     dispatch({ type: "SET_FOCUSED_ITEM", payload: { id } });
   }, []);
 
-  return {
-    state,
-    actions: {
+  const actions = useMemo(
+    () => ({
       updateItemPosition,
       bringItemToFront,
       selectItem,
@@ -324,6 +330,20 @@ export const useCanvasState = (initialItems: CanvasItem[] = []) => {
       resetItems,
       updateCardHeight,
       setFocusedItem,
-    },
-  };
+    }),
+    [
+      updateItemPosition,
+      bringItemToFront,
+      selectItem,
+      setExpandedStack,
+      updateViewport,
+      addItem,
+      deleteItem,
+      resetItems,
+      updateCardHeight,
+      setFocusedItem,
+    ]
+  );
+
+  return { state, actions };
 };

@@ -77,7 +77,7 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
         rects.set(index, rect);
       }
       iconRectsRef.current = rects;
-    });
+    }, [content.items]);
 
     // Set up ResizeObserver to update icon rects when layout changes
     useEffect(() => {
