@@ -1,141 +1,155 @@
 # AGENTS.md
 
-This repo is a Vite + React + TypeScript app using Tailwind, Jotai, and Vitest.
-Use `pnpm` (see `packageManager` in `package.json`).
+Agent reference for `portfolio-v9`.
+This is a Vite + React + TypeScript app with Tailwind, Jotai, and Vitest.
+Use `pnpm` only (`packageManager` is pinned in `package.json`).
+
+## Runtime and tooling snapshot
+- Node-based frontend app, ESM (`"type": "module"`).
+- Bundler: Vite (via `rolldown-vite` override).
+- Styling: Tailwind CSS v4.
+- State: Jotai + local React state/reducers.
+- Testing: Vitest (`happy-dom`) + Testing Library.
+- Lint/format: Biome, extended from `ultracite` presets.
 
 ## Commands
-- Install deps: `pnpm install`
-- Dev server: `pnpm dev`
-- Build (typecheck + bundle): `pnpm build`
-- Clean (format + lint write): `pnpm clean`
-- Run all tests (CI mode): `pnpm test`
-- Coverage: `pnpm coverage`
+- Install dependencies: `pnpm install`
+- Start dev server: `pnpm dev`
+- Build (TS project refs + bundle): `pnpm build`
+- Preview build output: `pnpm preview`
+- Format check: `pnpm format`
+- Format write: `pnpm format:write`
+- Lint check: `pnpm lint`
+- Lint write/fix: `pnpm lint:write`
+- Clean style pass (format + lint write): `pnpm clean`
+- Run tests once (CI mode): `pnpm test`
+- Run tests with coverage: `pnpm coverage`
 
-### Single-test recipes
-- One file: `pnpm test -- src/lib/utils.test.ts`
-- One test name: `pnpm test -- -t "repulsion offsets"`
-- Filter by path pattern: `pnpm test -- --run src/components`
-- Watch mode (direct): `pnpm vitest --watch`
+## Single-test and focused-test recipes
+- Run one test file: `pnpm test -- src/lib/utils.test.ts`
+- Run one folder/pattern: `pnpm test -- --run src/components/canvas`
+- Run a single test by name: `pnpm test -- -t "repulsion offsets"`
+- Run tests matching multiple words: `pnpm test -- -t "canvas controls"`
+- Open watch mode directly: `pnpm vitest --watch`
+- Watch one file: `pnpm vitest src/hooks/use-draggable.test.ts --watch`
+- Update coverage only for current changes (manual): use targeted `pnpm test -- ...` first, then `pnpm coverage`
 
-## Project structure
-- `src/` holds app code; entry is `src/main.tsx`.
-- Use path alias `@/` for `src/` (see `vite.config.ts`, `tsconfig.json`).
-- `src/components/` UI components and cards.
-- `src/hooks/` contains custom hooks (state + interactions).
-- `src/lib/` pure helpers (animation, repulsion, utils).
-- `src/context/` Jotai atoms.
-- `src/test-utils/` test helpers and providers.
+## Project layout
+- Entry point: `src/main.tsx`
+- App shell: `src/app.tsx`
+- Route/scene composition: `src/scenes/*`
+- Reusable UI: `src/components/**`
+- Canvas-specific UI: `src/components/canvas/**`
+- Card model/render registry: `src/cards/**`
+- Hooks and reducers: `src/hooks/**`
+- Pure utilities: `src/lib/**`
+- Global state atoms: `src/context/atoms.ts`
+- Shared types: `src/types/**`
+- Test helpers/providers: `src/test-utils/**`
+- Content markdown/assets: `src/content/**`, `src/assets/**`, `public/**`
 
-## Formatting and linting
-- Use Biome for formatting/linting (see `biome.jsonc`).
-- Biome rules extend `ultracite/biome/core` and `ultracite/biome/react`.
-- `noExcessiveCognitiveComplexity` is disabled; do not re-enable without discussion.
-- Editor defaults: format on save and explicit Biome fixes (see `.vscode/settings.json`).
+## Path aliases and TS config
+- Prefer alias imports from `@/` for `src/*` modules.
+- Alias is configured in both `vite.config.ts` and `tsconfig*.json`.
+- TypeScript is strict; keep code compliant with:
+  - `strict`, `noUnusedLocals`, `noUnusedParameters`
+  - `noFallthroughCasesInSwitch`
+  - `noUncheckedSideEffectImports`
+  - `verbatimModuleSyntax`
+
+## Formatting and linting rules
+- Biome is the source of truth for formatting and linting.
+- Do not introduce ESLint/Prettier-specific directives.
+- Keep `noExcessiveCognitiveComplexity` disabled unless explicitly requested.
+- VS Code settings expect Biome formatter + explicit organize/fix actions.
+- Prefer small, local fixes over broad stylistic rewrites.
+
+## Import conventions
+- Import order: Node built-ins, third-party, `@/` aliases, then relative.
+- Use `import type` for type-only imports.
+- Keep imports organized (Biome can do this).
+- Avoid default exports for components unless file already uses one.
 
 ## TypeScript conventions
-- Strict TypeScript (`strict`, `noUnusedLocals`, `noUnusedParameters`).
-- Use `import type` for type-only imports.
-- Prefer `interface` for React props, `type` for unions and helpers.
-- Keep types close to usage; export shared types from `src/types/*`.
-- Favor `as const` for config objects and static tuples.
-- Avoid `any`; prefer narrow unions or generics.
-- Keep functions pure in `src/lib` and avoid DOM access there.
+- Prefer `interface` for component props and object contracts.
+- Prefer `type` for unions, mapped helpers, and utility composition.
+- Avoid `any`; use narrowed unions/generics instead.
+- Keep shared domain types close to `src/types/*`.
+- Use `as const` for static config/tuple literals.
+- In `src/lib`, keep functions pure and DOM-free.
 
-## React and hooks
-- Use function components with `export const Component = () => {}`.
-- Prefer `useCallback`/`useMemo` for stable handlers/derived data.
-- Use `useLayoutEffect` when measuring layout or size.
-- Keep JSX return trees readable with early returns/guard clauses.
-- Avoid inline function props in hot paths unless memoized.
-- For UI state, co-locate state in component or use atoms in `src/context`.
+## React and hooks conventions
+- Use function components with named exports.
+- Keep render paths clear with guard clauses/early returns.
+- Use `useMemo`/`useCallback` for expensive or identity-sensitive values.
+- Use `useLayoutEffect` when logic depends on measured layout.
+- Avoid inline handlers in hot render paths unless memoized.
+- Co-locate local state unless it is truly shared (then use atoms).
 
-## Styling and class names
-- Tailwind CSS is the primary styling tool.
-- Prefer the `tw` helper (`src/lib/utils.ts`) for conditional classes.
-- Keep class strings readable; split long chains with `tw(...)` arrays.
-- Use design tokens already in the codebase (e.g., `bg-background2`).
-- Avoid inline styles unless needed for dynamic sizes/positions.
+## State and reducer conventions
+- Treat reducer state as immutable.
+- For `Map` and array updates, create new copies before writes.
+- Return original state when an action is a true no-op.
+- Keep action payloads typed; avoid stringly-typed loose payloads.
+- Canvas state contracts live in `src/types/canvas.ts`.
 
-## State management
-- Jotai atoms live in `src/context/atoms.ts`.
-- When updating Maps or arrays, create new copies (no mutation).
-- Reducers should return the original state on no-op updates.
-- Keep actions typed; avoid stringly-typed payloads.
+## Styling conventions
+- Tailwind utilities are primary; avoid ad-hoc CSS when utilities suffice.
+- Use `tw(...)` helper from `src/lib/utils.ts` for class composition.
+- Keep class strings readable and grouped logically.
+- Prefer existing tokens (e.g., background/foreground token classes).
+- Use inline style objects only for truly dynamic runtime values.
 
-## Error handling
-- Use guard clauses for missing data or invalid state.
-- Preserve existing ErrorBoundary behavior (`src/components/error-boundary.tsx`).
-- Avoid silent failures; return defaults and keep UI stable.
-- Use `biome-ignore` only with a comment explaining why.
+## Naming and file conventions
+- Components: `PascalCase` identifiers.
+- Hooks: `useXxx` naming.
+- Files for components/hooks/utilities are typically kebab-case.
+- Constants: `UPPER_SNAKE_CASE` for module-level constants, otherwise clear `camelCase`.
+- Prefer descriptive prop and variable names over abbreviations.
 
-## Testing
-- Tests live in `src/**/__tests__` or `*.test.ts(x)` (current repo uses `*.test.*`).
-- Runner: Vitest in `happy-dom` environment.
-- Prefer `@testing-library/react` for UI tests.
-- Use helpers from `src/test-utils/test-helpers.tsx` (e.g., `renderWithProviders`).
-- Coverage thresholds enforced in `vitest.config.ts`.
-- Avoid snapshot tests unless necessary.
+## Error handling expectations
+- Use guard clauses for invalid/missing state.
+- Preserve behavior of `src/components/error-boundary.tsx`.
+- Avoid silent failures; prefer explicit safe fallbacks.
+- Add suppression comments (`biome-ignore`) only with a concise reason.
 
-## Imports and ordering
-- Order imports: Node built-ins, third-party, aliased `@/`, then relative.
-- Keep imports sorted; Biome can organize them.
-- Do not use default exports for components unless existing file does.
+## Testing guidance
+- Test files are colocated as `*.test.ts` / `*.test.tsx`.
+- Prefer `@testing-library/react` for component behavior.
+- Use helpers from `src/test-utils/test-helpers.tsx`.
+- Current coverage thresholds (`vitest.config.ts`):
+  - Statements: 80
+  - Lines: 80
+  - Branches: 65
+  - Functions: 60
+- Prefer behavior assertions over snapshots unless snapshot is clearly justified.
 
-## Naming
-- Components: `PascalCase` (files often kebab-case).
-- Hooks: `useThing`.
-- Constants: `UPPER_SNAKE_CASE` or `camelCase` for local consts.
-- Props: descriptive names; avoid single-letter except for loop indexes.
+## Accessibility and UX guardrails
+- Provide `aria-label` for icon-only buttons.
+- Always set `type="button"` on non-submit button controls.
+- Preserve keyboard navigation and focus-visible affordances.
+- Keep semantic headings/labels intact during refactors.
 
-## File naming
-- Components live in kebab-case files (e.g., `canvas-control-panel.tsx`).
-- Hook files use `use-*.ts` naming.
-- Utility modules are short, descriptive nouns (`repulsion.ts`, `fan.ts`).
-
-## Data and assets
-- App data lives in `src/data/data.ts`.
-- Static assets under `src/assets/` and `public/`.
-- Use `import` for local assets when needed in components.
-
-## Canvas system notes
-- Canvas items are in `src/types/canvas.ts` and stored in Maps.
-- Keep viewport updates in `use-canvas-state` actions.
-- Avoid direct DOM manipulations outside hooks.
-
-## Lint-safe patterns
-- Handle unused callback params with `_` prefix.
-- Prefer early `return` over nested `if` blocks.
-- Avoid `console.log` in production components.
-
-## Accessibility
-- Provide `aria-label` for icon-only controls (see canvas buttons).
-- Use `type="button"` on button elements.
-- Preserve focus-visible styles and keyboard navigation.
-- Avoid disabling pointer events unless required.
-- Keep labels and headings semantic where possible.
-
-## Performance
-- Use `memo` for heavy components when needed (see `Card`).
-- Avoid expensive recalculations; prefer `useMemo`.
+## Performance guardrails
+- Memoize heavy render branches/components when profiling supports it.
+- Avoid repeated expensive calculations inside render.
 - Use `requestAnimationFrame` for animation-driven updates.
-- Use `ResizeObserver` for element size tracking.
+- Use `ResizeObserver` for responsive measurement logic.
 
-## Testing examples
-- Canvas reducer tests use `canvas-reducer.test.ts`.
-- Interaction helpers in `src/test-utils/mock-provider.tsx`.
-- Consider `vi.fn()` for spies and `vi.useFakeTimers()` if needed.
+## Agent-specific workflow notes
+- Make focused changes; avoid broad refactors unless asked.
+- Match existing patterns before introducing new abstractions.
+- Prefer updating existing files over creating parallel alternatives.
+- If scripts/tooling change, update this file in the same PR.
 
-## Tooling notes
-- Vite config adds alias `@` and Tailwind plugin.
-- React compiler plugin enabled via Babel.
-- TS build uses `tsc -b` via `pnpm build`.
+## Cursor and Copilot rules status
+- `.cursor/rules/`: not present in this repository.
+- `.cursorrules`: not present in this repository.
+- `.github/copilot-instructions.md`: not present in this repository.
+- If any of these files are added later, treat them as authoritative and sync this guide.
 
-## Documentation
-- Inline comments only when logic is non-obvious.
-- Update this guide when scripts or tooling change.
-
-## When in doubt
-- Match surrounding code style and patterns.
-- Prefer minimal, focused changes.
-- Ask before large refactors or dependency changes.
-- Keep AGENTS.md updated when scripts or tooling change.
+## When unsure
+- Follow local patterns from neighboring files.
+- Choose the smallest correct change.
+- Run targeted tests first, then broader checks.
+- Document any non-obvious tradeoff in PR/commit notes.
