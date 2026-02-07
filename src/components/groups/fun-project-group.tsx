@@ -21,9 +21,11 @@ const STAGGER_DELAY = 0.1;
 const VERTICAL_GAP = 16;
 const CONTENT_CARD_HEIGHT = 120; // Fallback height estimate before measurement
 const MEASUREMENT_SETTLE_MS = 120;
+const COLD_MEASUREMENT_SETTLE_MS = 280;
 const MEASUREMENT_MAX_WAIT_MS = 1500;
+const loadMarkdownRenderer = () => import("../markdown-renderer");
 const MarkdownRenderer = lazy(() =>
-  import("../markdown-renderer").then((module) => ({
+  loadMarkdownRenderer().then((module) => ({
     default: module.MarkdownRenderer,
   }))
 );
@@ -64,6 +66,7 @@ export const FunProjectGroup = ({
     Record<number, number>
   >({});
   const [isContentLayoutReady, setIsContentLayoutReady] = useState(false);
+  const [hasCompletedFirstExpand, setHasCompletedFirstExpand] = useState(false);
   const contentCardElementsRef = useRef(new Map<number, HTMLDivElement>());
   const contentCardRefCallbacksRef = useRef(
     new Map<number, (el: HTMLDivElement | null) => void>()
@@ -79,6 +82,7 @@ export const FunProjectGroup = ({
     clientX: number;
     clientY: number;
   } | null>(null);
+  const hasPrewarmedMarkdownRef = useRef(false);
 
   const cardWithSize = useMemo(() => {
     return {
@@ -162,6 +166,38 @@ export const FunProjectGroup = ({
     }
   }, []);
 
+  const prewarmMarkdownRenderer = useCallback(() => {
+    if (hasPrewarmedMarkdownRef.current) {
+      return;
+    }
+    hasPrewarmedMarkdownRef.current = true;
+    void loadMarkdownRenderer();
+  }, []);
+
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let idleId: number | null = null;
+
+    if ("requestIdleCallback" in window) {
+      idleId = window.requestIdleCallback(() => {
+        prewarmMarkdownRenderer();
+      });
+    } else {
+      timeoutId = setTimeout(() => {
+        prewarmMarkdownRenderer();
+      }, 200);
+    }
+
+    return () => {
+      if (idleId !== null && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [prewarmMarkdownRenderer]);
+
   useEffect(() => {
     if (!isExpanded) {
       clearMeasurementTimeouts();
@@ -231,14 +267,22 @@ export const FunProjectGroup = ({
       return;
     }
 
+    const settleDelay = hasCompletedFirstExpand
+      ? MEASUREMENT_SETTLE_MS
+      : COLD_MEASUREMENT_SETTLE_MS;
+
     if (measurementSettleTimeoutRef.current) {
       clearTimeout(measurementSettleTimeoutRef.current);
     }
     measurementSettleTimeoutRef.current = setTimeout(() => {
       setIsContentLayoutReady(true);
-    }, MEASUREMENT_SETTLE_MS);
+      if (!hasCompletedFirstExpand) {
+        setHasCompletedFirstExpand(true);
+      }
+    }, settleDelay);
   }, [
     allContentCardsMeasured,
+    hasCompletedFirstExpand,
     isContentLayoutReady,
     isExpanded,
     contentCardHeights,
@@ -279,6 +323,7 @@ export const FunProjectGroup = ({
         {/* Main card with icons */}
         <motion.div
           className="absolute top-0 left-0"
+          onPointerEnter={prewarmMarkdownRenderer}
           onPointerDown={(e) => {
             const target = e.target as HTMLElement;
             if (target.closest(".no-drag")) {
