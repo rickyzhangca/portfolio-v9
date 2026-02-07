@@ -1,14 +1,45 @@
-import { lazy, memo, Suspense, type ReactElement } from "react";
+import { lazy, memo, type ReactElement, Suspense, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { tw } from "@/lib/utils";
 
 const LANGUAGE_REGEX = /language-(\w+)/;
 const VIDEO_EXTENSIONS_REGEX = /\.(mov|mp4|webm)$/i;
+const DEFAULT_VIDEO_ASPECT_RATIO = "16 / 9";
 const LazyCodeHighlighter = lazy(() =>
   import("./code-highlighter").then((module) => ({
     default: module.CodeHighlighter,
   }))
 );
+
+interface MarkdownVideoProps {
+  src: string;
+  alt?: string;
+}
+
+const MarkdownVideo = ({ src, alt }: MarkdownVideoProps) => {
+  const [aspectRatio, setAspectRatio] = useState(DEFAULT_VIDEO_ASPECT_RATIO);
+
+  return (
+    <video
+      aria-label={alt}
+      autoPlay
+      className="mt-4 not-last:mb-4 w-full rounded-lg bg-background3 outline outline-border"
+      controls
+      loop
+      muted
+      onLoadedMetadata={(event) => {
+        const { videoWidth, videoHeight } = event.currentTarget;
+        if (videoWidth > 0 && videoHeight > 0) {
+          setAspectRatio(`${videoWidth / videoHeight}`);
+        }
+      }}
+      playsInline
+      preload="auto"
+      src={src}
+      style={{ aspectRatio }}
+    />
+  );
+};
 
 interface MarkdownRendererProps {
   content: string;
@@ -62,13 +93,8 @@ const MarkdownRendererComponent = ({ content }: MarkdownRendererProps) => {
 
           if (isVideo) {
             return (
-              <video
-                className="mt-4 not-last:mb-4 w-full rounded-lg outline outline-border"
-                controls
-                loop
-                muted
-                playsInline
-                preload="none"
+              <MarkdownVideo
+                alt={typeof alt === "string" ? alt : undefined}
                 src={src as string}
               />
             );
