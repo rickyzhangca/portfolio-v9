@@ -1,10 +1,15 @@
+/**
+ * @deprecated This component is no longer used. Card implementations have moved to src/cards/<kind>/
+ * See src/cards/README.md for the current architecture.
+ */
+
 import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { memo, useState } from "react";
 import { AnalyticsEvents, track } from "@/lib/analytics";
 import { SPRING_PRESETS } from "@/lib/animation";
 import { tw } from "@/lib/utils";
-import type { ProjectCardContent } from "@/types/canvas";
+import type { ProjectCardContent } from "@/cards/types";
 
 interface ProjectCardContentProps {
   data: ProjectCardContent;

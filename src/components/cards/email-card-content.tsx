@@ -1,9 +1,14 @@
+/**
+ * @deprecated This component is no longer used. Card implementations have moved to src/cards/<kind>/
+ * See src/cards/README.md for the current architecture.
+ */
+
 import { EnvelopeSimpleIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { memo, useState } from "react";
 import { AnalyticsEvents, track } from "@/lib/analytics";
 import { SPRING_PRESETS } from "@/lib/animation";
-import type { EmailCardContent } from "@/types/canvas";
+import type { EmailCardContent } from "@/cards/types";
 
 interface EmailCardContentProps {
   data: EmailCardContent;

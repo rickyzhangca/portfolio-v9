@@ -1,9 +1,9 @@
+import type { CardInstance } from "@/cards/types";
 import { getOffsets, getRotatedBoundingBox } from "@/lib/card-layout";
 import type { FanConfig } from "@/lib/fan";
 import type {
   CanvasFunStackItem,
   CanvasStackItem,
-  CardData,
   ViewportState,
 } from "@/types/canvas";
 
@@ -38,8 +38,8 @@ interface VisibleViewport {
  * accounts for card rotations, and includes fallback height.
  */
 const getExpandedBoundingBox = (
-  cover: CardData | undefined,
-  stack: CardData[],
+  cover: CardInstance | undefined,
+  stack: CardInstance[],
   fanConfig: FanConfig
 ): BoundingBox => {
   const offsets = getOffsets(cover, stack, true, fanConfig);
