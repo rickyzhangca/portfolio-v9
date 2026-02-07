@@ -20,6 +20,8 @@ const CONTENT_GAP = 24;
 const STAGGER_DELAY = 0.1;
 const VERTICAL_GAP = 16;
 const CONTENT_CARD_HEIGHT = 120; // Fallback height estimate before measurement
+const MEASUREMENT_SETTLE_MS = 120;
+const MEASUREMENT_MAX_WAIT_MS = 1500;
 const MarkdownRenderer = lazy(() =>
   import("../markdown-renderer").then((module) => ({
     default: module.MarkdownRenderer,
@@ -61,9 +63,16 @@ export const FunProjectGroup = ({
   const [contentCardHeights, setContentCardHeights] = useState<
     Record<number, number>
   >({});
+  const [isContentLayoutReady, setIsContentLayoutReady] = useState(false);
   const contentCardElementsRef = useRef(new Map<number, HTMLDivElement>());
   const contentCardRefCallbacksRef = useRef(
     new Map<number, (el: HTMLDivElement | null) => void>()
+  );
+  const measurementSettleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const measurementMaxWaitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
   );
 
   const cardPointerDownRef = useRef<{
@@ -107,6 +116,10 @@ export const FunProjectGroup = ({
 
   const handleContentCardMeasure = useCallback(
     (index: number, height: number) => {
+      if (height <= 0) {
+        return;
+      }
+
       setContentCardHeights((prev) => {
         if (prev[index] === height) {
           return prev; // Prevent unnecessary re-renders
@@ -117,23 +130,42 @@ export const FunProjectGroup = ({
     []
   );
 
-  const getContentCardRefCallback = useCallback((index: number) => {
-    let callback = contentCardRefCallbacksRef.current.get(index);
-    if (!callback) {
-      callback = (el: HTMLDivElement | null) => {
-        if (el) {
-          contentCardElementsRef.current.set(index, el);
-        } else {
-          contentCardElementsRef.current.delete(index);
-        }
-      };
-      contentCardRefCallbacksRef.current.set(index, callback);
+  const getContentCardRefCallback = useCallback(
+    (index: number) => {
+      let callback = contentCardRefCallbacksRef.current.get(index);
+      if (!callback) {
+        callback = (el: HTMLDivElement | null) => {
+          if (el) {
+            contentCardElementsRef.current.set(index, el);
+            const initialHeight = el.getBoundingClientRect().height;
+            handleContentCardMeasure(index, initialHeight);
+          } else {
+            contentCardElementsRef.current.delete(index);
+          }
+        };
+        contentCardRefCallbacksRef.current.set(index, callback);
+      }
+      return callback;
+    },
+    [handleContentCardMeasure]
+  );
+
+  const clearMeasurementTimeouts = useCallback(() => {
+    if (measurementSettleTimeoutRef.current) {
+      clearTimeout(measurementSettleTimeoutRef.current);
+      measurementSettleTimeoutRef.current = null;
     }
-    return callback;
+
+    if (measurementMaxWaitTimeoutRef.current) {
+      clearTimeout(measurementMaxWaitTimeoutRef.current);
+      measurementMaxWaitTimeoutRef.current = null;
+    }
   }, []);
 
   useEffect(() => {
     if (!isExpanded) {
+      clearMeasurementTimeouts();
+      setIsContentLayoutReady(false);
       return;
     }
 
@@ -141,10 +173,11 @@ export const FunProjectGroup = ({
     for (const [index, element] of contentCardElementsRef.current.entries()) {
       const observer = new ResizeObserver((entries) => {
         for (const entry of entries) {
-          if (entry.borderBoxSize) {
-            const height = entry.borderBoxSize[0].blockSize;
-            handleContentCardMeasure(index, height);
-          }
+          const height =
+            entry.borderBoxSize && entry.borderBoxSize.length > 0
+              ? entry.borderBoxSize[0].blockSize
+              : entry.contentRect.height;
+          handleContentCardMeasure(index, height);
         }
       });
       observer.observe(element);
@@ -156,7 +189,26 @@ export const FunProjectGroup = ({
         observer.disconnect();
       }
     };
-  }, [isExpanded, item.card.content.items.length, handleContentCardMeasure]);
+  }, [
+    clearMeasurementTimeouts,
+    isExpanded,
+    item.card.content.items.length,
+    handleContentCardMeasure,
+  ]);
+
+  useEffect(() => {
+    if (!isExpanded) {
+      return;
+    }
+
+    setIsContentLayoutReady(false);
+    clearMeasurementTimeouts();
+    measurementMaxWaitTimeoutRef.current = setTimeout(() => {
+      setIsContentLayoutReady(true);
+    }, MEASUREMENT_MAX_WAIT_MS);
+
+    return clearMeasurementTimeouts;
+  }, [clearMeasurementTimeouts, isExpanded, item.id]);
 
   const contentCardOffsets = useMemo(() => {
     let offsetY = 0;
@@ -167,6 +219,25 @@ export const FunProjectGroup = ({
       return currentOffset;
     });
   }, [item.card.content.items, contentCardHeights]);
+
+  const allContentCardsMeasured = useMemo(() => {
+    return item.card.content.items.every(
+      (_, index) => (contentCardHeights[index] ?? 0) > 0
+    );
+  }, [item.card.content.items, contentCardHeights]);
+
+  useEffect(() => {
+    if (!isExpanded || isContentLayoutReady || !allContentCardsMeasured) {
+      return;
+    }
+
+    if (measurementSettleTimeoutRef.current) {
+      clearTimeout(measurementSettleTimeoutRef.current);
+    }
+    measurementSettleTimeoutRef.current = setTimeout(() => {
+      setIsContentLayoutReady(true);
+    }, MEASUREMENT_SETTLE_MS);
+  }, [allContentCardsMeasured, isContentLayoutReady, isExpanded, contentCardHeights]);
 
   return (
     <motion.div
@@ -257,26 +328,33 @@ export const FunProjectGroup = ({
           const cardWidth = cardWithSize.size.width ?? 240;
           const offsetY = contentCardOffsets[index] ?? 0;
           const offsetX = cardWidth + CONTENT_GAP;
+          const shouldAnimateContent = isExpanded && isContentLayoutReady;
 
           return (
             <motion.div
               animate={{
-                opacity: isExpanded ? 1 : 0,
-                scale: isExpanded ? 1 : 0.8,
+                opacity: shouldAnimateContent ? 1 : 0,
+                scale: shouldAnimateContent ? 1 : 0.8,
                 x: offsetX,
                 y: offsetY,
               }}
               className="absolute top-0 left-0 origin-top-left will-change-transform"
               initial={false}
               key={funItem.title}
+              data-fun-content-card-index={index}
               style={{
                 zIndex: item.card.content.items.length - index - 1,
-                pointerEvents: isExpanded ? "auto" : "none",
+                pointerEvents: shouldAnimateContent ? "auto" : "none",
+                visibility: shouldAnimateContent ? "visible" : "hidden",
               }}
-              transition={{
-                ...SPRING_PRESETS.snappy,
-                delay: index * STAGGER_DELAY,
-              }}
+              transition={
+                shouldAnimateContent
+                  ? {
+                      ...SPRING_PRESETS.snappy,
+                      delay: index * STAGGER_DELAY,
+                    }
+                  : TRANSITIONS.none
+              }
             >
               <div
                 className="flex flex-col gap-5 rounded-3xl bg-background2 p-6 outline outline-border"
