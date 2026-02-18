@@ -1,4 +1,8 @@
-import { ArrowUUpLeftIcon, SlidersHorizontalIcon } from "@phosphor-icons/react";
+import {
+  ArrowUUpLeftIcon,
+  ClockCounterClockwiseIcon,
+  SlidersHorizontalIcon,
+} from "@phosphor-icons/react";
 import { useState } from "react";
 import { AnalyticsEvents, track } from "@/lib/analytics";
 import { CanvasControlButton } from "./canvas-control-button";
@@ -42,6 +46,16 @@ export const CanvasControls = ({
           label="Reset canvas"
           onClick={handleReset}
         />
+        <a
+          href="https://v8.rickyzhang.me"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <CanvasControlButton
+            Icon={ClockCounterClockwiseIcon}
+            label="Time machine"
+          />
+        </a>
       </div>
     </div>
   );
