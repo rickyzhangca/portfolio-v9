@@ -1,7 +1,7 @@
 import type { Icon } from "@phosphor-icons/react";
 
 interface CanvasControlButtonProps {
-  onClick: () => void;
+  onClick?: () => void;
   Icon: Icon;
   label: string;
   disabled?: boolean;
