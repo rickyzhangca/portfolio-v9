@@ -63,7 +63,7 @@ export const AboutModal = ({
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {isOpen && (
         <motion.div
           animate={{ opacity: 1 }}
