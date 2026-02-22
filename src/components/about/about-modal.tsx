@@ -138,13 +138,3 @@ export const AboutModal = ({
     </AnimatePresence>
   );
 };
-}}
-type = (<ArrowLeftIcon size={20} weight="bold" />) < "button";
-</button>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
-}
-    ;
