@@ -1,3 +1,5 @@
+"use no memo";
+
 import { motion } from "framer-motion";
 import { useCallback, useMemo, useState } from "react";
 import { getInteractionPolicy } from "@/cards/registry";
