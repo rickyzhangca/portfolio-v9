@@ -1,3 +1,5 @@
+"use no memo";
+
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { type PointerEventHandler, useEffect } from "react";
@@ -136,3 +138,13 @@ export const AboutModal = ({
     </AnimatePresence>
   );
 };
+}}
+type = (<ArrowLeftIcon size={20} weight="bold" />) < "button";
+</button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+    ;
