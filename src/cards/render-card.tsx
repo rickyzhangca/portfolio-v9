@@ -11,6 +11,7 @@ import { ResumeCard } from "@/cards/resume/resume-card";
 import { SocialsCard } from "@/cards/socials/socials-card";
 import { StickyNoteCard } from "@/cards/stickynote/stickynote-card";
 import { SwagCoverCard } from "@/cards/swag-cover/swag-cover-card";
+import { tw } from "@/lib/utils";
 
 interface RenderCardProps {
   card: CardInstance;
@@ -104,9 +105,31 @@ const RenderCardComponent = ({
     }
   };
 
+  useLayoutEffect(() => {
+    if (!(ref.current && onMeasure)) {
+      return;
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.borderBoxSize) {
+          const height = entry.borderBoxSize[0].blockSize;
+          if (height !== card.size.height) {
+            onMeasure(height);
+          }
+        }
+      }
+    });
+
+    observer.observe(ref.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [onMeasure, card.size.height]);
   return (
     <div
-      className={className}
+      className={tw("flex flex-col", className)}
       ref={ref}
       style={{
         width: card.size.width ?? "auto",

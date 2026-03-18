@@ -15,16 +15,6 @@ const CoverCardComponent = ({ content }: CoverCardProps) => {
         src={content.image}
         width="200"
       />
-
-      <div className="absolute bottom-6 left-6 flex flex-col gap-1">
-        <h3 className="font-medium text-white">{content.company}</h3>
-        <p className="relative text-[13px] text-white">
-          <span className="absolute opacity-50 mix-blend-overlay">
-            {content.title}
-          </span>
-          <span className="mix-blend-overlay">{content.title}</span>
-        </p>
-      </div>
     </div>
   );
 };
