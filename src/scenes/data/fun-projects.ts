@@ -106,7 +106,7 @@ export const funProjects: FunProjectItem[] = [
     icon: appleIcon,
     title: "Apple summary slides",
     description:
-      "In September 2019, Apple introduced a new visual language called Bento for use in their events, which is characterized by a series of well-organized summary slides. The design community has embraced this style, and many people have asked for a collection of these summary slides.\n\nIn response to this demand, I created a collection of Bento summary slides that is accessible on [web](https://apple-summary-slides.vercel.app/) and Figma.\n\n![Apple Summary Slides](" +
+      "In September 2019, Apple introduced a new visual language called Bento for use in their events, which is characterized by a series of well-organized summary slides. The design community has embraced this style, and many people have asked for a collection of these summary slides.\n\nIn response to this demand, I created a collection of Bento summary slides that is accessible on [web](https://apple-summary-slides.vercel.app/) and [Figma](https://www.figma.com/community/file/1150817983915754582/all-apple-event-summary-slides-2019-2025).\n\n![Apple Summary Slides](" +
       summarySlidesContent +
       ")\n\nThis collection has allowed over 14K designers and 30K visitors to easily access and get inspirations from the slides.\n\nAnd the community has loved it!\n\n![Apple Summary Slides](" +
       communityLoveContent +
