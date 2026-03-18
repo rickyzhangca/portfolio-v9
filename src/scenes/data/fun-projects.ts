@@ -99,7 +99,7 @@ export const funProjects: FunProjectItem[] = [
     link: {
       url: "https://www.figma.com/community/plugin/1050766825375940133/slides",
       type: "Figma",
-      count: 13_600,
+      count: 13_700,
     },
   },
   {
@@ -115,7 +115,7 @@ export const funProjects: FunProjectItem[] = [
     link: {
       url: "https://www.figma.com/community/file/1150817983915754582",
       type: "Figma",
-      count: 17_800,
+      count: 18_600,
     },
   },
   {
@@ -131,7 +131,7 @@ export const funProjects: FunProjectItem[] = [
     link: {
       url: "https://www.figma.com/community/file/1150065417044869754/octicons-extended",
       type: "Figma",
-      count: 557,
+      count: 568,
     },
   },
   {
@@ -145,7 +145,7 @@ export const funProjects: FunProjectItem[] = [
     link: {
       url: "https://www.figma.com/community/file/1070232689050503920",
       type: "Figma",
-      count: 664,
+      count: 679,
     },
   },
 ];
