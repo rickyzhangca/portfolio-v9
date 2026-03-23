@@ -5,6 +5,7 @@ import type {
   CoverCardInstance,
   FunProjectCardInstance,
   ProjectCardInstance,
+  StickyNoteCardInstance,
   SwagCoverCardInstance,
 } from "@/cards/types";
 import type {
@@ -12,6 +13,7 @@ import type {
   CanvasSingleItem,
   CanvasStackItem,
   CanvasSwagStackItem,
+  StackCardInstance,
 } from "@/types/canvas";
 import { MockProvider } from "./mock-provider";
 
@@ -37,13 +39,25 @@ export const createMockCover = (
   content: { company: "Test Company", image: "" },
 });
 
+export const createMockStickyNote = (
+  id: string,
+  width = 100,
+  height = 100,
+  content = "Test sticky note"
+): StickyNoteCardInstance => ({
+  id,
+  kind: "stickynote",
+  size: { width, height },
+  content: { content, color: "yellow" },
+});
+
 export const createMockStack = (
   id: string,
   x = 0,
   y = 0,
   zIndex = 1,
   cover?: CoverCardInstance,
-  stack?: ProjectCardInstance[]
+  stack?: StackCardInstance[]
 ): CanvasStackItem => ({
   id,
   kind: "stack",

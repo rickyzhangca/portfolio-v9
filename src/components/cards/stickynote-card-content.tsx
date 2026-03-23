@@ -13,7 +13,10 @@ interface StickyNoteCardContentProps {
 const StickyNoteCardContentComponent = ({
   data,
 }: StickyNoteCardContentProps) => {
-  const colorMap: Record<NonNullable<StickyNoteCardContent["color"]>, string> = {
+  const colorMap: Record<
+    NonNullable<StickyNoteCardContent["color"]>,
+    string
+  > = {
     pink: "bg-pink-200",
     blue: "bg-blue-200",
     green: "bg-green-200",

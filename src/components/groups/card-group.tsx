@@ -104,13 +104,18 @@ export const CardStack = ({
   }, [stack.cover, measuredSizes]);
 
   const projectsWithSizes = useMemo(() => {
-    return stack.stack.map((card) => ({
-      ...card,
-      size: {
-        ...card.size,
-        height: measuredSizes[card.id] ?? card.size.height,
-      },
-    }));
+    return stack.stack.map((card) => {
+      const isStickyNote = card.kind === "stickynote";
+      return {
+        ...card,
+        size: {
+          ...card.size,
+          height: isStickyNote
+            ? card.size.height
+            : (measuredSizes[card.id] ?? card.size.height),
+        },
+      };
+    });
   }, [stack.stack, measuredSizes]);
 
   const offsets = useMemo(
@@ -226,7 +231,7 @@ export const CardStack = ({
               x: 0,
               y: 0,
             }}
-            className="absolute top-0 left-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.16)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
+            className="absolute top-0 left-0 drop-shadow-[0_8px_16px_rgba(0,0,0,0.16)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_20px_rgba(0,0,0,0.32)]"
             initial={{
               opacity: 0,
               scale: 0,
