@@ -4,8 +4,11 @@ import type {
   CoverCardInstance,
   FunProjectCardInstance,
   ProjectCardInstance,
+  StickyNoteCardInstance,
   SwagCoverCardInstance,
 } from "@/cards/types";
+
+export type StackCardInstance = ProjectCardInstance | StickyNoteCardInstance;
 
 export interface Position {
   x: number;
@@ -48,7 +51,7 @@ export interface CanvasSingleItem extends CanvasItemBase {
 export interface CanvasStackItem extends CanvasItemBase {
   kind: "stack";
   cover: CoverCardInstance;
-  stack: ProjectCardInstance[];
+  stack: StackCardInstance[];
 }
 
 // Fun stack item (fun project card that expands to show 8 items)

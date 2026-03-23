@@ -1,3 +1,4 @@
+import githubLogo from "@/assets/covers/github-logo.webp";
 import mintlifyLogo from "@/assets/covers/mintlify-logo.webp";
 import mosaicLogo from "@/assets/covers/mosaic-logo.webp";
 import rbcLogo from "@/assets/covers/rbc-logo.webp";
@@ -19,12 +20,15 @@ import amplify from "@/assets/rbc/amplify.webp";
 import rbcProduct from "@/assets/rbc/product.webp";
 import pyspark from "@/assets/rbc/pyspark.webp";
 import redesign from "@/assets/rbc/redesign.webp";
+import appRedesign from "@/assets/wealthsimple/app-redesign.webp";
+import barCharts from "@/assets/wealthsimple/bar-charts.webp";
 import darkMode from "@/assets/wealthsimple/dark-mode.webp";
 import dataViz from "@/assets/wealthsimple/data-viz.webp";
 import homeGradients from "@/assets/wealthsimple/home-gradients.webp";
 import nativeSheet from "@/assets/wealthsimple/native-sheet.webp";
 import newProfileLayout from "@/assets/wealthsimple/new-profile-layout.webp";
 import snackbar from "@/assets/wealthsimple/snackbar.webp";
+import stackedBarCharts from "@/assets/wealthsimple/stacked-bar-charts.webp";
 import swipeable from "@/assets/wealthsimple/swipeable.webp";
 import ticker from "@/assets/wealthsimple/ticker.webp";
 import webChart from "@/assets/wealthsimple/web-chart.webp";
@@ -32,15 +36,43 @@ import widget from "@/assets/wealthsimple/widget.webp";
 import wsSans from "@/assets/wealthsimple/ws-sans.webp";
 import type { CanvasStackItem } from "@/types/canvas";
 
-const GAP_X = 300;
-const GAP_Y = 20;
+const GAP_X = 285;
+const GAP_Y = 18;
 const START_X = 80;
 const START_Y = 200;
+
+export const githubStack: CanvasStackItem = {
+  id: "github-stack",
+  kind: "stack",
+  position: { x: START_X, y: START_Y },
+  zIndex: 0,
+  cover: {
+    id: "github-cover",
+    kind: "cover",
+    size: { width: 240, height: 340 },
+    content: {
+      company: "GitHub",
+      title: "Sr Software Engineer, Core UX",
+      image: githubLogo,
+    },
+  },
+  stack: [
+    {
+      id: "sticky-note-github-1",
+      kind: "stickynote",
+      size: { width: 200, height: 200 },
+      content: {
+        content: "Exploring AI × design system, just getting started ;-)",
+        color: "yellow",
+      },
+    },
+  ],
+};
 
 export const wealthsimpleStack: CanvasStackItem = {
   id: "wealthsimple-stack",
   kind: "stack",
-  position: { x: START_X, y: START_Y },
+  position: { x: START_X + GAP_X, y: START_Y + GAP_Y },
   zIndex: 2,
   cover: {
     id: "wealthsimple-cover",
@@ -54,7 +86,34 @@ export const wealthsimpleStack: CanvasStackItem = {
   },
   stack: [
     {
-      id: "project-15",
+      id: "wealthsimple-app-redesign",
+      kind: "project",
+      size: { width: 350 },
+      content: {
+        title: "App redesign",
+        image: appRedesign,
+      },
+    },
+    {
+      id: "wealthsimple-stacked-bar-charts",
+      kind: "project",
+      size: { width: 350 },
+      content: {
+        title: "Stacked bar charts",
+        image: barCharts,
+      },
+    },
+    {
+      id: "wealthsimple-bar-charts",
+      kind: "project",
+      size: { width: 350 },
+      content: {
+        title: "Bar charts",
+        image: stackedBarCharts,
+      },
+    },
+    {
+      id: "wealthsimple-ws-sans",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -63,7 +122,7 @@ export const wealthsimpleStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-8",
+      id: "wealthsimple-native-sheets",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -72,7 +131,7 @@ export const wealthsimpleStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-12",
+      id: "wealthsimple-ticker",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -81,7 +140,7 @@ export const wealthsimpleStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-6",
+      id: "wealthsimple-data-viz",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -90,7 +149,7 @@ export const wealthsimpleStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-14",
+      id: "wealthsimple-widget",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -99,7 +158,7 @@ export const wealthsimpleStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-13",
+      id: "wealthsimple-web-chart",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -108,7 +167,7 @@ export const wealthsimpleStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-7",
+      id: "wealthsimple-home-gradients",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -117,7 +176,7 @@ export const wealthsimpleStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-9",
+      id: "wealthsimple-new-profile-layout",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -126,7 +185,7 @@ export const wealthsimpleStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-5",
+      id: "wealthsimple-web-dark-mode",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -135,7 +194,7 @@ export const wealthsimpleStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-11",
+      id: "wealthsimple-swipeable",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -144,7 +203,7 @@ export const wealthsimpleStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-10",
+      id: "wealthsimple-web-snackbar",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -158,7 +217,7 @@ export const wealthsimpleStack: CanvasStackItem = {
 export const mintlifyStack: CanvasStackItem = {
   id: "mintlify-stack",
   kind: "stack",
-  position: { x: START_X + GAP_X, y: START_Y + GAP_Y },
+  position: { x: START_X + GAP_X * 2, y: START_Y + GAP_Y * 2 },
   zIndex: 3,
   cover: {
     id: "mintlify-cover",
@@ -172,7 +231,7 @@ export const mintlifyStack: CanvasStackItem = {
   },
   stack: [
     {
-      id: "project-17",
+      id: "mintlify-chat",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -181,7 +240,7 @@ export const mintlifyStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-18",
+      id: "mintlify-editor",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -190,7 +249,7 @@ export const mintlifyStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-16",
+      id: "mintlify-auth",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -199,7 +258,7 @@ export const mintlifyStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-22",
+      id: "mintlify-support",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -208,7 +267,7 @@ export const mintlifyStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-19",
+      id: "mintlify-fonts",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -217,7 +276,7 @@ export const mintlifyStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-20",
+      id: "mintlify-footer",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -226,7 +285,7 @@ export const mintlifyStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-21",
+      id: "mintlify-gitlab",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -240,7 +299,7 @@ export const mintlifyStack: CanvasStackItem = {
 export const rbcStack: CanvasStackItem = {
   id: "rbc-stack",
   kind: "stack",
-  position: { x: START_X + GAP_X * 2, y: START_Y + GAP_Y * 2 },
+  position: { x: START_X + GAP_X * 3, y: START_Y + GAP_Y * 3 },
   zIndex: 1,
   cover: {
     id: "rbc-cover",
@@ -254,7 +313,7 @@ export const rbcStack: CanvasStackItem = {
   },
   stack: [
     {
-      id: "project-2",
+      id: "rbc-product",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -263,7 +322,7 @@ export const rbcStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-4",
+      id: "rbc-redesign",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -272,7 +331,7 @@ export const rbcStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-3",
+      id: "rbc-pyspark",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -281,7 +340,7 @@ export const rbcStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-1",
+      id: "rbc-amplify",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -295,7 +354,7 @@ export const rbcStack: CanvasStackItem = {
 export const mosaicStack: CanvasStackItem = {
   id: "mosaic-stack",
   kind: "stack",
-  position: { x: START_X + GAP_X * 3, y: START_Y + GAP_Y * 3 },
+  position: { x: START_X + GAP_X * 4, y: START_Y + GAP_Y * 4 },
   zIndex: 4,
   cover: {
     id: "mosaic-cover",
@@ -309,7 +368,7 @@ export const mosaicStack: CanvasStackItem = {
   },
   stack: [
     {
-      id: "project-24",
+      id: "mosaic-ds",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -318,7 +377,7 @@ export const mosaicStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-28",
+      id: "mosaic-printers",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -327,7 +386,7 @@ export const mosaicStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-23",
+      id: "mosaic-b2b",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -336,7 +395,7 @@ export const mosaicStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-26",
+      id: "mosaic-icon",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -345,7 +404,7 @@ export const mosaicStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-25",
+      id: "mosaic-graphic",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -354,7 +413,7 @@ export const mosaicStack: CanvasStackItem = {
       },
     },
     {
-      id: "project-27",
+      id: "mosaic-packaging",
       kind: "project",
       size: { width: 350 },
       content: {
@@ -366,6 +425,7 @@ export const mosaicStack: CanvasStackItem = {
 };
 
 export const companyStacks = [
+  githubStack,
   wealthsimpleStack,
   mintlifyStack,
   rbcStack,
