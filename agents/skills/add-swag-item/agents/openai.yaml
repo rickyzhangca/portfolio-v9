@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add Swag Item"
+  short_description: "Add a dropped swag image to the collection"
+  default_prompt: "Use $add-swag-item to add a newly dropped swag .webp into this portfolio repo."
