@@ -5,6 +5,7 @@ import { RenderCard } from "@/cards/render-card";
 import { fanConfigAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
 import { AnalyticsEvents, track } from "@/lib/analytics";
+import { getCardShadowStyle } from "@/lib/card-shadow";
 import type { CanvasStackItem, Position } from "@/types/canvas";
 
 const CARD_MASK_DATA_URI = `url("data:image/svg+xml,%3Csvg viewBox='0 0 240 340' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 301.6C0 315.041 0 321.762 2.61584 326.896C4.9168 331.412 8.58834 335.083 13.1042 337.384C18.2381 340 24.9587 340 38.4 340H201.6C215.041 340 221.762 340 226.896 337.384C231.412 335.083 235.083 331.412 237.384 326.896C240 321.762 240 315.041 240 301.6V250.875C240 245.342 240 242.576 239.541 239.894C239.133 237.514 238.457 235.187 237.526 232.958C236.476 230.448 234.994 228.112 232.03 223.441L231.47 222.559C228.506 217.888 227.024 215.552 225.974 213.042C225.043 210.813 224.367 208.486 223.959 206.106C223.5 203.424 223.5 200.658 223.5 195.125V134.875C223.5 129.342 223.5 126.576 223.959 123.894C224.367 121.514 225.043 119.187 225.974 116.958C227.024 114.448 228.506 112.112 231.47 107.441L232.03 106.559C234.994 101.888 236.476 99.5523 237.526 97.0418C238.457 94.8133 239.133 92.4865 239.541 90.1058C240 87.424 240 84.6577 240 79.1251V38.4C240 24.9587 240 18.2381 237.384 13.1042C235.083 8.58834 231.412 4.9168 226.896 2.61584C221.762 0 215.041 0 201.6 0H38.4C24.9587 0 18.2381 0 13.1042 2.61584C8.58834 4.9168 4.9168 8.58834 2.61584 13.1042C0 18.2381 0 24.9587 0 38.4V301.6Z'/%3E%3C/svg%3E")`;
@@ -27,6 +28,7 @@ const PROJECT_DELAY_AFTER_COVER = 0.2; // seconds after cover before projects ap
 interface CardStackProps {
   stack: CanvasStackItem;
   stackIndex: number;
+  maxZIndex: number;
   scale: number;
   isExpanded: boolean;
   dragDisabled: boolean;
@@ -43,6 +45,7 @@ interface CardStackProps {
 export const CardStack = ({
   stack,
   stackIndex,
+  maxZIndex,
   scale,
   isExpanded,
   dragDisabled,
@@ -124,6 +127,7 @@ export const CardStack = ({
   );
 
   const [isPeeking, setIsPeeking] = useState(false);
+  const [isCoverHovered, setIsCoverHovered] = useState(false);
   const peekTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const triggerPeek = useCallback(() => {
@@ -231,7 +235,7 @@ export const CardStack = ({
               x: 0,
               y: 0,
             }}
-            className="absolute top-0 left-0 drop-shadow-[0_8px_16px_rgba(0,0,0,0.16)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_20px_rgba(0,0,0,0.32)]"
+            className="absolute top-0 left-0 transition-[filter] will-change-transform"
             initial={{
               opacity: 0,
               scale: 0,
@@ -240,7 +244,13 @@ export const CardStack = ({
               y: 0,
             }}
             key={coverWithSize.id}
-            onHoverStart={triggerPeek}
+            onHoverEnd={() => {
+              setIsCoverHovered(false);
+            }}
+            onHoverStart={() => {
+              setIsCoverHovered(true);
+              triggerPeek();
+            }}
             onPointerDown={(e) => {
               const target = e.target as HTMLElement;
               if (target.closest(".no-drag")) {
@@ -283,8 +293,15 @@ export const CardStack = ({
               }
             }}
             style={{
-              zIndex: (stack.cover ? 1 : 0) + projectsWithSizes.length,
+              ...getCardShadowStyle({
+                surface: "canvas-filter",
+                preset: "cover",
+                state: isCoverHovered ? "hover" : "rest",
+                zIndex: stack.zIndex,
+                maxZIndex,
+              }),
               pointerEvents: "auto",
+              zIndex: (stack.cover ? 1 : 0) + projectsWithSizes.length,
             }}
             transition={{ ...SPRING_PRESETS.snappy, delay: coverEntranceDelay }}
           >
@@ -304,6 +321,7 @@ export const CardStack = ({
                 card={coverWithSize}
                 className="shadow-none hover:shadow-none"
                 onMeasure={(h) => handleCardMeasure(coverWithSize.id, h)}
+                shadowContext={{ zIndex: stack.zIndex, maxZIndex }}
               />
             </div>
           </motion.div>
@@ -422,6 +440,7 @@ export const CardStack = ({
                 isExpanded={isExpanded}
                 onMeasure={(h) => handleCardMeasure(card.id, h)}
                 priority={index < 2}
+                shadowContext={{ zIndex: stack.zIndex, maxZIndex }}
               />
             </motion.div>
           );

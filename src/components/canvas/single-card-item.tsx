@@ -6,11 +6,13 @@ import { getInteractionPolicy } from "@/cards/registry";
 import { RenderCard } from "@/cards/render-card";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
+import { getCardShadowStyle } from "@/lib/card-shadow";
 import { tw } from "@/lib/utils";
 import type { CanvasSingleItem, Position } from "@/types/canvas";
 
 interface SingleCardItemProps {
   item: CanvasSingleItem;
+  maxZIndex: number;
   scale: number;
   isFocused: boolean;
   dragDisabled: boolean;
@@ -26,6 +28,7 @@ interface SingleCardItemProps {
 
 export const SingleCardItem = ({
   item,
+  maxZIndex,
   scale,
   isFocused,
   dragDisabled,
@@ -41,6 +44,7 @@ export const SingleCardItem = ({
   const [measuredHeight, setMeasuredHeight] = useState<number | undefined>(
     item.card.size.height
   );
+  const [isHovered, setIsHovered] = useState(false);
 
   const cardWithSize = useMemo(() => {
     return {
@@ -161,7 +165,7 @@ export const SingleCardItem = ({
             x: focusOffsetX,
             y: focusOffsetY,
           }}
-          className="absolute top-0 left-0 drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
+          className="absolute top-0 left-0 transition-[filter] will-change-transform"
           initial={{
             opacity: 0,
             scale: 0,
@@ -190,9 +194,22 @@ export const SingleCardItem = ({
               onActivate();
             }
           }}
+          onHoverEnd={() => {
+            setIsHovered(false);
+          }}
+          onHoverStart={() => {
+            setIsHovered(true);
+          }}
           style={{
-            zIndex: 1,
+            ...getCardShadowStyle({
+              surface: "canvas-filter",
+              preset: "default",
+              state: isHovered ? "hover" : "rest",
+              zIndex: item.zIndex,
+              maxZIndex,
+            }),
             pointerEvents: "auto",
+            zIndex: 1,
           }}
           transition={{ ...SPRING_PRESETS.smooth, delay: 0.12 }}
         >
@@ -201,6 +218,7 @@ export const SingleCardItem = ({
             className="shadow-none hover:shadow-none"
             isFocused={isFocused}
             onMeasure={shouldRenderFocusHiRes ? undefined : handleCardMeasure}
+            shadowContext={{ zIndex: item.zIndex, maxZIndex }}
           />
         </motion.div>
       </motion.div>

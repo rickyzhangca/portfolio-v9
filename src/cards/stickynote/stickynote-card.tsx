@@ -1,12 +1,18 @@
 import { memo } from "react";
 import type { StickyNoteCardContent } from "@/cards/registry";
+import type { CardShadowContext } from "@/lib/card-shadow";
+import { getCardShadowStyle } from "@/lib/card-shadow";
 import { tw } from "@/lib/utils";
 
 interface StickyNoteCardProps {
   content: StickyNoteCardContent;
+  shadowContext?: CardShadowContext;
 }
 
-const StickyNoteCardComponent = ({ content }: StickyNoteCardProps) => {
+const StickyNoteCardComponent = ({
+  content,
+  shadowContext,
+}: StickyNoteCardProps) => {
   const colorMap: Record<
     NonNullable<StickyNoteCardContent["color"]>,
     string
@@ -20,7 +26,15 @@ const StickyNoteCardComponent = ({ content }: StickyNoteCardProps) => {
   const colorClass = colorMap[content.color ?? "yellow"];
 
   return (
-    <div className={tw("h-full w-full rounded-sm p-4 shadow-md", colorClass)}>
+    <div
+      className={tw("h-full w-full rounded-sm p-4", colorClass)}
+      style={getCardShadowStyle({
+        surface: "card-box-shadow",
+        preset: "paper",
+        zIndex: shadowContext?.zIndex,
+        maxZIndex: shadowContext?.maxZIndex,
+      })}
+    >
       <p className="wrap-break-word whitespace-pre-wrap font-hand text-sm">
         {content.content}
       </p>

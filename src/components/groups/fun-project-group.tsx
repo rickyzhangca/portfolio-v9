@@ -32,6 +32,7 @@ const MarkdownRenderer = lazy(() =>
 
 interface FunProjectGroupProps {
   item: CanvasFunStackItem;
+  maxZIndex: number;
   scale: number;
   isExpanded: boolean;
   dragDisabled: boolean;
@@ -47,6 +48,7 @@ interface FunProjectGroupProps {
 
 export const FunProjectGroup = ({
   item,
+  maxZIndex,
   scale,
   isExpanded,
   dragDisabled,
@@ -369,6 +371,7 @@ export const FunProjectGroup = ({
             isExpanded={isExpanded}
             isFocused={isExpanded}
             onMeasure={handleCardMeasure}
+            shadowContext={{ zIndex: item.zIndex, maxZIndex }}
           />
         </motion.div>
 

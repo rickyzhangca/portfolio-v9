@@ -8,6 +8,7 @@ import type { CanvasItem, Position } from "@/types/canvas";
 interface CanvasItemRendererProps {
   item: CanvasItem;
   itemIndex: number;
+  maxZIndex: number;
   scale: number;
   isExpanded: boolean;
   isFocused: boolean;
@@ -26,6 +27,7 @@ interface CanvasItemRendererProps {
 const CanvasItemRendererComponent = ({
   item,
   itemIndex,
+  maxZIndex,
   scale,
   isExpanded,
   isFocused,
@@ -46,6 +48,7 @@ const CanvasItemRendererComponent = ({
         dragDisabled={dragDisabled}
         isFocused={isFocused}
         item={item}
+        maxZIndex={maxZIndex}
         onActivate={onActivate}
         onBringToFront={onBringToFront}
         onCardHeightMeasured={onCardHeightMeasured}
@@ -65,6 +68,7 @@ const CanvasItemRendererComponent = ({
         dragDisabled={dragDisabled}
         isExpanded={isExpanded}
         item={item}
+        maxZIndex={maxZIndex}
         onBringToFront={onBringToFront}
         onCardHeightMeasured={onCardHeightMeasured}
         onDragEnd={onDragEnd}
@@ -84,6 +88,7 @@ const CanvasItemRendererComponent = ({
         dragDisabled={dragDisabled}
         isExpanded={isExpanded}
         item={item}
+        maxZIndex={maxZIndex}
         onBringToFront={onBringToFront}
         onCardHeightMeasured={onCardHeightMeasured}
         onDragEnd={onDragEnd}
@@ -103,6 +108,7 @@ const CanvasItemRendererComponent = ({
     <CardStack
       dragDisabled={dragDisabled}
       isExpanded={isExpanded}
+      maxZIndex={maxZIndex}
       onBringToFront={onBringToFront}
       onCardHeightMeasured={onCardHeightMeasured}
       onDragEnd={onDragEnd}

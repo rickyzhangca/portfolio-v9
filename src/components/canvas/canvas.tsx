@@ -983,6 +983,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                       item={item}
                       itemIndex={itemIndex}
                       key={item.id}
+                      maxZIndex={state.maxZIndex}
                       onActivate={getActivateCallback(item.id)}
                       onBringToFront={getBringToFrontCallback(item.id)}
                       onCardHeightMeasured={getCardHeightCallback(item.id)}

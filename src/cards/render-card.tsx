@@ -11,6 +11,7 @@ import { ResumeCard } from "@/cards/resume/resume-card";
 import { SocialsCard } from "@/cards/socials/socials-card";
 import { StickyNoteCard } from "@/cards/stickynote/stickynote-card";
 import { SwagCoverCard } from "@/cards/swag-cover/swag-cover-card";
+import type { CardShadowContext } from "@/lib/card-shadow";
 import { tw } from "@/lib/utils";
 
 interface RenderCardProps {
@@ -20,6 +21,7 @@ interface RenderCardProps {
   isFocused?: boolean;
   onMeasure?: (height: number) => void;
   priority?: boolean;
+  shadowContext?: CardShadowContext;
 }
 
 /**
@@ -33,6 +35,7 @@ const RenderCardComponent = ({
   isFocused = false,
   onMeasure,
   priority,
+  shadowContext,
 }: RenderCardProps) => {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -70,6 +73,7 @@ const RenderCardComponent = ({
             content={card.content}
             isExpanded={isExpanded}
             priority={priority}
+            shadowContext={shadowContext}
           />
         );
       case "resume":
@@ -81,7 +85,9 @@ const RenderCardComponent = ({
       case "socials":
         return <SocialsCard content={card.content} />;
       case "stickynote":
-        return <StickyNoteCard content={card.content} />;
+        return (
+          <StickyNoteCard content={card.content} shadowContext={shadowContext} />
+        );
       case "profilepic":
         return <ProfilePicCard content={card.content} />;
       case "macbook":
@@ -96,7 +102,9 @@ const RenderCardComponent = ({
           />
         );
       case "swagcover":
-        return <SwagCoverCard content={card.content} />;
+        return (
+          <SwagCoverCard content={card.content} shadowContext={shadowContext} />
+        );
       default: {
         // Exhaustiveness check - if we get here, we have a bug
         const _exhaustive: never = card;

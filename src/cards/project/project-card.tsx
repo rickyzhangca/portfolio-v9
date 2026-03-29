@@ -1,33 +1,42 @@
 import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { memo, useState } from "react";
-import { SPRING_PRESETS } from "@/lib/animation";
-import { tw } from "@/lib/utils";
 import type { ProjectCardContent } from "@/cards/registry";
+import { SPRING_PRESETS } from "@/lib/animation";
+import type { CardShadowContext } from "@/lib/card-shadow";
+import { getCardShadowStyle } from "@/lib/card-shadow";
+import { tw } from "@/lib/utils";
 
 interface ProjectCardProps {
   content: ProjectCardContent;
   isExpanded?: boolean;
   priority?: boolean;
+  shadowContext?: CardShadowContext;
 }
 
 const ProjectCardComponent = ({
   content,
   isExpanded = true,
   priority = false,
+  shadowContext,
 }: ProjectCardProps) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const mediaShadowStyle = getCardShadowStyle({
+    surface: "card-box-shadow",
+    preset: "media",
+    state: isExpanded ? "hover" : "rest",
+    zIndex: shadowContext?.zIndex,
+    maxZIndex: shadowContext?.maxZIndex,
+  });
 
   return (
     <div className="flex h-full flex-col gap-1.5">
       <div
         className={tw(
-          "no-pan overflow-hidden rounded-4xl border-6 bg-white transition-shadow",
-          isExpanded
-            ? "border-white shadow-3xl"
-            : "border-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.12)]"
+          "no-pan overflow-hidden rounded-4xl border-6 border-white bg-white transition-shadow"
         )}
+        style={mediaShadowStyle}
       >
         {imageError ? (
           <div className="flex items-center justify-center p-12 text-foreground2">

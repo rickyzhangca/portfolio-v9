@@ -34,6 +34,7 @@ class MockResizeObserver {
 
 const baseProps = {
   scale: 1,
+  maxZIndex: 6,
   dragDisabled: false,
   repulsionOffset: { x: 0, y: 0 },
   onBringToFront: vi.fn(),

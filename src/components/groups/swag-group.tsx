@@ -29,6 +29,7 @@ const COLLAPSED_POSITIONS = [
 
 interface SwagGroupProps {
   item: CanvasSwagStackItem;
+  maxZIndex: number;
   scale: number;
   isExpanded: boolean;
   dragDisabled: boolean;
@@ -45,6 +46,7 @@ interface SwagGroupProps {
 
 export const SwagGroup = ({
   item,
+  maxZIndex,
   scale,
   isExpanded,
   dragDisabled,
@@ -228,6 +230,7 @@ export const SwagGroup = ({
             card={cardWithSize}
             isExpanded={isExpanded}
             onMeasure={handleCardMeasure}
+            shadowContext={{ zIndex: item.zIndex, maxZIndex }}
           />
         </motion.div>
 
