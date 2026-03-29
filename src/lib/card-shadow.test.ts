@@ -3,6 +3,8 @@ import { getCardShadowStyle } from "./card-shadow";
 import { getShadowLighting } from "./shadow-lighting";
 
 const SHADOW_OPACITY_PATTERN = /rgba\(0, 0, 0, ([0-9.]+)\)/;
+const DROP_SHADOW_PATTERN =
+  /drop-shadow\(([-0-9.]+)px ([-0-9.]+)px ([-0-9.]+)px rgba\(0, 0, 0, ([0-9.]+)\)\)/;
 
 const getShadowOpacity = (filter: string) => {
   const match = filter.match(SHADOW_OPACITY_PATTERN);
@@ -12,6 +14,21 @@ const getShadowOpacity = (filter: string) => {
   }
 
   return Number(match[1]);
+};
+
+const parseDropShadow = (filter: string) => {
+  const match = filter.match(DROP_SHADOW_PATTERN);
+
+  if (!match) {
+    throw new Error(`Could not parse drop shadow from "${filter}"`);
+  }
+
+  return {
+    x: Number(match[1]),
+    y: Number(match[2]),
+    blur: Number(match[3]),
+    opacity: Number(match[4]),
+  };
 };
 
 describe("getCardShadowStyle", () => {
@@ -131,5 +148,32 @@ describe("getCardShadowStyle", () => {
         lighting: getShadowLighting(12, "live"),
       }).filter
     );
+  });
+
+  it("produces visibly different default canvas shadows across a day sweep", () => {
+    const midnightShadow = parseDropShadow(
+      getCardShadowStyle({
+        surface: "canvas-filter",
+        preset: "default",
+        zIndex: 5,
+        maxZIndex: 10,
+        lighting: getShadowLighting(0, "debug"),
+      }).filter ?? ""
+    );
+
+    const noonShadow = parseDropShadow(
+      getCardShadowStyle({
+        surface: "canvas-filter",
+        preset: "default",
+        zIndex: 5,
+        maxZIndex: 10,
+        lighting: getShadowLighting(12, "debug"),
+      }).filter ?? ""
+    );
+
+    expect(Math.abs(midnightShadow.blur - noonShadow.blur)).toBeGreaterThan(4);
+    expect(
+      Math.abs(midnightShadow.opacity - noonShadow.opacity)
+    ).toBeGreaterThan(0.08);
   });
 });

@@ -36,9 +36,9 @@ export const getShadowLighting = (
     mode,
     hour: normalizedHour,
     angleDeg: 90 - lateral * 35,
-    intensity: 0.7 + daylight * 0.5,
-    offsetScale: 0.85 + Math.abs(lateral) * 0.35,
-    blurScale: 1.05 + (1 - daylight) * 0.15,
+    intensity: 0.55 + daylight * 0.7,
+    offsetScale: 0.8 + Math.abs(lateral) * 0.35 + (1 - daylight) * 0.15,
+    blurScale: 1 + (1 - daylight) * 0.35,
   };
 };
 

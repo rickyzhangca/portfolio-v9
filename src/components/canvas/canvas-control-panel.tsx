@@ -1,5 +1,7 @@
+import { PauseIcon, PlayIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { useAtom, useAtomValue } from "jotai";
+import { useEffect, useRef, useState } from "react";
 import {
   fanConfigAtom,
   repulsionConfigAtom,
@@ -14,10 +16,12 @@ import { DEFAULT_REPULSION_CONFIG } from "@/lib/repulsion";
 import { formatShadowHour } from "@/lib/shadow-lighting";
 import { Slider } from "../ui/slider";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "../ui/tabs";
+import { CanvasControlButton } from "./canvas-control-button";
 import { CanvasControlResetButton } from "./canvas-control-reset-button";
 
 const toSingleNumber = (value: number | readonly number[]) =>
   (Array.isArray(value) ? value[0] : value) ?? 0;
+const SHADOW_PLAYBACK_DURATION_MS = 10_000;
 
 export const CanvasControlPanel = () => {
   const [config, setConfig] = useAtom(repulsionConfigAtom);
@@ -25,8 +29,12 @@ export const CanvasControlPanel = () => {
   const [shadowDebugConfig, setShadowDebugConfig] = useAtom(
     shadowDebugConfigAtom
   );
+  const [isShadowPlaybackActive, setIsShadowPlaybackActive] = useState(false);
   const shadowClockHour = useAtomValue(shadowClockHourAtom);
   const shadowLighting = useAtomValue(shadowLightingAtom);
+  const playbackFrameRef = useRef<number | null>(null);
+  const playbackStartHourRef = useRef(0);
+  const playbackStartTimeRef = useRef<number | null>(null);
 
   // Calculate transform for each card in the fan preview
   const calculateCardTransform = (index: number, isCover: boolean) => {
@@ -72,11 +80,76 @@ export const CanvasControlPanel = () => {
       ? shadowDebugConfig.debugHour
       : shadowClockHour;
 
+  const stopShadowPlayback = () => {
+    if (playbackFrameRef.current !== null) {
+      cancelAnimationFrame(playbackFrameRef.current);
+      playbackFrameRef.current = null;
+    }
+
+    playbackStartTimeRef.current = null;
+    setIsShadowPlaybackActive(false);
+  };
+
+  useEffect(() => {
+    if (!isShadowPlaybackActive) {
+      return;
+    }
+
+    const animatePlayback = (timestamp: number) => {
+      if (playbackStartTimeRef.current === null) {
+        playbackStartTimeRef.current = timestamp;
+      }
+
+      const elapsed = timestamp - playbackStartTimeRef.current;
+      const progress = Math.min(elapsed / SHADOW_PLAYBACK_DURATION_MS, 1);
+      const nextHour = (playbackStartHourRef.current + progress * 24) % 24;
+
+      setShadowDebugConfig({
+        mode: "debug",
+        debugHour: nextHour,
+      });
+
+      if (progress >= 1) {
+        playbackFrameRef.current = null;
+        playbackStartTimeRef.current = null;
+        setIsShadowPlaybackActive(false);
+        return;
+      }
+
+      playbackFrameRef.current = requestAnimationFrame(animatePlayback);
+    };
+
+    playbackFrameRef.current = requestAnimationFrame(animatePlayback);
+
+    return () => {
+      if (playbackFrameRef.current !== null) {
+        cancelAnimationFrame(playbackFrameRef.current);
+        playbackFrameRef.current = null;
+      }
+    };
+  }, [isShadowPlaybackActive, setShadowDebugConfig]);
+
   const handleShadowReset = () => {
+    stopShadowPlayback();
     setShadowDebugConfig({
       mode: "live",
       debugHour: shadowClockHour,
     });
+  };
+
+  const handleShadowPlaybackToggle = () => {
+    if (isShadowPlaybackActive) {
+      stopShadowPlayback();
+      return;
+    }
+
+    playbackStartHourRef.current = shadowControlHour;
+    playbackStartTimeRef.current = null;
+    setShadowDebugConfig({
+      mode: "debug",
+      debugHour: shadowControlHour,
+    });
+    setIsShadowPlaybackActive(true);
   };
 
   return (
@@ -387,7 +460,7 @@ export const CanvasControlPanel = () => {
                   className="text-foreground2"
                   htmlFor="shadow-time-slider"
                 >
-                  Time
+                  Time override
                 </label>
                 <span>{formatShadowHour(shadowControlHour)}</span>
               </div>
@@ -395,23 +468,34 @@ export const CanvasControlPanel = () => {
                 aria-label="Time override"
                 max={24}
                 min={0}
-                onValueChange={(value) =>
+                onValueChange={(value) => {
+                  stopShadowPlayback();
                   setShadowDebugConfig({
                     mode: "debug",
                     debugHour: toSingleNumber(value),
-                  })
-                }
+                  });
+                }}
                 step={0.25}
                 value={shadowControlHour}
               />
             </div>
           </div>
 
-          <div className="px-4 pb-4">
-            <CanvasControlResetButton
-              disabled={shadowDebugConfig.mode === "live"}
-              onClick={handleShadowReset}
+          <div className="flex items-center gap-2 px-4 pb-4">
+            <CanvasControlButton
+              className="bg-background3 p-2.5 hover:bg-background4 active:bg-background5 disabled:pointer-events-none"
+              Icon={isShadowPlaybackActive ? PauseIcon : PlayIcon}
+              label={isShadowPlaybackActive ? "Pause shadows" : "Play shadows"}
+              onClick={handleShadowPlaybackToggle}
             />
+            <div className="flex-1">
+              <CanvasControlResetButton
+                disabled={
+                  shadowDebugConfig.mode === "live" && !isShadowPlaybackActive
+                }
+                onClick={handleShadowReset}
+              />
+            </div>
           </div>
         </TabsPanel>
       </Tabs>
