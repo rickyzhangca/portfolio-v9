@@ -37,7 +37,7 @@ export const getShadowLighting = (
     angleDeg: 90 - lateral * 80,
     intensity: 0.8 + daylight * 0.6 + Math.abs(lateral) * 1.5,
     offsetScale: 0.5 + Math.abs(lateral) * 4.0 + (1 - daylight) * 0.5,
-    blurScale: 0.5 + Math.abs(lateral) * 3.0 + (1 - daylight) * 0.5,
+    blurScale: 0.5 + Math.abs(lateral) + (1 - daylight) * 0.5,
   };
 };
 

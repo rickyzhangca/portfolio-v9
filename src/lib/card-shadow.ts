@@ -121,13 +121,13 @@ const getCanvasShadowLayer = (
   const base = (() => {
     if (preset === "cover") {
       return state === "hover"
-        ? { blur: 20, offset: 12, opacity: 0.38 }
+        ? { blur: 18, offset: 10, opacity: 0.24 }
         : { blur: 16, offset: 8, opacity: 0.2 };
     }
 
     return state === "hover"
-      ? { blur: 24, offset: 12, opacity: 0.24 }
-      : { blur: 16, offset: 16, opacity: 0.12 };
+      ? { blur: 18, offset: 10, opacity: 0.16 }
+      : { blur: 16, offset: 8, opacity: 0.12 };
   })();
 
   return {
@@ -162,10 +162,10 @@ const getCardShadowLayers = (
       if (state === "hover") {
         return [
           {
-            blur: 60 + depth * 8,
-            offset: 20 + depth * 3,
-            opacity: 0.4 + depth * 0.04,
-            spread: -15,
+            blur: 16 + depth * 4,
+            offset: 6 + depth * 2,
+            opacity: 0.24 + depth * 0.04,
+            spread: -2,
           },
         ];
       }
