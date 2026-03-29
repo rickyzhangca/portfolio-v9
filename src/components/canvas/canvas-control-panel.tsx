@@ -427,7 +427,7 @@ export const CanvasControlPanel = () => {
         </TabsPanel>
 
         <TabsPanel className="w-72" value="shadows">
-          <div className="relative flex h-48 items-center justify-center bg-background3 p-4">
+          <div className="relative flex h-48 items-center justify-center overflow-hidden bg-background3 p-4">
             <div
               className="h-24 w-32 rounded-3xl bg-white outline outline-border"
               style={getCardShadowStyle({

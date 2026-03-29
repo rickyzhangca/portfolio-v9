@@ -28,17 +28,16 @@ export const getShadowLighting = (
   mode: ShadowLightingMode
 ): ShadowLightingState => {
   const normalizedHour = normalizeHour(hour);
-  const daylight =
-    (Math.cos(((normalizedHour - 12) / 12) * Math.PI) + 1) / 2;
+  const daylight = (Math.cos(((normalizedHour - 12) / 12) * Math.PI) + 1) / 2;
   const lateral = Math.sin(((normalizedHour - 12) / 12) * Math.PI);
 
   return {
     mode,
     hour: normalizedHour,
-    angleDeg: 90 - lateral * 35,
-    intensity: 0.55 + daylight * 0.7,
-    offsetScale: 0.8 + Math.abs(lateral) * 0.35 + (1 - daylight) * 0.15,
-    blurScale: 1 + (1 - daylight) * 0.35,
+    angleDeg: 90 - lateral * 80,
+    intensity: 0.8 + daylight * 0.4 + Math.abs(lateral) * 1.5,
+    offsetScale: 0.5 + Math.abs(lateral) * 8.0 + (1 - daylight) * 0.5,
+    blurScale: 0.5 + Math.abs(lateral) * 3.0 + (1 - daylight) * 0.5,
   };
 };
 
