@@ -98,6 +98,7 @@ import swag96 from "./96.webp";
 import swag97 from "./97.webp";
 import swag98 from "./98.webp";
 import swag99 from "./99.webp";
+import swag100 from "./100.webp";
 
 const swags: { src: string; label: string; caption?: string }[] = [
   {
@@ -594,6 +595,11 @@ const swags: { src: string; label: string; caption?: string }[] = [
     src: swag99,
     label: "Figma Make-a-Thon",
     caption: "Figma @ Waterloo",
+  },
+  {
+    src: swag100,
+    label: "Blueprint 2026",
+    caption: "SAID @ OCAD",
   },
 ];
 
