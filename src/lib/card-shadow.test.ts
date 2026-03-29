@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { getCardShadowStyle } from "./card-shadow";
+import { getShadowLighting } from "./shadow-lighting";
+
+const SHADOW_OPACITY_PATTERN = /rgba\(0, 0, 0, ([0-9.]+)\)/;
+
+const getShadowOpacity = (filter: string) => {
+  const match = filter.match(SHADOW_OPACITY_PATTERN);
+
+  if (!match) {
+    throw new Error(`Could not parse shadow opacity from "${filter}"`);
+  }
+
+  return Number(match[1]);
+};
 
 describe("getCardShadowStyle", () => {
   it("returns a filter style for canvas shadows", () => {
@@ -56,6 +69,16 @@ describe("getCardShadowStyle", () => {
     );
   });
 
+  it("keeps stack cover shadows visibly stronger at rest", () => {
+    const filter = getCardShadowStyle({
+      surface: "canvas-filter",
+      preset: "cover",
+      state: "rest",
+    }).filter;
+
+    expect(getShadowOpacity(filter ?? "")).toBeGreaterThan(0.2);
+  });
+
   it("slightly increases depth for higher z-index values", () => {
     expect(
       getCardShadowStyle({
@@ -70,6 +93,42 @@ describe("getCardShadowStyle", () => {
         preset: "default",
         zIndex: 10,
         maxZIndex: 10,
+      }).filter
+    );
+  });
+
+  it("changes shadow direction and strength when lighting is provided", () => {
+    expect(
+      getCardShadowStyle({
+        surface: "canvas-filter",
+        preset: "default",
+        lighting: getShadowLighting(8, "live"),
+      }).filter
+    ).not.toBe(
+      getCardShadowStyle({
+        surface: "canvas-filter",
+        preset: "default",
+        lighting: getShadowLighting(16, "live"),
+      }).filter
+    );
+  });
+
+  it("combines lighting with z-index depth bias", () => {
+    expect(
+      getCardShadowStyle({
+        surface: "canvas-filter",
+        preset: "default",
+        zIndex: 1,
+        maxZIndex: 10,
+        lighting: getShadowLighting(12, "live"),
+      }).filter
+    ).not.toBe(
+      getCardShadowStyle({
+        surface: "canvas-filter",
+        preset: "default",
+        zIndex: 10,
+        maxZIndex: 10,
+        lighting: getShadowLighting(12, "live"),
       }).filter
     );
   });

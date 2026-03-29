@@ -1,9 +1,11 @@
 "use no memo";
 
 import { motion } from "framer-motion";
+import { useAtomValue } from "jotai";
 import { useCallback, useMemo, useState } from "react";
 import { getInteractionPolicy } from "@/cards/registry";
 import { RenderCard } from "@/cards/render-card";
+import { shadowLightingAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { getCardShadowStyle } from "@/lib/card-shadow";
@@ -45,6 +47,7 @@ export const SingleCardItem = ({
     item.card.size.height
   );
   const [isHovered, setIsHovered] = useState(false);
+  const shadowLighting = useAtomValue(shadowLightingAtom);
 
   const cardWithSize = useMemo(() => {
     return {
@@ -207,6 +210,7 @@ export const SingleCardItem = ({
               state: isHovered ? "hover" : "rest",
               zIndex: item.zIndex,
               maxZIndex,
+              lighting: shadowLighting,
             }),
             pointerEvents: "auto",
             zIndex: 1,
@@ -218,7 +222,11 @@ export const SingleCardItem = ({
             className="shadow-none hover:shadow-none"
             isFocused={isFocused}
             onMeasure={shouldRenderFocusHiRes ? undefined : handleCardMeasure}
-            shadowContext={{ zIndex: item.zIndex, maxZIndex }}
+            shadowContext={{
+              zIndex: item.zIndex,
+              maxZIndex,
+              lighting: shadowLighting,
+            }}
           />
         </motion.div>
       </motion.div>

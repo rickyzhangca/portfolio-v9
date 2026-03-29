@@ -7,7 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { fanConfigAtom } from "@/context/atoms";
+import { fanConfigAtom, shadowLightingAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { tw } from "@/lib/utils";
@@ -64,6 +64,7 @@ export const SwagGroup = ({
     item.cover.size.height
   );
   const [hasMounted, setHasMounted] = useState(false);
+  const shadowLighting = useAtomValue(shadowLightingAtom);
 
   const cardPointerDownRef = useRef<{
     clientX: number;
@@ -230,7 +231,11 @@ export const SwagGroup = ({
             card={cardWithSize}
             isExpanded={isExpanded}
             onMeasure={handleCardMeasure}
-            shadowContext={{ zIndex: item.zIndex, maxZIndex }}
+            shadowContext={{
+              zIndex: item.zIndex,
+              maxZIndex,
+              lighting: shadowLighting,
+            }}
           />
         </motion.div>
 

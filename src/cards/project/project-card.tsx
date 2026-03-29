@@ -28,6 +28,7 @@ const ProjectCardComponent = ({
     state: isExpanded ? "hover" : "rest",
     zIndex: shadowContext?.zIndex,
     maxZIndex: shadowContext?.maxZIndex,
+    lighting: shadowContext?.lighting,
   });
 
   return (

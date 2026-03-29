@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { tw } from "@/lib/utils";
 
 function Slider({
+  "aria-label": ariaLabel,
   className,
   children,
   defaultValue,
@@ -49,9 +50,12 @@ function Slider({
           />
           {Array.from({ length: _values.length }, (_, index) => (
             <SliderPrimitive.Thumb
+              aria-label={ariaLabel}
               className="block size-5 shrink-0 select-none rounded-full border border-input bg-white not-dark:bg-clip-padding outline-none before:absolute before:inset-0 before:rounded-full"
               data-slot="slider-thumb"
               key={String(index)}
+              role="slider"
+              tabIndex={0}
             />
           ))}
         </SliderPrimitive.Track>

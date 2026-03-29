@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RenderCard } from "@/cards/render-card";
-import { fanConfigAtom } from "@/context/atoms";
+import { fanConfigAtom, shadowLightingAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
 import { AnalyticsEvents, track } from "@/lib/analytics";
 import { getCardShadowStyle } from "@/lib/card-shadow";
@@ -59,6 +59,7 @@ export const CardStack = ({
   setRootRef,
 }: CardStackProps) => {
   const fanConfig = useAtomValue(fanConfigAtom);
+  const shadowLighting = useAtomValue(shadowLightingAtom);
   const [measuredSizes, setMeasuredSizes] = useState<Record<string, number>>(
     {}
   );
@@ -299,6 +300,7 @@ export const CardStack = ({
                 state: isCoverHovered ? "hover" : "rest",
                 zIndex: stack.zIndex,
                 maxZIndex,
+                lighting: shadowLighting,
               }),
               pointerEvents: "auto",
               zIndex: (stack.cover ? 1 : 0) + projectsWithSizes.length,
@@ -321,7 +323,11 @@ export const CardStack = ({
                 card={coverWithSize}
                 className="shadow-none hover:shadow-none"
                 onMeasure={(h) => handleCardMeasure(coverWithSize.id, h)}
-                shadowContext={{ zIndex: stack.zIndex, maxZIndex }}
+                shadowContext={{
+                  zIndex: stack.zIndex,
+                  maxZIndex,
+                  lighting: shadowLighting,
+                }}
               />
             </div>
           </motion.div>
@@ -440,7 +446,11 @@ export const CardStack = ({
                 isExpanded={isExpanded}
                 onMeasure={(h) => handleCardMeasure(card.id, h)}
                 priority={index < 2}
-                shadowContext={{ zIndex: stack.zIndex, maxZIndex }}
+                shadowContext={{
+                  zIndex: stack.zIndex,
+                  maxZIndex,
+                  lighting: shadowLighting,
+                }}
               />
             </motion.div>
           );

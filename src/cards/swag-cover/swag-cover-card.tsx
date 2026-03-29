@@ -30,6 +30,7 @@ const SwagCoverCardComponent = ({
         preset: "paper",
         zIndex: shadowContext?.zIndex,
         maxZIndex: shadowContext?.maxZIndex,
+        lighting: shadowContext?.lighting,
       })}
     >
       <p className="wrap-break-word whitespace-pre-wrap font-hand text-sm">

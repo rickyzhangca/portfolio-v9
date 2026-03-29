@@ -13,7 +13,11 @@ import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { getInteractionPolicy } from "@/cards/registry";
 import { AboutModal } from "@/components/about/about-modal";
 import { ResumeModal } from "@/components/resume/resume-modal";
-import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
+import {
+  fanConfigAtom,
+  repulsionConfigAtom,
+  shadowClockHourAtom,
+} from "@/context/atoms";
 import { useCanvasState } from "@/hooks/use-canvas-state";
 import { AnalyticsEvents, track } from "@/lib/analytics";
 import {
@@ -58,6 +62,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
   );
   const isAboutOpen = !!activeAboutItemId;
   const [repulsionConfig] = useAtom(repulsionConfigAtom);
+  const [, setShadowClockHour] = useAtom(shadowClockHourAtom);
   const fanConfig = useAtomValue(fanConfigAtom);
 
   const [viewportDimensions, setViewportDimensions] = useState<{
@@ -122,6 +127,21 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
   useEffect(() => {
     isInteractionLockedRef.current = isResumeOpen || isAboutOpen;
   }, [isResumeOpen, isAboutOpen]);
+
+  useEffect(() => {
+    const syncShadowClock = () => {
+      setShadowClockHour(
+        new Date().getHours() +
+          new Date().getMinutes() / 60 +
+          new Date().getSeconds() / 3600
+      );
+    };
+
+    syncShadowClock();
+
+    const intervalId = window.setInterval(syncShadowClock, 60_000);
+    return () => window.clearInterval(intervalId);
+  }, [setShadowClockHour]);
 
   // Track viewport dimensions for responsive repulsion calculations
   useLayoutEffect(() => {

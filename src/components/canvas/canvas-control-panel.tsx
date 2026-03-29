@@ -1,9 +1,17 @@
 import { motion } from "framer-motion";
-import { useAtom } from "jotai";
-import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
+import { useAtom, useAtomValue } from "jotai";
+import {
+  fanConfigAtom,
+  repulsionConfigAtom,
+  shadowClockHourAtom,
+  shadowDebugConfigAtom,
+  shadowLightingAtom,
+} from "@/context/atoms";
 import { SPRING_PRESETS } from "@/lib/animation";
+import { getCardShadowStyle } from "@/lib/card-shadow";
 import { DEFAULT_FAN_CONFIG } from "@/lib/fan";
 import { DEFAULT_REPULSION_CONFIG } from "@/lib/repulsion";
+import { formatShadowHour } from "@/lib/shadow-lighting";
 import { Slider } from "../ui/slider";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "../ui/tabs";
 import { CanvasControlResetButton } from "./canvas-control-reset-button";
@@ -14,6 +22,11 @@ const toSingleNumber = (value: number | readonly number[]) =>
 export const CanvasControlPanel = () => {
   const [config, setConfig] = useAtom(repulsionConfigAtom);
   const [fanConfig, setFanConfig] = useAtom(fanConfigAtom);
+  const [shadowDebugConfig, setShadowDebugConfig] = useAtom(
+    shadowDebugConfigAtom
+  );
+  const shadowClockHour = useAtomValue(shadowClockHourAtom);
+  const shadowLighting = useAtomValue(shadowLightingAtom);
 
   // Calculate transform for each card in the fan preview
   const calculateCardTransform = (index: number, isCover: boolean) => {
@@ -54,18 +67,31 @@ export const CanvasControlPanel = () => {
     setFanConfig({ ...DEFAULT_FAN_CONFIG });
   };
 
+  const shadowControlHour =
+    shadowDebugConfig.mode === "debug"
+      ? shadowDebugConfig.debugHour
+      : shadowClockHour;
+
+  const handleShadowReset = () => {
+    setShadowDebugConfig({
+      mode: "live",
+      debugHour: shadowClockHour,
+    });
+  };
+
   return (
     <div
       className="flex flex-col overflow-hidden rounded-3xl bg-background2 outline outline-border"
       data-no-collapse
     >
-      <Tabs>
+      <Tabs defaultValue="repulsion">
         <TabsList className="px-3 pt-3">
           <TabsTrigger value="repulsion">Repulsion</TabsTrigger>
           <TabsTrigger value="visual">Fan</TabsTrigger>
+          <TabsTrigger value="shadows">Shadows</TabsTrigger>
         </TabsList>
-        <TabsPanel value="repulsion">
-          <div className="relative h-48 w-60 bg-background3 p-4">
+        <TabsPanel className="w-60" value="repulsion">
+          <div className="relative h-48 bg-background3 p-4">
             <div
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full outline outline-accent"
               style={{
@@ -149,8 +175,8 @@ export const CanvasControlPanel = () => {
           </div>
         </TabsPanel>
 
-        <TabsPanel value="visual">
-          <div className="relative h-48 w-60 bg-background3 p-4">
+        <TabsPanel className="w-60" value="visual">
+          <div className="relative h-48 bg-background3 p-4">
             <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-start justify-center">
               {/* Cover card - index 0 */}
               <motion.div
@@ -320,6 +346,71 @@ export const CanvasControlPanel = () => {
             <CanvasControlResetButton
               disabled={!isFanModified}
               onClick={handleResetFan}
+            />
+          </div>
+        </TabsPanel>
+
+        <TabsPanel className="w-72" value="shadows">
+          <div className="relative flex h-48 items-center justify-center bg-background3 p-4">
+            <div
+              className="h-24 w-32 rounded-3xl bg-white outline outline-border"
+              style={getCardShadowStyle({
+                surface: "card-box-shadow",
+                preset: "media",
+                state: "hover",
+                zIndex: 6,
+                maxZIndex: 12,
+                lighting: shadowLighting,
+              })}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2 p-4 text-sm">
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-1 justify-between">
+                <span className="text-foreground2">Time</span>
+                <span>{formatShadowHour(shadowLighting.hour)}</span>
+              </div>
+              <div className="flex flex-1 justify-between">
+                <span className="text-foreground2">Angle</span>
+                <span>{shadowLighting.angleDeg.toFixed(0)}°</span>
+              </div>
+              <div className="flex flex-1 justify-between">
+                <span className="text-foreground2">Intensity</span>
+                <span>{Math.round(shadowLighting.intensity * 100)}%</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <label
+                  className="text-foreground2"
+                  htmlFor="shadow-time-slider"
+                >
+                  Time
+                </label>
+                <span>{formatShadowHour(shadowControlHour)}</span>
+              </div>
+              <Slider
+                aria-label="Time override"
+                max={24}
+                min={0}
+                onValueChange={(value) =>
+                  setShadowDebugConfig({
+                    mode: "debug",
+                    debugHour: toSingleNumber(value),
+                  })
+                }
+                step={0.25}
+                value={shadowControlHour}
+              />
+            </div>
+          </div>
+
+          <div className="px-4 pb-4">
+            <CanvasControlResetButton
+              disabled={shadowDebugConfig.mode === "live"}
+              onClick={handleShadowReset}
             />
           </div>
         </TabsPanel>
