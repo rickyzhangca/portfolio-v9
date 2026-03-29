@@ -2,6 +2,7 @@ import { PauseIcon, PlayIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { useAtom, useAtomValue } from "jotai";
 import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import {
   fanConfigAtom,
   repulsionConfigAtom,
@@ -21,7 +22,7 @@ import { CanvasControlResetButton } from "./canvas-control-reset-button";
 
 const toSingleNumber = (value: number | readonly number[]) =>
   (Array.isArray(value) ? value[0] : value) ?? 0;
-const SHADOW_PLAYBACK_DURATION_MS = 10_000;
+const SHADOW_PLAYBACK_DURATION_MS = 4000;
 
 export const CanvasControlPanel = () => {
   const [config, setConfig] = useAtom(repulsionConfigAtom);
@@ -104,9 +105,11 @@ export const CanvasControlPanel = () => {
       const progress = Math.min(elapsed / SHADOW_PLAYBACK_DURATION_MS, 1);
       const nextHour = (playbackStartHourRef.current + progress * 24) % 24;
 
-      setShadowDebugConfig({
-        mode: "debug",
-        debugHour: nextHour,
+      flushSync(() => {
+        setShadowDebugConfig({
+          mode: "debug",
+          debugHour: nextHour,
+        });
       });
 
       if (progress >= 1) {
