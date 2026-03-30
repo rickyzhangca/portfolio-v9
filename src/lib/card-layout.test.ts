@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CardInstance } from "@/cards/types";
-import {
-  COLLAPSED_POSITIONS,
-  getOffsets,
-  getRotatedBoundingBox,
-  STACK_OFFSET_PX,
-} from "./card-layout";
+import { getOffsets, getRotatedBoundingBox, STACK_OFFSET_PX } from "./card-layout";
 import { DEFAULT_FAN_CONFIG } from "./fan";
 
 const createMockCard = (
@@ -167,29 +162,5 @@ describe("getRotatedBoundingBox", () => {
     const result = getRotatedBoundingBox(100, 100, 5);
     expect(result.width).toBeGreaterThan(100);
     expect(result.height).toBeGreaterThan(100);
-  });
-});
-
-describe("COLLAPSED_POSITIONS", () => {
-  it("has correct number of positions", () => {
-    expect(COLLAPSED_POSITIONS).toHaveLength(2);
-  });
-
-  it("first position has rotation", () => {
-    expect(COLLAPSED_POSITIONS[0].rotate).toBe(5);
-  });
-
-  it("first position has correct x and y", () => {
-    expect(COLLAPSED_POSITIONS[0].x).toBe(16);
-    expect(COLLAPSED_POSITIONS[0].y).toBe(24);
-  });
-
-  it("second position has no rotation", () => {
-    expect(COLLAPSED_POSITIONS[1].rotate).toBe(0);
-  });
-
-  it("second position has correct x and y", () => {
-    expect(COLLAPSED_POSITIONS[1].x).toBe(32);
-    expect(COLLAPSED_POSITIONS[1].y).toBe(72);
   });
 });
