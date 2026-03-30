@@ -4,6 +4,11 @@ import {
   createMockFunStack,
   renderWithProviders,
 } from "@/test-utils/test-helpers";
+
+vi.mock("../markdown-renderer", () => ({
+  MarkdownRenderer: ({ content }: { content: string }) => <div>{content}</div>,
+}));
+
 import { FunProjectGroup } from "./fun-project-group";
 
 interface MockResizeObserverEntry {
@@ -25,11 +30,17 @@ class MockResizeObserver {
     resizeObserverCallbacks.push(callback);
   }
 
-  observe() {}
+  observe() {
+    // Intentionally empty for tests.
+  }
 
-  disconnect() {}
+  disconnect() {
+    // Intentionally empty for tests.
+  }
 
-  unobserve() {}
+  unobserve() {
+    // Intentionally empty for tests.
+  }
 }
 
 const baseProps = {
@@ -65,13 +76,14 @@ describe("FunProjectGroup", () => {
     expect(screen.queryByText("Test Project")).toBeNull();
   });
 
-  it("mounts detail cards when expanded", () => {
+  it("mounts detail cards when expanded", async () => {
     const item = createMockFunStack("fun-1", 0, 0);
 
     renderWithProviders(
       <FunProjectGroup {...baseProps} isExpanded={true} item={item} />
     );
 
+    await screen.findByText("A test fun project");
     expect(screen.getByText("Test Project")).not.toBeNull();
   });
 
@@ -87,6 +99,8 @@ describe("FunProjectGroup", () => {
     ) as HTMLDivElement | null;
     expect(contentCard).not.toBeNull();
     expect(contentCard?.style.visibility).toBe("hidden");
+
+    await screen.findByText("A test fun project");
 
     act(() => {
       for (const callback of resizeObserverCallbacks) {
