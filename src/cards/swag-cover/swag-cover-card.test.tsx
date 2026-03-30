@@ -27,7 +27,8 @@ describe("SwagCoverCard", () => {
     expect(wrapper?.style.boxShadow).toBe(
       getCardShadowStyle({
         surface: "card-box-shadow",
-        preset: "paper",
+        role: "surface",
+        tone: "paper",
         zIndex: 4,
         maxZIndex: 6,
       }).boxShadow

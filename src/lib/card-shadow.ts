@@ -8,23 +8,33 @@ export interface CardShadowContext {
 }
 
 export type CardShadowSurface = "canvas-filter" | "card-box-shadow";
-export type CardShadowPreset = "default" | "cover" | "media" | "paper";
-export type CardShadowState = "rest" | "hover";
+export type CardShadowRole = "silhouette" | "surface" | "accent";
+export type CardShadowTone = "default" | "paper" | "soft" | "raised";
+export type CardShadowState = "rest" | "hover" | "expanded" | "focused";
 
 export interface CardShadowOptions {
   surface: CardShadowSurface;
-  preset: CardShadowPreset;
+  role: CardShadowRole;
+  tone?: CardShadowTone;
   state?: CardShadowState;
   zIndex?: number;
   maxZIndex?: number;
   lighting?: ShadowLightingState;
 }
 
-interface ShadowLayer {
+interface ShadowBlueprint {
   blur: number;
   offset: number;
   opacity: number;
   spread?: number;
+}
+
+export interface ShadowRecipeLayer {
+  x: number;
+  y: number;
+  blur: number;
+  opacity: number;
+  spread: number;
 }
 
 const DEFAULT_DEPTH = 0.5;
@@ -35,6 +45,16 @@ const DEFAULT_LIGHTING: ShadowLightingState = {
   intensity: 1,
   offsetScale: 1,
   blurScale: 1,
+};
+
+const SHADOW_STATE_MULTIPLIERS: Record<
+  CardShadowState,
+  { blur: number; offset: number; opacity: number }
+> = {
+  rest: { blur: 1, offset: 1, opacity: 1 },
+  hover: { blur: 1.05, offset: 1.08, opacity: 1.08 },
+  expanded: { blur: 1.03, offset: 1.04, opacity: 1.04 },
+  focused: { blur: 1.12, offset: 1.12, opacity: 1.14 },
 };
 
 const round = (value: number, precision = 3) => {
@@ -62,158 +82,129 @@ const getDepth = (zIndex?: number, maxZIndex?: number) => {
 const getLighting = (lighting?: ShadowLightingState) =>
   lighting ?? DEFAULT_LIGHTING;
 
-const getShadowOffset = (
-  offset: number,
-  angleDeg: number,
-  offsetScale: number,
-  depth: number
-) => {
-  const angleInRadians = (angleDeg * Math.PI) / 180;
-  const distance = offset * offsetScale * (1 + depth * 0.15);
+const resolveTone = (role: CardShadowRole, tone?: CardShadowTone) => {
+  if (tone) {
+    return tone;
+  }
 
-  return {
-    x: round(Math.cos(angleInRadians) * distance),
-    y: round(Math.sin(angleInRadians) * distance),
-  };
+  if (role === "accent") {
+    return "soft";
+  }
+
+  return "default";
 };
 
-const getBlur = (blur: number, blurScale: number, depth: number) =>
-  round(blur * blurScale * (1 + depth * 0.1));
-
-const getOpacity = (opacity: number, intensity: number, depth: number) =>
-  round(clamp(opacity * intensity * (1 + depth * 0.08), 0, 1));
-
-const toDropShadow = (
-  layer: ShadowLayer,
-  lighting: ShadowLightingState,
-  depth: number
-) => {
-  const { x, y } = getShadowOffset(
-    layer.offset,
-    lighting.angleDeg,
-    lighting.offsetScale,
-    depth
-  );
-
-  return `drop-shadow(${x}px ${y}px ${getBlur(layer.blur, lighting.blurScale, depth)}px rgba(0, 0, 0, ${getOpacity(layer.opacity, lighting.intensity, depth)}))`;
-};
-
-const toBoxShadow = (
-  layer: ShadowLayer,
-  lighting: ShadowLightingState,
-  depth: number
-) => {
-  const { x, y } = getShadowOffset(
-    layer.offset,
-    lighting.angleDeg,
-    lighting.offsetScale,
-    depth
-  );
-
-  return `${x}px ${y}px ${getBlur(layer.blur, lighting.blurScale, depth)}px ${round(layer.spread ?? 0)}px rgba(0, 0, 0, ${getOpacity(layer.opacity, lighting.intensity, depth)})`;
-};
-
-const getCanvasShadowLayer = (
-  preset: CardShadowPreset,
-  state: CardShadowState,
-  depth: number
-): ShadowLayer => {
-  const base = (() => {
-    if (preset === "cover") {
-      return state === "hover"
-        ? { blur: 18, offset: 10, opacity: 0.24 }
-        : { blur: 16, offset: 8, opacity: 0.2 };
-    }
-
-    return state === "hover"
-      ? { blur: 18, offset: 10, opacity: 0.16 }
-      : { blur: 16, offset: 8, opacity: 0.12 };
-  })();
-
-  return {
-    blur: base.blur + depth * 4,
-    offset: base.offset + depth * 2,
-    opacity: base.opacity + depth * 0.02,
-  };
-};
-
-const getCardShadowLayers = (
-  preset: CardShadowPreset,
-  state: CardShadowState,
-  depth: number
-): ShadowLayer[] => {
-  switch (preset) {
-    case "paper":
-      return [
-        {
-          blur: 6 + depth * 1.5,
-          offset: 4 + depth,
-          opacity: 0.1 + depth * 0.015,
-          spread: -1,
-        },
-        {
-          blur: 4 + depth,
-          offset: 2 + depth * 0.5,
-          opacity: 0.1 + depth * 0.01,
-          spread: -2,
-        },
-      ];
-    case "media":
-      if (state === "hover") {
+const getShadowBlueprints = (
+  role: CardShadowRole,
+  tone: CardShadowTone
+): ShadowBlueprint[] => {
+  switch (role) {
+    case "silhouette":
+      return [{ blur: 15.5, offset: 7.75, opacity: 0.138 }];
+    case "surface":
+      if (tone === "paper") {
         return [
-          {
-            blur: 16 + depth * 4,
-            offset: 6 + depth * 2,
-            opacity: 0.24 + depth * 0.04,
-            spread: -2,
-          },
+          { blur: 6.25, offset: 4.1, opacity: 0.105, spread: -1 },
+          { blur: 4.4, offset: 2.2, opacity: 0.094, spread: -2 },
         ];
       }
 
-      return [
-        {
-          blur: 6 + depth * 2,
-          offset: 2 + depth,
-          opacity: 0.12 + depth * 0.02,
-        },
-      ];
+      return [{ blur: 14.5, offset: 7, opacity: 0.146, spread: -1 }];
+    case "accent":
+      if (tone === "raised") {
+        return [
+          { blur: 12.75, offset: 6.1, opacity: 0.154, spread: -1 },
+          { blur: 5.5, offset: 2.6, opacity: 0.055, spread: -2 },
+        ];
+      }
+
+      return [{ blur: 10.5, offset: 5.2, opacity: 0.136, spread: -1 }];
     default:
-      return [
-        {
-          blur: 16 + depth * 4,
-          offset: 8 + depth * 2,
-          opacity: 0.16 + depth * 0.02,
-        },
-      ];
+      return [{ blur: 14.5, offset: 7, opacity: 0.146, spread: -1 }];
   }
+};
+
+const resolveLayer = (
+  layer: ShadowBlueprint,
+  lighting: ShadowLightingState,
+  depth: number,
+  state: CardShadowState
+): ShadowRecipeLayer => {
+  const stateMultipliers = SHADOW_STATE_MULTIPLIERS[state];
+  const angleInRadians = (lighting.angleDeg * Math.PI) / 180;
+  const offsetDistance =
+    layer.offset *
+    stateMultipliers.offset *
+    lighting.offsetScale *
+    (1 + depth * 0.12);
+  const blur =
+    layer.blur *
+    stateMultipliers.blur *
+    lighting.blurScale *
+    (1 + depth * 0.08);
+  const opacity =
+    layer.opacity *
+    stateMultipliers.opacity *
+    lighting.intensity *
+    (1 + depth * 0.06);
+
+  return {
+    x: round(Math.cos(angleInRadians) * offsetDistance),
+    y: round(Math.sin(angleInRadians) * offsetDistance),
+    blur: round(blur),
+    opacity: round(clamp(opacity, 0, 1)),
+    spread: round(layer.spread ?? 0),
+  };
+};
+
+const toDropShadow = (layer: ShadowRecipeLayer) =>
+  `drop-shadow(${layer.x}px ${layer.y}px ${layer.blur}px rgba(0, 0, 0, ${layer.opacity}))`;
+
+const toBoxShadow = (layer: ShadowRecipeLayer) =>
+  `${layer.x}px ${layer.y}px ${layer.blur}px ${layer.spread}px rgba(0, 0, 0, ${layer.opacity})`;
+
+export const getShadowRecipe = ({
+  role,
+  tone,
+  state = "rest",
+  zIndex,
+  maxZIndex,
+  lighting,
+}: Omit<CardShadowOptions, "surface">): ShadowRecipeLayer[] => {
+  const depth = getDepth(zIndex, maxZIndex);
+  const shadowLighting = getLighting(lighting);
+  const resolvedTone = resolveTone(role, tone);
+
+  return getShadowBlueprints(role, resolvedTone).map((layer) =>
+    resolveLayer(layer, shadowLighting, depth, state)
+  );
 };
 
 export const getCardShadowStyle = ({
   surface,
-  preset,
+  role,
+  tone,
   state = "rest",
   zIndex,
   maxZIndex,
   lighting,
 }: CardShadowOptions): CSSProperties => {
-  // Depth weighting stays intentionally conservative for now so this refactor
-  // establishes the dynamic lighting seam without re-lighting the whole canvas.
-  const depth = getDepth(zIndex, maxZIndex);
-  const shadowLighting = getLighting(lighting);
+  const recipe = getShadowRecipe({
+    role,
+    tone,
+    state,
+    zIndex,
+    maxZIndex,
+    lighting,
+  });
 
   if (surface === "canvas-filter") {
     return {
-      filter: toDropShadow(
-        getCanvasShadowLayer(preset, state, depth),
-        shadowLighting,
-        depth
-      ),
+      filter: recipe.map(toDropShadow).join(" "),
     };
   }
 
   return {
-    boxShadow: getCardShadowLayers(preset, state, depth)
-      .map((layer) => toBoxShadow(layer, shadowLighting, depth))
-      .join(", "),
+    boxShadow: recipe.map(toBoxShadow).join(", "),
   };
 };

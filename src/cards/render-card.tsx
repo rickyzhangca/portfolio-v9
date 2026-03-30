@@ -83,7 +83,9 @@ const RenderCardComponent = ({
       case "email":
         return <EmailCard content={card.content} />;
       case "socials":
-        return <SocialsCard content={card.content} />;
+        return (
+          <SocialsCard content={card.content} shadowContext={shadowContext} />
+        );
       case "stickynote":
         return (
           <StickyNoteCard content={card.content} shadowContext={shadowContext} />

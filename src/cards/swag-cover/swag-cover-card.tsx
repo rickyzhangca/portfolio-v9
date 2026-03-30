@@ -27,7 +27,8 @@ const SwagCoverCardComponent = ({
       className={tw("h-full w-full rounded-sm p-4", colorClass)}
       style={getCardShadowStyle({
         surface: "card-box-shadow",
-        preset: "paper",
+        role: "surface",
+        tone: "paper",
         zIndex: shadowContext?.zIndex,
         maxZIndex: shadowContext?.maxZIndex,
         lighting: shadowContext?.lighting,

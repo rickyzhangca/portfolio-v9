@@ -432,8 +432,8 @@ export const CanvasControlPanel = () => {
               className="h-24 w-32 rounded-3xl bg-white outline outline-border"
               style={getCardShadowStyle({
                 surface: "card-box-shadow",
-                preset: "media",
-                state: "hover",
+                role: "surface",
+                state: "expanded",
                 zIndex: 6,
                 maxZIndex: 12,
                 lighting: shadowLighting,

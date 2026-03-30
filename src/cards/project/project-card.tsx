@@ -22,10 +22,20 @@ const ProjectCardComponent = ({
 }: ProjectCardProps) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const shadowState = isExpanded ? "expanded" : "rest";
   const mediaShadowStyle = getCardShadowStyle({
     surface: "card-box-shadow",
-    preset: "media",
-    state: isExpanded ? "hover" : "rest",
+    role: "surface",
+    state: shadowState,
+    zIndex: shadowContext?.zIndex,
+    maxZIndex: shadowContext?.maxZIndex,
+    lighting: shadowContext?.lighting,
+  });
+  const metadataShadowStyle = getCardShadowStyle({
+    surface: "card-box-shadow",
+    role: "accent",
+    tone: "soft",
+    state: shadowState,
     zIndex: shadowContext?.zIndex,
     maxZIndex: shadowContext?.maxZIndex,
     lighting: shadowContext?.lighting,
@@ -67,8 +77,9 @@ const ProjectCardComponent = ({
           y: isExpanded ? 0 : -8,
           scale: isExpanded ? 1 : 0.95,
         }}
-        className="no-pan flex w-fit items-center gap-4 rounded-full bg-white px-5 py-3 shadow-2xl"
+        className="no-pan flex w-fit items-center gap-4 rounded-full bg-white px-5 py-3"
         initial={false}
+        style={metadataShadowStyle}
         transition={SPRING_PRESETS.snappy}
       >
         <span className="font-medium">{content.title}</span>
@@ -99,8 +110,9 @@ const ProjectCardComponent = ({
             y: isExpanded ? 0 : -8,
             scale: isExpanded ? 1 : 0.95,
           }}
-          className="no-pan rounded-3xl bg-white px-5 py-4 text-sm shadow-2xl"
+          className="no-pan rounded-3xl bg-white px-5 py-4 text-sm"
           initial={false}
+          style={metadataShadowStyle}
           transition={{
             ...SPRING_PRESETS.snappy,
             delay: 0.02,

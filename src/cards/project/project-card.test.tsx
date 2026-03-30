@@ -5,7 +5,7 @@ import { getShadowLighting } from "@/lib/shadow-lighting";
 import { ProjectCard } from "./project-card";
 
 describe("ProjectCard", () => {
-  it("applies shared media shadow styles to the image shell", () => {
+  it("applies shared surface shadow styles to the image shell", () => {
     render(
       <ProjectCard
         content={{
@@ -21,8 +21,8 @@ describe("ProjectCard", () => {
     expect(mediaShell?.style.boxShadow).toBe(
       getCardShadowStyle({
         surface: "card-box-shadow",
-        preset: "media",
-        state: "hover",
+        role: "surface",
+        state: "expanded",
         zIndex: 3,
         maxZIndex: 8,
       }).boxShadow
@@ -63,6 +63,40 @@ describe("ProjectCard", () => {
 
     expect(screen.getByAltText("Demo").parentElement?.style.boxShadow).not.toBe(
       morningShadow
+    );
+  });
+
+  it("uses shared accent shadow styles for project metadata pills", () => {
+    render(
+      <ProjectCard
+        content={{
+          title: "Demo",
+          description: "Shadow cleanup",
+          image: "/demo.png",
+        }}
+        shadowContext={{ maxZIndex: 8, zIndex: 3 }}
+      />
+    );
+
+    expect(screen.getByText("Demo").parentElement?.style.boxShadow).toBe(
+      getCardShadowStyle({
+        surface: "card-box-shadow",
+        role: "accent",
+        tone: "soft",
+        state: "expanded",
+        zIndex: 3,
+        maxZIndex: 8,
+      }).boxShadow
+    );
+    expect(screen.getByText("Shadow cleanup").style.boxShadow).toBe(
+      getCardShadowStyle({
+        surface: "card-box-shadow",
+        role: "accent",
+        tone: "soft",
+        state: "expanded",
+        zIndex: 3,
+        maxZIndex: 8,
+      }).boxShadow
     );
   });
 });

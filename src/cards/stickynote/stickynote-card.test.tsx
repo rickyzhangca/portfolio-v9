@@ -27,7 +27,8 @@ describe("StickyNoteCard", () => {
     expect(wrapper?.style.boxShadow).toBe(
       getCardShadowStyle({
         surface: "card-box-shadow",
-        preset: "paper",
+        role: "surface",
+        tone: "paper",
         zIndex: 2,
         maxZIndex: 5,
       }).boxShadow

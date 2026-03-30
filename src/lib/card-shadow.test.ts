@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getCardShadowStyle } from "./card-shadow";
+import { getCardShadowStyle, getShadowRecipe } from "./card-shadow";
 import { getShadowLighting } from "./shadow-lighting";
 
 const SHADOW_OPACITY_PATTERN = /rgba\(0, 0, 0, ([0-9.]+)\)/;
@@ -32,11 +32,11 @@ const parseDropShadow = (filter: string) => {
 };
 
 describe("getCardShadowStyle", () => {
-  it("returns a filter style for canvas shadows", () => {
+  it("returns a filter style for silhouette shadows", () => {
     expect(
       getCardShadowStyle({
         surface: "canvas-filter",
-        preset: "default",
+        role: "silhouette",
       })
     ).toEqual({
       filter: expect.stringContaining("drop-shadow("),
@@ -47,7 +47,8 @@ describe("getCardShadowStyle", () => {
     expect(
       getCardShadowStyle({
         surface: "card-box-shadow",
-        preset: "paper",
+        role: "surface",
+        tone: "paper",
       })
     ).toEqual({
       boxShadow: expect.any(String),
@@ -58,12 +59,12 @@ describe("getCardShadowStyle", () => {
     expect(
       getCardShadowStyle({
         surface: "card-box-shadow",
-        preset: "media",
+        role: "surface",
       })
     ).toEqual(
       getCardShadowStyle({
         surface: "card-box-shadow",
-        preset: "media",
+        role: "surface",
         zIndex: undefined,
         maxZIndex: undefined,
       })
@@ -74,40 +75,52 @@ describe("getCardShadowStyle", () => {
     expect(
       getCardShadowStyle({
         surface: "canvas-filter",
-        preset: "cover",
+        role: "silhouette",
         state: "rest",
       }).filter
     ).not.toBe(
       getCardShadowStyle({
         surface: "canvas-filter",
-        preset: "cover",
+        role: "silhouette",
         state: "hover",
       }).filter
     );
   });
 
-  it("keeps stack cover shadows visibly stronger at rest", () => {
-    const filter = getCardShadowStyle({
-      surface: "canvas-filter",
-      preset: "cover",
+  it("keeps silhouette and surface elevations in the same band", () => {
+    const silhouette = getShadowRecipe({
+      role: "silhouette",
       state: "rest",
-    }).filter;
+      zIndex: 5,
+      maxZIndex: 10,
+    });
+    const surface = getShadowRecipe({
+      role: "surface",
+      state: "expanded",
+      zIndex: 5,
+      maxZIndex: 10,
+    });
 
-    expect(getShadowOpacity(filter ?? "")).toBeGreaterThan(0.2);
+    expect(
+      Math.abs((silhouette[0]?.opacity ?? 0) - (surface[0]?.opacity ?? 0))
+    ).toBeLessThan(0.04);
+    expect(
+      Math.abs((silhouette[0]?.blur ?? 0) - (surface[0]?.blur ?? 0))
+    ).toBeLessThan(4);
   });
 
   it("slightly increases depth for higher z-index values", () => {
     expect(
       getCardShadowStyle({
         surface: "canvas-filter",
-        preset: "default",
+        role: "silhouette",
         zIndex: 1,
         maxZIndex: 10,
       }).filter
     ).not.toBe(
       getCardShadowStyle({
         surface: "canvas-filter",
-        preset: "default",
+        role: "silhouette",
         zIndex: 10,
         maxZIndex: 10,
       }).filter
@@ -118,13 +131,13 @@ describe("getCardShadowStyle", () => {
     expect(
       getCardShadowStyle({
         surface: "canvas-filter",
-        preset: "default",
+        role: "silhouette",
         lighting: getShadowLighting(8, "live"),
       }).filter
     ).not.toBe(
       getCardShadowStyle({
         surface: "canvas-filter",
-        preset: "default",
+        role: "silhouette",
         lighting: getShadowLighting(16, "live"),
       }).filter
     );
@@ -134,7 +147,7 @@ describe("getCardShadowStyle", () => {
     expect(
       getCardShadowStyle({
         surface: "canvas-filter",
-        preset: "default",
+        role: "silhouette",
         zIndex: 1,
         maxZIndex: 10,
         lighting: getShadowLighting(12, "live"),
@@ -142,7 +155,7 @@ describe("getCardShadowStyle", () => {
     ).not.toBe(
       getCardShadowStyle({
         surface: "canvas-filter",
-        preset: "default",
+        role: "silhouette",
         zIndex: 10,
         maxZIndex: 10,
         lighting: getShadowLighting(12, "live"),
@@ -154,7 +167,7 @@ describe("getCardShadowStyle", () => {
     const midnightShadow = parseDropShadow(
       getCardShadowStyle({
         surface: "canvas-filter",
-        preset: "default",
+        role: "silhouette",
         zIndex: 5,
         maxZIndex: 10,
         lighting: getShadowLighting(0, "debug"),
@@ -164,7 +177,7 @@ describe("getCardShadowStyle", () => {
     const noonShadow = parseDropShadow(
       getCardShadowStyle({
         surface: "canvas-filter",
-        preset: "default",
+        role: "silhouette",
         zIndex: 5,
         maxZIndex: 10,
         lighting: getShadowLighting(12, "debug"),
@@ -175,5 +188,35 @@ describe("getCardShadowStyle", () => {
     expect(
       Math.abs(midnightShadow.opacity - noonShadow.opacity)
     ).toBeGreaterThan(0.08);
+  });
+
+  it("keeps hover and focused deltas modest across roles", () => {
+    const restSilhouetteOpacity = getShadowOpacity(
+      getCardShadowStyle({
+        surface: "canvas-filter",
+        role: "silhouette",
+        state: "rest",
+      }).filter ?? ""
+    );
+    const hoverSilhouetteOpacity = getShadowOpacity(
+      getCardShadowStyle({
+        surface: "canvas-filter",
+        role: "silhouette",
+        state: "hover",
+      }).filter ?? ""
+    );
+    const focusedSurface = getShadowRecipe({
+      role: "surface",
+      state: "focused",
+    });
+    const restSurface = getShadowRecipe({
+      role: "surface",
+      state: "rest",
+    });
+
+    expect(hoverSilhouetteOpacity - restSilhouetteOpacity).toBeLessThan(0.05);
+    expect((focusedSurface[0]?.opacity ?? 0) - (restSurface[0]?.opacity ?? 0)).toBeLessThan(
+      0.07
+    );
   });
 });

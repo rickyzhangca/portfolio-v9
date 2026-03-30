@@ -1,14 +1,28 @@
 import { memo, type ReactNode, useState } from "react";
 import type { SocialsCardContent } from "@/cards/registry";
+import type { CardShadowContext } from "@/lib/card-shadow";
+import { getCardShadowStyle } from "@/lib/card-shadow";
 import { tw } from "@/lib/utils";
 
 const Key = ({
   mode,
+  shadowContext,
   children,
 }: {
   mode: "logi" | "apple";
+  shadowContext?: CardShadowContext;
   children: ReactNode;
 }) => {
+  const keyShadow = getCardShadowStyle({
+    surface: "card-box-shadow",
+    role: "accent",
+    tone: "soft",
+    state: "rest",
+    zIndex: shadowContext?.zIndex,
+    maxZIndex: shadowContext?.maxZIndex,
+    lighting: shadowContext?.lighting,
+  });
+
   return (
     <div
       className={tw("relative", mode === "logi" ? "rounded-2xl" : "rounded-md")}
@@ -18,12 +32,13 @@ const Key = ({
           "absolute flex size-18 -translate-y-2 items-center justify-center border-2 border-foreground1/80 transition duration-75 hover:-translate-y-1.5 active:translate-y-0",
           mode === "logi" ? "rounded-2xl" : "rounded-md"
         )}
+        data-shadow-surface="socials-key"
         style={{
           background:
             mode === "logi"
               ? "linear-gradient(195deg, rgba(65.58, 66.47, 68.23, 0.50) 0%, rgba(26.62, 27.04, 27.88, 0.50) 100%), linear-gradient(225deg, #5A5B5D 0%, #393A3C 100%)"
               : "linear-gradient(180deg, #4D4E50 0%, #222325 40%)",
-          boxShadow: "-3px 4px 6px rgba(0, 0, 0, 0.16)",
+          ...keyShadow,
         }}
       >
         <div
@@ -52,10 +67,29 @@ const Key = ({
 
 interface SocialsCardProps {
   content: SocialsCardContent;
+  shadowContext?: CardShadowContext;
 }
 
-const SocialsCardComponent = ({ content }: SocialsCardProps) => {
+const SocialsCardComponent = ({ content, shadowContext }: SocialsCardProps) => {
   const [mode, setMode] = useState<"logi" | "apple">("logi");
+  const shellShadow = getCardShadowStyle({
+    surface: "card-box-shadow",
+    role: "accent",
+    tone: "raised",
+    state: "rest",
+    zIndex: shadowContext?.zIndex,
+    maxZIndex: shadowContext?.maxZIndex,
+    lighting: shadowContext?.lighting,
+  });
+  const thumbShadow = getCardShadowStyle({
+    surface: "card-box-shadow",
+    role: "accent",
+    tone: "soft",
+    state: "rest",
+    zIndex: shadowContext?.zIndex,
+    maxZIndex: shadowContext?.maxZIndex,
+    lighting: shadowContext?.lighting,
+  });
 
   const toggleMode = () => {
     setMode((prev) => (prev === "logi" ? "apple" : "logi"));
@@ -74,12 +108,13 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
           "absolute flex items-center justify-center gap-5 pt-1.5 pr-5 pb-2 pl-2 outline outline-foreground1/60",
           mode === "logi" ? "rounded-2xl" : "rounded-lg"
         )}
+        data-shadow-surface="socials-shell"
         style={{
           background:
             mode === "logi"
               ? "linear-gradient(180deg, #7A7B7D 0%, #3D3D40 100%), linear-gradient(207deg, #7A7B7D 0%, #3D3D40 100%)"
               : "linear-gradient(180deg, #5B5D5F 0%, #3D3D40 100%), linear-gradient(207deg, #7A7B7D 0%, #3D3D40 100%)",
-          boxShadow: "0px 8px 16px rgba(0, 0, 0, 0.32)",
+          ...shellShadow,
         }}
       >
         <div className="flex gap-2">
@@ -88,7 +123,7 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
             onClick={() => handleLinkClick(content.linkedinUrl)}
             type="button"
           >
-            <Key mode={mode}>
+            <Key mode={mode} shadowContext={shadowContext}>
               <svg
                 fill="none"
                 height="24"
@@ -110,7 +145,7 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
             onClick={() => handleLinkClick(content.twitterUrl)}
             type="button"
           >
-            <Key mode={mode}>
+            <Key mode={mode} shadowContext={shadowContext}>
               <svg
                 fill="none"
                 height="20"
@@ -143,10 +178,11 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
                 "size-5 rounded-full transition",
                 mode === "apple" ? "translate-y-7" : "translate-y-0"
               )}
+              data-shadow-surface="socials-toggle-thumb"
               style={{
                 background:
                   "linear-gradient(195deg, #C6CAD3 0%, rgba(26.62, 27.04, 27.88, 0.50) 100%), linear-gradient(225deg, #5A5B5D 0%, #393A3C 100%)",
-                boxShadow: "-1px 1px 4px rgba(0, 0, 0, 0.36)",
+                ...thumbShadow,
               }}
             />
           </button>

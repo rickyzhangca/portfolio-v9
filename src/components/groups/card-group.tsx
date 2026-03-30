@@ -130,6 +130,17 @@ export const CardStack = ({
   const [isPeeking, setIsPeeking] = useState(false);
   const [isCoverHovered, setIsCoverHovered] = useState(false);
   const peekTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const coverShadowState = (() => {
+    if (isCoverHovered) {
+      return "hover" as const;
+    }
+
+    if (isExpanded) {
+      return "expanded" as const;
+    }
+
+    return "rest" as const;
+  })();
 
   const triggerPeek = useCallback(() => {
     if (peekTimeoutRef.current) {
@@ -296,8 +307,8 @@ export const CardStack = ({
             style={{
               ...getCardShadowStyle({
                 surface: "canvas-filter",
-                preset: "cover",
-                state: isCoverHovered ? "hover" : "rest",
+                role: "silhouette",
+                state: coverShadowState,
                 zIndex: stack.zIndex,
                 maxZIndex,
                 lighting: shadowLighting,

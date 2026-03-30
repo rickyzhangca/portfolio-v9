@@ -123,6 +123,17 @@ export const SingleCardItem = ({
   const focusOffsetY = shouldRenderFocusHiRes
     ? -((baseHeight * focusScale - baseHeight) / 2)
     : 0;
+  const shadowState = (() => {
+    if (isFocused) {
+      return "focused" as const;
+    }
+
+    if (isHovered) {
+      return "hover" as const;
+    }
+
+    return "rest" as const;
+  })();
 
   return (
     <motion.div
@@ -206,8 +217,8 @@ export const SingleCardItem = ({
           style={{
             ...getCardShadowStyle({
               surface: "canvas-filter",
-              preset: "default",
-              state: isHovered ? "hover" : "rest",
+              role: "silhouette",
+              state: shadowState,
               zIndex: item.zIndex,
               maxZIndex,
               lighting: shadowLighting,
