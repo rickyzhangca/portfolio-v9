@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { CardInstance } from "@/cards/types";
-import { getOffsets, getRotatedBoundingBox, STACK_OFFSET_PX } from "./card-layout";
+import {
+  getOffsets,
+  getRotatedBoundingBox,
+  STACK_OFFSET_PX,
+} from "./card-layout";
 import { DEFAULT_FAN_CONFIG } from "./fan";
 
 const createMockCard = (

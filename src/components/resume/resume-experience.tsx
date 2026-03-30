@@ -38,7 +38,9 @@ export const ResumeExperience = ({ data }: ResumeExperienceProps) => {
               ) : (
                 <p>{experience.description}</p>
               )}
-              <p className="whitespace-pre-line text-foreground2">{experience.caption}</p>
+              <p className="whitespace-pre-line text-foreground2">
+                {experience.caption}
+              </p>
             </div>
           </div>
         ))}
