@@ -30,7 +30,6 @@ interface SingleCardItemProps {
 
 export const SingleCardItem = ({
   item,
-  maxZIndex,
   scale,
   isFocused,
   dragDisabled,
@@ -123,16 +122,16 @@ export const SingleCardItem = ({
   const focusOffsetY = shouldRenderFocusHiRes
     ? -((baseHeight * focusScale - baseHeight) / 2)
     : 0;
-  const shadowState = (() => {
+  const shadowZ = (() => {
     if (isFocused) {
-      return "focused" as const;
+      return 22;
     }
 
     if (isHovered) {
-      return "hover" as const;
+      return 20;
     }
 
-    return "rest" as const;
+    return 16;
   })();
 
   return (
@@ -217,10 +216,8 @@ export const SingleCardItem = ({
           style={{
             ...getCardShadowStyle({
               surface: "canvas-filter",
-              role: "silhouette",
-              state: shadowState,
-              zIndex: item.zIndex,
-              maxZIndex,
+              z: shadowZ,
+              objectHeight: hiResCard.size.height,
               lighting: shadowLighting,
             }),
             pointerEvents: "auto",
@@ -234,8 +231,6 @@ export const SingleCardItem = ({
             isFocused={isFocused}
             onMeasure={shouldRenderFocusHiRes ? undefined : handleCardMeasure}
             shadowContext={{
-              zIndex: item.zIndex,
-              maxZIndex,
               lighting: shadowLighting,
             }}
           />

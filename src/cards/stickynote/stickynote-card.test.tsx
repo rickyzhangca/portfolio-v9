@@ -18,7 +18,7 @@ describe("StickyNoteCard", () => {
     const { container } = render(
       <StickyNoteCard
         content={{ content: "hello world" }}
-        shadowContext={{ maxZIndex: 5, zIndex: 2 }}
+        shadowContext={{ objectHeight: 120 }}
       />
     );
 
@@ -27,10 +27,8 @@ describe("StickyNoteCard", () => {
     expect(wrapper?.style.boxShadow).toBe(
       getCardShadowStyle({
         surface: "card-box-shadow",
-        role: "surface",
-        tone: "paper",
-        zIndex: 2,
-        maxZIndex: 5,
+        z: 6,
+        objectHeight: 120,
       }).boxShadow
     );
   });

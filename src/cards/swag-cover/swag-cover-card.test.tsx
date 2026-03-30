@@ -18,7 +18,7 @@ describe("SwagCoverCard", () => {
     const { container } = render(
       <SwagCoverCard
         content={{ content: "my swag collection" }}
-        shadowContext={{ maxZIndex: 6, zIndex: 4 }}
+        shadowContext={{ objectHeight: 120 }}
       />
     );
 
@@ -27,10 +27,8 @@ describe("SwagCoverCard", () => {
     expect(wrapper?.style.boxShadow).toBe(
       getCardShadowStyle({
         surface: "card-box-shadow",
-        role: "surface",
-        tone: "paper",
-        zIndex: 4,
-        maxZIndex: 6,
+        z: 6,
+        objectHeight: 120,
       }).boxShadow
     );
   });

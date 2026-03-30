@@ -22,22 +22,18 @@ const ProjectCardComponent = ({
 }: ProjectCardProps) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const shadowState = isExpanded ? "expanded" : "rest";
+  const mediaShadowZ = shadowContext?.z ?? (isExpanded ? 10 : 8);
+  const metadataShadowZ = shadowContext?.z ?? (isExpanded ? 5 : 4);
   const mediaShadowStyle = getCardShadowStyle({
     surface: "card-box-shadow",
-    role: "surface",
-    state: shadowState,
-    zIndex: shadowContext?.zIndex,
-    maxZIndex: shadowContext?.maxZIndex,
+    z: mediaShadowZ,
+    objectHeight: shadowContext?.objectHeight,
     lighting: shadowContext?.lighting,
   });
   const metadataShadowStyle = getCardShadowStyle({
     surface: "card-box-shadow",
-    role: "accent",
-    tone: "soft",
-    state: shadowState,
-    zIndex: shadowContext?.zIndex,
-    maxZIndex: shadowContext?.maxZIndex,
+    z: metadataShadowZ,
+    objectHeight: shadowContext?.objectHeight,
     lighting: shadowContext?.lighting,
   });
 

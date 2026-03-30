@@ -74,10 +74,8 @@ describe("CardStack", () => {
     expect(coverShadow?.style.filter).toBe(
       getCardShadowStyle({
         surface: "canvas-filter",
-        role: "silhouette",
-        state: "rest",
-        zIndex: 5,
-        maxZIndex: 10,
+        z: 16,
+        objectHeight: 100,
         lighting: getShadowLighting(12, "debug"),
       }).filter
     );

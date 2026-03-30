@@ -5,7 +5,6 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -70,32 +69,6 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
     useEffect(() => {
       handleMeasure();
     }, [handleMeasure]);
-
-    const restCubeShadowRecipe = useMemo(
-      () =>
-        getShadowRecipe({
-          role: "accent",
-          tone: "soft",
-          state: "rest",
-          zIndex: shadowContext?.zIndex,
-          maxZIndex: shadowContext?.maxZIndex,
-          lighting: shadowContext?.lighting,
-        }),
-      [shadowContext?.lighting, shadowContext?.maxZIndex, shadowContext?.zIndex]
-    );
-
-    const focusedCubeShadowRecipe = useMemo(
-      () =>
-        getShadowRecipe({
-          role: "accent",
-          tone: "soft",
-          state: "focused",
-          zIndex: shadowContext?.zIndex,
-          maxZIndex: shadowContext?.maxZIndex,
-          lighting: shadowContext?.lighting,
-        }),
-      [shadowContext?.lighting, shadowContext?.maxZIndex, shadowContext?.zIndex]
-    );
 
     // Update icon rect cache on mount and when icons change
     useLayoutEffect(() => {
@@ -182,6 +155,21 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
         {content.items.map((item, index) => {
           const effect = liftEffects.get(index);
           const y = effect?.y ?? 0;
+          const measuredIconHeight = iconRectsRef.current.get(index)?.height;
+          const iconHeight =
+            typeof measuredIconHeight === "number" && measuredIconHeight > 0
+              ? measuredIconHeight
+              : 64;
+          const restCubeShadowRecipe = getShadowRecipe({
+            z: shadowContext?.z ?? 4,
+            objectHeight: iconHeight,
+            lighting: shadowContext?.lighting,
+          });
+          const focusedCubeShadowRecipe = getShadowRecipe({
+            z: shadowContext?.z ?? 6,
+            objectHeight: iconHeight,
+            lighting: shadowContext?.lighting,
+          });
           const shadowProgress = clampShadowProgress(
             (effect?.shadowIntensity ?? 0) /
               DEFAULT_MAGNETIC_LIFT_CONFIG.shadowIntensity

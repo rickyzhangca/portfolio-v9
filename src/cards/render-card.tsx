@@ -73,7 +73,10 @@ const RenderCardComponent = ({
             content={card.content}
             isExpanded={isExpanded}
             priority={priority}
-            shadowContext={shadowContext}
+            shadowContext={{
+              ...shadowContext,
+              objectHeight: card.size.height ?? shadowContext?.objectHeight,
+            }}
           />
         );
       case "resume":
@@ -84,11 +87,23 @@ const RenderCardComponent = ({
         return <EmailCard content={card.content} />;
       case "socials":
         return (
-          <SocialsCard content={card.content} shadowContext={shadowContext} />
+          <SocialsCard
+            content={card.content}
+            shadowContext={{
+              ...shadowContext,
+              objectHeight: card.size.height ?? shadowContext?.objectHeight,
+            }}
+          />
         );
       case "stickynote":
         return (
-          <StickyNoteCard content={card.content} shadowContext={shadowContext} />
+          <StickyNoteCard
+            content={card.content}
+            shadowContext={{
+              ...shadowContext,
+              objectHeight: card.size.height ?? shadowContext?.objectHeight,
+            }}
+          />
         );
       case "profilepic":
         return <ProfilePicCard content={card.content} />;
@@ -101,12 +116,21 @@ const RenderCardComponent = ({
             isExpanded={isExpanded}
             isFocused={isFocused}
             onMeasure={onMeasure}
-            shadowContext={shadowContext}
+            shadowContext={{
+              ...shadowContext,
+              objectHeight: card.size.height ?? shadowContext?.objectHeight,
+            }}
           />
         );
       case "swagcover":
         return (
-          <SwagCoverCard content={card.content} shadowContext={shadowContext} />
+          <SwagCoverCard
+            content={card.content}
+            shadowContext={{
+              ...shadowContext,
+              objectHeight: card.size.height ?? shadowContext?.objectHeight,
+            }}
+          />
         );
       default: {
         // Exhaustiveness check - if we get here, we have a bug

@@ -21,8 +21,6 @@ describe("FunProjectCard", () => {
       <FunProjectCard
         content={content}
         shadowContext={{
-          maxZIndex: 8,
-          zIndex: 3,
           lighting: getShadowLighting(12, "debug"),
         }}
       />
@@ -31,11 +29,8 @@ describe("FunProjectCard", () => {
     expect(screen.getByAltText("Demo cube").style.filter).toBe(
       toShadowFilter(
         getShadowRecipe({
-          role: "accent",
-          tone: "soft",
-          state: "rest",
-          zIndex: 3,
-          maxZIndex: 8,
+          z: 4,
+          objectHeight: 64,
           lighting: getShadowLighting(12, "debug"),
         })
       )
@@ -47,8 +42,6 @@ describe("FunProjectCard", () => {
       <FunProjectCard
         content={content}
         shadowContext={{
-          maxZIndex: 8,
-          zIndex: 3,
           lighting: getShadowLighting(8, "debug"),
         }}
       />
@@ -60,8 +53,6 @@ describe("FunProjectCard", () => {
       <FunProjectCard
         content={content}
         shadowContext={{
-          maxZIndex: 8,
-          zIndex: 3,
           lighting: getShadowLighting(16, "debug"),
         }}
       />

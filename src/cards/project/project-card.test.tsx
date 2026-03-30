@@ -12,7 +12,7 @@ describe("ProjectCard", () => {
           title: "Demo",
           image: "/demo.png",
         }}
-        shadowContext={{ maxZIndex: 8, zIndex: 3 }}
+        shadowContext={{ objectHeight: 120 }}
       />
     );
 
@@ -21,10 +21,8 @@ describe("ProjectCard", () => {
     expect(mediaShell?.style.boxShadow).toBe(
       getCardShadowStyle({
         surface: "card-box-shadow",
-        role: "surface",
-        state: "expanded",
-        zIndex: 3,
-        maxZIndex: 8,
+        z: 10,
+        objectHeight: 120,
       }).boxShadow
     );
   });
@@ -37,8 +35,7 @@ describe("ProjectCard", () => {
           image: "/demo.png",
         }}
         shadowContext={{
-          maxZIndex: 8,
-          zIndex: 3,
+          objectHeight: 120,
           lighting: getShadowLighting(8, "live"),
         }}
       />
@@ -54,8 +51,7 @@ describe("ProjectCard", () => {
           image: "/demo.png",
         }}
         shadowContext={{
-          maxZIndex: 8,
-          zIndex: 3,
+          objectHeight: 120,
           lighting: getShadowLighting(16, "live"),
         }}
       />
@@ -74,28 +70,22 @@ describe("ProjectCard", () => {
           description: "Shadow cleanup",
           image: "/demo.png",
         }}
-        shadowContext={{ maxZIndex: 8, zIndex: 3 }}
+        shadowContext={{ objectHeight: 120 }}
       />
     );
 
     expect(screen.getByText("Demo").parentElement?.style.boxShadow).toBe(
       getCardShadowStyle({
         surface: "card-box-shadow",
-        role: "accent",
-        tone: "soft",
-        state: "expanded",
-        zIndex: 3,
-        maxZIndex: 8,
+        z: 5,
+        objectHeight: 120,
       }).boxShadow
     );
     expect(screen.getByText("Shadow cleanup").style.boxShadow).toBe(
       getCardShadowStyle({
         surface: "card-box-shadow",
-        role: "accent",
-        tone: "soft",
-        state: "expanded",
-        zIndex: 3,
-        maxZIndex: 8,
+        z: 5,
+        objectHeight: 120,
       }).boxShadow
     );
   });

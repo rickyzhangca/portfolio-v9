@@ -50,7 +50,6 @@ interface FunProjectGroupProps {
 
 export const FunProjectGroup = ({
   item,
-  maxZIndex,
   scale,
   isExpanded,
   dragDisabled,
@@ -375,8 +374,6 @@ export const FunProjectGroup = ({
             isFocused={isExpanded}
             onMeasure={handleCardMeasure}
             shadowContext={{
-              zIndex: item.zIndex,
-              maxZIndex,
               lighting: shadowLighting,
             }}
           />

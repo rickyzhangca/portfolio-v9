@@ -30,10 +30,8 @@ const StickyNoteCardComponent = ({
       className={tw("h-full w-full rounded-sm p-4", colorClass)}
       style={getCardShadowStyle({
         surface: "card-box-shadow",
-        role: "surface",
-        tone: "paper",
-        zIndex: shadowContext?.zIndex,
-        maxZIndex: shadowContext?.maxZIndex,
+        z: shadowContext?.z ?? 6,
+        objectHeight: shadowContext?.objectHeight,
         lighting: shadowContext?.lighting,
       })}
     >

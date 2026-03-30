@@ -46,7 +46,6 @@ interface SwagGroupProps {
 
 export const SwagGroup = ({
   item,
-  maxZIndex,
   scale,
   isExpanded,
   dragDisabled,
@@ -232,8 +231,6 @@ export const SwagGroup = ({
             isExpanded={isExpanded}
             onMeasure={handleCardMeasure}
             shadowContext={{
-              zIndex: item.zIndex,
-              maxZIndex,
               lighting: shadowLighting,
             }}
           />

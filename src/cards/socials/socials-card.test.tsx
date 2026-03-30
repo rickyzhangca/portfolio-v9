@@ -12,7 +12,7 @@ describe("SocialsCard", () => {
           linkedinUrl: "https://linkedin.test",
           twitterUrl: "https://twitter.test",
         }}
-        shadowContext={{ maxZIndex: 8, zIndex: 3 }}
+        shadowContext={{}}
       />
     );
 
@@ -26,21 +26,15 @@ describe("SocialsCard", () => {
     expect(shell?.style.boxShadow).toBe(
       getCardShadowStyle({
         surface: "card-box-shadow",
-        role: "accent",
-        tone: "raised",
-        state: "rest",
-        zIndex: 3,
-        maxZIndex: 8,
+        z: 6,
+        objectHeight: 96,
       }).boxShadow
     );
     expect(key?.style.boxShadow).toBe(
       getCardShadowStyle({
         surface: "card-box-shadow",
-        role: "accent",
-        tone: "soft",
-        state: "rest",
-        zIndex: 3,
-        maxZIndex: 8,
+        z: 4,
+        objectHeight: 72,
       }).boxShadow
     );
   });
@@ -53,8 +47,6 @@ describe("SocialsCard", () => {
           twitterUrl: "https://twitter.test",
         }}
         shadowContext={{
-          maxZIndex: 8,
-          zIndex: 3,
           lighting: getShadowLighting(8, "live"),
         }}
       />
@@ -72,8 +64,6 @@ describe("SocialsCard", () => {
           twitterUrl: "https://twitter.test",
         }}
         shadowContext={{
-          maxZIndex: 8,
-          zIndex: 3,
           lighting: getShadowLighting(16, "live"),
         }}
       />

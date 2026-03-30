@@ -45,7 +45,6 @@ interface CardStackProps {
 export const CardStack = ({
   stack,
   stackIndex,
-  maxZIndex,
   scale,
   isExpanded,
   dragDisabled,
@@ -130,16 +129,16 @@ export const CardStack = ({
   const [isPeeking, setIsPeeking] = useState(false);
   const [isCoverHovered, setIsCoverHovered] = useState(false);
   const peekTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const coverShadowState = (() => {
+  const coverShadowZ = (() => {
     if (isCoverHovered) {
-      return "hover" as const;
+      return 20;
     }
 
     if (isExpanded) {
-      return "expanded" as const;
+      return 18;
     }
 
-    return "rest" as const;
+    return 16;
   })();
 
   const triggerPeek = useCallback(() => {
@@ -307,10 +306,8 @@ export const CardStack = ({
             style={{
               ...getCardShadowStyle({
                 surface: "canvas-filter",
-                role: "silhouette",
-                state: coverShadowState,
-                zIndex: stack.zIndex,
-                maxZIndex,
+                z: coverShadowZ,
+                objectHeight: coverWithSize.size.height,
                 lighting: shadowLighting,
               }),
               pointerEvents: "auto",
@@ -335,8 +332,6 @@ export const CardStack = ({
                 className="shadow-none hover:shadow-none"
                 onMeasure={(h) => handleCardMeasure(coverWithSize.id, h)}
                 shadowContext={{
-                  zIndex: stack.zIndex,
-                  maxZIndex,
                   lighting: shadowLighting,
                 }}
               />
@@ -458,8 +453,6 @@ export const CardStack = ({
                 onMeasure={(h) => handleCardMeasure(card.id, h)}
                 priority={index < 2}
                 shadowContext={{
-                  zIndex: stack.zIndex,
-                  maxZIndex,
                   lighting: shadowLighting,
                 }}
               />

@@ -15,11 +15,8 @@ const Key = ({
 }) => {
   const keyShadow = getCardShadowStyle({
     surface: "card-box-shadow",
-    role: "accent",
-    tone: "soft",
-    state: "rest",
-    zIndex: shadowContext?.zIndex,
-    maxZIndex: shadowContext?.maxZIndex,
+    z: shadowContext?.z ?? 4,
+    objectHeight: 72,
     lighting: shadowContext?.lighting,
   });
 
@@ -74,20 +71,14 @@ const SocialsCardComponent = ({ content, shadowContext }: SocialsCardProps) => {
   const [mode, setMode] = useState<"logi" | "apple">("logi");
   const shellShadow = getCardShadowStyle({
     surface: "card-box-shadow",
-    role: "accent",
-    tone: "raised",
-    state: "rest",
-    zIndex: shadowContext?.zIndex,
-    maxZIndex: shadowContext?.maxZIndex,
+    z: shadowContext?.z ?? 6,
+    objectHeight: 96,
     lighting: shadowContext?.lighting,
   });
   const thumbShadow = getCardShadowStyle({
     surface: "card-box-shadow",
-    role: "accent",
-    tone: "soft",
-    state: "rest",
-    zIndex: shadowContext?.zIndex,
-    maxZIndex: shadowContext?.maxZIndex,
+    z: shadowContext?.z ?? 2,
+    objectHeight: 20,
     lighting: shadowContext?.lighting,
   });
 
