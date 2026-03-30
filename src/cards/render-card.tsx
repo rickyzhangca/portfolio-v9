@@ -101,6 +101,7 @@ const RenderCardComponent = ({
             isExpanded={isExpanded}
             isFocused={isFocused}
             onMeasure={onMeasure}
+            shadowContext={shadowContext}
           />
         );
       case "swagcover":

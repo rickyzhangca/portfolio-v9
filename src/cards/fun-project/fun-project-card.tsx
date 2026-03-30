@@ -5,32 +5,33 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
 import type { FunProjectCardContent } from "@/cards/types";
 import { SPRING_PRESETS } from "@/lib/animation";
-import { computeMagneticLift, type IconLiftEffect } from "@/lib/magnetic-lift";
+import type { CardShadowContext } from "@/lib/card-shadow";
+import {
+  getShadowRecipe,
+  interpolateShadowRecipes,
+  toShadowFilter,
+} from "@/lib/card-shadow";
+import {
+  computeMagneticLift,
+  DEFAULT_MAGNETIC_LIFT_CONFIG,
+  type IconLiftEffect,
+} from "@/lib/magnetic-lift";
 
 interface FunProjectCardProps {
   content: FunProjectCardContent;
   isExpanded?: boolean;
   isFocused?: boolean;
   onMeasure?: (height: number) => void;
+  shadowContext?: CardShadowContext;
 }
 
-const SHADOW_BASE_OPACITY = 0.08;
-const SHADOW_BASE_BLUR = 8;
-const SHADOW_MAX_OPACITY = 0.16;
-const SHADOW_MAX_BLUR_ADD = 8;
-
-const getShadowStyle = (intensity: number): string => {
-  const opacity =
-    SHADOW_BASE_OPACITY +
-    (SHADOW_MAX_OPACITY - SHADOW_BASE_OPACITY) * intensity;
-  const blur = SHADOW_BASE_BLUR + SHADOW_MAX_BLUR_ADD * intensity;
-  return `drop-shadow(0 ${blur / 2}px ${blur}px rgba(0,0,0,${opacity}))`;
-};
+const clampShadowProgress = (value: number) => Math.min(Math.max(value, 0), 1);
 
 export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
   (
@@ -39,6 +40,7 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
       isExpanded: _isExpanded = false,
       isFocused: _isFocused = false,
       onMeasure,
+      shadowContext,
     },
     ref
   ) => {
@@ -68,6 +70,32 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
     useEffect(() => {
       handleMeasure();
     }, [handleMeasure]);
+
+    const restCubeShadowRecipe = useMemo(
+      () =>
+        getShadowRecipe({
+          role: "accent",
+          tone: "soft",
+          state: "rest",
+          zIndex: shadowContext?.zIndex,
+          maxZIndex: shadowContext?.maxZIndex,
+          lighting: shadowContext?.lighting,
+        }),
+      [shadowContext?.lighting, shadowContext?.maxZIndex, shadowContext?.zIndex]
+    );
+
+    const focusedCubeShadowRecipe = useMemo(
+      () =>
+        getShadowRecipe({
+          role: "accent",
+          tone: "soft",
+          state: "focused",
+          zIndex: shadowContext?.zIndex,
+          maxZIndex: shadowContext?.maxZIndex,
+          lighting: shadowContext?.lighting,
+        }),
+      [shadowContext?.lighting, shadowContext?.maxZIndex, shadowContext?.zIndex]
+    );
 
     // Update icon rect cache on mount and when icons change
     useLayoutEffect(() => {
@@ -154,8 +182,17 @@ export const FunProjectCard = forwardRef<HTMLDivElement, FunProjectCardProps>(
         {content.items.map((item, index) => {
           const effect = liftEffects.get(index);
           const y = effect?.y ?? 0;
-          const shadowIntensity = effect?.shadowIntensity ?? 0;
-          const shadow = getShadowStyle(shadowIntensity);
+          const shadowProgress = clampShadowProgress(
+            (effect?.shadowIntensity ?? 0) /
+              DEFAULT_MAGNETIC_LIFT_CONFIG.shadowIntensity
+          );
+          const shadow = toShadowFilter(
+            interpolateShadowRecipes(
+              restCubeShadowRecipe,
+              focusedCubeShadowRecipe,
+              shadowProgress
+            )
+          );
 
           return (
             <motion.div

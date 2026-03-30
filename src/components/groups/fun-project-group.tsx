@@ -1,5 +1,6 @@
 import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
+import { useAtomValue } from "jotai";
 import {
   lazy,
   Suspense,
@@ -10,6 +11,7 @@ import {
   useState,
 } from "react";
 import { RenderCard } from "@/cards/render-card";
+import { shadowLightingAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { tw } from "@/lib/utils";
@@ -61,6 +63,7 @@ export const FunProjectGroup = ({
   onCardHeightMeasured,
   setRootRef,
 }: FunProjectGroupProps) => {
+  const shadowLighting = useAtomValue(shadowLightingAtom);
   const [measuredHeight, setMeasuredHeight] = useState<number | undefined>(
     item.card.size.height
   );
@@ -371,7 +374,11 @@ export const FunProjectGroup = ({
             isExpanded={isExpanded}
             isFocused={isExpanded}
             onMeasure={handleCardMeasure}
-            shadowContext={{ zIndex: item.zIndex, maxZIndex }}
+            shadowContext={{
+              zIndex: item.zIndex,
+              maxZIndex,
+              lighting: shadowLighting,
+            }}
           />
         </motion.div>
 

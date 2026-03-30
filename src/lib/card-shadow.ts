@@ -105,7 +105,7 @@ const getShadowBlueprints = (
       if (tone === "paper") {
         return [
           { blur: 8, offset: 3.6, opacity: 0.06, spread: -1 },
-          { blur: 6, offset: 1.9, opacity: 0.08, spread: -2 },
+          { blur: 6, offset: 1.9, opacity: 0.078, spread: -2 },
         ];
       }
 
@@ -163,6 +163,43 @@ const toDropShadow = (layer: ShadowRecipeLayer) =>
 const toBoxShadow = (layer: ShadowRecipeLayer) =>
   `${layer.x}px ${layer.y}px ${layer.blur}px ${layer.spread}px rgba(0, 0, 0, ${layer.opacity})`;
 
+const interpolateLayerValue = (from: number, to: number, progress: number) =>
+  round(from + (to - from) * progress);
+
+export const interpolateShadowRecipes = (
+  from: ShadowRecipeLayer[],
+  to: ShadowRecipeLayer[],
+  progress: number
+) => {
+  const clampedProgress = clamp(progress, 0, 1);
+
+  return from.map((fromLayer, index) => {
+    const toLayer = to[index] ?? to[to.length - 1] ?? fromLayer;
+
+    return {
+      x: interpolateLayerValue(fromLayer.x, toLayer.x, clampedProgress),
+      y: interpolateLayerValue(fromLayer.y, toLayer.y, clampedProgress),
+      blur: interpolateLayerValue(fromLayer.blur, toLayer.blur, clampedProgress),
+      opacity: interpolateLayerValue(
+        fromLayer.opacity,
+        toLayer.opacity,
+        clampedProgress
+      ),
+      spread: interpolateLayerValue(
+        fromLayer.spread,
+        toLayer.spread,
+        clampedProgress
+      ),
+    };
+  });
+};
+
+export const toShadowFilter = (recipe: ShadowRecipeLayer[]) =>
+  recipe.map(toDropShadow).join(" ");
+
+export const toShadowBoxShadow = (recipe: ShadowRecipeLayer[]) =>
+  recipe.map(toBoxShadow).join(", ");
+
 export const getShadowRecipe = ({
   role,
   tone,
@@ -200,11 +237,11 @@ export const getCardShadowStyle = ({
 
   if (surface === "canvas-filter") {
     return {
-      filter: recipe.map(toDropShadow).join(" "),
+      filter: toShadowFilter(recipe),
     };
   }
 
   return {
-    boxShadow: recipe.map(toBoxShadow).join(", "),
+    boxShadow: toShadowBoxShadow(recipe),
   };
 };
