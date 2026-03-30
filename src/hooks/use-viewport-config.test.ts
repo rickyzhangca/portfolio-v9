@@ -106,7 +106,7 @@ describe("useArePositionsModified", () => {
             id: "card-2",
             kind: "socials",
             size: {},
-            content: { linkedinUrl: "", twitterUrl: "" },
+            content: { githubUrl: "", linkedinUrl: "", twitterUrl: "" },
           },
         },
       ],
