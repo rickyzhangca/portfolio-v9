@@ -171,7 +171,7 @@ export const FunProjectGroup = ({
       return;
     }
     hasPrewarmedMarkdownRef.current = true;
-    void loadMarkdownRenderer();
+    loadMarkdownRenderer();
   }, []);
 
   useEffect(() => {
@@ -225,12 +225,7 @@ export const FunProjectGroup = ({
         observer.disconnect();
       }
     };
-  }, [
-    clearMeasurementTimeouts,
-    isExpanded,
-    item.card.content.items.length,
-    handleContentCardMeasure,
-  ]);
+  }, [clearMeasurementTimeouts, isExpanded, handleContentCardMeasure]);
 
   useEffect(() => {
     if (!isExpanded) {
@@ -244,7 +239,7 @@ export const FunProjectGroup = ({
     }, MEASUREMENT_MAX_WAIT_MS);
 
     return clearMeasurementTimeouts;
-  }, [clearMeasurementTimeouts, isExpanded, item.id]);
+  }, [clearMeasurementTimeouts, isExpanded]);
 
   const contentCardOffsets = useMemo(() => {
     let offsetY = 0;
@@ -285,7 +280,6 @@ export const FunProjectGroup = ({
     hasCompletedFirstExpand,
     isContentLayoutReady,
     isExpanded,
-    contentCardHeights,
   ]);
 
   return (
