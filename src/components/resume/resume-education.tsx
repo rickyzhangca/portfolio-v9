@@ -11,7 +11,6 @@ export const ResumeEducation = ({ data }: ResumeEducationProps) => {
       <div className="flex items-start gap-3">
         <img
           alt={`${data?.institution} logo`}
-          className="rounded-md outline outline-foreground1/20"
           height={28}
           src={data?.logo}
           width={28}

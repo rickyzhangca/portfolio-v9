@@ -1,8 +1,9 @@
-import queensLogo from "@/assets/resume/queens.webp";
-import wealthsimpleResumeLogo from "@/assets/resume/wealthsimple.webp";
+import githubResumeLogo from "@/assets/resume/github.webp";
 import mintlifyResumeLogo from "@/assets/resume/mintlify.webp";
-import rbcResumeLogo from "@/assets/resume/rbc.webp";
 import mosaicResumeLogo from "@/assets/resume/mosaic.webp";
+import queensLogo from "@/assets/resume/queens.webp";
+import rbcResumeLogo from "@/assets/resume/rbc.webp";
+import wealthsimpleResumeLogo from "@/assets/resume/wealthsimple.webp";
 import type { ResumeData } from "@/cards/registry";
 
 export const resumeData: ResumeData = {
@@ -18,20 +19,26 @@ export const resumeData: ResumeData = {
     institution: "Queen's University",
     years: "2017-2021",
     description:
-      "Learned computer science, artificial intelligence, psychology, linguistics",
+      "Courses: Computer Science, Artificial Intelligence, Psychology, Linguistics",
   },
   experiences: [
+    {
+      company: "GitHub",
+      logo: githubResumeLogo,
+      title: "Senior Design Engineer, Core UX",
+      caption: "03/2026 - Current",
+      description: ["Exploring AI x design system"],
+    },
     {
       company: "Wealthsimple",
       logo: wealthsimpleResumeLogo,
       title: "Design Engineer, Design Systems",
-      caption: "09/2024 - Current",
+      caption: "09/2024 - 03/2026",
       description: [
-        "Led front-end implementation of the web app dark mode, partnering with design and product teams to ship a polished experience",
-        "Introduced the dynamic gradients to the mobile app for delightful experience",
-        "Built new swipeable component used across the app for consistent interactions",
-        "Learned and shipped Android native sheets and new iOS home screen widgets",
-        "Maintaining and expanding the design system across web and mobile",
+        "Shipped web dark mode, snackbar, chart segments and animations, rolling ticker",
+        "Shipped mobile redesign, bar charts, new font, gradients, swipeables",
+        "Shipped Android native sheets",
+        "Shipped iOS home screen widgets",
       ],
     },
     {
@@ -40,15 +47,15 @@ export const resumeData: ResumeData = {
       title: "Design Engineer",
       caption: "06/2024 - 09/2024",
       description: [
-        "Shipped new search & chat designs and Mintlify widget",
-        "Brought custom fonts, advanced footer, and Gitlab integration to users",
-        "Built the redesigns for auth flows, onboarding, and support forms",
+        "Shipped new search & chat menu and Mintlify widget",
+        "Shipped custom fonts, advanced footer, and Gitlab integration to users",
+        "Shipped redesigned auth flows, onboarding, and support forms",
       ],
     },
     {
       company: "RBC",
       logo: rbcResumeLogo,
-      title: "UX Engineer",
+      title: "UX Engineer, AIOps",
       caption: "02/2023 - 06/2024",
       description: [
         "Owned product design and front-end for 4 AIOps products end-to-end",
@@ -60,43 +67,33 @@ export const resumeData: ResumeData = {
       company: "Mosaic Manufacturing",
       logo: mosaicResumeLogo,
       title: "Product Designer",
-      caption: "05/2021 - 02/2023",
-      description: [
-        "Architected a scalable and multi-device design system with 64% less components (launched in Dec 2022)",
-        "Led design and helped building an overhaul to the web app to deliver better user experience (launched in Apr 2022)",
-        "Designed the B2B solutions with insights from exploratory user research on over 20 high-value customers",
-        "Built the front-end for two 3D printers (shipped in Jan 2023)",
-        "Designed materials for marketing, branding, packaging, fund raising, events",
-      ],
-    },
-    {
-      company: "Mosaic Manufacturing",
-      logo: mosaicResumeLogo,
-      title: "UI Designer/Developer",
       caption:
-        "05/2020 - 08/2020 Intern\u00a0\u00a0\u00a0 10/2020 - 04/2021 Part-time",
+        "05/2021 - 02/2023\u00a0\u00a0\u00a0Full-time \n 10/2020 - 04/2021\u00a0\u00a0\u00a0Part-time \n 05/2020 - 08/2020\u00a0\u00a0Intern",
       description: [
-        "Designed the interface and experience of Palette 3, a 3D printing hardware, from concepts to hi-fi prototypes (shipped in Sep 2021)",
-        "Crafted the interface and experience from scratch for two 3D printers",
+        "Built a scalable and multi-device design system with 64% less components",
+        "Designed and helped building redesigned web app to deliver better UX",
+        "Designed and built the UI for 3 3D printing devices",
+        "Designed B2B solutions with insights from 20 exploratory user researches",
+        "Designed materials for marketing, branding, packaging, fund raising, events",
       ],
     },
   ],
   skills: [
     {
       category: "Design",
-      skills: ["Design systems", "High fidelity", "Vector tools"],
+      skills: ["Design system", "High-fidelity craft", "Vector tools"],
     },
     {
       category: "Front-end",
       skills: [
         "React, React Native, TypeScript",
-        "Components composition",
         "Prototyping",
+        "Component composition",
       ],
     },
     {
-      category: "Domains",
-      skills: ["Fintech", "Dev tools", "IT and operations"],
+      category: "Domain knowledge",
+      skills: ["Fintech", "Dev tools", "3D printing"],
     },
   ],
 };
