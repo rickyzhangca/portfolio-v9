@@ -18,7 +18,6 @@ export const ResumeExperience = ({ data }: ResumeExperienceProps) => {
           >
             <img
               alt={experience.company}
-              className="rounded-md outline outline-foreground1/20"
               height={28}
               src={experience.logo}
               width={28}
@@ -28,14 +27,18 @@ export const ResumeExperience = ({ data }: ResumeExperienceProps) => {
                 <p>{experience.title}</p>
                 <p className="text-foreground2">{experience.company}</p>
               </div>
-              <ul className="list-disc pl-5">
-                {experience.description.map((description) => (
-                  <li className="mb-0.5" key={description}>
-                    {description}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-foreground2">{experience.caption}</p>
+              {experience.description.length > 1 ? (
+                <ul className="list-disc pl-5">
+                  {experience.description.map((description) => (
+                    <li className="mb-0.5" key={description}>
+                      {description}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>{experience.description}</p>
+              )}
+              <p className="whitespace-pre-line text-foreground2">{experience.caption}</p>
             </div>
           </div>
         ))}
