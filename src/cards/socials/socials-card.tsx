@@ -84,6 +84,7 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
       >
         <div className="flex gap-2">
           <button
+            aria-label="LinkedIn"
             className="cursor-pointer focus:outline-none"
             onClick={() => handleLinkClick(content.linkedinUrl)}
             type="button"
@@ -106,6 +107,7 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
           </button>
 
           <button
+            aria-label="Twitter"
             className="cursor-pointer focus:outline-none"
             onClick={() => handleLinkClick(content.twitterUrl)}
             type="button"
@@ -126,10 +128,34 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
               </svg>
             </Key>
           </button>
+
+          <button
+            aria-label="GitHub"
+            className="cursor-pointer focus:outline-none"
+            onClick={() => handleLinkClick(content.githubUrl)}
+            type="button"
+          >
+            <Key mode={mode}>
+              <svg
+                fill="none"
+                height="24"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <title>GitHub</title>
+                <path
+                  d="M12 0C5.37 0 0 5.277 0 11.791c0 5.217 3.435 9.625 8.205 11.186.6.103.824-.25.824-.56 0-.28-.014-1.208-.014-2.195-3.015.545-3.795-.723-4.035-1.385-.135-.34-.72-1.386-1.23-1.666-.42-.222-1.02-.767-.015-.781.945-.015 1.62.854 1.845 1.209 1.08 1.782 2.805 1.282 3.495.972.105-.767.42-1.282.765-1.577-2.67-.295-5.46-1.312-5.46-5.823 0-1.282.465-2.343 1.23-3.168-.12-.295-.54-1.503.12-3.125 0 0 1.005-.308 3.3 1.21.976-.267 1.986-.4 3-.398 1.02 0 2.04.132 3 .397 2.295-1.532 3.3-1.209 3.3-1.209.66 1.622.24 2.83.12 3.125.765.825 1.23 1.873 1.23 3.168 0 4.526-2.805 5.528-5.475 5.823.435.369.81 1.076.81 2.181 0 1.577-.015 2.845-.015 3.243 0 .31.225.677.825.56C20.565 21.415 24 16.993 24 11.79 24 5.277 18.63 0 12 0"
+                  fill="#e7e7e7"
+                />
+              </svg>
+            </Key>
+          </button>
         </div>
 
         <div>
           <button
+            aria-label="Toggle keyboard mode"
             className="flex h-12 cursor-pointer flex-col items-center justify-start rounded-full transition"
             onClick={toggleMode}
             style={{
@@ -154,7 +180,7 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
       </div>
       <div
         className={tw(
-          "h-[96px] w-[220px] bg-foreground1",
+          "h-[96px] w-[300px] bg-foreground1",
           mode === "logi" ? "rounded-2xl" : "rounded-xl"
         )}
       />

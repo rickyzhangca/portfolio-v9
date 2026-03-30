@@ -71,6 +71,7 @@ export const socialsItem: CanvasSingleItem = {
     kind: "socials",
     size: {},
     content: {
+      githubUrl: "https://github.com/rickyzhangca",
       linkedinUrl: "https://www.linkedin.com/in/ricky-zhang/",
       twitterUrl: "https://x.com/rickyrickyriri",
     },

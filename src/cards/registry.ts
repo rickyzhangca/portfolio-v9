@@ -61,6 +61,7 @@ export interface EmailCardContent {
 }
 
 export interface SocialsCardContent {
+  githubUrl: string;
   linkedinUrl: string;
   twitterUrl: string;
 }
