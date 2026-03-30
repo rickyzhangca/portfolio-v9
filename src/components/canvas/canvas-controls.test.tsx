@@ -79,9 +79,13 @@ describe("CanvasControls", () => {
     const resetButton = screen.getByRole("button", { name: "Reset canvas" });
     fireEvent.click(resetButton);
 
-    expect(track).toHaveBeenNthCalledWith(1, AnalyticsEvents.CANVAS_VIEW_RESET, {
-      zoom_level: 1,
-    });
+    expect(track).toHaveBeenNthCalledWith(
+      1,
+      AnalyticsEvents.CANVAS_VIEW_RESET,
+      {
+        zoom_level: 1,
+      }
+    );
     expect(track).toHaveBeenNthCalledWith(
       2,
       AnalyticsEvents.CANVAS_POSITION_RESET
@@ -114,14 +118,18 @@ describe("CanvasControls", () => {
       <CanvasControls onReset={onReset} onResetPositions={onResetPositions} />
     );
 
-    const timeMachineButton = screen.getByRole("button", { name: "Time machine" });
+    const timeMachineButton = screen.getByRole("button", {
+      name: "Time machine",
+    });
     const timeMachineLink = timeMachineButton.closest("a");
 
     expect(timeMachineLink).not.toBeNull();
     if (!timeMachineLink) {
       throw new Error("Expected time machine link wrapper");
     }
-    expect(timeMachineLink.getAttribute("href")).toBe("https://v8.rickyzhang.me");
+    expect(timeMachineLink.getAttribute("href")).toBe(
+      "https://v8.rickyzhang.me"
+    );
     expect(timeMachineLink.getAttribute("target")).toBe("_blank");
     expect(timeMachineLink.getAttribute("rel")).toBe("noopener noreferrer");
   });
