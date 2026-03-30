@@ -219,4 +219,19 @@ describe("getCardShadowStyle", () => {
       0.07
     );
   });
+
+  it("keeps paper shadows lighter and broader than before", () => {
+    const paperLayers = getShadowRecipe({
+      role: "surface",
+      tone: "paper",
+      state: "rest",
+      zIndex: 0,
+      maxZIndex: 4,
+      lighting: getShadowLighting(12, "debug"),
+    });
+
+    expect(paperLayers[0]?.opacity ?? 0).toBeLessThan(0.13);
+    expect(paperLayers[1]?.opacity ?? 0).toBeLessThan(0.11);
+    expect(paperLayers[0]?.blur ?? 0).toBeGreaterThan(3.8);
+  });
 });

@@ -104,8 +104,8 @@ const getShadowBlueprints = (
     case "surface":
       if (tone === "paper") {
         return [
-          { blur: 6.25, offset: 4.1, opacity: 0.105, spread: -1 },
-          { blur: 4.4, offset: 2.2, opacity: 0.094, spread: -2 },
+          { blur: 8, offset: 3.6, opacity: 0.06, spread: -1 },
+          { blur: 6, offset: 1.9, opacity: 0.08, spread: -2 },
         ];
       }
 
