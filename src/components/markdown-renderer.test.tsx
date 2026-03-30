@@ -4,7 +4,6 @@ import { MarkdownRenderer } from "./markdown-renderer";
 
 const getVideoElement = (container: HTMLElement): HTMLVideoElement => {
   const video = container.querySelector("video");
-  expect(video).not.toBeNull();
   if (!(video instanceof HTMLVideoElement)) {
     throw new TypeError("Expected a rendered HTMLVideoElement");
   }
