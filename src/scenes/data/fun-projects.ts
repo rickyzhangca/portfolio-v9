@@ -56,7 +56,7 @@ export const funProjects: FunProjectItem[] = [
     icon: spellbookIcon,
     title: "Spellbook",
     description:
-      "ChatGPT 4o's image generation capability had a huge leap forward in early 2025. It is better than ever on understanding prompts and adhering to instructions (that is written in natural language).\n\nSo I created [Spellbook](https://spellbook.space). A platform for people to share and grab prompts that really work - guaranteed to reliably generate images in a well defined style for any given subject.\n\n![Spellbook Content](" +
+      "ChatGPT 4o's image generation capability had a huge leap forward in early 2025. It is better than ever on understanding prompts and adhering to instructions (that is written in natural language).\n\nSo I created [Spellbook](https://spellbook-space.pages.dev/). A platform for people to share and grab prompts that really work - guaranteed to reliably generate images in a well defined style for any given subject.\n\n![Spellbook Content](" +
       spellbookContent +
       ")",
     status: "Active",
