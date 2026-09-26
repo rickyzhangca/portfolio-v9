@@ -1,14 +1,10 @@
 import { useCallback, useMemo } from "react";
+import type { RepulsionConfig } from "@/lib/repulsion";
 import type { CanvasItem } from "@/types/canvas";
 
 interface ViewportDimensions {
   width: number;
   height: number;
-}
-
-interface RepulsionConfig {
-  radiusPx: number;
-  strengthPx: number;
 }
 
 interface UseViewportConfigOptions {
@@ -66,6 +62,9 @@ export const useArePositionsModified = (
   initialItems: CanvasItem[]
 ): boolean => {
   return useMemo(() => {
+    if (currentItems.size !== initialItems.length) {
+      return true;
+    }
     const initialMap = new Map(
       initialItems.map((item) => [item.id, item.position])
     );

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createMockFunStack,
@@ -7,14 +8,17 @@ import {
   createMockSwagStack,
 } from "@/test-utils/test-helpers";
 import type { Position } from "@/types/canvas";
+import type { SingleCardItem } from "./single-card-item";
 
-const singleCardItemMock = vi.fn((_: unknown) => undefined);
+const singleCardItemMock = vi.fn(
+  (_: ComponentProps<typeof SingleCardItem>) => undefined
+);
 const funProjectGroupMock = vi.fn((_: unknown) => undefined);
 const swagGroupMock = vi.fn((_: unknown) => undefined);
 const cardStackMock = vi.fn((_: unknown) => undefined);
 
 vi.mock("@/components/canvas/single-card-item", () => ({
-  SingleCardItem: (props: unknown) => {
+  SingleCardItem: (props: ComponentProps<typeof SingleCardItem>) => {
     singleCardItemMock(props);
     return <div data-testid="single-card-item" />;
   },
@@ -65,6 +69,40 @@ describe("CanvasItemRenderer", () => {
     vi.clearAllMocks();
   });
 
+  it("binds item IDs without retaining old handlers across rerenders", () => {
+    const item = createMockSingle("single");
+    const { rerender } = render(
+      <CanvasItemRenderer {...baseProps} item={item} />
+    );
+    const child = singleCardItemMock.mock.lastCall?.[0];
+    expect(child).toBeDefined();
+    child?.onActivate?.();
+    child?.onBringToFront();
+    child?.onPositionUpdate({ x: 20, y: 30 });
+    child?.onCardHeightMeasured?.("card", 240);
+    const element = document.createElement("div");
+    child?.setRootRef?.(element);
+    expect(baseProps.onActivate).toHaveBeenCalledWith("single");
+    expect(baseProps.onBringToFront).toHaveBeenCalledWith("single");
+    expect(baseProps.onPositionUpdate).toHaveBeenCalledWith("single", {
+      x: 20,
+      y: 30,
+    });
+    expect(baseProps.onCardHeightMeasured).toHaveBeenCalledWith(
+      "single",
+      "card",
+      240
+    );
+    expect(baseProps.setRootRef).toHaveBeenCalledWith("single", element);
+    const updated = vi.fn();
+    rerender(
+      <CanvasItemRenderer {...baseProps} item={item} onActivate={updated} />
+    );
+    singleCardItemMock.mock.lastCall?.[0].onActivate?.();
+    expect(updated).toHaveBeenCalledWith("single");
+    expect(baseProps.onActivate).toHaveBeenCalledTimes(1);
+  });
+
   it("renders a single item with activation props", () => {
     const item = createMockSingle("single-1");
 
@@ -75,9 +113,9 @@ describe("CanvasItemRenderer", () => {
       expect.objectContaining({
         item,
         isFocused: baseProps.isFocused,
-        onActivate: baseProps.onActivate,
+        onActivate: expect.any(Function),
         scale: baseProps.scale,
-        setRootRef: baseProps.setRootRef,
+        setRootRef: expect.any(Function),
       })
     );
   });
@@ -92,7 +130,7 @@ describe("CanvasItemRenderer", () => {
       expect.objectContaining({
         item,
         isExpanded: baseProps.isExpanded,
-        onToggleExpanded: baseProps.onToggleExpanded,
+        onToggleExpanded: expect.any(Function),
         repulsionOffset: baseProps.repulsionOffset,
       })
     );
@@ -108,7 +146,7 @@ describe("CanvasItemRenderer", () => {
       expect.objectContaining({
         item,
         stackIndex: baseProps.itemIndex,
-        onToggleExpanded: baseProps.onToggleExpanded,
+        onToggleExpanded: expect.any(Function),
       })
     );
   });
@@ -123,7 +161,7 @@ describe("CanvasItemRenderer", () => {
       expect.objectContaining({
         stack: item,
         stackIndex: baseProps.itemIndex,
-        onCardHeightMeasured: baseProps.onCardHeightMeasured,
+        onCardHeightMeasured: expect.any(Function),
       })
     );
   });

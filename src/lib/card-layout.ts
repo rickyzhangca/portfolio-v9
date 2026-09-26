@@ -4,6 +4,50 @@ import type { FanConfig } from "@/lib/fan";
 export const STACK_OFFSET_PX = 6;
 export const EXPAND_MAX_PER_ROW = 3;
 export const COLLAPSED_VISIBLE_COUNT = 2;
+export const FUN_STACK_LAYOUT = {
+  contentWidth: 680,
+  contentGap: 24,
+  estimatedCardHeight: 120,
+  verticalGap: 16,
+} as const;
+export const SWAG_LAYOUT = {
+  columns: 6,
+  itemSize: 180,
+  imageHeight: 120,
+  expandedScale: 1.05,
+} as const;
+
+export const getFanTransform = (
+  index: number,
+  config: FanConfig,
+  columns = EXPAND_MAX_PER_ROW
+) => {
+  const column = index % columns;
+  return {
+    rotate: (column + 1) * config.rotateStepDeg,
+    arcY: (column + 1) ** 2 * config.arcStepPx,
+  };
+};
+
+export const getSwagPosition = (
+  index: number,
+  coverWidth: number,
+  config: FanConfig
+) => {
+  const fan = getFanTransform(index, config, SWAG_LAYOUT.columns);
+  return {
+    x:
+      coverWidth +
+      config.expandGapPx +
+      (index % SWAG_LAYOUT.columns) *
+        (SWAG_LAYOUT.itemSize + config.expandGapPx),
+    y:
+      Math.floor(index / SWAG_LAYOUT.columns) *
+        (SWAG_LAYOUT.itemSize + config.expandRowGapPx) +
+      fan.arcY,
+    rotate: fan.rotate,
+  };
+};
 
 export const COLLAPSED_POSITIONS = [
   { x: 18, y: 24, rotate: 5 },

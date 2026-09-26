@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { useCallback, useMemo, useReducer, useRef } from "react";
 import type {
   CanvasAction,
   CanvasItem,
@@ -54,10 +54,16 @@ export const canvasReducer = (
     }
 
     case "SELECT_ITEM": {
+      if (state.selectedItemId === action.payload.id) {
+        return state;
+      }
       return { ...state, selectedItemId: action.payload.id };
     }
 
     case "SET_EXPANDED_STACK": {
+      if (state.expandedStackId === action.payload.id) {
+        return state;
+      }
       return { ...state, expandedStackId: action.payload.id };
     }
 
@@ -90,6 +96,9 @@ export const canvasReducer = (
     }
 
     case "DELETE_ITEM": {
+      if (!state.items.has(action.payload.id)) {
+        return state;
+      }
       const newItems = new Map(state.items);
       newItems.delete(action.payload.id);
       return {
@@ -226,6 +235,9 @@ export const canvasReducer = (
     }
 
     case "SET_FOCUSED_ITEM": {
+      if (state.focusedItemId === action.payload.id) {
+        return state;
+      }
       return { ...state, focusedItemId: action.payload.id };
     }
 
@@ -234,39 +246,22 @@ export const canvasReducer = (
   }
 };
 
+const createInitialState = (items: CanvasItem[]): CanvasState => ({
+  items: new Map(items.map((item) => [item.id, item])),
+  selectedItemId: null,
+  expandedStackId: null,
+  maxZIndex: items.reduce((max, item) => Math.max(max, item.zIndex), 0),
+  viewportState: initialViewportState,
+  focusedItemId: null,
+});
+
 export const useCanvasState = (initialItems: CanvasItem[] = []) => {
   const initialItemsRef = useRef(initialItems);
-  initialItemsRef.current = initialItems;
-
-  const [state, dispatch] = useReducer(canvasReducer, {
-    items: new Map(),
-    selectedItemId: null,
-    expandedStackId: null,
-    maxZIndex: initialItems.length,
-    viewportState: initialViewportState,
-    focusedItemId: null,
-  });
-
-  // Initialize with provided items on mount
-  useEffect(() => {
-    if (initialItems.length > 0) {
-      const itemsMap = new Map<string, CanvasItem>();
-      let maxZIndex = 0;
-
-      for (const item of initialItems) {
-        itemsMap.set(item.id, item);
-        maxZIndex = Math.max(maxZIndex, item.zIndex);
-      }
-
-      dispatch({
-        type: "LOAD_STATE",
-        payload: {
-          items: itemsMap,
-          maxZIndex,
-        },
-      });
-    }
-  }, [initialItems]);
+  const [state, dispatch] = useReducer(
+    canvasReducer,
+    initialItems,
+    createInitialState
+  );
 
   // Action creators
   const updateItemPosition = useCallback((id: string, position: Position) => {
