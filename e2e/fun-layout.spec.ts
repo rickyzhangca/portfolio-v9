@@ -152,30 +152,34 @@ test("late fun-project content avoids overlap without overriding manual pan", as
       Math.abs(finalCoverBounds.y - coverBoundsAfterPan.y)
     ).toBeLessThanOrEqual(1);
 
-    const cardBounds = await contentCards.evaluateAll((cards) =>
-      cards
-        .map((card) => {
-          const bounds = card.getBoundingClientRect();
-          return {
-            bottom: bounds.bottom,
-            index: Number(card.getAttribute("data-fun-content-card-index")),
-            top: bounds.top,
-          };
-        })
-        .sort((first, second) => first.index - second.index)
-    );
-    expect(cardBounds).toHaveLength(contentCardCount);
-    for (let index = 1; index < cardBounds.length; index++) {
-      const previous = cardBounds[index - 1];
-      const current = cardBounds[index];
-      expect(previous).toBeDefined();
-      expect(current).toBeDefined();
-      if (!(previous && current)) {
-        throw new Error("Expected measured fun-project content cards");
+    // A lazy image may decode after the earlier stability sample. Assert the
+    // eventual measured layout itself, not a quiet period before that decode.
+    await expect(async () => {
+      const cardBounds = await contentCards.evaluateAll((cards) =>
+        cards
+          .map((card) => {
+            const bounds = card.getBoundingClientRect();
+            return {
+              bottom: bounds.bottom,
+              index: Number(card.getAttribute("data-fun-content-card-index")),
+              top: bounds.top,
+            };
+          })
+          .sort((first, second) => first.index - second.index)
+      );
+      expect(cardBounds).toHaveLength(contentCardCount);
+      for (let index = 1; index < cardBounds.length; index++) {
+        const previous = cardBounds[index - 1];
+        const current = cardBounds[index];
+        expect(previous).toBeDefined();
+        expect(current).toBeDefined();
+        if (!(previous && current)) {
+          throw new Error("Expected measured fun-project content cards");
+        }
+        expect(current.index).toBe(index);
+        expect(current.top).toBeGreaterThanOrEqual(previous.bottom - 1);
       }
-      expect(current.index).toBe(index);
-      expect(current.top).toBeGreaterThanOrEqual(previous.bottom - 1);
-    }
+    }).toPass({ timeout: 15_000, intervals: [100] });
   } finally {
     releaseMarkdown();
   }

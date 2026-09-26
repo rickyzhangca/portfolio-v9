@@ -57,7 +57,7 @@ const transformStyle = async (page: Page): Promise<string> =>
       return getComputedStyle(element).transform;
     });
 
-const panElementToCenter = async (
+const panElementIntoView = async (
   page: Page,
   target: Locator
 ): Promise<void> => {
@@ -79,18 +79,9 @@ const panElementToCenter = async (
 
   await page.mouse.move(20, 20);
   await page.mouse.wheel(deltaX, deltaY);
-  await expect
-    .poll(async () => {
-      const current = await target.boundingBox();
-      if (!current) {
-        return Number.POSITIVE_INFINITY;
-      }
-      return Math.max(
-        Math.abs(current.x + current.width / 2 - viewport.width / 2),
-        Math.abs(current.y + current.height / 2 - viewport.height / 2)
-      );
-    })
-    .toBeLessThan(40);
+  // Lazy media may change its height after entry; visibility, not a fixed center,
+  // is the contract needed to start loading and measure playback readiness.
+  await expect(target).toBeInViewport();
 };
 
 const measureInteractionFeedback = async (
@@ -370,7 +361,7 @@ test(
       name: "Toggle Wealthsimple",
       exact: true,
     });
-    await panElementToCenter(page, wealthsimpleToggle);
+    await panElementIntoView(page, wealthsimpleToggle);
     await page.waitForLoadState("networkidle");
     await expect(wealthsimpleToggle).toHaveAttribute("aria-expanded", "false");
 
@@ -398,7 +389,7 @@ test(
       name: "Reset canvas",
       exact: true,
     });
-    await panElementToCenter(page, swagToggle);
+    await panElementIntoView(page, swagToggle);
     await page.waitForLoadState("networkidle");
     await expect(swagToggle).toHaveAttribute("aria-expanded", "false");
 
@@ -618,7 +609,7 @@ const centerVideoAndMeasure = async (
   video: Locator,
   samples: PerformanceSample[]
 ): Promise<void> => {
-  await panElementToCenter(page, video);
+  await panElementIntoView(page, video);
   await expect.poll(() => videoHasSource(video)).toBe(true);
   const feedback = await measureInteractionFeedback(
     lab,
@@ -658,7 +649,7 @@ test(
       name: "Toggle fun projects",
       exact: true,
     });
-    await panElementToCenter(page, funToggle);
+    await panElementIntoView(page, funToggle);
 
     const coldToken = await lab.startCapture("visible-video", "cold-visible");
     await funToggle.click();
@@ -674,7 +665,7 @@ test(
     await centerVideoAndMeasure(page, lab, coldToken, video, samples);
 
     const offscreenAnchor = page.locator('[data-fun-content-card-index="0"]');
-    await panElementToCenter(page, offscreenAnchor);
+    await panElementIntoView(page, offscreenAnchor);
     await expect
       .poll(() =>
         video.evaluate((element) => {
@@ -698,7 +689,7 @@ test(
     ).toBe(false);
 
     const warmToken = await lab.startCapture("visible-video", "warm-visible");
-    await panElementToCenter(page, video);
+    await panElementIntoView(page, video);
     await expect.poll(() => videoHasSource(video)).toBe(true);
     const warmFeedback = await measureInteractionFeedback(
       lab,
