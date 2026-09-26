@@ -78,7 +78,7 @@ test("late fun-project content avoids overlap without overriding manual pan", as
       name: "Toggle fun projects",
       exact: true,
     });
-    await funProjects.click();
+    await funProjects.press("Enter");
     await expect(funProjects).toHaveAttribute("aria-expanded", "true");
     await expect
       .poll(() => markdownRequestIntercepted, {

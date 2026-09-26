@@ -253,7 +253,7 @@ test("repeated open-close-reset cycles stay synchronized across resizes", async 
       name: "Toggle swag collection",
       exact: true,
     });
-    await swagCollection.click();
+    await swagCollection.press("Enter");
     await expect(swagCollection).toHaveAttribute("aria-expanded", "true");
     await expect(reset).toBeEnabled();
     await reset.click();
