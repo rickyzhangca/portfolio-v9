@@ -15,6 +15,7 @@
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:perf": "playwright test --config=playwright.performance.config.ts",
     "check:bundle": "node scripts/check-bundle.mjs"
   },
   "dependencies": {

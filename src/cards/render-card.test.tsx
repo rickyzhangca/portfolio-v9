@@ -32,6 +32,23 @@ describe("RenderCard measurement", () => {
 
   afterEach(() => {
     globalThis.ResizeObserver = originalResizeObserver;
+    vi.restoreAllMocks();
+  });
+
+  it("falls back to layout height, not transformed or content-box height", () => {
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(180);
+    const onMeasure = vi.fn();
+    const card = createMockCover("cover");
+    card.content.image = "/cover.png";
+    render(<RenderCard card={card} onMeasure={onMeasure} />);
+    const entry = {
+      borderBoxSize: [],
+      contentRect: { height: 132 },
+    } as unknown as ResizeObserverEntry;
+    act(() => {
+      observers[0]?.callback([entry], {} as ResizeObserver);
+    });
+    expect(onMeasure).toHaveBeenCalledWith(180);
   });
 
   it("observes once, reports a changed height once, and disconnects on cleanup", () => {

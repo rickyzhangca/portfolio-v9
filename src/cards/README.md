@@ -18,6 +18,20 @@ This directory (`src/cards/`) is the **single source of truth** for all card-rel
 | Card renderer | `src/cards/render-card.tsx` | Routes to card components based on kind |
 | Card implementations | `src/cards/<kind>/` | Individual card component implementations |
 
+## Layout Measurements
+
+Measurements are untransformed border-box pixels: prefer ResizeObserver
+`borderBoxSize`, with `offsetHeight` as the fallback. Do not feed
+`getBoundingClientRect()` sizes into canvas layout; they include entrance
+animations and viewport scaling.
+
+Fun-project detail offsets follow actual measured heights, including late font
+or media reflow. Expansion initially uses estimated bounds, then permits one
+settled-content auto-pan refinement. Pointer/wheel input, resize, reset, close,
+or another activation cancels that refinement. Later layout changes must not
+continually recenter the reader. Oversized content retains its top anchor and
+remains reachable by panning rather than being forced into the viewport.
+
 ## Deprecated Code
 
 Legacy card content components formerly under `src/components/cards/` were
