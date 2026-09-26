@@ -12,6 +12,7 @@ export const ResumeHeader = ({ data }: ResumeHeaderProps) => {
         <a
           className="underline decoration-foreground1/30 underline-offset-3"
           href={data?.website}
+          rel="noreferrer"
           target="_blank"
         >
           {data?.website.replace("https://", "")}
