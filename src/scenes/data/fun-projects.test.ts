@@ -10,6 +10,8 @@ describe("funProjects", () => {
     expect(spellbookProject?.description).toContain(
       "https://spellbook-space.pages.dev/"
     );
-    expect(spellbookProject?.description).not.toContain("https://spellbook.space");
+    expect(spellbookProject?.description).not.toContain(
+      "https://spellbook.space"
+    );
   });
 });

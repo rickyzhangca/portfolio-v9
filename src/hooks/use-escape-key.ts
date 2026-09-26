@@ -21,7 +21,7 @@ export const useEscapeKey = ({
     }
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (isLocked || e.key !== "Escape") {
+      if (isLocked || e.defaultPrevented || e.key !== "Escape") {
         return;
       }
 

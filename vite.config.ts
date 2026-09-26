@@ -22,6 +22,7 @@ export default defineConfig({
     open: true,
   },
   build: {
+    manifest: true,
     rollupOptions: {
       output: {
         advancedChunks: {
@@ -36,7 +37,7 @@ export default defineConfig({
             },
             {
               name: "vendor",
-              test: /react|react-dom|jotai/,
+              test: /\/node_modules\/(?:react|react-dom|jotai)\//,
             },
           ],
         },

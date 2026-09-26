@@ -10,11 +10,11 @@ import {
 import { fanConfigAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
+import { getSwagPosition, SWAG_LAYOUT } from "@/lib/card-layout";
 import { tw } from "@/lib/utils";
 import type { CanvasSwagStackItem, Position } from "@/types/canvas";
 
-const SWAG_ITEM_SIZE = 180;
-const GRID_COLUMNS = 6;
+const SWAG_ITEM_SIZE = SWAG_LAYOUT.itemSize;
 const STAGGER_DELAY = 0.01;
 
 // Collapsed positions for swag items (stacked under cover)
@@ -89,29 +89,18 @@ export const SwagGroup = ({
 
   const getSwagOffset = useCallback(
     (index: number) => {
-      const row = Math.floor(index / GRID_COLUMNS);
-      const colInRow = index % GRID_COLUMNS;
-
-      // Expanded position: grid layout with fan effect
-      const baseX = coverWidth + fanConfig.expandGapPx;
-      const expandedX =
-        baseX + colInRow * (SWAG_ITEM_SIZE + fanConfig.expandGapPx);
-      const expandedY = row * (SWAG_ITEM_SIZE + fanConfig.expandRowGapPx);
-
-      // Fan effect calculations (same as card-group)
-      const fanRotate = (colInRow + 1) * fanConfig.rotateStepDeg;
-      const fanArcY = (colInRow + 1) ** 2 * fanConfig.arcStepPx;
+      const expanded = getSwagPosition(index, coverWidth, fanConfig);
 
       // Collapsed position: stacked under cover
       const collapsedPos = COLLAPSED_POSITIONS[Math.min(index, 5)];
 
       return {
-        expandedX,
-        expandedY: expandedY + fanArcY,
+        expandedX: expanded.x,
+        expandedY: expanded.y,
         collapsedX: collapsedPos.x,
         collapsedY: collapsedPos.y,
         collapsedRotate: collapsedPos.rotate,
-        fanRotate,
+        fanRotate: expanded.rotate,
       };
     },
     [coverWidth, fanConfig]
@@ -153,6 +142,7 @@ export const SwagGroup = ({
         !dragDisabled && "cursor-grab",
         isDragging && "cursor-grabbing"
       )}
+      data-expanded={isExpanded}
       data-swag-stack-id={item.id}
       onMouseDown={handleMouseDown}
       onTouchStart={handleMouseDown}
@@ -180,11 +170,25 @@ export const SwagGroup = ({
             scale: 1,
             rotate: 0,
           }}
+          aria-expanded={isExpanded}
+          aria-label="Toggle swag collection"
           className="absolute top-0 left-0"
           initial={{
             opacity: 0,
             scale: 0,
             rotate: -5,
+          }}
+          onKeyDown={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              (event.key === "Enter" || event.key === " ")
+            ) {
+              event.preventDefault();
+              onToggleExpanded();
+            }
+          }}
+          onPointerCancel={() => {
+            cardPointerDownRef.current = null;
           }}
           onPointerDown={(e) => {
             if (e.button !== 0) {
@@ -215,10 +219,12 @@ export const SwagGroup = ({
               onToggleExpanded();
             }
           }}
+          role="button"
           style={{
             pointerEvents: "auto",
             zIndex: item.swags.length,
           }}
+          tabIndex={0}
           transition={{
             ...SPRING_PRESETS.snappy,
             delay: 0.3 + stackIndex * 0.05,
@@ -251,7 +257,7 @@ export const SwagGroup = ({
             <motion.div
               animate={{
                 opacity: 1,
-                scale: isExpanded ? 1.05 : 0.6,
+                scale: isExpanded ? SWAG_LAYOUT.expandedScale : 0.6,
                 x: isExpanded ? offset.expandedX : offset.collapsedX,
                 y: isExpanded ? offset.expandedY : offset.collapsedY,
                 rotate: isExpanded ? offset.fanRotate : offset.collapsedRotate,
