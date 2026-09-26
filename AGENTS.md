@@ -6,7 +6,7 @@ Use `pnpm` only (`packageManager` is pinned in `package.json`).
 
 ## Runtime and tooling snapshot
 - Node-based frontend app, ESM (`"type": "module"`).
-- Bundler: Vite (via `rolldown-vite` override).
+- Bundler: Vite 8 (Rolldown).
 - Styling: Tailwind CSS v4.
 - State: Jotai + local React state/reducers.
 - Testing: Vitest (`happy-dom`) + Testing Library.

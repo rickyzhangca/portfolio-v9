@@ -117,7 +117,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
           maxScale={3}
           minScale={0.3}
           onPanningStop={viewport.onStopped}
-          onTransformed={viewport.onTransformed}
+          onTransform={viewport.onTransformed}
           onZoomStop={viewport.onStopped}
           panning={{
             disabled: isDragging || interaction.isLocked,
