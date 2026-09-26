@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useAtom } from "jotai";
 import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
 import { SPRING_PRESETS } from "@/lib/animation";
+import { EXPAND_MAX_PER_ROW, getFanTransform } from "@/lib/card-layout";
 import { DEFAULT_FAN_CONFIG } from "@/lib/fan";
 import { DEFAULT_REPULSION_CONFIG } from "@/lib/repulsion";
 import { Slider } from "../ui/slider";
@@ -23,13 +24,14 @@ export const CanvasControlPanel = () => {
 
     // Calculate row and column (max 3 per row, matching card-group.tsx)
     const cardIndex = index - 1; // Subtract cover card
-    const row = Math.floor(cardIndex / 3);
-    const colInRow = cardIndex % 3;
+    const row = Math.floor(cardIndex / EXPAND_MAX_PER_ROW);
+    const colInRow = cardIndex % EXPAND_MAX_PER_ROW;
 
     // Apply fan formulas from card-group.tsx, scaled down for preview
     const SCALE = 0.15; // Scale factor for preview area
-    const rotate = (colInRow + 1) * fanConfig.rotateStepDeg;
-    const arcY = (colInRow + 1) ** 2 * fanConfig.arcStepPx * SCALE;
+    const fan = getFanTransform(cardIndex, fanConfig);
+    const rotate = fan.rotate;
+    const arcY = fan.arcY * SCALE;
     const gapX = (colInRow + 1) * fanConfig.expandGapPx * SCALE;
     const gapY = row * fanConfig.expandRowGapPx * SCALE;
 
@@ -107,6 +109,7 @@ export const CanvasControlPanel = () => {
                 </span>
               </div>
               <Slider
+                aria-label="Radius"
                 max={2000}
                 min={200}
                 onValueChange={(value) =>
@@ -130,6 +133,7 @@ export const CanvasControlPanel = () => {
                 </span>
               </div>
               <Slider
+                aria-label="Strength"
                 max={500}
                 min={0}
                 onValueChange={(value) =>
@@ -224,6 +228,7 @@ export const CanvasControlPanel = () => {
                 </span>
               </div>
               <Slider
+                aria-label="Rotation step"
                 max={5}
                 min={0}
                 onValueChange={(value) =>
@@ -250,6 +255,7 @@ export const CanvasControlPanel = () => {
                 </span>
               </div>
               <Slider
+                aria-label="Arc step"
                 max={20}
                 min={0}
                 onValueChange={(value) =>
@@ -276,6 +282,7 @@ export const CanvasControlPanel = () => {
                 </span>
               </div>
               <Slider
+                aria-label="Horizontal gap"
                 max={70}
                 min={-70}
                 onValueChange={(value) =>
@@ -302,6 +309,7 @@ export const CanvasControlPanel = () => {
                 </span>
               </div>
               <Slider
+                aria-label="Vertical gap"
                 max={70}
                 min={-70}
                 onValueChange={(value) =>

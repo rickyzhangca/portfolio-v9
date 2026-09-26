@@ -20,4 +20,6 @@ This directory (`src/cards/`) is the **single source of truth** for all card-rel
 
 ## Deprecated Code
 
-The directory `src/components/cards/` contains legacy card content components that are no longer used. New card implementations should be added to `src/cards/<kind>/` following the existing pattern.
+Legacy card content components formerly under `src/components/cards/` were
+removed after confirming they had no production callers. Add new card
+implementations under `src/cards/<kind>/` following the existing pattern.

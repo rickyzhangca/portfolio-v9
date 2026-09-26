@@ -4,9 +4,74 @@ import {
   createMockCard,
   createMockCover,
   createMockStack,
+  createMockSwagStack,
 } from "@/test-utils/test-helpers";
 import type { CanvasFunStackItem } from "@/types/canvas";
-import { getAutoPanTarget, getFunStackAutoPanTarget } from "./auto-pan";
+import {
+  getAutoPanTarget,
+  getFunStackAutoPanTarget,
+  getSwagStackAutoPanTarget,
+} from "./auto-pan";
+
+describe("swag auto-pan uses rendered fan geometry", () => {
+  it("centers the exact occupied columns, without a trailing gap", () => {
+    const stack = createMockSwagStack("swag", 1800, 100);
+    stack.swags = [{ src: "/swag.webp", label: "Swag" }];
+    const fanConfig = {
+      rotateStepDeg: 0,
+      arcStepPx: 0,
+      expandGapPx: 50,
+      expandRowGapPx: 10,
+    };
+    const target = getSwagStackAutoPanTarget(
+      stack,
+      { scale: 1, positionX: 0, positionY: 0 },
+      1000,
+      800,
+      fanConfig
+    );
+    // 100px cover + 50px gap + 180px image at 1.05x, 120px image height at 1.05x.
+    expect(target).toEqual({
+      x: 500 - (1800 + 339 / 2),
+      y: 400 - (100 + 126 / 2),
+      scale: 1,
+    });
+  });
+
+  it("includes cover height even when there are no swag images", () => {
+    const stack = createMockSwagStack("swag", 1800, 100);
+    const target = getSwagStackAutoPanTarget(
+      stack,
+      { scale: 1, positionX: 0, positionY: 0 },
+      1000,
+      800
+    );
+    expect(target).toEqual({ x: -1350, y: 250, scale: 1 });
+  });
+
+  it("recomputes bounds after fan configuration changes and covers multiple rows", () => {
+    const stack = createMockSwagStack("swag", 900, 700);
+    stack.swags = Array.from({ length: 7 }, (_, i) => ({
+      src: `/${i}.webp`,
+      label: `${i}`,
+    }));
+    const viewport = { scale: 1, positionX: 0, positionY: 0 };
+    const compact = getSwagStackAutoPanTarget(
+      stack,
+      viewport,
+      2000,
+      1500,
+      DEFAULT_FAN_CONFIG
+    );
+    const wide = getSwagStackAutoPanTarget(stack, viewport, 2000, 1500, {
+      ...DEFAULT_FAN_CONFIG,
+      expandGapPx: 200,
+      arcStepPx: 10,
+    });
+    expect(wide).not.toEqual(compact);
+    expect(wide?.x).toBe(40 - stack.position.x);
+  });
+});
 
 const createMockFunStack = (
   id: string,

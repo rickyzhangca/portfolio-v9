@@ -12,7 +12,7 @@ const CARD_MASK_DATA_URI = `url("data:image/svg+xml,%3Csvg viewBox='0 0 240 340'
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import {
   COLLAPSED_POSITIONS,
-  EXPAND_MAX_PER_ROW,
+  getFanTransform,
   getOffsets,
 } from "@/lib/card-layout";
 import { tw } from "@/lib/utils";
@@ -61,6 +61,7 @@ export const CardStack = ({
   );
   const movedItemsRef = useRef<Set<string>>(new Set());
   const dragTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef(false);
   // Control when projects become visible (after cover animation completes)
   const [showProjects, setShowProjects] = useState(false);
 
@@ -78,7 +79,9 @@ export const CardStack = ({
 
   // Cleanup timeout on unmount
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
       if (dragTimeoutRef.current) {
         clearTimeout(dragTimeoutRef.current);
       }
@@ -156,6 +159,9 @@ export const CardStack = ({
     onDragEnd: (finalPosition) => {
       onPositionUpdate(finalPosition);
       onDragEnd?.();
+      if (!isMountedRef.current) {
+        return;
+      }
 
       // Track this item as moved
       movedItemsRef.current.add(stack.id);
@@ -203,6 +209,7 @@ export const CardStack = ({
         isDragging && "cursor-grabbing"
       )}
       data-card-stack-id={stack.id}
+      data-expanded={isExpanded}
       onMouseDown={handleMouseDown}
       onTouchStart={handleMouseDown}
       ref={setRootRef}
@@ -231,6 +238,8 @@ export const CardStack = ({
               x: 0,
               y: 0,
             }}
+            aria-expanded={isExpanded}
+            aria-label={`Toggle ${stack.cover.content.company}`}
             className="absolute top-0 left-0 drop-shadow-[0_8px_16px_rgba(0,0,0,0.16)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_20px_rgba(0,0,0,0.32)]"
             initial={{
               opacity: 0,
@@ -241,6 +250,18 @@ export const CardStack = ({
             }}
             key={coverWithSize.id}
             onHoverStart={triggerPeek}
+            onKeyDown={(event) => {
+              if (
+                event.target === event.currentTarget &&
+                (event.key === "Enter" || event.key === " ")
+              ) {
+                event.preventDefault();
+                onToggleExpanded();
+              }
+            }}
+            onPointerCancel={() => {
+              coverPointerDownRef.current = null;
+            }}
             onPointerDown={(e) => {
               const target = e.target as HTMLElement;
               if (target.closest(".no-drag")) {
@@ -282,10 +303,12 @@ export const CardStack = ({
                 onToggleExpanded();
               }
             }}
+            role="button"
             style={{
               zIndex: (stack.cover ? 1 : 0) + projectsWithSizes.length,
               pointerEvents: "auto",
             }}
+            tabIndex={0}
             transition={{ ...SPRING_PRESETS.snappy, delay: coverEntranceDelay }}
           >
             <div
@@ -310,15 +333,9 @@ export const CardStack = ({
         )}
         {projectsWithSizes.map((card, index) => {
           const offset = offsets[index] ?? { x: 0, y: 0 };
-          const colInRow = index % EXPAND_MAX_PER_ROW;
-          const fanRotate =
-            isExpanded && stack.cover
-              ? (colInRow + 1) * fanConfig.rotateStepDeg
-              : 0;
-          const fanArcY =
-            isExpanded && stack.cover
-              ? (colInRow + 1) ** 2 * fanConfig.arcStepPx
-              : 0;
+          const fan = getFanTransform(index, fanConfig);
+          const fanRotate = isExpanded && stack.cover ? fan.rotate : 0;
+          const fanArcY = isExpanded && stack.cover ? fan.arcY : 0;
 
           // Calculate scale factor to fit project card within cover width when collapsed
           const coverWidth =
@@ -421,7 +438,6 @@ export const CardStack = ({
                 card={card}
                 isExpanded={isExpanded}
                 onMeasure={(h) => handleCardMeasure(card.id, h)}
-                priority={index < 2}
               />
             </motion.div>
           );

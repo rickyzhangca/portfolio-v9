@@ -7,6 +7,8 @@ function Slider({
   children,
   defaultValue,
   value,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
   min = 0,
   max = 100,
   ...props
@@ -49,6 +51,8 @@ function Slider({
           />
           {Array.from({ length: _values.length }, (_, index) => (
             <SliderPrimitive.Thumb
+              aria-label={ariaLabel}
+              aria-labelledby={ariaLabelledBy}
               className="block size-5 shrink-0 select-none rounded-full border border-input bg-white not-dark:bg-clip-padding outline-none before:absolute before:inset-0 before:rounded-full"
               data-slot="slider-thumb"
               key={String(index)}

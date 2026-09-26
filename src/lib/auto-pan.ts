@@ -1,6 +1,13 @@
 import type { CardInstance } from "@/cards/types";
-import { getOffsets, getRotatedBoundingBox } from "@/lib/card-layout";
-import type { FanConfig } from "@/lib/fan";
+import {
+  FUN_STACK_LAYOUT,
+  getFanTransform,
+  getOffsets,
+  getRotatedBoundingBox,
+  getSwagPosition,
+  SWAG_LAYOUT,
+} from "@/lib/card-layout";
+import { DEFAULT_FAN_CONFIG, type FanConfig } from "@/lib/fan";
 import type {
   CanvasFunStackItem,
   CanvasStackItem,
@@ -12,12 +19,12 @@ export const AUTO_PAN_MARGIN = 40;
 export const AUTO_PAN_DURATION_MS = 360;
 export const AUTO_PAN_EASING = "easeInOutCubic";
 
-// Keep this in sync with `src/components/groups/fun-project-group.tsx`.
-const CONTENT_WIDTH = 680;
-const CONTENT_GAP = 24;
-// Keep these in sync with `src/components/groups/fun-project-group.tsx`.
-const FUN_STACK_CONTENT_CARD_HEIGHT = 120;
-const FUN_STACK_VERTICAL_GAP = 16;
+const {
+  contentWidth: CONTENT_WIDTH,
+  contentGap: CONTENT_GAP,
+  estimatedCardHeight: FUN_STACK_CONTENT_CARD_HEIGHT,
+  verticalGap: FUN_STACK_VERTICAL_GAP,
+} = FUN_STACK_LAYOUT;
 
 interface BoundingBox {
   minX: number;
@@ -65,8 +72,10 @@ const getExpandedBoundingBox = (
     // For expanded cards, calculate rotation based on position in row
     // Row 0: first 3 cards get 0.5, 1.0, 1.5 deg rotation
     // Row 1: next 3 cards get 0.5, 1.0, 1.5 deg rotation, etc.
-    const colIndex = i % 3;
-    const rotationDeg = (colIndex + 1) * fanConfig.rotateStepDeg;
+    const { rotate: rotationDeg, arcY: fanArcY } = getFanTransform(
+      i,
+      fanConfig
+    );
 
     const { width: bboxWidth, height: bboxHeight } = getRotatedBoundingBox(
       cardWidth,
@@ -74,14 +83,13 @@ const getExpandedBoundingBox = (
       rotationDeg
     );
 
-    // Account for fanArcY offset applied to each card in card-group.tsx
-    // Formula: (colInRow + 1) ** 2 * fanConfig.arcStepPx
-    const fanArcY = (colIndex + 1) ** 2 * fanConfig.arcStepPx;
-
-    const cardMinX = offset.x;
-    const cardMinY = offset.y;
-    const cardMaxX = offset.x + bboxWidth;
-    const cardMaxY = offset.y + fanArcY + bboxHeight;
+    // CardStack rotates around its top-left corner, not its center.
+    const radians = (rotationDeg * Math.PI) / 180;
+    const cardMinX = offset.x - Math.max(0, cardHeight * Math.sin(radians));
+    const cardMinY =
+      offset.y + fanArcY + Math.min(0, cardWidth * Math.sin(radians));
+    const cardMaxX = cardMinX + bboxWidth;
+    const cardMaxY = cardMinY + bboxHeight;
 
     minX = Math.min(minX, cardMinX);
     minY = Math.min(minY, cardMinY);
@@ -369,23 +377,30 @@ export const getFunStackAutoPanTarget = (
  * Includes the cover + gap + swag grid.
  */
 const getSwagStackExpandedBoundingBox = (
-  coverWidth: number,
-  swagCount: number,
-  gridCols: number,
-  swagItemSize: number,
-  gridGap: number
+  stack: CanvasSwagStackItem,
+  fanConfig: FanConfig
 ): BoundingBox => {
-  const rows = Math.ceil(swagCount / gridCols);
-  const totalWidth = coverWidth + 40 + gridCols * (swagItemSize + gridGap);
-  // Height: items + gaps between rows (last row has no trailing gap)
-  const totalHeight = rows * swagItemSize + Math.max(0, rows - 1) * gridGap;
-
-  return {
+  const coverWidth = stack.cover.size.width ?? 240;
+  const bounds = {
     minX: 0,
     minY: 0,
-    maxX: totalWidth,
-    maxY: totalHeight,
+    maxX: coverWidth,
+    maxY: stack.cover.size.height ?? 360,
   };
+  for (let index = 0; index < stack.swags.length; index++) {
+    const position = getSwagPosition(index, coverWidth, fanConfig);
+    const width = SWAG_LAYOUT.itemSize * SWAG_LAYOUT.expandedScale;
+    const height = SWAG_LAYOUT.imageHeight * SWAG_LAYOUT.expandedScale;
+    const radians = (position.rotate * Math.PI) / 180;
+    const rotated = getRotatedBoundingBox(width, height, position.rotate);
+    const minX = position.x - Math.max(0, height * Math.sin(radians));
+    const minY = position.y + Math.min(0, width * Math.sin(radians));
+    bounds.minX = Math.min(bounds.minX, minX);
+    bounds.minY = Math.min(bounds.minY, minY);
+    bounds.maxX = Math.max(bounds.maxX, minX + rotated.width);
+    bounds.maxY = Math.max(bounds.maxY, minY + rotated.height);
+  }
+  return bounds;
 };
 
 /**
@@ -397,24 +412,9 @@ export const getSwagStackAutoPanTarget = (
   viewportState: ViewportState,
   windowWidth: number,
   windowHeight: number,
-  options?: {
-    gridCols?: number;
-    swagItemSize?: number;
-    gridGap?: number;
-  }
+  fanConfig: FanConfig = DEFAULT_FAN_CONFIG
 ): { x: number; y: number; scale: number } | null => {
-  const coverWidth = swagStack.cover.size.width ?? 240;
-  const gridCols = options?.gridCols ?? 6;
-  const swagItemSize = options?.swagItemSize ?? 180;
-  const gridGap = options?.gridGap ?? 16;
-
-  const expandedBbox = getSwagStackExpandedBoundingBox(
-    coverWidth,
-    swagStack.swags.length,
-    gridCols,
-    swagItemSize,
-    gridGap
-  );
+  const expandedBbox = getSwagStackExpandedBoundingBox(swagStack, fanConfig);
 
   // Get current visible viewport in canvas coordinates
   const visibleViewport = getVisibleViewport(

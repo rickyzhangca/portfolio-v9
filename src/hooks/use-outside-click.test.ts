@@ -199,7 +199,7 @@ describe("useOutsideClick", () => {
     expect(onClickOutsideMock).toHaveBeenCalledTimes(1);
   });
 
-  it("calls onClickOutside on pointercancel event", () => {
+  it("does not treat pointer cancellation as a click", () => {
     renderHook(() =>
       useOutsideClick({
         isActive: true,
@@ -225,7 +225,7 @@ describe("useOutsideClick", () => {
     });
     document.dispatchEvent(cancelEvent);
 
-    expect(onClickOutsideMock).toHaveBeenCalledTimes(1);
+    expect(onClickOutsideMock).not.toHaveBeenCalled();
   });
 
   it("removes listeners when isActive changes to false", () => {

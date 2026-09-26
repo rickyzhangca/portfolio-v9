@@ -24,6 +24,20 @@ Use `pnpm` only (`packageManager` is pinned in `package.json`).
 - Clean style pass (format + lint write): `pnpm clean`
 - Run tests once (CI mode): `pnpm test`
 - Run tests with coverage: `pnpm coverage`
+- Browser regression tests: `pnpm build && pnpm test:e2e` (first run: `pnpm exec playwright install chromium`)
+- Initial JavaScript budget: `pnpm build && pnpm check:bundle`
+
+## Canvas ownership and regression gates
+- `initialItems` is a mount-time scene baseline. Parent rerenders do not reload it; use a new React `key` to replace a scene. Reset returns to that baseline.
+- `use-canvas-state` owns committed item and viewport state; `use-canvas-viewport` owns the live transform, pending animation frames and settled commits (including reset and momentum).
+- `use-canvas-interactions` owns activation/close commands and return positions. Canvas owns the active document; all background interaction locks derive from it.
+- Bind item IDs at `CanvasItemRenderer`, not in persistent callback maps. Callbacks must observe the latest configuration.
+- Shared fan/swag geometry and fun-stack dimensions live in `src/lib/card-layout.ts`; renderers and auto-pan must use the same definitions.
+- Project images use viewport-aware native lazy loading; retain eager loading for primary covers. Videos must not start just because hidden measurement content mounts.
+- CI runs formatting, lint, coverage, production build, initial-JS budget and Chromium desktop/touch regressions. Unit coverage includes the Canvas and group integration surfaces.
+- The initial-JS budget follows static imports in the Vite manifest, excluding dynamic chunks: 950 KB raw and 300 KB gzip (baseline approximately 876/278 KB). Match vendor package paths precisely so lazy highlighter dependencies do not become eager. Do not raise the budget to hide a regression; document intentional product-driven changes.
+- Browser specs live in `e2e/`; Vitest runs only colocated `src/**/*.test.{ts,tsx}`. Measure frame time and media transfer separately before adding virtualization.
+- The lockfile resolves Base UI to 1.2.0: 1.1.0's Slider incorrectly reads the global `event`. Keep the real keyboard-slider regression when updating this dependency.
 
 ## Single-test and focused-test recipes
 - Run one test file: `pnpm test -- src/lib/utils.test.ts`
