@@ -25,6 +25,7 @@ Use `pnpm` only (`packageManager` is pinned in `package.json`).
 - Run tests once (CI mode): `pnpm test`
 - Run tests with coverage: `pnpm coverage`
 - Browser regression tests: `pnpm build && pnpm test:e2e` (first run: `pnpm exec playwright install chromium firefox webkit`)
+- Development initialization regression: `PW_DEV=1 pnpm test:e2e e2e/canvas-origin.spec.ts --project=desktop`. CI also runs this against WebKit and Firefox. The dev-server mode requires port 4173 to be free.
 - Visual regression tests: `PW_VISUAL=1 pnpm test:e2e --project=visual-chromium` after building. Committed baselines target Ubuntu 24.04 and the lockfile's Chromium version; do not generate Linux-named references on macOS.
 - Initial JavaScript budget: `pnpm build && pnpm check:bundle`
 - Interaction performance report: `pnpm test:perf` (builds production assets, then runs three repetitions on a separate preview port, 4174)
@@ -39,6 +40,7 @@ Use `pnpm` only (`packageManager` is pinned in `package.json`).
 - Shared fan/swag geometry and fun-stack dimensions live in `src/lib/card-layout.ts`; renderers and auto-pan must use the same definitions.
 - Measure untransformed border-box dimensions (`ResizeObserver.borderBoxSize`, falling back to `offsetHeight`), not transformed screen bounds. Fun-project detail offsets follow actual heights; allow only one settled-layout auto-pan refinement per expansion, cancelled by user input, resize, reset, close or another activation.
 - Canvas viewport containers use `overflow: clip`, not `hidden`: native focus scrolling must not create a second coordinate offset outside the transform controller. Keep the keyboard-activated oversized-collection anchor regression.
+- Canvas coordinates start at the top-left; keep `centerOnInit` disabled and explicitly override the transform library's `fit-content` dimensions with `!w-full !h-full`. Its injected CSS can otherwise override layered Tailwind utilities in development and center a zero-sized scene at half the viewport.
 - Project images use viewport-aware native lazy loading; retain eager loading for primary covers. Videos must not start just because hidden measurement content mounts.
 - CI runs formatting, lint, coverage, production build, initial-JS budget, Chromium desktop/touch, WebKit desktop/iPhone, Firefox desktop, and Chromium visual regressions on Ubuntu 24.04. Unit coverage includes the Canvas and group integration surfaces.
 - CI retries browser failures once for diagnostics but still fails on flaky tests. Async-layout assertions must check eventual geometry, not assume a quiet sample means lazy media has finished loading.

@@ -40,6 +40,10 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium firefox webkit
       - name: Run browser regressions
         run: pnpm test:e2e
+      - name: Check development canvas initialization
+        env:
+          PW_DEV: "1"
+        run: pnpm test:e2e e2e/canvas-origin.spec.ts --project=desktop --project=webkit-desktop --project=firefox-desktop
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const visualTestMatch = "**/visual/**/*.spec.ts";
 const includeVisualProject = process.env.PW_VISUAL === "1";
+const useDevServer = process.env.PW_DEV === "1";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -64,8 +65,8 @@ export default defineConfig({
       : []),
   ],
   webServer: {
-    command: "pnpm preview --host 127.0.0.1 --port 4173 --strictPort",
+    command: `pnpm ${useDevServer ? "dev" : "preview"} --host 127.0.0.1 --port 4173 --strictPort`,
     url: "http://127.0.0.1:4173",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !(process.env.CI || useDevServer),
   },
 });

@@ -110,7 +110,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
         ref={viewport.containerRef}
       >
         <TransformWrapper
-          centerOnInit={true}
+          centerOnInit={false}
           doubleClick={{ disabled: true, mode: "zoomIn" }}
           initialScale={1}
           limitToBounds={false}
@@ -131,7 +131,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
           {({ resetTransform }) => (
             <>
               <TransformComponent
-                contentClass="relative w-full h-full"
+                contentClass="relative !w-full !h-full"
                 wrapperClass="!w-screen !h-screen !overflow-clip"
               >
                 {Array.from(state.items.values()).map((item, itemIndex) => (
