@@ -105,6 +105,51 @@ const createMockFunStack = (
   };
 };
 
+describe("measured fun stack bounds", () => {
+  it("uses actual content height instead of centering an underestimated list", () => {
+    const item = createMockFunStack("fun", 1800, 500, 1, 240, 360, 2);
+    const viewport = { scale: 1, positionX: 0, positionY: 0 };
+    const estimate = getFunStackAutoPanTarget(item, viewport, 1440, 1000);
+    const measured = getFunStackAutoPanTarget(item, viewport, 1440, 1000, 1600);
+    expect(estimate?.y).toBe(-180);
+    expect(measured).toEqual({
+      x: 720 - (1800 + 944 / 2),
+      y: 40 - 500,
+      scale: 1,
+    });
+  });
+
+  it("centers measured content on both axes when it fits at the current scale", () => {
+    const item = createMockFunStack("fun", 1800, 500, 1, 240, 360, 2);
+    expect(
+      getFunStackAutoPanTarget(
+        item,
+        { scale: 0.5, positionX: 0, positionY: 0 },
+        1000,
+        800,
+        600
+      )
+    ).toEqual({
+      x: 500 - (1800 + 944 / 2) * 0.5,
+      y: 400 - (500 + 600 / 2) * 0.5,
+      scale: 0.5,
+    });
+  });
+
+  it("does not reserve a nonexistent detail column for empty stacks", () => {
+    const item = createMockFunStack("fun", 100, 100, 1, 240, 360, 0);
+    expect(
+      getFunStackAutoPanTarget(
+        item,
+        { scale: 1, positionX: 0, positionY: 0 },
+        600,
+        600,
+        0
+      )
+    ).toBeNull();
+  });
+});
+
 describe("getAutoPanTarget - content fits viewport", () => {
   it("returns null when expanded stack with cover and stack fits within viewport", () => {
     const cover = createMockCover("cover", 200, 300);

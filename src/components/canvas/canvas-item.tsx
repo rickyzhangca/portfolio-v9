@@ -19,6 +19,7 @@ interface CanvasItemRendererProps {
   onDragStart?: () => void;
   onDragEnd?: () => void;
   onCardHeightMeasured?: (id: string, cardId: string, height: number) => void;
+  onContentLayoutMeasured?: (id: string, height: number) => void;
   onActivate?: (id: string) => void;
   setRootRef?: (id: string, el: HTMLDivElement | null) => void;
 }
@@ -37,6 +38,7 @@ const CanvasItemRendererComponent = ({
   onDragStart,
   onDragEnd,
   onCardHeightMeasured: measureCard,
+  onContentLayoutMeasured: measureContent,
   onActivate: activate,
   setRootRef: registerElement,
 }: CanvasItemRendererProps) => {
@@ -59,6 +61,10 @@ const CanvasItemRendererComponent = ({
   const onActivate = useCallback(
     () => activate?.(item.id),
     [activate, item.id]
+  );
+  const onContentLayoutMeasured = useCallback(
+    (height: number) => measureContent?.(item.id, height),
+    [measureContent, item.id]
   );
   const setRootRef = useCallback(
     (element: HTMLDivElement | null) => registerElement?.(item.id, element),
@@ -91,6 +97,7 @@ const CanvasItemRendererComponent = ({
         item={item}
         onBringToFront={onBringToFront}
         onCardHeightMeasured={onCardHeightMeasured}
+        onContentLayoutMeasured={onContentLayoutMeasured}
         onDragEnd={onDragEnd}
         onDragStart={onDragStart}
         onPositionUpdate={onPositionUpdate}

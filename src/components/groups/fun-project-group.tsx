@@ -31,6 +31,19 @@ const MarkdownRenderer = lazy(() =>
   }))
 );
 
+const ProjectDescription = ({
+  content,
+  index,
+  onReady,
+}: {
+  content: string;
+  index: number;
+  onReady: (index: number) => void;
+}) => {
+  useEffect(() => onReady(index), [index, onReady]);
+  return <MarkdownRenderer content={content} />;
+};
+
 interface FunProjectGroupProps {
   item: CanvasFunStackItem;
   scale: number;
@@ -43,6 +56,7 @@ interface FunProjectGroupProps {
   onDragStart?: () => void;
   onDragEnd?: () => void;
   onCardHeightMeasured?: (cardId: string, height: number) => void;
+  onContentLayoutMeasured?: (height: number) => void;
   setRootRef?: (el: HTMLDivElement | null) => void;
 }
 
@@ -58,6 +72,7 @@ export const FunProjectGroup = ({
   onDragStart,
   onDragEnd,
   onCardHeightMeasured,
+  onContentLayoutMeasured,
   setRootRef,
 }: FunProjectGroupProps) => {
   const [measuredHeight, setMeasuredHeight] = useState<number | undefined>(
@@ -68,6 +83,9 @@ export const FunProjectGroup = ({
   >({});
   const [isContentLayoutReady, setIsContentLayoutReady] = useState(false);
   const [hasCompletedFirstExpand, setHasCompletedFirstExpand] = useState(false);
+  const [readyDescriptions, setReadyDescriptions] = useState<Set<number>>(
+    () => new Set()
+  );
   const contentCardElementsRef = useRef(new Map<number, HTMLDivElement>());
   const contentCardRefCallbacksRef = useRef(
     new Map<number, (el: HTMLDivElement | null) => void>()
@@ -142,7 +160,8 @@ export const FunProjectGroup = ({
         callback = (el: HTMLDivElement | null) => {
           if (el) {
             contentCardElementsRef.current.set(index, el);
-            const initialHeight = el.getBoundingClientRect().height;
+            // Layout pixels, unaffected by the entrance scale or canvas transform.
+            const initialHeight = el.offsetHeight;
             handleContentCardMeasure(index, initialHeight);
           } else {
             contentCardElementsRef.current.delete(index);
@@ -154,6 +173,12 @@ export const FunProjectGroup = ({
     },
     [handleContentCardMeasure]
   );
+
+  const handleDescriptionReady = useCallback((index: number) => {
+    setReadyDescriptions((previous) =>
+      previous.has(index) ? previous : new Set([...previous, index])
+    );
+  }, []);
 
   const clearMeasurementTimeouts = useCallback(() => {
     if (measurementSettleTimeoutRef.current) {
@@ -213,7 +238,7 @@ export const FunProjectGroup = ({
           const height =
             entry.borderBoxSize && entry.borderBoxSize.length > 0
               ? entry.borderBoxSize[0].blockSize
-              : entry.contentRect.height;
+              : element.offsetHeight;
           handleContentCardMeasure(index, height);
         }
       });
@@ -254,10 +279,12 @@ export const FunProjectGroup = ({
 
   const allContentCardsMeasured = useMemo(() => {
     return item.card.content.items.every(
-      (_, index) => (contentCardHeights[index] ?? 0) > 0
+      (_, index) =>
+        (contentCardHeights[index] ?? 0) > 0 && readyDescriptions.has(index)
     );
-  }, [item.card.content.items, contentCardHeights]);
+  }, [item.card.content.items, contentCardHeights, readyDescriptions]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Restart the settling window on every height change, even after all cards have a measurement.
   useEffect(() => {
     if (!isExpanded || isContentLayoutReady || !allContentCardsMeasured) {
       return;
@@ -276,11 +303,42 @@ export const FunProjectGroup = ({
         setHasCompletedFirstExpand(true);
       }
     }, settleDelay);
+    return () => {
+      if (measurementSettleTimeoutRef.current !== null) {
+        clearTimeout(measurementSettleTimeoutRef.current);
+        measurementSettleTimeoutRef.current = null;
+      }
+    };
   }, [
     allContentCardsMeasured,
+    contentCardHeights,
     hasCompletedFirstExpand,
     isContentLayoutReady,
     isExpanded,
+  ]);
+
+  useEffect(() => {
+    if (!(isExpanded && isContentLayoutReady && allContentCardsMeasured)) {
+      return;
+    }
+    const lastIndex = item.card.content.items.length - 1;
+    const height =
+      lastIndex < 0
+        ? 0
+        : contentCardOffsets[lastIndex] + contentCardHeights[lastIndex];
+    const timeout = setTimeout(
+      () => onContentLayoutMeasured?.(height),
+      MEASUREMENT_SETTLE_MS
+    );
+    return () => clearTimeout(timeout);
+  }, [
+    allContentCardsMeasured,
+    contentCardHeights,
+    contentCardOffsets,
+    isContentLayoutReady,
+    isExpanded,
+    item.card.content.items.length,
+    onContentLayoutMeasured,
   ]);
 
   return (
@@ -297,6 +355,7 @@ export const FunProjectGroup = ({
       )}
       data-expanded={isExpanded}
       data-fun-stack-id={item.id}
+      data-layout-ready={isContentLayoutReady && allContentCardsMeasured}
       onMouseDown={handleMouseDown}
       onTouchStart={handleMouseDown}
       ref={setRootRef}
@@ -466,7 +525,11 @@ export const FunProjectGroup = ({
 
                   <div className="prose prose-sm max-w-none text-foreground1/80">
                     <Suspense fallback={null}>
-                      <MarkdownRenderer content={funItem.description} />
+                      <ProjectDescription
+                        content={funItem.description}
+                        index={index}
+                        onReady={handleDescriptionReady}
+                      />
                     </Suspense>
                   </div>
 
