@@ -104,7 +104,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
   return (
     <LayoutGroup>
       <div
-        className="h-screen w-screen overflow-hidden"
+        className="h-screen w-screen overflow-clip"
         onPointerDownCapture={interaction.cancelLayoutCorrection}
         onWheelCapture={interaction.cancelLayoutCorrection}
         ref={viewport.containerRef}
@@ -132,7 +132,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
             <>
               <TransformComponent
                 contentClass="relative w-full h-full"
-                wrapperClass="!w-screen !h-screen"
+                wrapperClass="!w-screen !h-screen !overflow-clip"
               >
                 {Array.from(state.items.values()).map((item, itemIndex) => (
                   <CanvasItemRenderer

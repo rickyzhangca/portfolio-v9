@@ -20,6 +20,25 @@ test("keyboard expansion and Escape preserve a usable canvas", async ({
   await expect(cover).toHaveAttribute("aria-expanded", "false");
 });
 
+test("keyboard activation keeps an oversized collection at its reading anchor", async ({
+  page,
+}) => {
+  const cover = page.getByRole("button", {
+    name: "Toggle swag collection",
+    exact: true,
+  });
+  await cover.press("Enter");
+  await expect(cover).toHaveAttribute("aria-expanded", "true");
+  await expect
+    .poll(async () => {
+      const bounds = await cover.boundingBox();
+      return bounds
+        ? Math.max(Math.abs(bounds.x - 40), Math.abs(bounds.y - 40))
+        : Number.POSITIVE_INFINITY;
+    })
+    .toBeLessThan(1);
+});
+
 test("wheel pan and reset synchronize the reset control", async ({
   page,
   browserName,
