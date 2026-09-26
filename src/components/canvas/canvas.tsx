@@ -49,6 +49,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     fanConfig,
     getViewport,
     panTo: viewport.panTo,
+    cancelPendingPan: viewport.cancelPendingPan,
     bringItemToFront: actions.bringItemToFront,
     setExpandedStack: actions.setExpandedStack,
     setFocusedItem: actions.setFocusedItem,
@@ -104,6 +105,8 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     <LayoutGroup>
       <div
         className="h-screen w-screen overflow-hidden"
+        onPointerDownCapture={interaction.cancelLayoutCorrection}
+        onWheelCapture={interaction.cancelLayoutCorrection}
         ref={viewport.containerRef}
       >
         <TransformWrapper
@@ -146,6 +149,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                     onActivate={interaction.activate}
                     onBringToFront={actions.bringItemToFront}
                     onCardHeightMeasured={actions.updateCardHeight}
+                    onContentLayoutMeasured={interaction.measureContentLayout}
                     onDragEnd={onDragEnd}
                     onDragStart={onDragStart}
                     onPositionUpdate={actions.updateItemPosition}

@@ -4,6 +4,13 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      generate_visual_baselines:
+        description: Generate Linux visual baseline candidates for manual review only
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -14,7 +21,10 @@ concurrency:
 
 jobs:
   quality:
-    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.generate_visual_baselines != true }}
+    runs-on: ubuntu-24.04
+    env:
+      PW_VISUAL: "1"
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -27,11 +37,55 @@ jobs:
       - run: pnpm format && pnpm lint
       - run: pnpm coverage
       - run: pnpm build && pnpm check:bundle
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
+      - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - name: Run browser regressions
+        run: pnpm test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: browser-failures
           path: test-results
           if-no-files-found: ignore
+
+  visual-baseline-candidates:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.generate_visual_baselines == true }}
+    name: Generate Linux visual baseline candidates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Generate candidates without comparison
+        env:
+          PW_VISUAL: "1"
+        run: pnpm exec playwright test --project=visual-chromium --update-snapshots
+      - name: Upload visual baseline candidates
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baseline-candidates-linux-chromium
+          path: |
+            e2e/visual/canvas.spec.ts-snapshots/*-visual-chromium-linux.png
+            test-results
+          if-no-files-found: warn
+      - name: Explain visual baseline review
+        if: always()
+        run: |
+          {
+            echo "## Linux visual baseline review"
+            echo "Download the visual-baseline-candidates-linux-chromium artifact and manually inspect each screenshot."
+            echo "This job only creates and uploads candidate files; it never approves, commits, or enables comparisons."
+            echo "If reviewed and accepted, commit the six \`*-visual-chromium-linux.png\` files under \`e2e/visual/canvas.spec.ts-snapshots/\` in a separate reviewed change."
+            echo "Do not create Linux-named baselines on macOS. Normal CI requires all six reviewed snapshots and never updates them automatically."
+          } >> "$GITHUB_STEP_SUMMARY"

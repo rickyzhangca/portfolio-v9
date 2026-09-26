@@ -107,18 +107,20 @@ const getExpandedBoundingBox = (
 const getFunStackExpandedBoundingBox = (
   cardWidth: number,
   cardHeight: number,
-  itemsCount: number
+  itemsCount: number,
+  measuredContentHeight?: number
 ): BoundingBox => {
   const listHeight =
-    itemsCount > 0
+    measuredContentHeight ??
+    (itemsCount > 0
       ? itemsCount * FUN_STACK_CONTENT_CARD_HEIGHT +
         (itemsCount - 1) * FUN_STACK_VERTICAL_GAP
-      : 0;
+      : 0);
 
   return {
     minX: 0,
     minY: 0,
-    maxX: cardWidth + CONTENT_GAP + CONTENT_WIDTH,
+    maxX: itemsCount > 0 ? cardWidth + CONTENT_GAP + CONTENT_WIDTH : cardWidth,
     // Content cards fly out to the right and stack vertically starting at y=0.
     maxY: Math.max(cardHeight, listHeight),
   };
@@ -305,7 +307,8 @@ export const getFunStackAutoPanTarget = (
   funStack: CanvasFunStackItem,
   viewportState: ViewportState,
   windowWidth: number,
-  windowHeight: number
+  windowHeight: number,
+  measuredContentHeight?: number
 ): { x: number; y: number; scale: number } | null => {
   const cardWidth = funStack.card.size.width ?? 240;
   const cardHeight = funStack.card.size.height ?? 360;
@@ -314,7 +317,8 @@ export const getFunStackAutoPanTarget = (
   const expandedBbox = getFunStackExpandedBoundingBox(
     cardWidth,
     cardHeight,
-    funStack.card.content.items.length
+    funStack.card.content.items.length,
+    measuredContentHeight
   );
 
   // Get current visible viewport in canvas coordinates
