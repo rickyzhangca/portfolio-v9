@@ -41,18 +41,18 @@ const RenderCardComponent = ({
       return;
     }
 
+    const element = ref.current;
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        if (entry.borderBoxSize) {
-          const height = entry.borderBoxSize[0].blockSize;
-          if (height !== card.size.height) {
-            onMeasure(height);
-          }
+        const height =
+          entry.borderBoxSize?.[0]?.blockSize ?? element.offsetHeight;
+        if (height > 0 && height !== card.size.height) {
+          onMeasure(height);
         }
       }
     });
 
-    observer.observe(ref.current);
+    observer.observe(element);
 
     return () => {
       observer.disconnect();

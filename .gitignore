@@ -24,5 +24,6 @@ dist-ssr
 coverage
 playwright-report
 test-results
+.playwright-work/
 
 .opencode

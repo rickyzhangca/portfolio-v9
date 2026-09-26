@@ -49,6 +49,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     fanConfig,
     getViewport,
     panTo: viewport.panTo,
+    cancelPendingPan: viewport.cancelPendingPan,
     bringItemToFront: actions.bringItemToFront,
     setExpandedStack: actions.setExpandedStack,
     setFocusedItem: actions.setFocusedItem,
@@ -103,11 +104,13 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
   return (
     <LayoutGroup>
       <div
-        className="h-screen w-screen overflow-hidden"
+        className="h-screen w-screen overflow-clip"
+        onPointerDownCapture={interaction.cancelLayoutCorrection}
+        onWheelCapture={interaction.cancelLayoutCorrection}
         ref={viewport.containerRef}
       >
         <TransformWrapper
-          centerOnInit={true}
+          centerOnInit={false}
           doubleClick={{ disabled: true, mode: "zoomIn" }}
           initialScale={1}
           limitToBounds={false}
@@ -128,8 +131,8 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
           {({ resetTransform }) => (
             <>
               <TransformComponent
-                contentClass="relative w-full h-full"
-                wrapperClass="!w-screen !h-screen"
+                contentClass="relative !w-full !h-full"
+                wrapperClass="!w-screen !h-screen !overflow-clip"
               >
                 {Array.from(state.items.values()).map((item, itemIndex) => (
                   <CanvasItemRenderer
@@ -146,6 +149,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                     onActivate={interaction.activate}
                     onBringToFront={actions.bringItemToFront}
                     onCardHeightMeasured={actions.updateCardHeight}
+                    onContentLayoutMeasured={interaction.measureContentLayout}
                     onDragEnd={onDragEnd}
                     onDragStart={onDragStart}
                     onPositionUpdate={actions.updateItemPosition}

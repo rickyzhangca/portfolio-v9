@@ -31,6 +31,9 @@ const transform = vi.hoisted(() => ({
     | undefined,
   panDisabled: false,
   setTransform: vi.fn(),
+  measureContent: undefined as
+    | ((id: string, height: number) => void)
+    | undefined,
 }));
 
 vi.mock("react-zoom-pan-pinch", () => ({
@@ -86,6 +89,7 @@ vi.mock("./canvas-item", () => ({
     isFocused,
     dragDisabled,
     onPositionUpdate,
+    onContentLayoutMeasured,
   }: {
     item: CanvasItem;
     onActivate: (id: string) => void;
@@ -95,32 +99,36 @@ vi.mock("./canvas-item", () => ({
     isFocused: boolean;
     dragDisabled: boolean;
     onPositionUpdate: (id: string, position: { x: number; y: number }) => void;
-  }) => (
-    <div
-      data-drag-disabled={dragDisabled}
-      data-expanded={isExpanded}
-      data-focused={isFocused}
-      data-testid={item.id}
-      ref={(el) => setRootRef(item.id, el)}
-    >
-      <button
-        onClick={() =>
-          item.kind === "single"
-            ? onActivate(item.id)
-            : onToggleExpanded(item.id)
-        }
-        type="button"
+    onContentLayoutMeasured: (id: string, height: number) => void;
+  }) => {
+    transform.measureContent = onContentLayoutMeasured;
+    return (
+      <div
+        data-drag-disabled={dragDisabled}
+        data-expanded={isExpanded}
+        data-focused={isFocused}
+        data-testid={item.id}
+        ref={(el) => setRootRef(item.id, el)}
       >
-        {item.id}
-      </button>
-      <button
-        onClick={() => onPositionUpdate(item.id, { x: 123, y: 456 })}
-        type="button"
-      >
-        Move {item.id}
-      </button>
-    </div>
-  ),
+        <button
+          onClick={() =>
+            item.kind === "single"
+              ? onActivate(item.id)
+              : onToggleExpanded(item.id)
+          }
+          type="button"
+        >
+          {item.id}
+        </button>
+        <button
+          onClick={() => onPositionUpdate(item.id, { x: 123, y: 456 })}
+          type="button"
+        >
+          Move {item.id}
+        </button>
+      </div>
+    );
+  },
 }));
 vi.mock("./canvas-controls", () => ({
   CanvasControls: ({
@@ -206,6 +214,101 @@ afterEach(() => {
 });
 
 describe("Canvas interaction contracts", () => {
+  it("cancels a measured correction queued just before pointer input", () => {
+    render(<Canvas initialItems={[createMockFunStack("fun", 1400, 500)]} />);
+    fireEvent.click(screen.getByText("fun"));
+    settle();
+    const original = { ...transform.current };
+    act(() => transform.measureContent?.("fun", 1800));
+    fireEvent.pointerDown(screen.getByText("fun"));
+    settle();
+    expect(transform.current).toEqual(original);
+  });
+
+  it("preserves the return position when only measured bounds require panning", () => {
+    render(<Canvas initialItems={[createMockFunStack("fun", 40, 40)]} />);
+    fireEvent.click(screen.getByText("fun"));
+    settle();
+    expect(transform.setTransform).not.toHaveBeenCalled();
+    act(() => transform.measureContent?.("fun", 1800));
+    settle();
+    expect(transform.current.positionY).toBe(0);
+    expect(transform.setTransform).toHaveBeenCalledTimes(1);
+    fireEvent.keyDown(document, { key: "Escape" });
+    settle();
+    expect(transform.current).toEqual({
+      scale: 1,
+      positionX: 0,
+      positionY: 0,
+    });
+  });
+
+  it("refines measured fun content once and restores the original viewport", () => {
+    render(<Canvas initialItems={[createMockFunStack("fun", 1400, 500)]} />);
+    fireEvent.click(screen.getByText("fun"));
+    settle();
+    const estimated = { ...transform.current };
+    act(() => transform.measureContent?.("fun", 1800));
+    settle();
+    expect(transform.current.positionY).toBe(40 - 500);
+    expect(transform.current.positionY).not.toBe(estimated.positionY);
+    const calls = transform.setTransform.mock.calls.length;
+    act(() => transform.measureContent?.("fun", 2400));
+    settle();
+    expect(transform.setTransform).toHaveBeenCalledTimes(calls);
+    fireEvent.keyDown(document, { key: "Escape" });
+    settle();
+    expect(transform.current).toEqual({
+      scale: 1,
+      positionX: 0,
+      positionY: 0,
+    });
+  });
+
+  it.each([
+    "wheel",
+    "pointer",
+    "resize",
+    "reset",
+    "close",
+    "switch",
+  ])("does not steal the viewport after %s while layout is pending", (intent) => {
+    render(
+      <Canvas initialItems={[createMockFunStack("fun", 1400, 500), stack()]} />
+    );
+    fireEvent.click(screen.getByText("fun"));
+    settle();
+    switch (intent) {
+      case "wheel":
+        fireEvent.wheel(screen.getByText("fun"), { deltaY: 120 });
+        break;
+      case "pointer":
+        fireEvent.pointerDown(screen.getByText("fun"));
+        break;
+      case "resize":
+        fireEvent(window, new Event("resize"));
+        break;
+      case "reset":
+        fireEvent.click(screen.getByText("Reset canvas"));
+        break;
+      case "close":
+        fireEvent.keyDown(document, { key: "Escape" });
+        break;
+      case "switch":
+        fireEvent.click(screen.getByText("stack"));
+        break;
+      default:
+        throw new Error("Unexpected intent");
+    }
+    settle();
+    const position = { ...transform.current };
+    const calls = transform.setTransform.mock.calls.length;
+    act(() => transform.measureContent?.("fun", 1800));
+    settle();
+    expect(transform.current).toEqual(position);
+    expect(transform.setTransform).toHaveBeenCalledTimes(calls);
+  });
+
   it("normalizes wheel units and commits the resulting position", () => {
     render(<Canvas initialItems={[stack()]} />);
     fireEvent.wheel(screen.getByText("stack"), {

@@ -1,13 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./fixtures";
 
 const NONEMPTY_NAME = /.+/;
 test.beforeEach(async ({ page }) => {
-  // External analytics/fonts must not make interaction tests network-dependent.
-  await page.route(
-    "https://portfolio-umami.haoyuzhangca2973.workers.dev/**",
-    (route) => route.abort()
-  );
-  await page.route("https://fonts.googleapis.com/**", (route) => route.abort());
   await page.goto("/");
 });
 
@@ -25,7 +20,34 @@ test("keyboard expansion and Escape preserve a usable canvas", async ({
   await expect(cover).toHaveAttribute("aria-expanded", "false");
 });
 
-test("wheel pan and reset synchronize the reset control", async ({ page }) => {
+test("keyboard activation keeps an oversized collection at its reading anchor", async ({
+  page,
+}) => {
+  const cover = page.getByRole("button", {
+    name: "Toggle swag collection",
+    exact: true,
+  });
+  await cover.press("Enter");
+  await expect(cover).toHaveAttribute("aria-expanded", "true");
+  await expect
+    .poll(async () => {
+      const bounds = await cover.boundingBox();
+      return bounds
+        ? Math.max(Math.abs(bounds.x - 40), Math.abs(bounds.y - 40))
+        : Number.POSITIVE_INFINITY;
+    })
+    .toBeLessThan(1);
+});
+
+test("wheel pan and reset synchronize the reset control", async ({
+  page,
+  browserName,
+  isMobile,
+}) => {
+  test.skip(
+    browserName === "webkit" && isMobile,
+    "Playwright mobile WebKit does not support mouse wheel input"
+  );
   const reset = page.getByRole("button", { name: "Reset canvas", exact: true });
   await expect(reset).toBeDisabled();
   await page.mouse.move(10, 10);
@@ -37,7 +59,13 @@ test("wheel pan and reset synchronize the reset control", async ({ page }) => {
 
 test("project videos stay unloaded offscreen and activate when panned into view", async ({
   page,
+  browserName,
+  isMobile,
 }) => {
+  test.skip(
+    browserName === "webkit" && isMobile,
+    "This pan scenario requires wheel input, which mobile WebKit does not support"
+  );
   await expect(page.locator("video")).toHaveCount(0);
   const projects = page.getByRole("button", {
     name: "Toggle fun projects",
@@ -98,7 +126,9 @@ test("project videos stay unloaded offscreen and activate when panned into view"
     )
     .toBe(false);
   await expect
-    .poll(() => video.evaluate((element) => element.paused))
+    .poll(() =>
+      video.evaluate((element) => (element as HTMLVideoElement).paused)
+    )
     .toBe(true);
 });
 
@@ -129,14 +159,17 @@ test("document dialogs contain focus, close with Escape and restore the opener",
         })
       )
       .toBe(true);
-    for (let index = 0; index < 8; index++) {
-      await page.keyboard.press("Tab");
-      await expect
-        .poll(() =>
-          dialog.evaluate((el) => el.contains(document.activeElement))
-        )
-        .toBe(true);
-    }
+    const focusable = dialog.locator(
+      'a[href], area[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), iframe, object, embed, [contenteditable="true"], [tabindex]:not([tabindex="-1"])'
+    );
+    const firstFocusable = focusable.first();
+    const lastFocusable = focusable.last();
+    await expect(focusable).not.toHaveCount(0);
+    await lastFocusable.focus();
+    await page.keyboard.press("Tab");
+    await expect(firstFocusable).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(lastFocusable).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
     await expect(opener).toBeFocused();
@@ -146,8 +179,12 @@ test("document dialogs contain focus, close with Escape and restore the opener",
 test("cancelled touch drag releases the card without expanding it", async ({
   page,
   isMobile,
+  browserName,
 }) => {
-  test.skip(!isMobile, "Native touch cancellation contract");
+  test.skip(
+    browserName !== "chromium" || !isMobile,
+    "CDP touch cancellation is only supported in Chromium mobile emulation"
+  );
   const cover = page.getByRole("button", {
     name: "Toggle GitHub",
     exact: true,
@@ -178,4 +215,82 @@ test("cancelled touch drag releases the card without expanding it", async ({
   await expect(page.locator(".cursor-grabbing")).toHaveCount(0);
   await expect(cover).toHaveAttribute("aria-expanded", "false");
   await client.detach();
+});
+
+test("repeated open-close-reset cycles stay synchronized across resizes", async ({
+  page,
+  browserName,
+  isMobile,
+}) => {
+  const cover = page.getByRole("button", {
+    name: "Toggle GitHub",
+    exact: true,
+  });
+  const reset = page.getByRole("button", { name: "Reset canvas", exact: true });
+  const viewports = [
+    { width: 1440, height: 1000 },
+    { width: 1024, height: 768 },
+    { width: 390, height: 844 },
+    { width: 1440, height: 1000 },
+  ];
+  const expectResetWithinViewport = async (viewport: {
+    width: number;
+    height: number;
+  }) => {
+    const bounds = await reset.boundingBox();
+    expect(bounds).not.toBeNull();
+    if (!bounds) {
+      throw new Error("Reset control has no rendered bounds");
+    }
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.y).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(viewport.height);
+  };
+
+  if (browserName === "webkit" && isMobile) {
+    const swagCollection = page.getByRole("button", {
+      name: "Toggle swag collection",
+      exact: true,
+    });
+    await swagCollection.press("Enter");
+    await expect(swagCollection).toHaveAttribute("aria-expanded", "true");
+    await expect(reset).toBeEnabled();
+    await reset.click();
+    await expect(reset).toBeDisabled();
+    await expect(swagCollection).toHaveAttribute("aria-expanded", "false");
+  } else {
+    for (let iteration = 0; iteration < 3; iteration++) {
+      await page.mouse.move(10, 10);
+      await page.mouse.wheel(200, 100);
+      await expect(reset).toBeEnabled();
+      await reset.click();
+      await expect(reset).toBeDisabled();
+    }
+  }
+
+  for (let iteration = 0; iteration < 3; iteration++) {
+    await cover.click();
+    await expect(cover).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("Escape");
+    await expect(cover).toHaveAttribute("aria-expanded", "false");
+  }
+
+  for (let index = 0; index < viewports.length; index++) {
+    const viewport = viewports[index];
+    const resizedViewport = viewports[(index + 1) % viewports.length];
+    if (!(viewport && resizedViewport)) {
+      throw new Error("Resize scenario is missing a viewport");
+    }
+    await page.setViewportSize(viewport);
+    await expect(cover).toBeVisible();
+    await expectResetWithinViewport(viewport);
+
+    await cover.click();
+    await expect(cover).toHaveAttribute("aria-expanded", "true");
+    await page.setViewportSize(resizedViewport);
+    await expectResetWithinViewport(resizedViewport);
+    await page.keyboard.press("Escape");
+    await expect(cover).toHaveAttribute("aria-expanded", "false");
+  }
 });
