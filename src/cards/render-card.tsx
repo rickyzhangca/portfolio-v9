@@ -105,28 +105,6 @@ const RenderCardComponent = ({
     }
   };
 
-  useLayoutEffect(() => {
-    if (!(ref.current && onMeasure)) {
-      return;
-    }
-
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.borderBoxSize) {
-          const height = entry.borderBoxSize[0].blockSize;
-          if (height !== card.size.height) {
-            onMeasure(height);
-          }
-        }
-      }
-    });
-
-    observer.observe(ref.current);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [onMeasure, card.size.height]);
   return (
     <div
       className={tw("flex flex-col", className)}

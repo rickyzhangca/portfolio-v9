@@ -2,12 +2,13 @@
 
 import { ArrowLeftIcon, FileIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { type PointerEventHandler, useEffect } from "react";
+import type { PointerEventHandler } from "react";
 import {
   RESUME_CARD_SIZE,
   RESUME_SHEET_SIZE,
 } from "@/cards/resume/resume-data";
 import type { ResumeData } from "@/cards/types";
+import { useModalAccessibility } from "@/components/use-modal-accessibility";
 import { AnalyticsEvents, track } from "@/lib/analytics";
 import { SPRING_PRESETS } from "@/lib/animation";
 import { ResumeSheet } from "./resume-sheet";
@@ -25,24 +26,38 @@ export const ResumeModal = ({
   layoutId = "resume-card",
   data,
 }: ResumeModalProps) => {
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <ResumeModalPresence
+          data={data}
+          key="resume-modal"
+          layoutId={layoutId}
+          onClose={onClose}
+        />
+      )}
+    </AnimatePresence>
+  );
+};
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        track(AnalyticsEvents.MODAL_CLOSE, {
-          modal_type: "resume",
-          close_method: "keyboard",
-        });
-        onClose();
-      }
-    };
+interface ResumeModalPresenceProps {
+  onClose: () => void;
+  layoutId: string;
+  data?: ResumeData;
+}
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, onClose]);
+const ResumeModalPresence = ({
+  onClose,
+  layoutId,
+  data,
+}: ResumeModalPresenceProps) => {
+  const dialogRef = useModalAccessibility(() => {
+    track(AnalyticsEvents.MODAL_CLOSE, {
+      modal_type: "resume",
+      close_method: "keyboard",
+    });
+    onClose();
+  });
 
   const handleBackdropPointerDown: PointerEventHandler<HTMLDivElement> = (
     event
@@ -73,88 +88,88 @@ export const ResumeModal = ({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
+    <motion.div
+      animate={{ opacity: 1, transition: SPRING_PRESETS.smooth }}
+      aria-label="Resume"
+      aria-modal="true"
+      className="fixed inset-0 z-50 bg-white"
+      exit={{
+        opacity: 0,
+        transition: { ...SPRING_PRESETS.smooth, delay: 0.2 },
+      }}
+      initial={{ opacity: 0 }}
+      ref={dialogRef}
+      role="dialog"
+      tabIndex={-1}
+    >
+      <div
+        className="absolute inset-0 flex items-start justify-center overflow-auto pt-12 pb-24"
+        onPointerDown={handleBackdropPointerDown}
+      >
         <motion.div
-          animate={{ opacity: 1, transition: SPRING_PRESETS.smooth }}
-          aria-modal="true"
-          className="fixed inset-0 z-50 bg-white"
-          exit={{
-            opacity: 0,
-            transition: { ...SPRING_PRESETS.smooth, delay: 0.2 },
+          className="relative overflow-hidden bg-white"
+          layoutId={layoutId}
+          onPointerDown={(e) => e.stopPropagation()}
+          style={{
+            width: RESUME_SHEET_SIZE.width,
+            // Match the card's aspect ratio to minimize layout animation distortion
+            height:
+              RESUME_SHEET_SIZE.width *
+              (RESUME_CARD_SIZE.height / RESUME_CARD_SIZE.width),
           }}
-          initial={{ opacity: 0 }}
-          role="dialog"
+          transition={SPRING_PRESETS.smooth}
         >
-          <div
-            className="absolute inset-0 flex items-start justify-center overflow-auto pt-12 pb-24"
-            onPointerDown={handleBackdropPointerDown}
-          >
-            <motion.div
-              className="relative overflow-hidden bg-white"
-              layoutId={layoutId}
-              onPointerDown={(e) => e.stopPropagation()}
-              style={{
-                width: RESUME_SHEET_SIZE.width,
-                // Match the card's aspect ratio to minimize layout animation distortion
-                height:
-                  RESUME_SHEET_SIZE.width *
-                  (RESUME_CARD_SIZE.height / RESUME_CARD_SIZE.width),
-              }}
-              transition={SPRING_PRESETS.smooth}
-            >
-              <ResumeSheet data={data} interactive={true} />
-            </motion.div>
-          </div>
-
-          <motion.div
-            animate={{
-              x: "-50%",
-              y: 0,
-              boxShadow: "0 12px 24px -12px rgba(0, 0, 0, 0.48)",
-            }}
-            className="fixed bottom-6 left-1/2 flex items-center overflow-hidden rounded-full bg-foreground1/80 text-background1 backdrop-blur"
-            exit={{
-              x: "-50%",
-              y: "200%",
-              boxShadow: "0 0 0 rgba(0,0,0,0)",
-              transition: { duration: 0.24 },
-            }}
-            initial={{
-              x: "-50%",
-              y: "200%",
-              boxShadow: "0 0 0 rgba(0,0,0,0)",
-            }}
-            transition={{
-              y: { ...SPRING_PRESETS.smooth, delay: 0.16 },
-              boxShadow: { duration: 0.24 },
-            }}
-          >
-            <button
-              className="no-drag flex cursor-pointer items-center gap-2 py-4 pr-4.5 pl-6 transition-colors hover:bg-foreground1/20"
-              onClick={() => {
-                track(AnalyticsEvents.MODAL_CLOSE, {
-                  modal_type: "resume",
-                  close_method: "button",
-                });
-                onClose();
-              }}
-              type="button"
-            >
-              <ArrowLeftIcon size={20} weight="bold" />
-            </button>
-            <div className="h-8 w-px bg-white/20" />
-            <a
-              className="no-drag flex cursor-pointer items-center gap-2 py-4 pr-7 pl-5 font-medium transition-colors hover:bg-foreground1/20"
-              download="RickyZhang_Resume.pdf"
-              href="/RickyZhang_Resume.pdf"
-            >
-              <FileIcon size={20} weight="bold" />
-              Download PDF
-            </a>
-          </motion.div>
+          <ResumeSheet data={data} interactive={true} />
         </motion.div>
-      )}
-    </AnimatePresence>
+      </div>
+
+      <motion.div
+        animate={{
+          x: "-50%",
+          y: 0,
+          boxShadow: "0 12px 24px -12px rgba(0, 0, 0, 0.48)",
+        }}
+        className="fixed bottom-6 left-1/2 flex items-center overflow-hidden rounded-full bg-foreground1/80 text-background1 backdrop-blur"
+        exit={{
+          x: "-50%",
+          y: "200%",
+          boxShadow: "0 0 0 rgba(0,0,0,0)",
+          transition: { duration: 0.24 },
+        }}
+        initial={{
+          x: "-50%",
+          y: "200%",
+          boxShadow: "0 0 0 rgba(0,0,0,0)",
+        }}
+        transition={{
+          y: { ...SPRING_PRESETS.smooth, delay: 0.16 },
+          boxShadow: { duration: 0.24 },
+        }}
+      >
+        <button
+          aria-label="Close resume dialog"
+          className="no-drag flex cursor-pointer items-center gap-2 py-4 pr-4.5 pl-6 transition-colors hover:bg-foreground1/20"
+          onClick={() => {
+            track(AnalyticsEvents.MODAL_CLOSE, {
+              modal_type: "resume",
+              close_method: "button",
+            });
+            onClose();
+          }}
+          type="button"
+        >
+          <ArrowLeftIcon size={20} weight="bold" />
+        </button>
+        <div className="h-8 w-px bg-white/20" />
+        <a
+          className="no-drag flex cursor-pointer items-center gap-2 py-4 pr-7 pl-5 font-medium transition-colors hover:bg-foreground1/20"
+          download="RickyZhang_Resume.pdf"
+          href="/RickyZhang_Resume.pdf"
+        >
+          <FileIcon size={20} weight="bold" />
+          Download PDF
+        </a>
+      </motion.div>
+    </motion.div>
   );
 };

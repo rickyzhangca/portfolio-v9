@@ -161,6 +161,7 @@ export const SingleCardItem = ({
             x: focusOffsetX,
             y: focusOffsetY,
           }}
+          aria-label={isActivatable ? `Open ${item.card.kind}` : undefined}
           className="absolute top-0 left-0 drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
           initial={{
             opacity: 0,
@@ -181,7 +182,7 @@ export const SingleCardItem = ({
             }
 
             // Prevent "click after drag" from triggering click action
-            if (!dragDisabled && didDragRef.current) {
+            if (didDragRef.current) {
               didDragRef.current = false;
               return;
             }
@@ -190,10 +191,21 @@ export const SingleCardItem = ({
               onActivate();
             }
           }}
+          onKeyDown={(event) => {
+            if (event.target !== event.currentTarget || !isActivatable) {
+              return;
+            }
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onActivate?.();
+            }
+          }}
+          role={isActivatable ? "button" : undefined}
           style={{
             zIndex: 1,
             pointerEvents: "auto",
           }}
+          tabIndex={isActivatable ? 0 : undefined}
           transition={{ ...SPRING_PRESETS.smooth, delay: 0.12 }}
         >
           <RenderCard

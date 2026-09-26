@@ -37,6 +37,12 @@ describe("useViewportConfig", () => {
 });
 
 describe("useArePositionsModified", () => {
+  it("treats deletion as a modification", () => {
+    const { result } = renderHook(() =>
+      useArePositionsModified(new Map(), initialItems)
+    );
+    expect(result.current).toBe(true);
+  });
   const initialItems: CanvasItem[] = [
     {
       id: "item-1",

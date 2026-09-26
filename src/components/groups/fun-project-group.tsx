@@ -12,14 +12,15 @@ import {
 import { RenderCard } from "@/cards/render-card";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
+import { FUN_STACK_LAYOUT } from "@/lib/card-layout";
 import { tw } from "@/lib/utils";
 import type { CanvasFunStackItem, Position } from "@/types/canvas";
 
-const CONTENT_WIDTH = 680;
-const CONTENT_GAP = 24;
+const CONTENT_WIDTH = FUN_STACK_LAYOUT.contentWidth;
+const CONTENT_GAP = FUN_STACK_LAYOUT.contentGap;
 const STAGGER_DELAY = 0.1;
-const VERTICAL_GAP = 16;
-const CONTENT_CARD_HEIGHT = 120; // Fallback height estimate before measurement
+const VERTICAL_GAP = FUN_STACK_LAYOUT.verticalGap;
+const CONTENT_CARD_HEIGHT = FUN_STACK_LAYOUT.estimatedCardHeight;
 const MEASUREMENT_SETTLE_MS = 120;
 const COLD_MEASUREMENT_SETTLE_MS = 280;
 const MEASUREMENT_MAX_WAIT_MS = 1500;
@@ -294,6 +295,7 @@ export const FunProjectGroup = ({
         !dragDisabled && "cursor-grab",
         isDragging && "cursor-grabbing"
       )}
+      data-expanded={isExpanded}
       data-fun-stack-id={item.id}
       onMouseDown={handleMouseDown}
       onTouchStart={handleMouseDown}
@@ -316,7 +318,21 @@ export const FunProjectGroup = ({
       >
         {/* Main card with icons */}
         <motion.div
+          aria-expanded={isExpanded}
+          aria-label="Toggle fun projects"
           className="absolute top-0 left-0"
+          onKeyDown={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              (event.key === "Enter" || event.key === " ")
+            ) {
+              event.preventDefault();
+              onToggleExpanded();
+            }
+          }}
+          onPointerCancel={() => {
+            cardPointerDownRef.current = null;
+          }}
           onPointerDown={(e) => {
             const target = e.target as HTMLElement;
             if (target.closest(".no-drag")) {
@@ -353,10 +369,12 @@ export const FunProjectGroup = ({
               onToggleExpanded();
             }
           }}
+          role="button"
           style={{
             pointerEvents: "auto",
             zIndex: item.card.content.items.length,
           }}
+          tabIndex={0}
         >
           <RenderCard
             card={cardWithSize}

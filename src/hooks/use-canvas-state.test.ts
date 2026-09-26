@@ -10,6 +10,32 @@ import type { CanvasItem } from "@/types/canvas";
 import { canvasReducer, useCanvasState } from "./use-canvas-state";
 
 describe("useCanvasState - Reducer Action Coverage", () => {
+  it("initializes synchronously and treats initialItems as a mount-time baseline", () => {
+    const initial = [createMockStack("s1", 10, 20)];
+    const { result, rerender } = renderHook(
+      ({ items }) => useCanvasState(items),
+      {
+        initialProps: { items: initial },
+      }
+    );
+    expect(result.current.state.items.get("s1")?.position).toEqual({
+      x: 10,
+      y: 20,
+    });
+    act(() =>
+      result.current.actions.updateItemPosition("s1", { x: 30, y: 40 })
+    );
+    rerender({ items: [createMockStack("s1", 100, 200)] });
+    expect(result.current.state.items.get("s1")?.position).toEqual({
+      x: 30,
+      y: 40,
+    });
+    act(() => result.current.actions.resetItems());
+    expect(result.current.state.items.get("s1")?.position).toEqual({
+      x: 10,
+      y: 20,
+    });
+  });
   const createMockState = (items: CanvasItem[] = []) => {
     const itemsMap = new Map<string, CanvasItem>();
     let maxZIndex = 0;
