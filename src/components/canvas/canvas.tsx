@@ -3,8 +3,10 @@ import { useAtomValue } from "jotai";
 import { useCallback, useMemo, useState } from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { AboutModal } from "@/components/about/about-modal";
+import { ArticleModal } from "@/components/articles/article-modal";
 import { ResumeModal } from "@/components/resume/resume-modal";
 import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
+import { useCanvasSession } from "@/context/canvas-session";
 import {
   type ActiveDocument,
   useCanvasInteractions,
@@ -15,7 +17,11 @@ import {
   useArePositionsModified,
   useViewportConfig,
 } from "@/hooks/use-viewport-config";
-import { computeRepulsionOffsets } from "@/lib/repulsion";
+import { getDocumentLayoutId } from "@/lib/document-motion";
+import {
+  computeRepulsionOffsets,
+  computeStackCardRepulsion,
+} from "@/lib/repulsion";
 import type { CanvasItem } from "@/types/canvas";
 import { CanvasControls } from "./canvas-controls";
 import { CanvasItemRenderer } from "./canvas-item";
@@ -31,51 +37,73 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
   const { state, actions } = useCanvasState(baselineItems);
   const [isDragging, setIsDragging] = useState(false);
   const [activeDocument, setActiveDocument] = useState<ActiveDocument>(null);
+  const session = useCanvasSession();
   const fanConfig = useAtomValue(fanConfigAtom);
   const repulsionConfig = useAtomValue(repulsionConfigAtom);
   const viewport = useCanvasViewport(
     state.viewportState,
     actions.updateViewport,
-    activeDocument !== null
+    activeDocument !== null || session.articleOpen || !session.canvasVisible
   );
   const getViewport = useCallback(
     () => viewport.viewportRef.current,
     [viewport.viewportRef]
   );
   const interaction = useCanvasInteractions({
-    state,
     activeDocument,
-    setActiveDocument,
+    bringItemToFront: actions.bringItemToFront,
+    cancelPendingPan: viewport.cancelPendingPan,
     fanConfig,
     getViewport,
     panTo: viewport.panTo,
-    cancelPendingPan: viewport.cancelPendingPan,
-    bringItemToFront: actions.bringItemToFront,
+    setActiveDocument,
     setExpandedStack: actions.setExpandedStack,
     setFocusedItem: actions.setFocusedItem,
+    state,
   });
   const { effectiveRepulsionConfig } = useViewportConfig({
-    viewportDimensions: viewport.dimensions,
     baseRepulsionConfig: repulsionConfig,
+    viewportDimensions: viewport.dimensions,
   });
-  const documentItemId = interaction.activeDocument?.itemId ?? null;
+  const documentSource =
+    activeDocument ?? (session.articleOpen ? session.articleSource : null);
+  const documentItemId = documentSource?.itemId ?? null;
   const sourceId =
-    state.expandedStackId ?? documentItemId ?? state.focusedItemId;
-  const repulsionOffsets = useMemo(
-    () =>
-      computeRepulsionOffsets(
+    documentItemId ?? state.expandedStackId ?? state.focusedItemId;
+  const repulsion = useMemo(() => {
+    const sourceItem = documentItemId
+      ? state.items.get(documentItemId)
+      : undefined;
+    const config = documentSource ? effectiveRepulsionConfig : repulsionConfig;
+    const stackRepulsion =
+      documentSource && sourceItem?.kind === "stack"
+        ? computeStackCardRepulsion({
+            cardId: documentSource.cardId,
+            config,
+            fanConfig,
+            page: interaction.stackPages[sourceItem.id] ?? 0,
+            stack: sourceItem,
+          })
+        : null;
+    return {
+      cards: stackRepulsion?.offsets,
+      items: computeRepulsionOffsets(
         state.items,
-        sourceId,
-        documentItemId ? effectiveRepulsionConfig : repulsionConfig
+        stackRepulsion?.source ?? sourceId,
+        config
       ),
-    [
-      state.items,
-      sourceId,
-      documentItemId,
-      effectiveRepulsionConfig,
-      repulsionConfig,
-    ]
-  );
+      stackId: stackRepulsion?.source.itemId,
+    };
+  }, [
+    state.items,
+    sourceId,
+    documentItemId,
+    documentSource,
+    fanConfig,
+    interaction.stackPages,
+    effectiveRepulsionConfig,
+    repulsionConfig,
+  ]);
   const arePositionsModified = useArePositionsModified(
     state.items,
     baselineItems
@@ -86,7 +114,11 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     state.viewportState.positionY === 0;
   const onDragStart = useCallback(() => setIsDragging(true), []);
   const onDragEnd = useCallback(() => setIsDragging(false), []);
-  const { cancelPendingPan } = viewport;
+  const { cancelPendingPan, transformRef } = viewport;
+  const resetViewport = useCallback(() => {
+    cancelPendingPan();
+    transformRef.current?.resetTransform();
+  }, [cancelPendingPan, transformRef]);
   const { clearReturnPositions } = interaction;
   const { resetItems: resetSceneItems } = actions;
   const resetItems = useCallback(() => {
@@ -121,14 +153,14 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
           onZoomStop={viewport.onStopped}
           panning={{
             disabled: isDragging || interaction.isLocked,
-            velocityDisabled: false,
             excluded: ["no-pan"],
+            velocityDisabled: false,
           }}
           pinch={{ disabled: true }}
           ref={viewport.transformRef}
           wheel={{ disabled: true }}
         >
-          {({ resetTransform }) => (
+          {() => (
             <>
               <TransformComponent
                 contentClass="relative !w-full !h-full"
@@ -136,6 +168,11 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
               >
                 {Array.from(state.items.values()).map((item, itemIndex) => (
                   <CanvasItemRenderer
+                    cardRepulsionOffsets={
+                      item.id === repulsion.stackId
+                        ? repulsion.cards
+                        : undefined
+                    }
                     dragDisabled={
                       state.expandedStackId !== null ||
                       interaction.isLocked ||
@@ -152,10 +189,12 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                     onContentLayoutMeasured={interaction.measureContentLayout}
                     onDragEnd={onDragEnd}
                     onDragStart={onDragStart}
+                    onPageChange={interaction.changePage}
                     onPositionUpdate={actions.updateItemPosition}
                     onToggleExpanded={interaction.toggleExpanded}
+                    page={interaction.stackPages[item.id] ?? 0}
                     repulsionOffset={
-                      repulsionOffsets.get(item.id) ?? ZERO_OFFSET
+                      repulsion.items.get(item.id) ?? ZERO_OFFSET
                     }
                     scale={viewport.scale}
                     setRootRef={interaction.registerElement}
@@ -172,11 +211,11 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                         initial={{ opacity: 0 }}
                         key={id}
                         style={{
-                          zIndex: item.zIndex - 1,
+                          height: 100_000,
                           left: -50_000,
                           top: -50_000,
                           width: 100_000,
-                          height: 100_000,
+                          zIndex: item.zIndex - 1,
                         }}
                       />
                     ) : null;
@@ -185,10 +224,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
               </TransformComponent>
               <CanvasControls
                 isResetDisabled={isViewportReset && !arePositionsModified}
-                onReset={() => {
-                  viewport.cancelPendingPan();
-                  resetTransform();
-                }}
+                onReset={resetViewport}
                 onResetPositions={resetItems}
               />
             </>
@@ -201,12 +237,29 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
               : undefined
           }
           isOpen={interaction.activeDocument?.kind === "resume"}
+          layoutId={
+            activeDocument?.kind === "resume"
+              ? getDocumentLayoutId(
+                  activeDocument.itemId,
+                  activeDocument.cardId
+                )
+              : undefined
+          }
           onClose={interaction.closeDocument}
         />
         <AboutModal
           isOpen={interaction.activeDocument?.kind === "about"}
+          layoutId={
+            activeDocument?.kind === "about"
+              ? getDocumentLayoutId(
+                  activeDocument.itemId,
+                  activeDocument.cardId
+                )
+              : undefined
+          }
           onClose={interaction.closeDocument}
         />
+        <ArticleModal />
       </div>
     </LayoutGroup>
   );

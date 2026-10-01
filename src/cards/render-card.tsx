@@ -1,7 +1,9 @@
 import { memo, useLayoutEffect, useRef } from "react";
 import { AboutCard } from "@/cards/about/about-card";
+import { ArticleCard } from "@/cards/article/article-card";
 import { CoverCard } from "@/cards/cover/cover-card";
 import { EmailCard } from "@/cards/email/email-card";
+import { FolderCoverCard } from "@/cards/folder-cover/folder-cover-card";
 import { FunProjectCard } from "@/cards/fun-project/fun-project-card";
 import { MacbookCard } from "@/cards/macbook/macbook-card";
 import { ProfilePicCard } from "@/cards/profilepic/profilepic-card";
@@ -62,6 +64,10 @@ const RenderCardComponent = ({
   // Render the appropriate card component based on kind
   const renderContent = () => {
     switch (card.kind) {
+      case "article":
+        return <ArticleCard content={card.content} />;
+      case "folder-cover":
+        return <FolderCoverCard content={card.content} />;
       case "cover":
         return <CoverCard content={card.content} />;
       case "project":
@@ -110,8 +116,8 @@ const RenderCardComponent = ({
       className={tw("flex flex-col", className)}
       ref={ref}
       style={{
-        width: card.size.width ?? "auto",
         height: card.size.height ?? "auto",
+        width: card.size.width ?? "auto",
       }}
     >
       {renderContent()}

@@ -260,6 +260,7 @@ test("repeated open-close-reset cycles stay synchronized across resizes", async 
     await expect(reset).toBeDisabled();
     await expect(swagCollection).toHaveAttribute("aria-expanded", "false");
   } else {
+    await expect(reset).toBeDisabled();
     for (let iteration = 0; iteration < 3; iteration++) {
       await page.mouse.move(10, 10);
       await page.mouse.wheel(200, 100);

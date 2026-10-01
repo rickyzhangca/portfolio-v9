@@ -8,14 +8,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["src/**/*.test.{ts,tsx}"],
-    setupFiles: ["./src/test-utils/vitest.setup.ts"],
-    environment: "happy-dom",
-    globals: true,
     coverage: {
-      provider: "v8",
-      reporter: ["text", "json", "html", "lcov"],
-      include: ["src/**/*.{ts,tsx}"],
       exclude: [
         "node_modules/",
         "src/test-utils/**",
@@ -40,12 +33,19 @@ export default defineConfig({
         "src/main.tsx",
         "src/vite-env.d.ts",
       ],
+      include: ["src/**/*.{ts,tsx}"],
+      provider: "v8",
+      reporter: ["text", "json", "html", "lcov"],
       thresholds: {
-        statements: 80,
         branches: 65,
         functions: 60,
         lines: 80,
+        statements: 80,
       },
     },
+    environment: "happy-dom",
+    globals: true,
+    include: ["src/**/*.test.{ts,tsx}", "tools/**/*.test.ts"],
+    setupFiles: ["./src/test-utils/vitest.setup.ts"],
   },
 });

@@ -3,14 +3,19 @@ import {
   ClockCounterClockwiseIcon,
   SlidersHorizontalIcon,
 } from "@phosphor-icons/react";
-import { useState } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import { AnalyticsEvents, track } from "@/lib/analytics";
 import { CanvasControlButton } from "./canvas-control-button";
-import { CanvasControlPanel } from "./canvas-control-panel";
+
+const CanvasControlPanel = lazy(() =>
+  import("./canvas-control-panel").then((module) => ({
+    default: module.CanvasControlPanel,
+  }))
+);
 
 interface CanvasControlsProps {
-  onReset: () => void;
   isResetDisabled?: boolean;
+  onReset: () => void;
   onResetPositions: () => void;
 }
 
@@ -20,6 +25,7 @@ export const CanvasControls = ({
   onResetPositions,
 }: CanvasControlsProps) => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const togglePanel = useCallback(() => setIsPanelOpen((open) => !open), []);
 
   const handleReset = () => {
     track(AnalyticsEvents.CANVAS_VIEW_RESET, { zoom_level: 1 });
@@ -30,7 +36,21 @@ export const CanvasControls = ({
 
   return (
     <div className="no-pan fixed right-3 bottom-3 z-50 flex flex-col items-end justify-end gap-2">
-      {isPanelOpen && <CanvasControlPanel />}
+      {isPanelOpen ? (
+        <Suspense
+          fallback={
+            <div
+              className="rounded-3xl bg-background2 px-4 py-3 text-sm outline outline-border"
+              data-no-collapse
+              role="status"
+            >
+              Loading playground...
+            </div>
+          }
+        >
+          <CanvasControlPanel />
+        </Suspense>
+      ) : null}
       <div
         className="flex flex-col rounded-full bg-background2 p-1 outline outline-border"
         data-no-collapse
@@ -38,7 +58,7 @@ export const CanvasControls = ({
         <CanvasControlButton
           Icon={SlidersHorizontalIcon}
           label="Open playground"
-          onClick={() => setIsPanelOpen(!isPanelOpen)}
+          onClick={togglePanel}
         />
         <CanvasControlButton
           disabled={isResetDisabled}

@@ -1,25 +1,29 @@
 import { describe, expect, it } from "vitest";
-import type { CanvasStackItem } from "@/types/canvas";
-import { computeRepulsionOffsets } from "./repulsion";
+import { DEFAULT_FAN_CONFIG } from "@/lib/fan";
+import type { CanvasItem, CanvasStackItem } from "@/types/canvas";
+import {
+  computeRepulsionOffsets,
+  computeStackCardRepulsion,
+} from "./repulsion";
 
 // Helper to create minimal mock stack items
 const createMockGroup = (
   id: string,
   x: number,
   y: number,
-  size = { width: 200, height: 200 }
+  size = { height: 200, width: 200 }
 ): CanvasStackItem => ({
-  id,
-  position: { x, y },
-  zIndex: 1,
-  kind: "stack",
   cover: {
+    content: { company: "Test", image: "" },
     id: `${id}-cover`,
     kind: "cover",
     size,
-    content: { company: "Test", image: "" },
   },
+  id,
+  kind: "stack",
+  position: { x, y },
   stack: [],
+  zIndex: 1,
 });
 
 describe("computeRepulsionOffsets", () => {
@@ -117,4 +121,84 @@ describe("computeRepulsionOffsets", () => {
     // Just verify it calculated something using defaults
     expect(offsets.get("g2")?.x).toBeGreaterThan(0);
   });
+  it("pushes background items from an explicit article center instead of its cover", () => {
+    const items = new Map<string, CanvasItem>([
+      ["writing", createMockGroup("writing", 0, 0)],
+      ["between", createMockGroup("between", 200, 0)],
+    ]);
+    const offsets = computeRepulsionOffsets(
+      items,
+      { center: { x: 500, y: 100 }, itemId: "writing" },
+      { radiusPx: 1000, strengthPx: 100 }
+    );
+    expect(offsets.get("between")).toEqual({ x: -80, y: 0 });
+    expect(offsets.get("writing")).toEqual({ x: 0, y: 0 });
+  });
+});
+
+const writingStack = (count = 3): CanvasStackItem => ({
+  ...createMockGroup("writing", 700, 900),
+  pageSize: 6,
+  stack: Array.from({ length: count }, (_, index) => ({
+    content: { slug: "ephemeral-design" },
+    id: `article-${index}`,
+    kind: "article",
+    size: { height: 200, width: 100 },
+  })),
+});
+
+describe("nested article repulsion", () => {
+  it("pushes the cover and sibling cards away from the active card, leaving its anchor fixed", () => {
+    const stack = writingStack();
+    const result = computeStackCardRepulsion({
+      cardId: "article-1",
+      config: { radiusPx: 1000, strengthPx: 100 },
+      fanConfig: {
+        ...DEFAULT_FAN_CONFIG,
+        arcStepPx: 0,
+        expandGapPx: 20,
+        rotateStepDeg: 0,
+      },
+      stack,
+    });
+    expect(result?.source).toEqual({
+      center: { x: 1090, y: 1000 },
+      itemId: "writing",
+    });
+    expect(result?.offsets.get("article-1")).toEqual({ x: 0, y: 0 });
+    expect(result?.offsets.get("writing-cover")?.x).toBeCloseTo(-71);
+    expect(result?.offsets.get("article-0")?.x).toBeCloseTo(-88);
+    expect(result?.offsets.get("article-2")?.x).toBeCloseTo(88);
+    expect(stack.position).toEqual({ x: 700, y: 900 });
+  });
+  it("uses rotation around the top-left corner and the arc on the current page", () => {
+    const result = computeStackCardRepulsion({
+      cardId: "article-6",
+      fanConfig: {
+        ...DEFAULT_FAN_CONFIG,
+        arcStepPx: 7,
+        expandGapPx: 20,
+        rotateStepDeg: 90,
+      },
+      page: 1,
+      stack: writingStack(1000),
+    });
+    expect(result?.source.center.x).toBeCloseTo(820);
+    expect(result?.source.center.y).toBeCloseTo(957);
+    expect(result?.offsets.size).toBe(7);
+    expect(result?.offsets.has("article-0")).toBe(false);
+    expect(result?.offsets.get("article-6")).toEqual({ x: 0, y: 0 });
+  });
+  it.each(["removed-card", "writing-cover", "article-6"])(
+    "rejects an absent or unmounted source %s instead of using the cover center",
+    (cardId) => {
+      expect(
+        computeStackCardRepulsion({
+          cardId,
+          fanConfig: DEFAULT_FAN_CONFIG,
+          stack: writingStack(12),
+        })
+      ).toBeNull();
+    }
+  );
 });

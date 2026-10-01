@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getInteractionPolicy } from "@/cards/registry";
+import { useCanvasSession } from "@/context/canvas-session";
 import { useEscapeKey } from "@/hooks/use-escape-key";
 import { useOutsideClick } from "@/hooks/use-outside-click";
 import { AnalyticsEvents, track } from "@/lib/analytics";
@@ -8,23 +9,26 @@ import {
   getFunStackAutoPanTarget,
   getSwagStackAutoPanTarget,
 } from "@/lib/auto-pan";
+import { getCanvasCard } from "@/lib/canvas-card";
+import { getStackPage } from "@/lib/card-layout";
 import type { FanConfig } from "@/lib/fan";
 import type { CanvasState, ViewportState } from "@/types/canvas";
 
 interface InteractionOptions {
-  state: CanvasState;
   activeDocument: ActiveDocument;
-  setActiveDocument: (document: ActiveDocument) => void;
+  bringItemToFront: (id: string) => void;
+  cancelPendingPan: () => void;
   fanConfig: FanConfig;
   getViewport: () => ViewportState;
   panTo: (target: ViewportState) => void;
-  cancelPendingPan: () => void;
-  bringItemToFront: (id: string) => void;
+  setActiveDocument: (document: ActiveDocument) => void;
   setExpandedStack: (id: string | null) => void;
   setFocusedItem: (id: string | null) => void;
+  state: CanvasState;
 }
 
 export type ActiveDocument = {
+  cardId: string;
   kind: "resume" | "about";
   itemId: string;
 } | null;
@@ -41,6 +45,8 @@ export const useCanvasInteractions = ({
   setExpandedStack,
   setFocusedItem,
 }: InteractionOptions) => {
+  const session = useCanvasSession();
+  const [stackPages, setStackPages] = useState<Record<string, number>>({});
   const elementsRef = useRef(new Map<string, HTMLDivElement>());
   const preStackViewportRef = useRef<ViewportState | null>(null);
   const preFocusViewportRef = useRef<ViewportState | null>(null);
@@ -48,7 +54,8 @@ export const useCanvasInteractions = ({
     id: string;
     viewport: ViewportState;
   } | null>(null);
-  const isLocked = activeDocument !== null;
+  const isLocked =
+    activeDocument !== null || session.articleOpen || !session.canvasVisible;
 
   const cancelLayoutCorrection = useCallback(() => {
     pendingLayoutRef.current = null;
@@ -89,25 +96,25 @@ export const useCanvasInteractions = ({
   }, [panTo, setFocusedItem]);
 
   useOutsideClick({
-    isActive: !!state.expandedStackId && !isLocked,
     getElement: useCallback(
       () => elementsRef.current.get(state.expandedStackId ?? ""),
       [state.expandedStackId]
     ),
+    isActive: !!state.expandedStackId && !isLocked,
     onClickOutside: useCallback(() => {
       closeStack();
       track(AnalyticsEvents.STACK_CLOSE, {
-        stack_type: state.expandedStackId,
         close_method: "outside_click",
+        stack_type: state.expandedStackId,
       });
     }, [closeStack, state.expandedStackId]),
   });
   useOutsideClick({
-    isActive: !!state.focusedItemId && !isLocked,
     getElement: useCallback(
       () => elementsRef.current.get(state.focusedItemId ?? ""),
       [state.focusedItemId]
     ),
+    isActive: !!state.focusedItemId && !isLocked,
     onClickOutside: closeFocus,
   });
   useEscapeKey({
@@ -125,27 +132,38 @@ export const useCanvasInteractions = ({
   });
 
   const activate = useCallback(
-    (id: string) => {
+    (id: string, cardId?: string, trigger?: HTMLElement) => {
       const item = state.items.get(id);
-      if (isLocked || !item || item.kind !== "single") {
+      if (isLocked || !item) {
         return;
       }
-      const policy = getInteractionPolicy(item.card.kind);
+      const card = getCanvasCard(item, cardId);
+      if (!card) {
+        return;
+      }
+      const policy = getInteractionPolicy(card.kind);
       pendingLayoutRef.current = null;
       if (policy.activate === "open-modal") {
-        const kind = item.card.kind;
+        const { kind } = card;
         if (kind === "resume" || kind === "about") {
           bringItemToFront(id);
-          setActiveDocument({ kind, itemId: id });
+          setActiveDocument({ cardId: card.id, itemId: id, kind });
           track(
             kind === "resume"
               ? AnalyticsEvents.RESUME_VIEW
               : AnalyticsEvents.ABOUT_VIEW
           );
+        } else if (card.kind === "article" && trigger) {
+          bringItemToFront(id);
+          session.openArticle?.(
+            card.content.slug,
+            { cardId: card.id, itemId: id },
+            trigger
+          );
         }
         return;
       }
-      if (policy.activate !== "toggle-focus") {
+      if (policy.activate !== "toggle-focus" || item.kind !== "single") {
         return;
       }
       if (state.focusedItemId === id) {
@@ -159,7 +177,6 @@ export const useCanvasInteractions = ({
       bringItemToFront(id);
       track(AnalyticsEvents.MACBOOK_ZOOM, { direction: "in" });
       panTo({
-        scale: viewport.scale,
         positionX:
           window.innerWidth / 2 -
           (item.position.x + (item.card.size.width ?? 0) / 2) * viewport.scale,
@@ -167,6 +184,7 @@ export const useCanvasInteractions = ({
           window.innerHeight / 2 -
           (item.position.y + (item.card.size.height ?? 360) / 2) *
             viewport.scale,
+        scale: viewport.scale,
       });
     },
     [
@@ -179,6 +197,7 @@ export const useCanvasInteractions = ({
       setFocusedItem,
       state.focusedItemId,
       state.items,
+      session.openArticle,
     ]
   );
 
@@ -197,7 +216,14 @@ export const useCanvasInteractions = ({
       const target = (() => {
         switch (item.kind) {
           case "stack":
-            return getAutoPanTarget(item, fanConfig, viewport, width, height);
+            return getAutoPanTarget(
+              item,
+              fanConfig,
+              viewport,
+              width,
+              height,
+              stackPages[id] ?? 0
+            );
           case "funstack":
             return getFunStackAutoPanTarget(item, viewport, width, height);
           case "swagstack":
@@ -246,7 +272,39 @@ export const useCanvasInteractions = ({
       setExpandedStack,
       state.expandedStackId,
       state.items,
+      stackPages,
     ]
+  );
+
+  const changePage = useCallback(
+    (id: string, page: number) => {
+      const item = state.items.get(id);
+      if (isLocked || item?.kind !== "stack") {
+        return;
+      }
+      const nextPage = getStackPage(item, page).page;
+      setStackPages((previous) =>
+        previous[id] === nextPage ? previous : { ...previous, [id]: nextPage }
+      );
+      const current = getViewport();
+      const target = getAutoPanTarget(
+        item,
+        fanConfig,
+        current,
+        window.innerWidth,
+        window.innerHeight,
+        nextPage
+      );
+      if (target) {
+        preStackViewportRef.current ??= { ...current };
+        panTo({
+          positionX: target.x,
+          positionY: target.y,
+          scale: target.scale,
+        });
+      }
+    },
+    [fanConfig, getViewport, isLocked, panTo, state.items]
   );
 
   const measureContentLayout = useCallback(
@@ -297,14 +355,16 @@ export const useCanvasInteractions = ({
   );
 
   return {
-    activeDocument,
-    isLocked,
-    closeDocument,
     activate,
-    toggleExpanded,
-    registerElement,
-    clearReturnPositions,
+    activeDocument,
     cancelLayoutCorrection,
+    changePage,
+    clearReturnPositions,
+    closeDocument,
+    isLocked,
     measureContentLayout,
+    registerElement,
+    stackPages,
+    toggleExpanded,
   };
 };

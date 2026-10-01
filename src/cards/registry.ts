@@ -38,19 +38,28 @@ export interface InteractionPolicy {
 
 export interface CoverCardContent {
   company: string;
-  title?: string;
   image: string;
+  title?: string;
+}
+
+export interface ArticleCardContent {
+  slug: string;
+}
+
+export interface FolderCoverCardContent {
+  count: number;
+  label: string;
 }
 
 export interface ProjectCardContent {
-  title: string;
   description?: string;
+  image: string;
   link?: {
     label?: string;
     url: string;
     icon?: ReactNode;
   };
-  image: string;
+  title: string;
 }
 
 export interface EmailCardContent {
@@ -67,27 +76,27 @@ export interface SocialsCardContent {
 }
 
 export interface StickyNoteCardContent {
-  content: string;
   color?: "yellow" | "pink" | "blue" | "green" | "orange";
+  content: string;
 }
 
 export interface ProfilePicCardContent {
-  images: string[];
   alt?: string;
+  images: string[];
 }
 
 export interface SwagCoverCardContent {
-  content: string; // "My Swag Collection"
   color?: "yellow" | "pink" | "blue" | "green" | "orange";
+  content: string; // "My Swag Collection"
 }
 
 export interface MacbookSticker {
-  src: string;
   description: string;
+  height: number;
+  src: string;
+  width: number;
   x: number;
   y: number;
-  width: number;
-  height: number;
 }
 
 export interface MacbookCardContent {
@@ -95,16 +104,16 @@ export interface MacbookCardContent {
 }
 
 export interface FunProjectItem {
-  icon: string;
-  title: string;
   description: string;
+  icon: string;
+  image?: string;
   link?: {
     url: string;
     type?: string;
     count?: number;
   };
   status: "Active" | "Maintaining" | "Archived";
-  image?: string;
+  title: string;
 }
 
 export interface FunProjectCardContent {
@@ -113,26 +122,26 @@ export interface FunProjectCardContent {
 
 // Resume types (moved from canvas.ts)
 export interface ResumeHeader {
-  name: string;
-  website: string;
   email: string;
+  name: string;
   phone: string;
+  website: string;
 }
 
 export interface ResumeEducation {
-  logo: string;
   degree: string;
-  institution: string;
-  years: string;
   description: string;
+  institution: string;
+  logo: string;
+  years: string;
 }
 
 export interface Experience {
+  caption: string;
   company: string;
+  description: string[];
   logo: string;
   title: string;
-  caption: string;
-  description: string[];
 }
 
 export interface SkillCategory {
@@ -141,9 +150,9 @@ export interface SkillCategory {
 }
 
 export interface ResumeData {
-  header: ResumeHeader;
   education: ResumeEducation;
   experiences: Experience[];
+  header: ResumeHeader;
   skills: SkillCategory[];
 }
 
@@ -169,64 +178,76 @@ export interface BaseCardInstance {
  * Card instance for each kind
  */
 export interface CoverCardInstance extends BaseCardInstance {
-  kind: "cover";
   content: CoverCardContent;
+  kind: "cover";
+}
+
+export interface ArticleCardInstance extends BaseCardInstance {
+  content: ArticleCardContent;
+  kind: "article";
+}
+
+export interface FolderCoverCardInstance extends BaseCardInstance {
+  content: FolderCoverCardContent;
+  kind: "folder-cover";
 }
 
 export interface ProjectCardInstance extends BaseCardInstance {
-  kind: "project";
   content: ProjectCardContent;
+  kind: "project";
 }
 
 export interface ResumeCardInstance extends BaseCardInstance {
-  kind: "resume";
   content: ResumeData;
+  kind: "resume";
 }
 
 export interface AboutCardInstance extends BaseCardInstance {
-  kind: "about";
   content: AboutCardContent;
+  kind: "about";
 }
 
 export interface EmailCardInstance extends BaseCardInstance {
-  kind: "email";
   content: EmailCardContent;
+  kind: "email";
 }
 
 export interface SocialsCardInstance extends BaseCardInstance {
-  kind: "socials";
   content: SocialsCardContent;
+  kind: "socials";
 }
 
 export interface StickyNoteCardInstance extends BaseCardInstance {
-  kind: "stickynote";
   content: StickyNoteCardContent;
+  kind: "stickynote";
 }
 
 export interface ProfilePicCardInstance extends BaseCardInstance {
-  kind: "profilepic";
   content: ProfilePicCardContent;
+  kind: "profilepic";
 }
 
 export interface MacbookCardInstance extends BaseCardInstance {
-  kind: "macbook";
   content: MacbookCardContent;
+  kind: "macbook";
 }
 
 export interface FunProjectCardInstance extends BaseCardInstance {
-  kind: "funproject";
   content: FunProjectCardContent;
+  kind: "funproject";
 }
 
 export interface SwagCoverCardInstance extends BaseCardInstance {
-  kind: "swagcover";
   content: SwagCoverCardContent;
+  kind: "swagcover";
 }
 
 /**
  * Union of all card instances
  */
 export type CardInstance =
+  | ArticleCardInstance
+  | FolderCoverCardInstance
   | CoverCardInstance
   | ProjectCardInstance
   | ResumeCardInstance
@@ -256,12 +277,12 @@ export type CardContentByKind<K extends CardKind> = Extract<
  * Card definition - maps kind to component and policy
  */
 export interface CardDefinition<K extends CardKind = CardKind> {
-  /** The card kind identifier */
-  kind: K;
   /** The React component that renders this card */
   component: ComponentType<{ content: CardContentByKind<K> }>;
   /** The interaction policy for this card */
   interactionPolicy: InteractionPolicy;
+  /** The card kind identifier */
+  kind: K;
 }
 
 // ============================================================================
@@ -273,8 +294,8 @@ export interface CardDefinition<K extends CardKind = CardKind> {
  * This avoids circular dependency issues during the migration
  */
 export interface LazyCardDefinition<K extends CardKind = CardKind> {
-  kind: K;
   interactionPolicy: InteractionPolicy;
+  kind: K;
 }
 
 /**
@@ -283,83 +304,91 @@ export interface LazyCardDefinition<K extends CardKind = CardKind> {
  */
 export const CARD_REGISTRY: Readonly<Record<CardKind, LazyCardDefinition>> =
   Object.freeze({
-    cover: {
-      kind: "cover",
-      interactionPolicy: {
-        activate: "none",
-        drag: "full",
-      },
-    },
-    project: {
-      kind: "project",
-      interactionPolicy: {
-        activate: "none",
-        drag: "full",
-      },
-    },
-    resume: {
-      kind: "resume",
-      interactionPolicy: {
-        activate: "open-modal",
-        drag: "full",
-      },
-    },
     about: {
-      kind: "about",
       interactionPolicy: {
         activate: "open-modal",
         drag: "full",
       },
+      kind: "about",
+    },
+    article: {
+      interactionPolicy: { activate: "open-modal", drag: "full" },
+      kind: "article",
+    },
+    cover: {
+      interactionPolicy: {
+        activate: "none",
+        drag: "full",
+      },
+      kind: "cover",
     },
     email: {
+      interactionPolicy: {
+        activate: "none",
+        drag: "full",
+      },
       kind: "email",
-      interactionPolicy: {
-        activate: "none",
-        drag: "full",
-      },
     },
-    socials: {
-      kind: "socials",
-      interactionPolicy: {
-        activate: "none",
-        drag: "full",
-      },
+    "folder-cover": {
+      interactionPolicy: { activate: "none", drag: "full" },
+      kind: "folder-cover",
     },
-    stickynote: {
-      kind: "stickynote",
+    funproject: {
       interactionPolicy: {
         activate: "none",
         drag: "full",
       },
-    },
-    profilepic: {
-      kind: "profilepic",
-      interactionPolicy: {
-        activate: "none",
-        drag: "full",
-      },
+      kind: "funproject",
     },
     macbook: {
-      kind: "macbook",
       interactionPolicy: {
         activate: "toggle-focus",
         drag: "full",
         focusScale: 2,
       },
+      kind: "macbook",
     },
-    funproject: {
-      kind: "funproject",
+    profilepic: {
       interactionPolicy: {
         activate: "none",
         drag: "full",
       },
+      kind: "profilepic",
+    },
+    project: {
+      interactionPolicy: {
+        activate: "none",
+        drag: "full",
+      },
+      kind: "project",
+    },
+    resume: {
+      interactionPolicy: {
+        activate: "open-modal",
+        drag: "full",
+      },
+      kind: "resume",
+    },
+    socials: {
+      interactionPolicy: {
+        activate: "none",
+        drag: "full",
+      },
+      kind: "socials",
+    },
+    stickynote: {
+      interactionPolicy: {
+        activate: "none",
+        drag: "full",
+      },
+      kind: "stickynote",
     },
     swagcover: {
-      kind: "swagcover",
       interactionPolicy: {
         activate: "none",
         drag: "full",
       },
+      kind: "swagcover",
     },
   } as const);
 

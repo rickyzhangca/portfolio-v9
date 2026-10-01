@@ -1,7 +1,12 @@
-import { ABOUT_SHEET_SIZE } from "@/cards/about/about-data";
+import { lazy, Suspense } from "react";
 import aboutContent from "@/content/about.md?raw";
 import { tw } from "@/lib/utils";
-import { MarkdownRenderer } from "../markdown-renderer";
+
+const MarkdownRenderer = lazy(() =>
+  import("../markdown-renderer").then((module) => ({
+    default: module.MarkdownRenderer,
+  }))
+);
 
 interface AboutSheetProps {
   className?: string;
@@ -11,19 +16,16 @@ interface AboutSheetProps {
 export const AboutSheet = ({
   className,
   interactive = true,
-}: AboutSheetProps) => {
-  return (
-    <article
-      className={tw(
-        "flex h-full w-full flex-col bg-white px-10 pt-10",
-        !interactive && "pointer-events-none select-none",
-        className
-      )}
-      style={{
-        width: ABOUT_SHEET_SIZE.width,
-      }}
-    >
+}: AboutSheetProps) => (
+  <article
+    className={tw(
+      "flex h-full w-full flex-col bg-white px-10 pt-10",
+      !interactive && "pointer-events-none select-none",
+      className
+    )}
+  >
+    <Suspense fallback={<p>Loading…</p>}>
       <MarkdownRenderer content={aboutContent} />
-    </article>
-  );
-};
+    </Suspense>
+  </article>
+);
