@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test";
 import { test } from "./fixtures";
 
 const EPHEMERAL_PATH = "/writing/en/ephemeral-design";
+const ARTICLE_BODY_MODULE_PATTERN = /^\/assets\/(?:en|cn)-.+\.js$/;
 const PROJECTION_ARTICLES = [
   "design-system-team-maturity",
   "ephemeral-design",
@@ -20,6 +21,72 @@ async function expandWriting(page: Page) {
   await expect(first).toBeVisible();
   return { first, folder };
 }
+
+test("bounded previews include visible static diagrams without loading full MDX or off-card images", async ({
+  page,
+  isMobile,
+}) => {
+  const requests: { type: string; pathname: string }[] = [];
+  page.on("request", (request) => {
+    requests.push({
+      pathname: new URL(request.url()).pathname,
+      type: request.resourceType(),
+    });
+  });
+  await expandWriting(page);
+  const card = page.locator('a[href="/writing/en/verification-asymmetry"]');
+  const images = card.locator("img");
+  expect(await images.count()).toBeGreaterThan(1);
+  const first = images.first();
+  await expect(first).toHaveAttribute(
+    "alt",
+    "Verification asymmetry image - 0"
+  );
+  await expect(first).toHaveAttribute("width", "734");
+  await expect(first).toHaveAttribute("height", "412");
+  await expect(first).toHaveAttribute("loading", "lazy");
+  await expect(first).toHaveAttribute("decoding", "async");
+  if (!isMobile) {
+    await expect(first).toBeInViewport();
+    await expect
+      .poll(() =>
+        first.evaluate(
+          (image) =>
+            image instanceof HTMLImageElement &&
+            image.complete &&
+            image.naturalWidth > 0
+        )
+      )
+      .toBe(true);
+    const offCardPaths = await images.evaluateAll((elements) =>
+      elements
+        .slice(1)
+        .filter((element) => element instanceof HTMLImageElement)
+        .map((element) => element.getAttribute("data-preview-src"))
+        .filter((src): src is string => src !== null)
+        .map((src) => new URL(src, window.location.origin).pathname)
+    );
+    expect(offCardPaths).toHaveLength((await images.count()) - 1);
+    expect(
+      await images.evaluateAll((elements) =>
+        elements.slice(1).every((element) => !element.hasAttribute("src"))
+      )
+    ).toBe(true);
+    expect(
+      requests.filter(
+        (request) =>
+          request.type === "image" && offCardPaths.includes(request.pathname)
+      )
+    ).toHaveLength(0);
+  }
+  expect(
+    requests.filter(
+      (request) =>
+        request.type === "script" &&
+        ARTICLE_BODY_MODULE_PATTERN.test(request.pathname)
+    )
+  ).toHaveLength(0);
+});
 
 interface ProjectionFrame {
   backdropOpacity: number;
