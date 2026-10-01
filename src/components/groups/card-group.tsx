@@ -10,7 +10,12 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  ARTICLE_CARD_PREVIEW_INSET,
+  ARTICLE_CARD_SIZE,
+} from "@/cards/article/article-card";
 import { RenderCard } from "@/cards/render-card";
+import { PaperCardProjection } from "@/components/documents/paper-card-projection";
 import { fanConfigAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
 import { AnalyticsEvents, track } from "@/lib/analytics";
@@ -121,19 +126,27 @@ export const CardStack = ({
   const dragTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef<boolean>(false);
   // Control when projects become visible (after cover animation completes)
-  const [showProjects, setShowProjects] = useState(false);
+  const [hasShownProjects, setHasShownProjects] = useState(isExpanded);
+  const showProjects = isExpanded || hasShownProjects;
 
   // Calculate entrance delays based on group index
   const coverEntranceDelay = COVER_BASE_DELAY + stackIndex * COVER_STAGGER;
   const projectsEntranceDelay = coverEntranceDelay + PROJECT_DELAY_AFTER_COVER;
 
-  // Show projects after cover animation has time to complete
+  // Expansion takes precedence over the one-time staggered entrance.
   useEffect(() => {
+    if (hasShownProjects) {
+      return;
+    }
+    if (isExpanded) {
+      setHasShownProjects(true);
+      return;
+    }
     const timer = setTimeout(() => {
-      setShowProjects(true);
+      setHasShownProjects(true);
     }, projectsEntranceDelay * 1000); // Convert to ms
     return () => clearTimeout(timer);
-  }, [projectsEntranceDelay]);
+  }, [hasShownProjects, isExpanded, projectsEntranceDelay]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -566,14 +579,13 @@ export const CardStack = ({
                     isExpanded={isExpanded}
                     onActivate={onActivateCard}
                   >
-                    <motion.div
-                      className="overflow-hidden bg-white"
+                    <PaperCardProjection
+                      inset={ARTICLE_CARD_PREVIEW_INSET}
                       layoutId={getDocumentLayoutId(stack.id, card.id)}
-                      style={{ borderRadius: 24 }}
-                      transition={SPRING_PRESETS.smooth}
+                      size={ARTICLE_CARD_SIZE}
                     >
                       {content}
-                    </motion.div>
+                    </PaperCardProjection>
                   </StackArticleLink>
                 ) : (
                   content

@@ -27,6 +27,32 @@ function ClosingReader({ onExited }: { onExited: () => void }) {
 }
 
 describe("reader shell", () => {
+  it("gives article content its own proportional projection plane", async () => {
+    render(
+      <ReaderShell
+        clipDuringLayout
+        contentLayoutId="document:writing:essay:content"
+        isOpen
+        layoutId="document:writing:essay"
+        onClose={vi.fn()}
+        paperAspectRatio={2 / 3}
+        title="An essay"
+      >
+        <article>Long article body</article>
+      </ReaderShell>
+    );
+    const dialog = await screen.findByRole("dialog", { name: "An essay" });
+    const backdrop = dialog.querySelector("[data-reader-backdrop]");
+    const surface = dialog.querySelector<HTMLElement>("[data-paper-surface]");
+    const content = dialog.querySelector<HTMLElement>("[data-paper-content]");
+    expect(backdrop?.classList.contains("bg-white")).toBe(true);
+    expect(dialog.classList.contains("bg-white")).toBe(false);
+    expect(surface?.style.aspectRatio).toBe(`${2 / 3} / 1`);
+    expect(content?.style.aspectRatio).toBe(`${2 / 3} / 1`);
+    expect(content?.contains(screen.getByText("Long article body"))).toBe(true);
+    expect(surface?.parentElement).toBe(content?.parentElement);
+  });
+
   it("releases pointer interception and modal isolation as soon as exit starts", async () => {
     render(
       <>
@@ -62,9 +88,9 @@ describe("reader shell", () => {
         <p>Article body</p>
       </ReaderShell>
     );
-    expect(
-      await screen.findByRole("dialog", { name: "An essay" })
-    ).toBeTruthy();
+    const dialog = await screen.findByRole("dialog", { name: "An essay" });
+    expect(dialog.classList.contains("bg-white")).toBe(true);
+    expect(dialog.querySelector("[data-reader-backdrop]")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Close reader" }));
     expect(close).toHaveBeenCalledWith("button");
   });
