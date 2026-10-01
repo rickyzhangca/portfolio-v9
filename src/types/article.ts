@@ -23,6 +23,15 @@ export type ArticlePreviewBlock = {
       kind: "heading";
     }
   | { kind: "divider" | "code" }
+  | {
+      alt: string;
+      className?: string;
+      height: number;
+      kind: "image";
+      src: string;
+      title?: string;
+      width: number;
+    }
   | { children: ArticlePreviewBlock[]; kind: "quote" }
   | {
       items: {
