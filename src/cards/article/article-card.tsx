@@ -8,6 +8,7 @@ import { useCanvasSession } from "@/context/canvas-session";
 import { getArticle, getArticleLocale } from "@/lib/articles/catalogue";
 
 export const ARTICLE_CARD_SIZE = { height: 360, width: 240 } as const;
+export const ARTICLE_CARD_PREVIEW_INSET = 16;
 
 interface ArticlePreviewSize {
   fadeEnd: number;
