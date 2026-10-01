@@ -1,14 +1,19 @@
 // Import card types from the card system
 import type {
+  ArticleCardInstance,
   CardInstance,
   CoverCardInstance,
+  FolderCoverCardInstance,
   FunProjectCardInstance,
   ProjectCardInstance,
   StickyNoteCardInstance,
   SwagCoverCardInstance,
 } from "@/cards/types";
 
-export type StackCardInstance = ProjectCardInstance | StickyNoteCardInstance;
+export type StackCardInstance =
+  | ProjectCardInstance
+  | StickyNoteCardInstance
+  | ArticleCardInstance;
 
 export interface Position {
   x: number;
@@ -16,20 +21,20 @@ export interface Position {
 }
 
 export interface Size {
-  width?: number;
   height?: number;
+  width?: number;
 }
 
 export interface SwagItem {
-  src: string;
-  label: string;
   caption?: string;
+  label: string;
+  src: string;
 }
 
 export interface ViewportState {
-  scale: number;
   positionX: number;
   positionY: number;
+  scale: number;
 }
 
 // Canvas item base properties
@@ -41,29 +46,28 @@ export interface CanvasItemBase {
 
 // Single card item (standalone card like resume, contact, doc)
 export interface CanvasSingleItem extends CanvasItemBase {
-  kind: "single";
   card: CardInstance;
+  kind: "single";
 }
 
-// Stack item (cover + 1+ project cards)
-// Since stacks are projects-only, the cover must be a cover card
-// and the stack must be an array of project cards
+// A folder containing a typed collection of cards.
 export interface CanvasStackItem extends CanvasItemBase {
+  cover: CoverCardInstance | FolderCoverCardInstance;
   kind: "stack";
-  cover: CoverCardInstance;
+  pageSize?: number;
   stack: StackCardInstance[];
 }
 
 // Fun stack item (fun project card that expands to show 8 items)
 export interface CanvasFunStackItem extends CanvasItemBase {
-  kind: "funstack";
   card: FunProjectCardInstance;
+  kind: "funstack";
 }
 
 // Swag stack item (swag cover that expands to show swag items in grid)
 export interface CanvasSwagStackItem extends CanvasItemBase {
-  kind: "swagstack";
   cover: SwagCoverCardInstance;
+  kind: "swagstack";
   swags: SwagItem[];
 }
 
@@ -74,12 +78,12 @@ export type CanvasItem =
   | CanvasSwagStackItem;
 
 export interface CanvasState {
-  items: Map<string, CanvasItem>;
-  selectedItemId: string | null;
   expandedStackId: string | null;
-  maxZIndex: number;
-  viewportState: ViewportState;
   focusedItemId: string | null; // For Macbook zoom toggle
+  items: Map<string, CanvasItem>;
+  maxZIndex: number;
+  selectedItemId: string | null;
+  viewportState: ViewportState;
 }
 
 export type CanvasAction =

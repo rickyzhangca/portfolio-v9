@@ -1,5 +1,6 @@
 import type { CardInstance } from "@/cards/types";
 import type { FanConfig } from "@/lib/fan";
+import type { CanvasStackItem } from "@/types/canvas";
 
 export const STACK_OFFSET_PX = 6;
 export const EXPAND_MAX_PER_ROW = 3;
@@ -50,9 +51,73 @@ export const getSwagPosition = (
 };
 
 export const COLLAPSED_POSITIONS = [
-  { x: 18, y: 24, rotate: 5 },
-  { x: 32, y: 72, rotate: 0 },
+  { rotate: 5, x: 18, y: 24 },
+  { rotate: 0, x: 32, y: 72 },
 ];
+
+export function getStackPage(stack: CanvasStackItem, requestedPage = 0) {
+  const pageSize =
+    stack.pageSize && Number.isInteger(stack.pageSize) && stack.pageSize > 0
+      ? stack.pageSize
+      : Math.max(1, stack.stack.length);
+  const pageCount = Math.max(1, Math.ceil(stack.stack.length / pageSize));
+  const page = Math.min(
+    pageCount - 1,
+    Math.max(0, Number.isFinite(requestedPage) ? Math.floor(requestedPage) : 0)
+  );
+  return {
+    cards: stack.stack.slice(page * pageSize, (page + 1) * pageSize),
+    page,
+    pageCount,
+  };
+}
+
+export function getExpandedStackLayout(
+  cover: CardInstance | undefined,
+  cards: CardInstance[],
+  fanConfig: FanConfig
+) {
+  const offsets = getOffsets(cover, cards, true, fanConfig);
+  const placements = cards.map((card, index) => {
+    const col = index % EXPAND_MAX_PER_ROW;
+    return {
+      ...offsets[index],
+      card,
+      rotate: (col + 1) * fanConfig.rotateStepDeg,
+      y: offsets[index].y + (col + 1) ** 2 * fanConfig.arcStepPx,
+    };
+  });
+  const bounds = {
+    maxX: cover?.size.width ?? 0,
+    maxY: cover ? (cover.size.height ?? 360) : 0,
+    minX: 0,
+    minY: 0,
+  };
+  for (const { card, x, y, rotate } of placements) {
+    const angle = (rotate * Math.PI) / 180;
+    const cosine = Math.cos(angle);
+    const sine = Math.sin(angle);
+    const width = card.size.width ?? 350;
+    const height = card.size.height ?? 360;
+    // CardStack rotates around the top-left corner, so positive rotation
+    // extends left of x; a width-only bounding box would miss that edge.
+    const corners = [
+      [0, 0],
+      [width, 0],
+      [0, height],
+      [width, height],
+    ];
+    for (const [cornerX, cornerY] of corners) {
+      const pointX = x + cornerX * cosine - cornerY * sine;
+      const pointY = y + cornerX * sine + cornerY * cosine;
+      bounds.minX = Math.min(bounds.minX, pointX);
+      bounds.minY = Math.min(bounds.minY, pointY);
+      bounds.maxX = Math.max(bounds.maxX, pointX);
+      bounds.maxY = Math.max(bounds.maxY, pointY);
+    }
+  }
+  return { bounds, placements };
+}
 
 export const getRotatedBoundingBox = (
   width: number,
@@ -64,8 +129,8 @@ export const getRotatedBoundingBox = (
   const sin = Math.sin(theta);
 
   return {
-    width: Math.abs(width * cos) + Math.abs(height * sin),
     height: Math.abs(height * cos) + Math.abs(width * sin),
+    width: Math.abs(width * cos) + Math.abs(height * sin),
   };
 };
 
@@ -95,7 +160,7 @@ export const getOffsets = (
   let prevExtraWidth = 0;
   let hasPrevInRow = false;
 
-  for (let index = 0; index < projects.length; index++) {
+  for (let index = 0; index < projects.length; index += 1) {
     const card = projects[index];
     if (!card) {
       continue;

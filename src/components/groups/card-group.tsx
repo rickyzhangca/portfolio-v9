@@ -1,6 +1,15 @@
 import { motion } from "framer-motion";
 import { useAtomValue } from "jotai";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { RenderCard } from "@/cards/render-card";
 import { fanConfigAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
@@ -12,10 +21,13 @@ const CARD_MASK_DATA_URI = `url("data:image/svg+xml,%3Csvg viewBox='0 0 240 340'
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import {
   COLLAPSED_POSITIONS,
-  getFanTransform,
-  getOffsets,
+  COLLAPSED_VISIBLE_COUNT,
+  getExpandedStackLayout,
+  getStackPage,
 } from "@/lib/card-layout";
+import { getDocumentLayoutId } from "@/lib/document-motion";
 import { tw } from "@/lib/utils";
+import { StackArticleLink } from "./stack-article-link";
 
 // Local definitions removed as they are now imported
 
@@ -23,24 +35,57 @@ import { tw } from "@/lib/utils";
 const COVER_BASE_DELAY = 0.05; // seconds before first cover appears
 const COVER_STAGGER = 0.05; // seconds between each group's cover
 const PROJECT_DELAY_AFTER_COVER = 0.2; // seconds after cover before projects appear
+const ZERO_REPULSION_OFFSET = { x: 0, y: 0 } as const;
+
+interface CardRepulsionFrameProps {
+  cardId: string;
+  children: ReactNode;
+  offset?: Position;
+  zIndex: number;
+}
+
+function CardRepulsionFrame({
+  cardId,
+  children,
+  offset = ZERO_REPULSION_OFFSET,
+  zIndex,
+}: CardRepulsionFrameProps) {
+  return (
+    <motion.div
+      animate={{ x: offset.x, y: offset.y }}
+      className="absolute top-0 left-0 will-change-transform"
+      data-repulsion-card-id={cardId}
+      initial={false}
+      style={{ zIndex }}
+      transition={SPRING_PRESETS.smooth}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 interface CardStackProps {
+  cardRepulsionOffsets?: ReadonlyMap<string, Position>;
+  dragDisabled: boolean;
+  isExpanded: boolean;
+  onActivateCard?: (cardId: string, trigger: HTMLElement) => void;
+  onBringToFront: () => void;
+  onCardHeightMeasured?: (cardId: string, height: number) => void;
+  onDragEnd?: () => void;
+  onDragStart?: () => void;
+  onPageChange?: (page: number) => void;
+  onPositionUpdate: (position: Position) => void;
+  onToggleExpanded: () => void;
+  page?: number;
+  repulsionOffset: Position;
+  scale: number;
+  setRootRef?: (el: HTMLDivElement | null) => void;
   stack: CanvasStackItem;
   stackIndex: number;
-  scale: number;
-  isExpanded: boolean;
-  dragDisabled: boolean;
-  repulsionOffset: Position;
-  onBringToFront: () => void;
-  onToggleExpanded: () => void;
-  onPositionUpdate: (position: Position) => void;
-  onDragStart?: () => void;
-  onDragEnd?: () => void;
-  onCardHeightMeasured?: (cardId: string, height: number) => void;
-  setRootRef?: (el: HTMLDivElement | null) => void;
 }
 
 export const CardStack = ({
+  cardRepulsionOffsets,
   stack,
   stackIndex,
   scale,
@@ -53,15 +98,28 @@ export const CardStack = ({
   onDragStart,
   onDragEnd,
   onCardHeightMeasured,
+  onActivateCard,
+  page = 0,
+  onPageChange,
   setRootRef,
 }: CardStackProps) => {
   const fanConfig = useAtomValue(fanConfigAtom);
+  const stackPage = useMemo(() => getStackPage(stack, page), [stack, page]);
+  const [retainExpandedCards, setRetainExpandedCards] = useState(isExpanded);
+  useEffect(() => {
+    if (isExpanded) {
+      setRetainExpandedCards(true);
+      return;
+    }
+    const timer = setTimeout(() => setRetainExpandedCards(false), 500);
+    return () => clearTimeout(timer);
+  }, [isExpanded]);
   const [measuredSizes, setMeasuredSizes] = useState<Record<string, number>>(
     {}
   );
   const movedItemsRef = useRef<Set<string>>(new Set());
   const dragTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isMountedRef = useRef(false);
+  const isMountedRef = useRef<boolean>(false);
   // Control when projects become visible (after cover animation completes)
   const [showProjects, setShowProjects] = useState(false);
 
@@ -95,7 +153,7 @@ export const CardStack = ({
 
   const coverWithSize = useMemo(() => {
     if (!stack.cover) {
-      return undefined;
+      return;
     }
     return {
       ...stack.cover,
@@ -106,25 +164,34 @@ export const CardStack = ({
     };
   }, [stack.cover, measuredSizes]);
 
-  const projectsWithSizes = useMemo(() => {
-    return stack.stack.map((card) => {
-      const isStickyNote = card.kind === "stickynote";
-      return {
-        ...card,
-        size: {
-          ...card.size,
-          height: isStickyNote
-            ? card.size.height
-            : (measuredSizes[card.id] ?? card.size.height),
-        },
-      };
-    });
-  }, [stack.stack, measuredSizes]);
-
-  const offsets = useMemo(
-    () => getOffsets(coverWithSize, projectsWithSizes, isExpanded, fanConfig),
-    [coverWithSize, projectsWithSizes, isExpanded, fanConfig]
+  const projectsWithSizes = useMemo(
+    () =>
+      stackPage.cards.map((card) => {
+        const isFixedSize =
+          card.kind === "stickynote" || card.kind === "article";
+        return {
+          ...card,
+          size: {
+            ...card.size,
+            height: isFixedSize
+              ? card.size.height
+              : (measuredSizes[card.id] ?? card.size.height),
+          },
+        };
+      }),
+    [stackPage.cards, measuredSizes]
   );
+
+  const expandedLayout = useMemo(
+    () => getExpandedStackLayout(coverWithSize, projectsWithSizes, fanConfig),
+    [coverWithSize, projectsWithSizes, fanConfig]
+  );
+  const renderedCards =
+    isExpanded || retainExpandedCards
+      ? projectsWithSizes
+      : projectsWithSizes.slice(0, COLLAPSED_VISIBLE_COUNT);
+  const coverRepulsionOffset =
+    cardRepulsionOffsets?.get(stack.cover.id) ?? ZERO_REPULSION_OFFSET;
 
   const [isPeeking, setIsPeeking] = useState(false);
   const peekTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -140,22 +207,17 @@ export const CardStack = ({
   }, []);
 
   // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (peekTimeoutRef.current) {
         clearTimeout(peekTimeoutRef.current);
       }
-    };
-  }, []);
+    },
+    []
+  );
 
   const { isDragging, handleMouseDown, currentPosition } = useDraggable({
-    position: stack.position,
-    scale,
     disabled: dragDisabled,
-    onDragStart: () => {
-      onBringToFront();
-      onDragStart?.();
-    },
     onDragEnd: (finalPosition) => {
       onPositionUpdate(finalPosition);
       onDragEnd?.();
@@ -180,7 +242,22 @@ export const CardStack = ({
         }
       }, 500);
     },
+    onDragStart: () => {
+      onBringToFront();
+      onDragStart?.();
+    },
+    position: stack.position,
+    scale,
   });
+
+  const handlePreviousPage = useCallback(
+    () => onPageChange?.(stackPage.page - 1),
+    [onPageChange, stackPage.page]
+  );
+  const handleNextPage = useCallback(
+    () => onPageChange?.(stackPage.page + 1),
+    [onPageChange, stackPage.page]
+  );
 
   const handleCardMeasure = useCallback(
     (id: string, height: number) => {
@@ -195,6 +272,71 @@ export const CardStack = ({
     },
     [onCardHeightMeasured]
   );
+
+  const handleCoverPointerDown = useCallback(
+    (e: PointerEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement;
+      if (target.closest(".no-drag")) {
+        coverPointerDownRef.current = null;
+        return;
+      }
+
+      if (e.button !== 0) {
+        coverPointerDownRef.current = null;
+        return;
+      }
+
+      coverPointerDownRef.current = {
+        clientX: e.clientX,
+        clientY: e.clientY,
+      };
+    },
+    []
+  );
+
+  const handleCoverPointerUp = useCallback(
+    (e: PointerEvent<HTMLDivElement>) => {
+      const start = coverPointerDownRef.current;
+      coverPointerDownRef.current = null;
+
+      if (!start) {
+        return;
+      }
+
+      const moved = Math.hypot(
+        e.clientX - start.clientX,
+        e.clientY - start.clientY
+      );
+
+      // Treat as a click only when the pointer didn't move (pan/drag should not toggle).
+      if (moved < 6) {
+        if (!isExpanded) {
+          track(AnalyticsEvents.STACK_EXPAND, {
+            item_count: stack.stack.length,
+            stack_type: stack.id,
+          });
+        }
+        onToggleExpanded();
+      }
+    },
+    [isExpanded, onToggleExpanded, stack.id, stack.stack.length]
+  );
+
+  const handleCoverKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (
+        event.target === event.currentTarget &&
+        (event.key === "Enter" || event.key === " ")
+      ) {
+        event.preventDefault();
+        onToggleExpanded();
+      }
+    },
+    [onToggleExpanded]
+  );
+  const handleCoverPointerCancel = useCallback(() => {
+    coverPointerDownRef.current = null;
+  }, []);
 
   return (
     <motion.div
@@ -230,112 +372,77 @@ export const CardStack = ({
         transition={isDragging ? TRANSITIONS.none : SPRING_PRESETS.quick}
       >
         {coverWithSize && (
-          <motion.div
-            animate={{
-              opacity: 1,
-              scale: 1,
-              rotate: 0,
-              x: 0,
-              y: 0,
-            }}
-            aria-expanded={isExpanded}
-            aria-label={`Toggle ${stack.cover.content.company}`}
-            className="absolute top-0 left-0 drop-shadow-[0_8px_16px_rgba(0,0,0,0.16)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_20px_rgba(0,0,0,0.32)]"
-            initial={{
-              opacity: 0,
-              scale: 0,
-              rotate: -5,
-              x: 0,
-              y: 0,
-            }}
-            key={coverWithSize.id}
-            onHoverStart={triggerPeek}
-            onKeyDown={(event) => {
-              if (
-                event.target === event.currentTarget &&
-                (event.key === "Enter" || event.key === " ")
-              ) {
-                event.preventDefault();
-                onToggleExpanded();
-              }
-            }}
-            onPointerCancel={() => {
-              coverPointerDownRef.current = null;
-            }}
-            onPointerDown={(e) => {
-              const target = e.target as HTMLElement;
-              if (target.closest(".no-drag")) {
-                coverPointerDownRef.current = null;
-                return;
-              }
-
-              if (e.button !== 0) {
-                coverPointerDownRef.current = null;
-                return;
-              }
-
-              coverPointerDownRef.current = {
-                clientX: e.clientX,
-                clientY: e.clientY,
-              };
-            }}
-            onPointerUp={(e) => {
-              const start = coverPointerDownRef.current;
-              coverPointerDownRef.current = null;
-
-              if (!start) {
-                return;
-              }
-
-              const moved = Math.hypot(
-                e.clientX - start.clientX,
-                e.clientY - start.clientY
-              );
-
-              // Treat as a click only when the pointer didn't move (pan/drag should not toggle).
-              if (moved < 6) {
-                if (!isExpanded) {
-                  track(AnalyticsEvents.STACK_EXPAND, {
-                    stack_type: stack.id,
-                    item_count: stack.stack.length,
-                  });
-                }
-                onToggleExpanded();
-              }
-            }}
-            role="button"
-            style={{
-              zIndex: (stack.cover ? 1 : 0) + projectsWithSizes.length,
-              pointerEvents: "auto",
-            }}
-            tabIndex={0}
-            transition={{ ...SPRING_PRESETS.snappy, delay: coverEntranceDelay }}
+          <CardRepulsionFrame
+            cardId={coverWithSize.id}
+            offset={cardRepulsionOffsets?.get(coverWithSize.id)}
+            zIndex={projectsWithSizes.length + 1}
           >
-            <div
+            <motion.div
+              animate={{
+                opacity: 1,
+                rotate: 0,
+                scale: 1,
+                x: 0,
+                y: 0,
+              }}
+              aria-expanded={isExpanded}
+              aria-label={
+                stack.cover.kind === "folder-cover"
+                  ? `Toggle ${stack.cover.content.label} folder`
+                  : `Toggle ${stack.cover.content.company}`
+              }
+              className="absolute top-0 left-0 drop-shadow-[0_8px_16px_rgba(0,0,0,0.16)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_20px_rgba(0,0,0,0.32)]"
+              initial={{
+                opacity: 0,
+                rotate: -5,
+                scale: 0,
+                x: 0,
+                y: 0,
+              }}
+              key={coverWithSize.id}
+              onHoverStart={triggerPeek}
+              onKeyDown={handleCoverKeyDown}
+              onPointerCancel={handleCoverPointerCancel}
+              onPointerDown={handleCoverPointerDown}
+              onPointerUp={handleCoverPointerUp}
+              role="button"
               style={{
-                maskImage: CARD_MASK_DATA_URI,
-                WebkitMaskImage: CARD_MASK_DATA_URI,
-                maskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
-                WebkitMaskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
-                maskRepeat: "no-repeat",
-                WebkitMaskRepeat: "no-repeat",
-                maskPosition: "center",
-                WebkitMaskPosition: "center",
+                pointerEvents: "auto",
+                zIndex: (stack.cover ? 1 : 0) + projectsWithSizes.length,
+              }}
+              tabIndex={0}
+              transition={{
+                ...SPRING_PRESETS.snappy,
+                delay: coverEntranceDelay,
               }}
             >
-              <RenderCard
-                card={coverWithSize}
-                className="shadow-none hover:shadow-none"
-                onMeasure={(h) => handleCardMeasure(coverWithSize.id, h)}
-              />
-            </div>
-          </motion.div>
+              <div
+                style={{
+                  maskImage: CARD_MASK_DATA_URI,
+                  maskPosition: "center",
+                  maskRepeat: "no-repeat",
+                  maskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
+                  WebkitMaskImage: CARD_MASK_DATA_URI,
+                  WebkitMaskPosition: "center",
+                  WebkitMaskRepeat: "no-repeat",
+                  WebkitMaskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
+                }}
+              >
+                <RenderCard
+                  card={coverWithSize}
+                  className="shadow-none hover:shadow-none"
+                  onMeasure={
+                    coverWithSize.kind === "folder-cover"
+                      ? undefined
+                      : (h) => handleCardMeasure(coverWithSize.id, h)
+                  }
+                />
+              </div>
+            </motion.div>
+          </CardRepulsionFrame>
         )}
-        {projectsWithSizes.map((card, index) => {
-          const offset = offsets[index] ?? { x: 0, y: 0 };
-          const fan = getFanTransform(index, fanConfig);
-          const fanRotate = isExpanded && stack.cover ? fan.rotate : 0;
-          const fanArcY = isExpanded && stack.cover ? fan.arcY : 0;
+        {renderedCards.map((card, index) => {
+          const placement = expandedLayout.placements[index];
 
           // Calculate scale factor to fit project card within cover width when collapsed
           const coverWidth =
@@ -346,7 +453,6 @@ export const CardStack = ({
           );
 
           // When collapsed: only first 2 cards visible, others stack behind 2nd card
-          const COLLAPSED_VISIBLE_COUNT = 2;
           const isHiddenWhenCollapsed =
             !isExpanded && index >= COLLAPSED_VISIBLE_COUNT;
 
@@ -389,7 +495,7 @@ export const CardStack = ({
             return isExpanded ? 1 : collapsedOpacity;
           })();
 
-          const scale = (() => {
+          const cardScale = (() => {
             if (!showProjects) {
               return collapsedScale * 0.5;
             }
@@ -403,45 +509,111 @@ export const CardStack = ({
           })();
 
           const rotate = isExpanded
-            ? fanRotate
+            ? placement.rotate
             : collapsedPos.rotate + jigRotate;
 
           const x = (() => {
             if (!showProjects) {
               return collapsedPos.x - 12;
             }
-            return isExpanded ? offset.x : collapsedPos.x + jigX;
+            return isExpanded ? placement.x : collapsedPos.x + jigX;
           })();
 
-          const y = isExpanded ? offset.y + fanArcY : collapsedPos.y + jigY;
+          const y = isExpanded ? placement.y : collapsedPos.y + jigY;
+
+          const content = (
+            <RenderCard
+              card={card}
+              isExpanded={isExpanded}
+              onMeasure={
+                card.kind === "article"
+                  ? undefined
+                  : (h) => handleCardMeasure(card.id, h)
+              }
+              priority={false}
+            />
+          );
 
           return (
-            <motion.div
-              animate={{
-                opacity,
-                scale,
-                rotate,
-                x,
-                y,
-              }}
-              className={tw("absolute top-0 left-0 will-change-transform")}
-              initial={false}
+            <CardRepulsionFrame
+              cardId={card.id}
               key={card.id}
-              style={{
-                zIndex: projectsWithSizes.length - index,
-                pointerEvents: isExpanded || !stack.cover ? "auto" : "none",
-                transformOrigin: "top left",
-              }}
-              transition={SPRING_PRESETS.snappy}
+              offset={cardRepulsionOffsets?.get(card.id)}
+              zIndex={projectsWithSizes.length - index}
             >
-              <RenderCard
-                card={card}
-                isExpanded={isExpanded}
-                onMeasure={(h) => handleCardMeasure(card.id, h)}
-              />
-            </motion.div>
+              <motion.div
+                animate={{
+                  opacity,
+                  rotate,
+                  scale: cardScale,
+                  x,
+                  y,
+                }}
+                aria-hidden={!isExpanded}
+                className={tw("absolute top-0 left-0 will-change-transform")}
+                inert={!isExpanded}
+                initial={false}
+                style={{
+                  pointerEvents: isExpanded || !stack.cover ? "auto" : "none",
+                  transformOrigin: "top left",
+                  zIndex: projectsWithSizes.length - index,
+                }}
+                transition={SPRING_PRESETS.snappy}
+              >
+                {card.kind === "article" ? (
+                  <StackArticleLink
+                    card={card}
+                    isExpanded={isExpanded}
+                    onActivate={onActivateCard}
+                  >
+                    <motion.div
+                      className="overflow-hidden bg-white"
+                      layoutId={getDocumentLayoutId(stack.id, card.id)}
+                      style={{ borderRadius: 24 }}
+                      transition={SPRING_PRESETS.smooth}
+                    >
+                      {content}
+                    </motion.div>
+                  </StackArticleLink>
+                ) : (
+                  content
+                )}
+              </motion.div>
+            </CardRepulsionFrame>
           );
         })}
+        {isExpanded && stackPage.pageCount > 1 && (
+          <motion.nav
+            animate={{ x: coverRepulsionOffset.x, y: coverRepulsionOffset.y }}
+            aria-label="Folder pages"
+            className="no-drag no-pan absolute flex items-center gap-3 rounded-full bg-white px-4 py-2 text-sm shadow-lg"
+            initial={false}
+            style={{ left: 0, top: (coverWithSize?.size.height ?? 340) + 24 }}
+            transition={SPRING_PRESETS.smooth}
+          >
+            <button
+              aria-label="Previous articles"
+              className="cursor-pointer disabled:opacity-30"
+              disabled={stackPage.page === 0}
+              onClick={handlePreviousPage}
+              type="button"
+            >
+              ←
+            </button>
+            <span>
+              {stackPage.page + 1} / {stackPage.pageCount}
+            </span>
+            <button
+              aria-label="Next articles"
+              className="cursor-pointer disabled:opacity-30"
+              disabled={stackPage.page >= stackPage.pageCount - 1}
+              onClick={handleNextPage}
+              type="button"
+            >
+              →
+            </button>
+          </motion.nav>
+        )}
       </motion.div>
     </motion.div>
   );

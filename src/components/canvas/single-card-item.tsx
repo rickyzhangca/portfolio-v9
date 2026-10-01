@@ -1,26 +1,33 @@
 "use no memo";
 
 import { motion } from "framer-motion";
-import { useCallback, useMemo, useState } from "react";
+import {
+  type KeyboardEvent,
+  type MouseEvent,
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
 import { getInteractionPolicy } from "@/cards/registry";
 import { RenderCard } from "@/cards/render-card";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
+import { getDocumentLayoutId } from "@/lib/document-motion";
 import { tw } from "@/lib/utils";
 import type { CanvasSingleItem, Position } from "@/types/canvas";
 
 interface SingleCardItemProps {
-  item: CanvasSingleItem;
-  scale: number;
-  isFocused: boolean;
   dragDisabled: boolean;
-  repulsionOffset: Position;
+  isFocused: boolean;
+  item: CanvasSingleItem;
+  onActivate?: (trigger?: HTMLElement) => void;
   onBringToFront: () => void;
-  onPositionUpdate: (position: Position) => void;
-  onDragStart?: () => void;
-  onDragEnd?: () => void;
   onCardHeightMeasured?: (cardId: string, height: number) => void;
-  onActivate?: () => void;
+  onDragEnd?: () => void;
+  onDragStart?: () => void;
+  onPositionUpdate: (position: Position) => void;
+  repulsionOffset: Position;
+  scale: number;
   setRootRef?: (el: HTMLDivElement | null) => void;
 }
 
@@ -42,29 +49,30 @@ export const SingleCardItem = ({
     item.card.size.height
   );
 
-  const cardWithSize = useMemo(() => {
-    return {
+  const cardWithSize = useMemo(
+    () => ({
       ...item.card,
       size: {
         ...item.card.size,
         height: measuredHeight ?? item.card.size.height,
       },
-    };
-  }, [item.card, measuredHeight]) as typeof item.card;
+    }),
+    [item.card, measuredHeight]
+  ) as typeof item.card;
 
   const { isDragging, didDragRef, handleMouseDown, currentPosition } =
     useDraggable({
-      position: item.position,
-      scale,
       disabled: dragDisabled,
-      onDragStart: () => {
-        onBringToFront();
-        onDragStart?.();
-      },
       onDragEnd: (finalPosition) => {
         onPositionUpdate(finalPosition);
         onDragEnd?.();
       },
+      onDragStart: () => {
+        onBringToFront();
+        onDragStart?.();
+      },
+      position: item.position,
+      scale,
     });
 
   const handleCardMeasure = useCallback(
@@ -94,8 +102,8 @@ export const SingleCardItem = ({
         ...cardWithSize,
         size: {
           ...cardWithSize.size,
-          width: baseWidth * focusScale,
           height: baseHeight * focusScale,
+          width: baseWidth * focusScale,
         },
       } satisfies typeof cardWithSize)
     : cardWithSize;
@@ -116,6 +124,38 @@ export const SingleCardItem = ({
   const focusOffsetY = shouldRenderFocusHiRes
     ? -((baseHeight * focusScale - baseHeight) / 2)
     : 0;
+
+  const handleActivate = useCallback(
+    (e: MouseEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement;
+      if (target.closest(".no-drag")) {
+        return;
+      }
+
+      // Prevent "click after drag" from triggering click action
+      if (didDragRef.current) {
+        didDragRef.current = false;
+        return;
+      }
+
+      if (isActivatable && onActivate) {
+        onActivate(e.currentTarget);
+      }
+    },
+    [didDragRef, isActivatable, onActivate]
+  );
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (event.target !== event.currentTarget || !isActivatable) {
+        return;
+      }
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onActivate?.(event.currentTarget);
+      }
+    },
+    [isActivatable, onActivate]
+  );
 
   return (
     <motion.div
@@ -171,39 +211,16 @@ export const SingleCardItem = ({
           }}
           key={cardWithSize.id}
           layoutId={
-            item.card.kind === "resume" || item.card.kind === "about"
-              ? `${item.card.kind}-card`
+            interactionPolicy.activate === "open-modal"
+              ? getDocumentLayoutId(item.id, item.card.id)
               : undefined
           }
-          onClick={(e) => {
-            const target = e.target as HTMLElement;
-            if (target.closest(".no-drag")) {
-              return;
-            }
-
-            // Prevent "click after drag" from triggering click action
-            if (didDragRef.current) {
-              didDragRef.current = false;
-              return;
-            }
-
-            if (isActivatable && onActivate) {
-              onActivate();
-            }
-          }}
-          onKeyDown={(event) => {
-            if (event.target !== event.currentTarget || !isActivatable) {
-              return;
-            }
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              onActivate?.();
-            }
-          }}
+          onClick={handleActivate}
+          onKeyDown={handleKeyDown}
           role={isActivatable ? "button" : undefined}
           style={{
-            zIndex: 1,
             pointerEvents: "auto",
+            zIndex: 1,
           }}
           tabIndex={isActivatable ? 0 : undefined}
           transition={{ ...SPRING_PRESETS.smooth, delay: 0.12 }}

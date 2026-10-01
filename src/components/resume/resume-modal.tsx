@@ -1,175 +1,56 @@
-"use no memo";
-
-import { ArrowLeftIcon, FileIcon } from "@phosphor-icons/react";
-import { AnimatePresence, motion } from "framer-motion";
-import type { PointerEventHandler } from "react";
-import {
-  RESUME_CARD_SIZE,
-  RESUME_SHEET_SIZE,
-} from "@/cards/resume/resume-data";
+import { FileIcon } from "@phosphor-icons/react";
+import { useCallback } from "react";
+import { RESUME_CARD_SIZE } from "@/cards/resume/resume-data";
 import type { ResumeData } from "@/cards/types";
-import { useModalAccessibility } from "@/components/use-modal-accessibility";
+import { ReaderShell } from "@/components/documents/reader-shell";
 import { AnalyticsEvents, track } from "@/lib/analytics";
 import { SPRING_PRESETS } from "@/lib/animation";
 import { ResumeSheet } from "./resume-sheet";
 
 interface ResumeModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  layoutId?: string;
   data?: ResumeData;
+  isOpen: boolean;
+  layoutId?: string;
+  onClose: () => void;
 }
 
-export const ResumeModal = ({
+export function ResumeModal({
   isOpen,
   onClose,
   layoutId = "resume-card",
   data,
-}: ResumeModalProps) => {
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <ResumeModalPresence
-          data={data}
-          key="resume-modal"
-          layoutId={layoutId}
-          onClose={onClose}
-        />
-      )}
-    </AnimatePresence>
+}: ResumeModalProps) {
+  const close = useCallback(
+    (method: "button" | "keyboard" | "outside_click" = "button") => {
+      track(AnalyticsEvents.MODAL_CLOSE, {
+        close_method: method,
+        modal_type: "resume",
+      });
+      onClose();
+    },
+    [onClose]
   );
-};
-
-interface ResumeModalPresenceProps {
-  onClose: () => void;
-  layoutId: string;
-  data?: ResumeData;
-}
-
-const ResumeModalPresence = ({
-  onClose,
-  layoutId,
-  data,
-}: ResumeModalPresenceProps) => {
-  const dialogRef = useModalAccessibility(() => {
-    track(AnalyticsEvents.MODAL_CLOSE, {
-      modal_type: "resume",
-      close_method: "keyboard",
-    });
-    onClose();
-  });
-
-  const handleBackdropPointerDown: PointerEventHandler<HTMLDivElement> = (
-    event
-  ) => {
-    // Only close when clicking the backdrop, not inside the sheet.
-    if (event.target !== event.currentTarget) {
-      return;
-    }
-
-    const container = event.currentTarget;
-    const scrollbarWidth = container.offsetWidth - container.clientWidth;
-
-    // Ignore interactions on the scrollbar gutter so scrolling doesn't close.
-    if (scrollbarWidth > 0) {
-      const rect = container.getBoundingClientRect();
-      const isScrollbarClick = event.clientX >= rect.right - scrollbarWidth;
-
-      if (isScrollbarClick) {
-        return;
-      }
-    }
-
-    track(AnalyticsEvents.MODAL_CLOSE, {
-      modal_type: "resume",
-      close_method: "outside_click",
-    });
-    onClose();
-  };
-
   return (
-    <motion.div
-      animate={{ opacity: 1, transition: SPRING_PRESETS.smooth }}
-      aria-label="Resume"
-      aria-modal="true"
-      className="fixed inset-0 z-50 bg-white"
-      exit={{
-        opacity: 0,
-        transition: { ...SPRING_PRESETS.smooth, delay: 0.2 },
-      }}
-      initial={{ opacity: 0 }}
-      ref={dialogRef}
-      role="dialog"
-      tabIndex={-1}
-    >
-      <div
-        className="absolute inset-0 flex items-start justify-center overflow-auto pt-12 pb-24"
-        onPointerDown={handleBackdropPointerDown}
-      >
-        <motion.div
-          className="relative overflow-hidden bg-white"
-          layoutId={layoutId}
-          onPointerDown={(e) => e.stopPropagation()}
-          style={{
-            width: RESUME_SHEET_SIZE.width,
-            // Match the card's aspect ratio to minimize layout animation distortion
-            height:
-              RESUME_SHEET_SIZE.width *
-              (RESUME_CARD_SIZE.height / RESUME_CARD_SIZE.width),
-          }}
-          transition={SPRING_PRESETS.smooth}
-        >
-          <ResumeSheet data={data} interactive={true} />
-        </motion.div>
-      </div>
-
-      <motion.div
-        animate={{
-          x: "-50%",
-          y: 0,
-          boxShadow: "0 12px 24px -12px rgba(0, 0, 0, 0.48)",
-        }}
-        className="fixed bottom-6 left-1/2 flex items-center overflow-hidden rounded-full bg-foreground1/80 text-background1 backdrop-blur"
-        exit={{
-          x: "-50%",
-          y: "200%",
-          boxShadow: "0 0 0 rgba(0,0,0,0)",
-          transition: { duration: 0.24 },
-        }}
-        initial={{
-          x: "-50%",
-          y: "200%",
-          boxShadow: "0 0 0 rgba(0,0,0,0)",
-        }}
-        transition={{
-          y: { ...SPRING_PRESETS.smooth, delay: 0.16 },
-          boxShadow: { duration: 0.24 },
-        }}
-      >
-        <button
-          aria-label="Close resume dialog"
-          className="no-drag flex cursor-pointer items-center gap-2 py-4 pr-4.5 pl-6 transition-colors hover:bg-foreground1/20"
-          onClick={() => {
-            track(AnalyticsEvents.MODAL_CLOSE, {
-              modal_type: "resume",
-              close_method: "button",
-            });
-            onClose();
-          }}
-          type="button"
-        >
-          <ArrowLeftIcon size={20} weight="bold" />
-        </button>
-        <div className="h-8 w-px bg-white/20" />
+    <ReaderShell
+      actions={
         <a
-          className="no-drag flex cursor-pointer items-center gap-2 py-4 pr-7 pl-5 font-medium transition-colors hover:bg-foreground1/20"
+          className="flex items-center gap-2 border-white/20 border-l px-6 py-4 hover:bg-white/10 focus-visible:outline-2"
           download="RickyZhang_Resume.pdf"
           href="/RickyZhang_Resume.pdf"
         >
           <FileIcon size={20} weight="bold" />
           Download PDF
         </a>
-      </motion.div>
-    </motion.div>
+      }
+      backdropExitDelay={0.2}
+      backdropTransition={SPRING_PRESETS.smooth}
+      isOpen={isOpen}
+      layoutId={layoutId}
+      onClose={close}
+      paperAspectRatio={RESUME_CARD_SIZE.width / RESUME_CARD_SIZE.height}
+      title="Ricky Zhang’s resume"
+    >
+      <ResumeSheet data={data} interactive />
+    </ReaderShell>
   );
-};
+}

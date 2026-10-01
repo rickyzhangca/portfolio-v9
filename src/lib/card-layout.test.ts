@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
+import type { ProjectCardInstance } from "@/cards/registry";
 import type { CardInstance } from "@/cards/types";
+import { getAutoPanTarget } from "@/lib/auto-pan";
+import { createMockCover, createMockStack } from "@/test-utils/test-helpers";
 import {
+  getExpandedStackLayout,
   getOffsets,
   getRotatedBoundingBox,
+  getStackPage,
   STACK_OFFSET_PX,
 } from "./card-layout";
 import { DEFAULT_FAN_CONFIG } from "./fan";
@@ -11,11 +16,96 @@ const createMockCard = (
   id: string,
   width = 100,
   height = 100
-): CardInstance => ({
+): ProjectCardInstance => ({
+  content: { description: "Test", image: "", title: "Test" },
   id,
   kind: "project",
-  size: { width, height },
-  content: { title: "Test", description: "Test", image: "" },
+  size: { height, width },
+});
+
+describe("bounded stack pages", () => {
+  it("includes the actual left edge when a card rotates around its top-left corner", () => {
+    const config = {
+      ...DEFAULT_FAN_CONFIG,
+      arcStepPx: 0,
+      expandGapPx: 0,
+      rotateStepDeg: 45,
+    };
+    const layout = getExpandedStackLayout(
+      undefined,
+      [createMockCard("rotated", 100, 200)],
+      config
+    );
+    expect(layout.bounds.minX).toBeCloseTo(-200 * Math.sin(Math.PI / 4));
+    expect(layout.bounds.maxX).toBeCloseTo(100 * Math.cos(Math.PI / 4));
+    expect(layout.bounds.maxY).toBeCloseTo(300 * Math.sin(Math.PI / 4));
+  });
+  it.each([3, 100, 1000])(
+    "limits layout work for %s cards to the current page",
+    (count) => {
+      const cards = Array.from({ length: count }, (_, index) =>
+        createMockCard(`p${index}`, 240, 360)
+      );
+      const stack = {
+        ...createMockStack(
+          "writing",
+          0,
+          0,
+          1,
+          createMockCover("cover", 240, 340),
+          cards
+        ),
+        pageSize: 6,
+      };
+      const page = getStackPage(stack, 0);
+      expect(page.cards).toHaveLength(Math.min(count, 6));
+      expect(page.pageCount).toBe(Math.ceil(count / 6));
+      const layout = getExpandedStackLayout(
+        stack.cover,
+        page.cards,
+        DEFAULT_FAN_CONFIG
+      );
+      expect(layout.placements).toHaveLength(Math.min(count, 6));
+      const smallStack = { ...stack, stack: cards.slice(0, 6) };
+      expect(
+        getAutoPanTarget(
+          stack,
+          DEFAULT_FAN_CONFIG,
+          { positionX: 0, positionY: 0, scale: 1 },
+          800,
+          600
+        )
+      ).toEqual(
+        getAutoPanTarget(
+          smallStack,
+          DEFAULT_FAN_CONFIG,
+          { positionX: 0, positionY: 0, scale: 1 },
+          800,
+          600
+        )
+      );
+    }
+  );
+  it("clamps invalid pages and exposes the final partial page", () => {
+    const stack = {
+      ...createMockStack(
+        "writing",
+        0,
+        0,
+        1,
+        createMockCover("cover"),
+        Array.from({ length: 14 }, (_, index) => createMockCard(`p${index}`))
+      ),
+      pageSize: 6,
+    };
+    expect(getStackPage(stack, 999).cards.map(({ id }) => id)).toEqual([
+      "p12",
+      "p13",
+    ]);
+    expect(getStackPage(stack, -1).page).toBe(0);
+    expect(getStackPage(stack, Number.NaN).page).toBe(0);
+    expect(getStackPage({ ...stack, stack: [] }).pageCount).toBe(1);
+  });
 });
 
 describe("getOffsets", () => {

@@ -48,19 +48,19 @@ vi.mock("@/components/groups/swag-group", () => ({
 import { CanvasItemRenderer } from "./canvas-item";
 
 const baseProps = {
-  itemIndex: 2,
-  scale: 1.5,
+  dragDisabled: false,
   isExpanded: true,
   isFocused: false,
-  dragDisabled: false,
-  repulsionOffset: { x: 12, y: -8 } satisfies Position,
-  onBringToFront: vi.fn(),
-  onToggleExpanded: vi.fn(),
-  onPositionUpdate: vi.fn(),
-  onDragStart: vi.fn(),
-  onDragEnd: vi.fn(),
-  onCardHeightMeasured: vi.fn(),
+  itemIndex: 2,
   onActivate: vi.fn(),
+  onBringToFront: vi.fn(),
+  onCardHeightMeasured: vi.fn(),
+  onDragEnd: vi.fn(),
+  onDragStart: vi.fn(),
+  onPositionUpdate: vi.fn(),
+  onToggleExpanded: vi.fn(),
+  repulsionOffset: { x: 12, y: -8 } satisfies Position,
+  scale: 1.5,
   setRootRef: vi.fn(),
 };
 
@@ -82,7 +82,11 @@ describe("CanvasItemRenderer", () => {
     child?.onCardHeightMeasured?.("card", 240);
     const element = document.createElement("div");
     child?.setRootRef?.(element);
-    expect(baseProps.onActivate).toHaveBeenCalledWith("single");
+    expect(baseProps.onActivate).toHaveBeenCalledWith(
+      "single",
+      undefined,
+      undefined
+    );
     expect(baseProps.onBringToFront).toHaveBeenCalledWith("single");
     expect(baseProps.onPositionUpdate).toHaveBeenCalledWith("single", {
       x: 20,
@@ -99,7 +103,7 @@ describe("CanvasItemRenderer", () => {
       <CanvasItemRenderer {...baseProps} item={item} onActivate={updated} />
     );
     singleCardItemMock.mock.lastCall?.[0].onActivate?.();
-    expect(updated).toHaveBeenCalledWith("single");
+    expect(updated).toHaveBeenCalledWith("single", undefined, undefined);
     expect(baseProps.onActivate).toHaveBeenCalledTimes(1);
   });
 
@@ -111,8 +115,8 @@ describe("CanvasItemRenderer", () => {
     expect(screen.getByTestId("single-card-item")).toBeDefined();
     expect(singleCardItemMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        item,
         isFocused: baseProps.isFocused,
+        item,
         onActivate: expect.any(Function),
         scale: baseProps.scale,
         setRootRef: expect.any(Function),
@@ -128,8 +132,8 @@ describe("CanvasItemRenderer", () => {
     expect(screen.getByTestId("fun-project-group")).toBeDefined();
     expect(funProjectGroupMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        item,
         isExpanded: baseProps.isExpanded,
+        item,
         onToggleExpanded: expect.any(Function),
         repulsionOffset: baseProps.repulsionOffset,
       })
@@ -145,23 +149,31 @@ describe("CanvasItemRenderer", () => {
     expect(swagGroupMock).toHaveBeenCalledWith(
       expect.objectContaining({
         item,
-        stackIndex: baseProps.itemIndex,
         onToggleExpanded: expect.any(Function),
+        stackIndex: baseProps.itemIndex,
       })
     );
   });
 
   it("renders a card stack for stack items", () => {
     const item = createMockStack("stack-1");
+    const cardRepulsionOffsets = new Map([["cover", { x: -40, y: 8 }]]);
 
-    render(<CanvasItemRenderer {...baseProps} item={item} />);
+    render(
+      <CanvasItemRenderer
+        {...baseProps}
+        cardRepulsionOffsets={cardRepulsionOffsets}
+        item={item}
+      />
+    );
 
     expect(screen.getByTestId("card-stack")).toBeDefined();
     expect(cardStackMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        cardRepulsionOffsets,
+        onCardHeightMeasured: expect.any(Function),
         stack: item,
         stackIndex: baseProps.itemIndex,
-        onCardHeightMeasured: expect.any(Function),
       })
     );
   });
