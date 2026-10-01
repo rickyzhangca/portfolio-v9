@@ -77,8 +77,8 @@
 
   /* Disable text selection for better UX */
   .select-none-important {
-    user-select: none !important;
     -webkit-user-select: none !important;
+    user-select: none !important;
   }
 
   /* Smooth cursor transitions */
@@ -99,14 +99,73 @@
   }
 }
 
-/* Ensure full viewport usage */
+/* Only the canvas owns gesture suppression; article pages scroll normally. */
 html,
 body,
 #root {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
   width: 100%;
-  height: 100%;
-  touch-action: none;
+  min-height: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+@layer components {
+  .article-prose {
+    @apply text-base leading-[1.85] text-foreground1/90 sm:text-lg;
+  }
+  .article-prose p {
+    @apply my-5;
+  }
+  .article-prose h2 {
+    @apply mt-14 mb-5 scroll-mt-8 font-medium text-2xl leading-snug tracking-tight sm:text-3xl;
+  }
+  .article-prose h3 {
+    @apply mt-9 mb-4 scroll-mt-8 font-medium text-xl leading-snug;
+  }
+  .article-prose h4 {
+    @apply mt-7 mb-3 scroll-mt-8 font-medium text-lg;
+  }
+  .article-prose a,
+  .article-prose .article-preview-link {
+    @apply text-accent underline decoration-accent/30 underline-offset-4 hover:decoration-accent;
+  }
+  .article-prose .heading-link {
+    @apply text-inherit no-underline hover:underline;
+  }
+  .article-prose strong {
+    @apply font-semibold text-foreground1;
+  }
+  .article-prose ul {
+    @apply my-5 list-disc space-y-2 pl-6;
+  }
+  .article-prose ol {
+    @apply my-5 list-decimal space-y-2 pl-6;
+  }
+  .article-prose li > p {
+    @apply my-2;
+  }
+  .article-prose blockquote {
+    @apply my-8 rounded-r-xl border-accent border-l-3 bg-background2 px-6 py-2 text-foreground1/70;
+  }
+  .article-prose hr {
+    @apply my-12;
+  }
+  .article-prose table {
+    @apply w-full min-w-140 border-collapse text-left text-sm leading-relaxed;
+  }
+  .article-prose th {
+    @apply bg-background2 px-4 py-3 font-medium;
+  }
+  .article-prose td {
+    @apply border-t px-4 py-3 align-top;
+  }
+  .article-prose code {
+    @apply rounded bg-background2 px-1.5 py-0.5 font-mono text-[0.85em];
+  }
+  .article-prose pre {
+    @apply my-7 overflow-x-auto rounded-xl bg-background2 p-5 text-sm;
+  }
+  .article-prose pre code {
+    @apply bg-transparent p-0;
+  }
 }

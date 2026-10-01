@@ -33,7 +33,7 @@ export const resumeItem: CanvasSingleItem = {
 export const aboutItem: CanvasSingleItem = {
   id: "about-item",
   kind: "single",
-  position: { x: 60 + RESUME_CARD_SIZE.width, y: 640 },
+  position: { x: 243, y: 684 },
   zIndex: 1,
   card: {
     id: "about-card",
@@ -169,7 +169,7 @@ export const macbookItem: CanvasSingleItem = {
 export const funProjectsItem: CanvasFunStackItem = {
   id: "fun-projects-stack",
   kind: "funstack",
-  position: { x: 700, y: 700 },
+  position: { x: 694, y: 692 },
   zIndex: 6,
   card: {
     id: "fun-projects-card",
@@ -184,7 +184,7 @@ export const funProjectsItem: CanvasFunStackItem = {
 export const swagItem: CanvasSwagStackItem = {
   id: "swag-stack",
   kind: "swagstack",
-  position: { x: 860, y: 1000 },
+  position: { x: 926, y: 976 },
   zIndex: 7,
   cover: {
     id: "swag-cover",

@@ -6,25 +6,29 @@ import { SwagGroup } from "@/components/groups/swag-group";
 import type { CanvasItem, Position } from "@/types/canvas";
 
 interface CanvasItemRendererProps {
-  item: CanvasItem;
-  itemIndex: number;
-  scale: number;
+  cardRepulsionOffsets?: ReadonlyMap<string, Position>;
+  dragDisabled: boolean;
   isExpanded: boolean;
   isFocused: boolean;
-  dragDisabled: boolean;
-  repulsionOffset: Position;
+  item: CanvasItem;
+  itemIndex: number;
+  onActivate?: (id: string, cardId?: string, trigger?: HTMLElement) => void;
   onBringToFront: (id: string) => void;
-  onToggleExpanded: (id: string) => void;
-  onPositionUpdate: (id: string, position: Position) => void;
-  onDragStart?: () => void;
-  onDragEnd?: () => void;
   onCardHeightMeasured?: (id: string, cardId: string, height: number) => void;
   onContentLayoutMeasured?: (id: string, height: number) => void;
-  onActivate?: (id: string) => void;
+  onDragEnd?: () => void;
+  onDragStart?: () => void;
+  onPageChange?: (id: string, page: number) => void;
+  onPositionUpdate: (id: string, position: Position) => void;
+  onToggleExpanded: (id: string) => void;
+  page?: number;
+  repulsionOffset: Position;
+  scale: number;
   setRootRef?: (id: string, el: HTMLDivElement | null) => void;
 }
 
 const CanvasItemRendererComponent = ({
+  cardRepulsionOffsets,
   item,
   itemIndex,
   scale,
@@ -40,6 +44,8 @@ const CanvasItemRendererComponent = ({
   onCardHeightMeasured: measureCard,
   onContentLayoutMeasured: measureContent,
   onActivate: activate,
+  onPageChange: changePage,
+  page,
   setRootRef: registerElement,
 }: CanvasItemRendererProps) => {
   const onBringToFront = useCallback(
@@ -59,8 +65,17 @@ const CanvasItemRendererComponent = ({
     [measureCard, item.id]
   );
   const onActivate = useCallback(
-    () => activate?.(item.id),
+    (trigger?: HTMLElement) => activate?.(item.id, undefined, trigger),
     [activate, item.id]
+  );
+  const onActivateCard = useCallback(
+    (cardId: string, trigger: HTMLElement) =>
+      activate?.(item.id, cardId, trigger),
+    [activate, item.id]
+  );
+  const onPageChange = useCallback(
+    (nextPage: number) => changePage?.(item.id, nextPage),
+    [changePage, item.id]
   );
   const onContentLayoutMeasured = useCallback(
     (height: number) => measureContent?.(item.id, height),
@@ -132,14 +147,18 @@ const CanvasItemRendererComponent = ({
   // item.kind === "stack"
   return (
     <CardStack
+      cardRepulsionOffsets={cardRepulsionOffsets}
       dragDisabled={dragDisabled}
       isExpanded={isExpanded}
+      onActivateCard={onActivateCard}
       onBringToFront={onBringToFront}
       onCardHeightMeasured={onCardHeightMeasured}
       onDragEnd={onDragEnd}
       onDragStart={onDragStart}
+      onPageChange={onPageChange}
       onPositionUpdate={onPositionUpdate}
       onToggleExpanded={onToggleExpanded}
+      page={page}
       repulsionOffset={repulsionOffset}
       scale={scale}
       setRootRef={setRootRef}

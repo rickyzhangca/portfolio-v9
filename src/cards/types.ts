@@ -10,6 +10,8 @@ export type {
   AboutCardInstance,
   // Interaction policy types
   ActivationType,
+  ArticleCardContent,
+  ArticleCardInstance,
   BaseCardInstance,
   // Utility types
   CardContentByKind,
@@ -22,6 +24,8 @@ export type {
   EmailCardContent,
   EmailCardInstance,
   Experience,
+  FolderCoverCardContent,
+  FolderCoverCardInstance,
   FunProjectCardContent,
   FunProjectCardInstance,
   FunProjectItem,

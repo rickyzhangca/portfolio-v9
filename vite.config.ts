@@ -1,13 +1,32 @@
 import path from "node:path";
+import mdx from "@mdx-js/rollup";
+import { reactRouter } from "@react-router/dev/vite";
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
-import react, { reactCompilerPreset } from "@vitejs/plugin-react";
+import { reactCompilerPreset } from "@vitejs/plugin-react";
+import rehypeSlug from "rehype-slug";
+import remarkGfm from "remark-gfm";
 import { defineConfig } from "vite";
+import { articlesPlugin } from "./tools/articles-plugin.ts";
+
+const ARTICLE_MDX_PATTERN = /\.mdx$/;
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    manifest: true,
+  },
   plugins: [
-    react(),
+    articlesPlugin(),
+    {
+      enforce: "pre",
+      ...mdx({
+        include: ARTICLE_MDX_PATTERN,
+        rehypePlugins: [rehypeSlug],
+        remarkPlugins: [remarkGfm],
+      }),
+    },
+    reactRouter(),
     babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
   ],
@@ -18,28 +37,5 @@ export default defineConfig({
   },
   server: {
     open: true,
-  },
-  build: {
-    manifest: true,
-    rolldownOptions: {
-      output: {
-        codeSplitting: {
-          groups: [
-            {
-              name: "framer-motion",
-              test: /framer-motion/,
-            },
-            {
-              name: "react-zoom-pan-pinch",
-              test: /react-zoom-pan-pinch/,
-            },
-            {
-              name: "vendor",
-              test: /\/node_modules\/(?:react|react-dom|jotai)\//,
-            },
-          ],
-        },
-      },
-    },
   },
 });

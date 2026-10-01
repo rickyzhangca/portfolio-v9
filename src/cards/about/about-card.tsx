@@ -1,6 +1,7 @@
-import { AboutSheet } from "@/components/about/about-sheet";
 import { ABOUT_SHEET_SIZE } from "@/cards/about/about-data";
 import type { AboutCardContent } from "@/cards/registry";
+import { AboutSheet } from "@/components/about/about-sheet";
+import { PaperPreviewFrame } from "@/components/documents/paper-preview-frame";
 
 const PREVIEW_WIDTH = 240;
 
@@ -15,20 +16,18 @@ interface AboutCardProps {
 export const AboutCard = (_props: AboutCardProps) => {
   // About card is markdown-driven, no typed data needed
   return (
-    <div className="h-full w-full overflow-hidden rounded-3xl bg-white">
-      <p className="mx-2 mt-2 mb-1 w-fit rounded-full bg-background2 px-5 py-2 font-medium text-foreground1/50 text-sm">
-        About
-      </p>
+    <PaperPreviewFrame label="About">
       <div
         className="origin-top-left"
         style={{
-          transform: `scale(${PREVIEW_SCALE})`,
           paddingLeft: PADDING_X,
           paddingRight: PADDING_X,
+          transform: `scale(${PREVIEW_SCALE})`,
+          width: ABOUT_SHEET_SIZE.width,
         }}
       >
         <AboutSheet interactive={false} />
       </div>
-    </div>
+    </PaperPreviewFrame>
   );
 };

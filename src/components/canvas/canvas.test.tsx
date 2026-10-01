@@ -22,18 +22,18 @@ import type { CanvasItem, ViewportState } from "@/types/canvas";
 import { Canvas } from "./canvas";
 
 const transform = vi.hoisted(() => ({
-  current: { scale: 1, positionX: 0, positionY: 0 },
-  onTransformed: undefined as
-    | ((ref: { state: ViewportState }) => void)
+  current: { positionX: 0, positionY: 0, scale: 1 },
+  measureContent: undefined as
+    | ((id: string, height: number) => void)
     | undefined,
   onPanningStop: undefined as
     | ((ref: { state: ViewportState }) => void)
     | undefined,
+  onTransformed: undefined as
+    | ((ref: { state: ViewportState }) => void)
+    | undefined,
   panDisabled: false,
   setTransform: vi.fn(),
-  measureContent: undefined as
-    | ((id: string, height: number) => void)
-    | undefined,
 }));
 
 vi.mock("react-zoom-pan-pinch", () => ({
@@ -43,28 +43,29 @@ vi.mock("react-zoom-pan-pinch", () => ({
   TransformWrapper: ({
     children,
     ref,
-    onTransformed,
+    onTransform,
     onPanningStop,
     panning,
   }: {
     children: (controls: { resetTransform: () => void }) => ReactNode;
     ref: Ref<unknown>;
-    onTransformed: typeof transform.onTransformed;
+    onTransform: typeof transform.onTransformed;
     onPanningStop: typeof transform.onPanningStop;
     panning: { disabled: boolean };
   }) => {
-    transform.onTransformed = onTransformed;
+    transform.onTransformed = onTransform;
     transform.onPanningStop = onPanningStop;
     transform.panDisabled = panning.disabled;
     useImperativeHandle(
       ref,
       () => ({
         instance: {
-          get transformState() {
+          get state() {
             return transform.current;
           },
         },
         setTransform: transform.setTransform,
+        resetTransform: () => transform.setTransform(0, 0, 1),
       }),
       []
     );
@@ -181,12 +182,15 @@ vi.mock("@/components/resume/resume-modal", () => ({
       </button>
     ) : null,
 }));
+vi.mock("@/components/articles/article-modal", () => ({
+  ArticleModal: () => null,
+}));
 
 const settle = () =>
   act(() => {
     vi.advanceTimersByTime(120);
   });
-const changedViewport = { scale: 1, positionX: 200, positionY: -100 };
+const changedViewport = { positionX: 200, positionY: -100, scale: 1 };
 const pan = () =>
   act(() => {
     transform.current = changedViewport;
@@ -200,10 +204,10 @@ const stack = () =>
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
-  transform.current = { scale: 1, positionX: 0, positionY: 0 };
+  transform.current = { positionX: 0, positionY: 0, scale: 1 };
   transform.setTransform.mockImplementation(
     (positionX: number, positionY: number, scale: number) => {
-      transform.current = { scale, positionX, positionY };
+      transform.current = { positionX, positionY, scale };
       transform.onTransformed?.({ state: transform.current });
     }
   );
@@ -237,9 +241,9 @@ describe("Canvas interaction contracts", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     settle();
     expect(transform.current).toEqual({
-      scale: 1,
       positionX: 0,
       positionY: 0,
+      scale: 1,
     });
   });
 
@@ -259,62 +263,60 @@ describe("Canvas interaction contracts", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     settle();
     expect(transform.current).toEqual({
-      scale: 1,
       positionX: 0,
       positionY: 0,
+      scale: 1,
     });
   });
 
-  it.each([
-    "wheel",
-    "pointer",
-    "resize",
-    "reset",
-    "close",
-    "switch",
-  ])("does not steal the viewport after %s while layout is pending", (intent) => {
-    render(
-      <Canvas initialItems={[createMockFunStack("fun", 1400, 500), stack()]} />
-    );
-    fireEvent.click(screen.getByText("fun"));
-    settle();
-    switch (intent) {
-      case "wheel":
-        fireEvent.wheel(screen.getByText("fun"), { deltaY: 120 });
-        break;
-      case "pointer":
-        fireEvent.pointerDown(screen.getByText("fun"));
-        break;
-      case "resize":
-        fireEvent(window, new Event("resize"));
-        break;
-      case "reset":
-        fireEvent.click(screen.getByText("Reset canvas"));
-        break;
-      case "close":
-        fireEvent.keyDown(document, { key: "Escape" });
-        break;
-      case "switch":
-        fireEvent.click(screen.getByText("stack"));
-        break;
-      default:
-        throw new Error("Unexpected intent");
+  it.each(["wheel", "pointer", "resize", "reset", "close", "switch"])(
+    "does not steal the viewport after %s while layout is pending",
+    (intent) => {
+      render(
+        <Canvas
+          initialItems={[createMockFunStack("fun", 1400, 500), stack()]}
+        />
+      );
+      fireEvent.click(screen.getByText("fun"));
+      settle();
+      switch (intent) {
+        case "wheel":
+          fireEvent.wheel(screen.getByText("fun"), { deltaY: 120 });
+          break;
+        case "pointer":
+          fireEvent.pointerDown(screen.getByText("fun"));
+          break;
+        case "resize":
+          fireEvent(window, new Event("resize"));
+          break;
+        case "reset":
+          fireEvent.click(screen.getByText("Reset canvas"));
+          break;
+        case "close":
+          fireEvent.keyDown(document, { key: "Escape" });
+          break;
+        case "switch":
+          fireEvent.click(screen.getByText("stack"));
+          break;
+        default:
+          throw new Error("Unexpected intent");
+      }
+      settle();
+      const position = { ...transform.current };
+      const calls = transform.setTransform.mock.calls.length;
+      act(() => transform.measureContent?.("fun", 1800));
+      settle();
+      expect(transform.current).toEqual(position);
+      expect(transform.setTransform).toHaveBeenCalledTimes(calls);
     }
-    settle();
-    const position = { ...transform.current };
-    const calls = transform.setTransform.mock.calls.length;
-    act(() => transform.measureContent?.("fun", 1800));
-    settle();
-    expect(transform.current).toEqual(position);
-    expect(transform.setTransform).toHaveBeenCalledTimes(calls);
-  });
+  );
 
   it("normalizes wheel units and commits the resulting position", () => {
     render(<Canvas initialItems={[stack()]} />);
     fireEvent.wheel(screen.getByText("stack"), {
+      deltaMode: 1,
       deltaX: 2,
       deltaY: 3,
-      deltaMode: 1,
     });
     expect(transform.current).toEqual({
       positionX: -32,
@@ -322,15 +324,15 @@ describe("Canvas interaction contracts", () => {
       scale: 1,
     });
     fireEvent.wheel(screen.getByText("stack"), {
+      deltaMode: 2,
       deltaX: 1,
       deltaY: 1,
-      deltaMode: 2,
     });
     expect(transform.current.positionY).toBe(-48 - window.innerHeight);
     fireEvent.wheel(screen.getByText("stack"), {
+      deltaMode: 0,
       deltaX: 10,
       deltaY: 15,
-      deltaMode: 0,
     });
     expect(transform.current.positionX).toBe(-32 - window.innerWidth - 10);
     settle();
@@ -432,15 +434,15 @@ describe("Canvas interaction contracts", () => {
     expect(screen.getByTestId("stack").dataset.expanded).toBe("true");
     fireEvent.pointerDown(document.body, {
       button: 0,
-      pointerId: 1,
       clientX: 10,
       clientY: 10,
+      pointerId: 1,
     });
     fireEvent.pointerCancel(document.body, { pointerId: 1 });
     fireEvent.pointerUp(document.body, {
-      pointerId: 1,
       clientX: 10,
       clientY: 10,
+      pointerId: 1,
     });
     expect(screen.getByTestId("stack").dataset.expanded).toBe("true");
     fireEvent.keyDown(window, { key: "Escape" });
@@ -454,69 +456,69 @@ describe("Canvas interaction contracts", () => {
     fireEvent.click(screen.getByText("stack"));
     fireEvent.pointerDown(screen.getByText("stack"), {
       button: 0,
-      pointerId: 1,
       clientX: 10,
       clientY: 10,
+      pointerId: 1,
     });
     fireEvent.pointerUp(screen.getByText("stack"), {
-      pointerId: 1,
       clientX: 10,
       clientY: 10,
+      pointerId: 1,
     });
     expect(screen.getByTestId("stack").dataset.expanded).toBe("true");
     fireEvent.pointerDown(document.body, {
       button: 0,
-      pointerId: 1,
       clientX: 10,
       clientY: 10,
+      pointerId: 1,
     });
     fireEvent.pointerMove(document.body, {
-      pointerId: 1,
       clientX: 100,
       clientY: 100,
+      pointerId: 1,
     });
     fireEvent.pointerUp(document.body, {
-      pointerId: 1,
       clientX: 10,
       clientY: 10,
+      pointerId: 1,
     });
     expect(screen.getByTestId("stack").dataset.expanded).toBe("true");
     fireEvent.pointerDown(document.body, {
       button: 0,
-      pointerId: 1,
       clientX: 10,
       clientY: 10,
+      pointerId: 1,
     });
     fireEvent.pointerUp(document.body, {
-      pointerId: 1,
       clientX: 10,
       clientY: 10,
+      pointerId: 1,
     });
     expect(screen.getByTestId("stack").dataset.expanded).toBe("false");
   });
 
-  it.each([
-    "about",
-    "resume",
-  ] as const)("locks panning and background interactions for %s", (kind) => {
-    const item =
-      kind === "resume"
-        ? createMockSingle("document")
-        : createMockSingle("document", 0, 0, 1, {
-            id: "about",
-            kind: "about",
-            size: { width: 100, height: 100 },
-            content: {},
-          });
-    render(<Canvas initialItems={[item, stack()]} />);
-    fireEvent.click(screen.getByText("document"));
-    expect(transform.panDisabled).toBe(true);
-    expect(screen.getByTestId("stack").dataset.dragDisabled).toBe("true");
-    fireEvent.click(screen.getByText("stack"));
-    expect(screen.getByTestId("stack").dataset.expanded).toBe("false");
-    fireEvent.click(screen.getByText(`Close ${kind}`));
-    expect(transform.panDisabled).toBe(false);
-  });
+  it.each(["about", "resume"] as const)(
+    "locks panning and background interactions for %s",
+    (kind) => {
+      const item =
+        kind === "resume"
+          ? createMockSingle("document")
+          : createMockSingle("document", 0, 0, 1, {
+              content: {},
+              id: "about",
+              kind: "about",
+              size: { height: 100, width: 100 },
+            });
+      render(<Canvas initialItems={[item, stack()]} />);
+      fireEvent.click(screen.getByText("document"));
+      expect(transform.panDisabled).toBe(true);
+      expect(screen.getByTestId("stack").dataset.dragDisabled).toBe("true");
+      fireEvent.click(screen.getByText("stack"));
+      expect(screen.getByTestId("stack").dataset.expanded).toBe("false");
+      fireEvent.click(screen.getByText(`Close ${kind}`));
+      expect(transform.panDisabled).toBe(false);
+    }
+  );
 
   it("clears pending auto-pan and return positions when resetting", () => {
     render(<Canvas initialItems={[stack()]} />);
@@ -526,7 +528,7 @@ describe("Canvas interaction contracts", () => {
     settle();
     fireEvent.keyDown(window, { key: "Escape" });
     settle();
-    expect(transform.current).toEqual({ scale: 1, positionX: 0, positionY: 0 });
+    expect(transform.current).toEqual({ positionX: 0, positionY: 0, scale: 1 });
   });
 
   it("keeps a mounted scene on parent rerender and cancels scheduled work on unmount", () => {

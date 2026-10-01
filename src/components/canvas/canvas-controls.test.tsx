@@ -4,8 +4,8 @@ import { AnalyticsEvents, track } from "@/lib/analytics";
 
 vi.mock("@/lib/analytics", () => ({
   AnalyticsEvents: {
-    CANVAS_VIEW_RESET: "canvas_view_reset",
     CANVAS_POSITION_RESET: "canvas_position_reset",
+    CANVAS_VIEW_RESET: "canvas_view_reset",
   },
   track: vi.fn(),
 }));
@@ -32,7 +32,7 @@ describe("CanvasControls", () => {
     expect(screen.getByRole("button", { name: "Time machine" })).toBeDefined();
   });
 
-  it("toggles panel open when playground button is clicked", () => {
+  it("toggles panel open when playground button is clicked", async () => {
     const onReset = vi.fn();
     const onResetPositions = vi.fn();
 
@@ -45,10 +45,10 @@ describe("CanvasControls", () => {
     });
     fireEvent.click(playgroundButton);
 
-    expect(screen.getByText("Repulsion")).toBeDefined();
+    expect(await screen.findByText("Repulsion")).toBeDefined();
   });
 
-  it("closes panel when playground button is clicked again", () => {
+  it("closes panel when playground button is clicked again", async () => {
     const onReset = vi.fn();
     const onResetPositions = vi.fn();
 
@@ -61,7 +61,7 @@ describe("CanvasControls", () => {
     });
     fireEvent.click(playgroundButton);
 
-    expect(screen.getByText("Repulsion")).toBeDefined();
+    expect(await screen.findByText("Repulsion")).toBeDefined();
 
     fireEvent.click(playgroundButton);
 

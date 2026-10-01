@@ -113,7 +113,7 @@ export const useCanvasViewport = (
         return;
       }
       cancelPendingPan();
-      const current = transform.instance.transformState;
+      const current = transform.instance.state;
       let unit = 1;
       if (event.deltaMode === 1) {
         unit = 16;

@@ -1,9 +1,8 @@
-import type { CardInstance } from "@/cards/types";
 import {
   FUN_STACK_LAYOUT,
-  getFanTransform,
-  getOffsets,
+  getExpandedStackLayout,
   getRotatedBoundingBox,
+  getStackPage,
   getSwagPosition,
   SWAG_LAYOUT,
 } from "@/lib/card-layout";
@@ -27,78 +26,18 @@ const {
 } = FUN_STACK_LAYOUT;
 
 interface BoundingBox {
-  minX: number;
-  minY: number;
   maxX: number;
   maxY: number;
+  minX: number;
+  minY: number;
 }
 
 interface VisibleViewport {
-  minX: number;
-  minY: number;
   maxX: number;
   maxY: number;
+  minX: number;
+  minY: number;
 }
-
-/**
- * Calculate the bounding box of expanded stack content.
- * Uses getOffsets() with expanded=true to get fan positions,
- * accounts for card rotations, and includes fallback height.
- */
-const getExpandedBoundingBox = (
-  cover: CardInstance | undefined,
-  stack: CardInstance[],
-  fanConfig: FanConfig
-): BoundingBox => {
-  const offsets = getOffsets(cover, stack, true, fanConfig);
-
-  // Start with cover card bounds
-  let minX = 0;
-  let minY = 0;
-  let maxX = cover?.size.width ?? 0;
-  let maxY = cover?.size.height ?? 360;
-
-  // Calculate bounds for each stack card at its fanned offset
-  for (let i = 0; i < stack.length; i++) {
-    const card = stack[i];
-    if (!card) {
-      continue;
-    }
-
-    const offset = offsets[i];
-    const cardHeight = card.size.height ?? 360;
-    const cardWidth = card.size.width ?? 350;
-
-    // For expanded cards, calculate rotation based on position in row
-    // Row 0: first 3 cards get 0.5, 1.0, 1.5 deg rotation
-    // Row 1: next 3 cards get 0.5, 1.0, 1.5 deg rotation, etc.
-    const { rotate: rotationDeg, arcY: fanArcY } = getFanTransform(
-      i,
-      fanConfig
-    );
-
-    const { width: bboxWidth, height: bboxHeight } = getRotatedBoundingBox(
-      cardWidth,
-      cardHeight,
-      rotationDeg
-    );
-
-    // CardStack rotates around its top-left corner, not its center.
-    const radians = (rotationDeg * Math.PI) / 180;
-    const cardMinX = offset.x - Math.max(0, cardHeight * Math.sin(radians));
-    const cardMinY =
-      offset.y + fanArcY + Math.min(0, cardWidth * Math.sin(radians));
-    const cardMaxX = cardMinX + bboxWidth;
-    const cardMaxY = cardMinY + bboxHeight;
-
-    minX = Math.min(minX, cardMinX);
-    minY = Math.min(minY, cardMinY);
-    maxX = Math.max(maxX, cardMaxX);
-    maxY = Math.max(maxY, cardMaxY);
-  }
-
-  return { minX, minY, maxX, maxY };
-};
 
 /**
  * Calculate the bounding box of expanded fun stack content.
@@ -118,11 +57,11 @@ const getFunStackExpandedBoundingBox = (
       : 0);
 
   return {
-    minX: 0,
-    minY: 0,
     maxX: itemsCount > 0 ? cardWidth + CONTENT_GAP + CONTENT_WIDTH : cardWidth,
     // Content cards fly out to the right and stack vertically starting at y=0.
     maxY: Math.max(cardHeight, listHeight),
+    minX: 0,
+    minY: 0,
   };
 };
 
@@ -142,7 +81,7 @@ const getVisibleViewport = (
   const maxX = (windowWidth - positionX) / scale;
   const maxY = (windowHeight - positionY) / scale;
 
-  return { minX, minY, maxX, maxY };
+  return { maxX, maxY, minX, minY };
 };
 
 /**
@@ -175,12 +114,10 @@ const calculateMarginTransform = (
   groupPosition: { x: number; y: number },
   currentScale: number,
   margin: number
-): { x: number; y: number } => {
-  return {
-    x: margin - groupPosition.x * currentScale,
-    y: margin - groupPosition.y * currentScale,
-  };
-};
+): { x: number; y: number } => ({
+  x: margin - groupPosition.x * currentScale,
+  y: margin - groupPosition.y * currentScale,
+});
 
 /**
  * Calculate new positionX/Y to center the group content within the viewport.
@@ -244,14 +181,15 @@ export const getAutoPanTarget = (
   fanConfig: FanConfig,
   viewportState: ViewportState,
   windowWidth: number,
-  windowHeight: number
+  windowHeight: number,
+  page = 0
 ): { x: number; y: number; scale: number } | null => {
   // Calculate bounding box of expanded content
-  const expandedBbox = getExpandedBoundingBox(
+  const expandedBbox = getExpandedStackLayout(
     stack.cover,
-    stack.stack,
+    getStackPage(stack, page).cards,
     fanConfig
-  );
+  ).bounds;
 
   // Get current visible viewport in canvas coordinates
   const visibleViewport = getVisibleViewport(
@@ -291,9 +229,9 @@ export const getAutoPanTarget = (
 
   // Use centered transform for axes that fit, margin transform for axes that don't
   const result = {
+    scale: viewportState.scale,
     x: canCenter.horizontal ? centeredTransform.x : marginTransform.x,
     y: canCenter.vertical ? centeredTransform.y : marginTransform.y,
-    scale: viewportState.scale,
   };
 
   return result;
@@ -365,12 +303,12 @@ export const getFunStackAutoPanTarget = (
   // pin the expanded content to the top-left (with margin), even if it could be
   // vertically centered.
   const result = {
+    scale: viewportState.scale,
     x: canCenter.horizontal ? centeredTransform.x : marginTransform.x,
     y:
       canCenter.horizontal && canCenter.vertical
         ? centeredTransform.y
         : marginTransform.y,
-    scale: viewportState.scale,
   };
 
   return result;
@@ -386,12 +324,12 @@ const getSwagStackExpandedBoundingBox = (
 ): BoundingBox => {
   const coverWidth = stack.cover.size.width ?? 240;
   const bounds = {
-    minX: 0,
-    minY: 0,
     maxX: coverWidth,
     maxY: stack.cover.size.height ?? 360,
+    minX: 0,
+    minY: 0,
   };
-  for (let index = 0; index < stack.swags.length; index++) {
+  for (let index = 0; index < stack.swags.length; index += 1) {
     const position = getSwagPosition(index, coverWidth, fanConfig);
     const width = SWAG_LAYOUT.itemSize * SWAG_LAYOUT.expandedScale;
     const height = SWAG_LAYOUT.imageHeight * SWAG_LAYOUT.expandedScale;
@@ -460,12 +398,12 @@ export const getSwagStackAutoPanTarget = (
   );
 
   const result = {
+    scale: viewportState.scale,
     x: canCenter.horizontal ? centeredTransform.x : marginTransform.x,
     y:
       canCenter.horizontal && canCenter.vertical
         ? centeredTransform.y
         : marginTransform.y,
-    scale: viewportState.scale,
   };
 
   return result;

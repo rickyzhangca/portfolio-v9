@@ -12,6 +12,7 @@ import {
   createMockStack,
   createMockStickyNote,
 } from "@/test-utils/test-helpers";
+import type { CanvasStackItem } from "@/types/canvas";
 import { CardStack } from "./card-group";
 
 const stack = createMockStack("company", 20, 30, 1, undefined, [
@@ -20,7 +21,9 @@ const stack = createMockStack("company", 20, 30, 1, undefined, [
   createMockCard("three"),
   createMockStickyNote("note"),
 ]);
-stack.cover.content.image = "/cover.webp";
+if (stack.cover.kind === "cover") {
+  stack.cover.content.image = "/cover.webp";
+}
 for (const card of stack.stack) {
   if (card.kind === "project") {
     card.content.image = "/project.webp";
@@ -28,27 +31,27 @@ for (const card of stack.stack) {
 }
 const callbacks = () => ({
   onBringToFront: vi.fn(),
-  onToggleExpanded: vi.fn(),
-  onPositionUpdate: vi.fn(),
-  onDragStart: vi.fn(),
-  onDragEnd: vi.fn(),
   onCardHeightMeasured: vi.fn(),
+  onDragEnd: vi.fn(),
+  onDragStart: vi.fn(),
+  onPositionUpdate: vi.fn(),
+  onToggleExpanded: vi.fn(),
 });
 const base = {
-  stack,
-  stackIndex: 0,
-  scale: 1,
   dragDisabled: false,
   repulsionOffset: { x: 0, y: 0 },
+  scale: 1,
+  stack,
+  stackIndex: 0,
 };
 
-beforeEach(() => vi.useFakeTimers());
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
 });
 
 describe("CardStack", () => {
+  beforeEach(() => vi.useFakeTimers());
   it("renders previews with lazy images and exposes keyboard expansion", () => {
     const actions = callbacks();
     const { rerender } = render(
@@ -140,5 +143,101 @@ describe("CardStack", () => {
     unmount();
     expect(actions.onDragEnd).toHaveBeenCalledTimes(1);
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+const writingStack: CanvasStackItem = {
+  cover: {
+    content: { count: 1000, label: "Writing" },
+    id: "cover",
+    kind: "folder-cover",
+    size: { height: 340, width: 240 },
+  },
+  id: "writing",
+  kind: "stack",
+  pageSize: 6,
+  position: { x: 0, y: 0 },
+  stack: Array.from({ length: 1000 }, (_, index) => ({
+    content: { slug: "ephemeral-design" },
+    id: `article-${index}`,
+    kind: "article",
+    size: { height: 360, width: 240 },
+  })),
+  zIndex: 1,
+};
+const props = {
+  dragDisabled: true,
+  onBringToFront: vi.fn(),
+  onPositionUpdate: vi.fn(),
+  onToggleExpanded: vi.fn(),
+  repulsionOffset: { x: 0, y: 0 },
+  scale: 1,
+  stack: writingStack,
+  stackIndex: 0,
+};
+
+describe("Writing folder rendering", () => {
+  it("repels the cover and sibling cards without moving the document's shared-layout anchor", () => {
+    const { container } = render(
+      <CardStack
+        {...props}
+        cardRepulsionOffsets={
+          new Map([
+            ["cover", { x: -120, y: -20 }],
+            ["article-0", { x: 0, y: 0 }],
+            ["article-1", { x: 80, y: 10 }],
+          ])
+        }
+        isExpanded
+      />
+    );
+    const cover = container.querySelector<HTMLElement>(
+      '[data-repulsion-card-id="cover"]'
+    );
+    const active = container.querySelector<HTMLElement>(
+      '[data-repulsion-card-id="article-0"]'
+    );
+    const sibling = container.querySelector<HTMLElement>(
+      '[data-repulsion-card-id="article-1"]'
+    );
+    expect(cover?.style.transform).toContain("translateX(-120px)");
+    expect(cover?.style.transform).toContain("translateY(-20px)");
+    expect(active?.style.transform).toBe("none");
+    expect(sibling?.style.transform).toContain("translateX(80px)");
+    expect(sibling?.style.transform).toContain("translateY(10px)");
+    expect(Number(cover?.style.zIndex)).toBeGreaterThan(
+      Number(sibling?.style.zIndex)
+    );
+  });
+  it("mounts only two inert previews while 1000 articles are collapsed", () => {
+    const { container } = render(<CardStack {...props} isExpanded={false} />);
+    const links = container.querySelectorAll('a[id^="article-"]');
+    expect(links).toHaveLength(2);
+    expect(
+      Array.from(links).every(
+        (link) =>
+          link.getAttribute("tabindex") === "-1" && link.closest("[inert]")
+      )
+    ).toBe(true);
+  });
+  it("mounts only the active page and lets the pager select the next one", () => {
+    const changePage = vi.fn();
+    const { container, rerender } = render(
+      <CardStack {...props} isExpanded onPageChange={changePage} />
+    );
+    expect(container.querySelectorAll('a[id^="article-"]')).toHaveLength(6);
+    fireEvent.click(screen.getByRole("button", { name: "Next articles" }));
+    expect(changePage).toHaveBeenCalledWith(1);
+    rerender(
+      <CardStack {...props} isExpanded onPageChange={changePage} page={166} />
+    );
+    expect(container.querySelectorAll('a[id^="article-"]')).toHaveLength(4);
+    expect(container.querySelector("#article-996")).not.toBeNull();
+    expect(container.querySelector("#article-0")).toBeNull();
+    expect(
+      screen
+        .getByRole("button", { name: "Next articles" })
+        .hasAttribute("disabled")
+    ).toBe(true);
   });
 });

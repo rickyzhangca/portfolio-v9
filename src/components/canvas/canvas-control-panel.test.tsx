@@ -1,12 +1,20 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
 import { DEFAULT_FAN_CONFIG } from "@/lib/fan";
 import { DEFAULT_REPULSION_CONFIG } from "@/lib/repulsion";
 import { CanvasControlPanel } from "./canvas-control-panel";
 
-afterEach(cleanup);
+beforeEach(() => {
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+    () => new DOMRect(0, 0, 200, 20)
+  );
+});
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 it("updates real config atoms through named keyboard sliders and resets each tab independently", async () => {
   const store = createStore();

@@ -110,11 +110,14 @@ const getBuildFingerprint = (): {
   value: string;
   source: string;
 } => {
-  const manifestPath = resolve(process.cwd(), "dist/.vite/manifest.json");
+  const manifestPath = resolve(
+    process.cwd(),
+    "dist/client/.vite/manifest.json"
+  );
   if (!existsSync(manifestPath)) {
     return {
       value: "unavailable",
-      source: "dist/.vite/manifest.json was not present",
+      source: "dist/client/.vite/manifest.json was not present",
     };
   }
   try {
@@ -123,7 +126,7 @@ const getBuildFingerprint = (): {
       .digest("hex");
     return {
       value: `vite-manifest-sha256:${digest}`,
-      source: "dist/.vite/manifest.json",
+      source: "dist/client/.vite/manifest.json",
     };
   } catch (error) {
     return {
