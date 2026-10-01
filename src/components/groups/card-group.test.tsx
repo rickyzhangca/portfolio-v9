@@ -4,6 +4,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import { Provider } from "jotai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -52,6 +53,26 @@ afterEach(() => {
 
 describe("CardStack", () => {
   beforeEach(() => vi.useFakeTimers());
+  it("lets expansion preempt a delayed scene entrance", async () => {
+    vi.useRealTimers();
+    const actions = callbacks();
+    const { container, rerender } = render(
+      <Provider>
+        <CardStack {...base} {...actions} isExpanded={false} stackIndex={100} />
+      </Provider>
+    );
+    const card = container.querySelector<HTMLElement>(
+      '[data-repulsion-card-id="one"] > div'
+    );
+    expect(card?.style.opacity).toBe("0");
+    rerender(
+      <Provider>
+        <CardStack {...base} {...actions} isExpanded stackIndex={100} />
+      </Provider>
+    );
+    await waitFor(() => expect(card?.style.opacity).toBe("1"));
+  });
+
   it("renders previews with lazy images and exposes keyboard expansion", () => {
     const actions = callbacks();
     const { rerender } = render(
@@ -213,6 +234,7 @@ describe("Writing folder rendering", () => {
     const { container } = render(<CardStack {...props} isExpanded={false} />);
     const links = container.querySelectorAll('a[id^="article-"]');
     expect(links).toHaveLength(2);
+    expect(container.querySelectorAll("[data-paper-content]")).toHaveLength(2);
     expect(
       Array.from(links).every(
         (link) =>
@@ -226,12 +248,14 @@ describe("Writing folder rendering", () => {
       <CardStack {...props} isExpanded onPageChange={changePage} />
     );
     expect(container.querySelectorAll('a[id^="article-"]')).toHaveLength(6);
+    expect(container.querySelectorAll("[data-paper-content]")).toHaveLength(6);
     fireEvent.click(screen.getByRole("button", { name: "Next articles" }));
     expect(changePage).toHaveBeenCalledWith(1);
     rerender(
       <CardStack {...props} isExpanded onPageChange={changePage} page={166} />
     );
     expect(container.querySelectorAll('a[id^="article-"]')).toHaveLength(4);
+    expect(container.querySelectorAll("[data-paper-content]")).toHaveLength(4);
     expect(container.querySelector("#article-996")).not.toBeNull();
     expect(container.querySelector("#article-0")).toBeNull();
     expect(

@@ -15,7 +15,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { SPRING_PRESETS } from "@/lib/animation";
+import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { tw } from "@/lib/utils";
 
 interface ReaderShellProps {
@@ -25,6 +25,7 @@ interface ReaderShellProps {
   children: ReactNode;
   className?: string;
   clipDuringLayout?: boolean;
+  contentLayoutId?: string;
   isOpen: boolean;
   layoutId?: string;
   onClose: (method?: "button" | "keyboard" | "outside_click") => void;
@@ -55,6 +56,7 @@ function ReaderDialog({
   layoutId,
   className,
   clipDuringLayout = false,
+  contentLayoutId,
   paperAspectRatio,
 }: Omit<ReaderShellProps, "isOpen" | "onExitComplete">) {
   const isPresent = useIsPresent();
@@ -107,7 +109,10 @@ function ReaderDialog({
       <Dialog.Portal data-no-collapse keepMounted>
         <Dialog.Popup
           aria-modal={isPresent || undefined}
-          className="fixed inset-0 z-50 bg-white outline-none"
+          className={tw(
+            "fixed inset-0 z-50 outline-none",
+            !contentLayoutId && "bg-white"
+          )}
           inert={!isPresent}
           initialFocus={viewportRef}
           render={
@@ -128,6 +133,21 @@ function ReaderDialog({
           style={{ pointerEvents: isPresent ? "auto" : "none" }}
         >
           <Dialog.Title className="sr-only">{title}</Dialog.Title>
+          {contentLayoutId ? (
+            <motion.div
+              animate={{ opacity: 1 }}
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-white"
+              data-reader-backdrop
+              exit={{
+                opacity: 0,
+                transition: reducedMotion
+                  ? { duration: 0 }
+                  : { ...TRANSITIONS.opacity, ease: "linear" },
+              }}
+              initial={false}
+            />
+          ) : null}
           <motion.div
             className={tw(
               "absolute inset-0 overscroll-contain px-5 pt-12 pb-24 outline-none",
@@ -142,6 +162,7 @@ function ReaderDialog({
             <ReaderPaper
               className={className}
               clipDuringLayout={clipDuringLayout}
+              contentLayoutId={contentLayoutId}
               layoutId={layoutId}
               paperAspectRatio={paperAspectRatio}
               reducedMotion={!!reducedMotion}
@@ -204,6 +225,7 @@ function ReaderPaper({
   children,
   className,
   clipDuringLayout,
+  contentLayoutId,
   layoutId,
   paperAspectRatio,
   reducedMotion,
@@ -212,6 +234,7 @@ function ReaderPaper({
   | "children"
   | "className"
   | "clipDuringLayout"
+  | "contentLayoutId"
   | "layoutId"
   | "paperAspectRatio"
 > & { reducedMotion: boolean }) {
@@ -223,6 +246,21 @@ function ReaderPaper({
     }
   }, [clipDuringLayout]);
   const finishAnimation = useCallback(() => setAnimating(false), []);
+  if (contentLayoutId) {
+    return (
+      <ReaderProjectedPaper
+        className={className}
+        clipDuringLayout={clipDuringLayout}
+        contentLayoutId={contentLayoutId}
+        layoutId={layoutId}
+        paperAspectRatio={paperAspectRatio}
+        reducedMotion={reducedMotion}
+      >
+        {children}
+      </ReaderProjectedPaper>
+    );
+  }
+
   return (
     <motion.div
       className={tw(
@@ -230,11 +268,11 @@ function ReaderPaper({
         clipDuringLayout && (isAnimating || !isPresent) && "overflow-hidden",
         className
       )}
+      data-paper-surface
       layoutId={reducedMotion ? undefined : layoutId}
       onLayoutAnimationComplete={finishAnimation}
       onLayoutAnimationStart={startAnimation}
-      // Keep the projection in the card's proportions. Reveal the long body
-      // after arrival so it cannot paint outside the growing paper frame.
+      // Keep long content inside the card's proportions during projection.
       style={{
         aspectRatio: clipDuringLayout ? paperAspectRatio : undefined,
         borderRadius: clipDuringLayout ? 0 : undefined,
@@ -247,5 +285,92 @@ function ReaderPaper({
     >
       {children}
     </motion.div>
+  );
+}
+
+function ReaderProjectedPaper({
+  children,
+  className,
+  clipDuringLayout,
+  contentLayoutId,
+  layoutId,
+  paperAspectRatio,
+  reducedMotion,
+}: Pick<
+  ReaderShellProps,
+  | "children"
+  | "className"
+  | "clipDuringLayout"
+  | "contentLayoutId"
+  | "layoutId"
+  | "paperAspectRatio"
+> & { reducedMotion: boolean }) {
+  const isPresent = useIsPresent();
+  const presentRef = useRef(isPresent);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const animationsRef = useRef({ content: false, surface: false });
+  const syncClipping = useCallback(() => {
+    if (contentRef.current) {
+      contentRef.current.style.overflow =
+        clipDuringLayout &&
+        (!presentRef.current ||
+          animationsRef.current.content ||
+          animationsRef.current.surface)
+          ? "hidden"
+          : "";
+    }
+  }, [clipDuringLayout]);
+  useLayoutEffect(() => {
+    presentRef.current = isPresent;
+    syncClipping();
+  }, [isPresent, syncClipping]);
+  // Track clipping at lifecycle boundaries without animation-driven renders.
+  const startSurface = useCallback(() => {
+    animationsRef.current.surface = true;
+    syncClipping();
+  }, [syncClipping]);
+  const finishSurface = useCallback(() => {
+    animationsRef.current.surface = false;
+    syncClipping();
+  }, [syncClipping]);
+  const startContent = useCallback(() => {
+    animationsRef.current.content = true;
+    syncClipping();
+  }, [syncClipping]);
+  const finishContent = useCallback(() => {
+    animationsRef.current.content = false;
+    syncClipping();
+  }, [syncClipping]);
+  return (
+    <div
+      className={tw("relative mx-auto w-full max-w-210", className)}
+      data-paper-frame
+      style={{ aspectRatio: paperAspectRatio }}
+    >
+      <motion.div
+        className="absolute inset-0 bg-white"
+        data-paper-surface
+        layoutId={reducedMotion ? undefined : layoutId}
+        onLayoutAnimationComplete={finishSurface}
+        onLayoutAnimationStart={startSurface}
+        style={{ aspectRatio: paperAspectRatio, borderRadius: 0 }}
+        transition={reducedMotion ? { duration: 0 } : SPRING_PRESETS.smooth}
+      />
+      <motion.div
+        className="relative w-full"
+        data-paper-content
+        layoutId={reducedMotion ? undefined : contentLayoutId}
+        onLayoutAnimationComplete={finishContent}
+        onLayoutAnimationStart={startContent}
+        ref={contentRef}
+        style={{
+          aspectRatio: paperAspectRatio,
+          overflow: clipDuringLayout ? "hidden" : undefined,
+        }}
+        transition={reducedMotion ? { duration: 0 } : SPRING_PRESETS.smooth}
+      >
+        {children}
+      </motion.div>
+    </div>
   );
 }

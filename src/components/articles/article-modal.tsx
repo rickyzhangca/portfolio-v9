@@ -4,7 +4,10 @@ import { ARTICLE_CARD_SIZE } from "@/cards/article/article-card";
 import { ReaderShell } from "@/components/documents/reader-shell";
 import { useCanvasSession } from "@/context/canvas-session";
 import { getArticle, isArticleLocale } from "@/lib/articles/catalogue";
-import { getDocumentLayoutId } from "@/lib/document-motion";
+import {
+  getDocumentContentLayoutId,
+  getDocumentLayoutId,
+} from "@/lib/document-motion";
 import { ArticleLanguageSwitch } from "./article-language-switch";
 import { ArticleSheet } from "./article-sheet";
 
@@ -48,6 +51,7 @@ export function ArticleModal() {
     return null;
   }
   const { article, locale, source } = selection;
+  const layoutId = getDocumentLayoutId(source.itemId, source.cardId);
   return (
     <ReaderShell
       actions={
@@ -58,8 +62,9 @@ export function ArticleModal() {
         />
       }
       clipDuringLayout
+      contentLayoutId={getDocumentContentLayoutId(layoutId)}
       isOpen={session.articleOpen}
-      layoutId={getDocumentLayoutId(source.itemId, source.cardId)}
+      layoutId={layoutId}
       onClose={close}
       onExitComplete={finishExit}
       paperAspectRatio={ARTICLE_CARD_SIZE.width / ARTICLE_CARD_SIZE.height}
