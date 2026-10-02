@@ -32,7 +32,6 @@ Create `src/content/articles/<lowercase-kebab-slug>/meta.json` and one or both l
 {
   "published": "2026-09-30",
   "title": { "en": "Essay title", "cn": "文章标题" },
-  "description": { "en": "A short description.", "cn": "简短介绍。" },
   "draft": false
 }
 ```

@@ -1,19 +1,20 @@
+import { COLLAPSED_POSITIONS } from "@/lib/card-layout";
 import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
+    createMockCard,
+    createMockStack,
+    createMockStickyNote,
+} from "@/test-utils/test-helpers";
+import type { CanvasStackItem } from "@/types/canvas";
+import {
+    act,
+    cleanup,
+    fireEvent,
+    render,
+    screen,
+    waitFor,
 } from "@testing-library/react";
 import { Provider } from "jotai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  createMockCard,
-  createMockStack,
-  createMockStickyNote,
-} from "@/test-utils/test-helpers";
-import type { CanvasStackItem } from "@/types/canvas";
 import { CardStack } from "./card-group";
 
 const stack = createMockStack("company", 20, 30, 1, undefined, [
@@ -71,6 +72,33 @@ describe("CardStack", () => {
       </Provider>
     );
     await waitFor(() => expect(card?.style.opacity).toBe("1"));
+  });
+
+  it("starts cards beyond the collapsed pair in the stack before they fan out", () => {
+    const actions = callbacks();
+    const { container, rerender } = render(
+      <Provider>
+        <CardStack {...base} {...actions} isExpanded={false} />
+      </Provider>
+    );
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(
+      container.querySelector('[data-repulsion-card-id="three"]')
+    ).toBeNull();
+    rerender(
+      <Provider>
+        <CardStack {...base} {...actions} isExpanded />
+      </Provider>
+    );
+    const third = container.querySelector<HTMLElement>(
+      '[data-repulsion-card-id="three"] > div'
+    );
+    const [, stacked] = COLLAPSED_POSITIONS;
+    expect(third?.style.transform).toContain(`translateX(${stacked.x}px)`);
+    expect(third?.style.transform).toContain(`translateY(${stacked.y}px)`);
+    expect(third?.style.opacity).toBe("1");
   });
 
   it("renders previews with lazy images and exposes keyboard expansion", () => {

@@ -57,7 +57,7 @@ function clickPointer(target: Element) {
   fireEvent.click(target);
 }
 
-async function setup() {
+async function setup(close: "click" | "escape" = "click") {
   const router = createMemoryRouter(
     [
       {
@@ -80,19 +80,37 @@ async function setup() {
     name: "Toggle Writing folder",
   });
   fireEvent.keyDown(folder, { key: "Enter" });
-  clickPointer(screen.getByRole("link", { name: "Read Ephemeral Design" }));
+  const link = screen.getByRole("link", { name: "Read Ephemeral Design" });
+  clickPointer(link);
   const dialog = await screen.findByRole("dialog", {
     name: "Ephemeral Design",
   });
-  clickPointer(screen.getByRole("button", { name: "Close reader" }));
+  if (close === "escape") {
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: "Escape",
+    });
+  } else {
+    clickPointer(screen.getByRole("button", { name: "Close reader" }));
+  }
   await waitFor(() => expect(router.state.location.pathname).toBe("/"));
   expect(dialog.isConnected).toBe(true);
-  return { dialog, folder, router };
+  return { dialog, folder, link, router };
 }
 
 describe("writing reader exit interactions", () => {
+  it("returns focus after Escape without the writing card focus ring", async () => {
+    const { link } = await setup("escape");
+    expect(link.dataset.suppressFocusRing).toBe("");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.activeElement).toBe(link);
+    expect(link.dataset.suppressFocusRing).toBe("");
+    fireEvent.blur(link);
+    expect(link.dataset.suppressFocusRing).toBeUndefined();
+  });
+
   it("does not collapse the folder for a gesture on the retained reader layer", async () => {
-    const { dialog, folder } = await setup();
+    const { dialog, folder, link } = await setup();
+    expect(link.dataset.suppressFocusRing).toBeUndefined();
     clickPointer(dialog.querySelector("[data-reader-viewport]") ?? dialog);
     expect(folder.getAttribute("aria-expanded")).toBe("true");
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
