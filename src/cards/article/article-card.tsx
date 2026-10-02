@@ -1,4 +1,3 @@
-import { useLayoutEffect, useRef, useState } from "react";
 import type { ArticleCardContent } from "@/cards/registry";
 import { ArticlePaper } from "@/components/articles/article-paper";
 import { ArticlePreview } from "@/components/articles/article-preview";
@@ -6,9 +5,12 @@ import { PaperPreviewFrame } from "@/components/documents/paper-preview-frame";
 import { useReaderPaperWidth } from "@/components/documents/reader-paper-layout";
 import { useCanvasSession } from "@/context/canvas-session";
 import { getArticle, getArticleLocale } from "@/lib/articles/catalogue";
+import { useLayoutEffect, useRef, useState } from "react";
 
 export const ARTICLE_CARD_SIZE = { height: 360, width: 240 } as const;
 export const ARTICLE_CARD_PREVIEW_INSET = 16;
+const CLOSED_PREVIEW_SHIFT = 12;
+const CLOSED_PREVIEW_FADE = 40;
 
 interface ArticlePreviewSize {
   fadeEnd: number;
@@ -68,14 +70,14 @@ export function ArticleCard({ content }: { content: ArticleCardContent }) {
       <div
         className="h-full overflow-hidden"
         style={{
-          maskImage: `linear-gradient(to bottom, black ${Math.max(0, previewSize.fadeEnd - 56)}px, transparent ${previewSize.fadeEnd}px)`,
+          maskImage: `linear-gradient(to bottom, black ${Math.max(0, previewSize.fadeEnd - CLOSED_PREVIEW_FADE)}px, transparent ${previewSize.fadeEnd}px)`,
         }}
       >
         <div
           className="origin-top-left"
           ref={paperRef}
           style={{
-            transform: `scale(${previewSize.scale})`,
+            transform: `translateY(-${CLOSED_PREVIEW_SHIFT}px) scale(${previewSize.scale})`,
             width: paperWidth,
           }}
         >
