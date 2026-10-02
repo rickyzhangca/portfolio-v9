@@ -80,8 +80,7 @@ export function generateSharing(articles: ArticleMetadata[]) {
       }
       const key = `${article.slug}-${locale}`;
       const title = lines(translation.title, 1030, 58).slice(0, 3);
-      const description = lines(translation.description, 1030, 28).slice(0, 2);
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><rect width="1200" height="630" fill="#f7f7f4"/><rect x="40" y="40" width="1120" height="550" rx="28" fill="white"/><g fill="#26251f" font-family="Noto Sans SC"><text x="84" y="110" font-size="24" fill="#77756c">Ricky Zhang · Writing</text>${title.map((line, index) => `<text x="84" y="${220 + index * 78}" font-size="58" font-weight="600">${xml(line)}</text>`).join("")}${description.map((line, index) => `<text x="84" y="${440 + index * 42}" font-size="28" fill="#77756c">${xml(line)}</text>`).join("")}<text x="84" y="550" font-size="20" fill="#77756c">${article.published} · ${locale === "cn" ? "中文" : "English"} · rickyzhang.me</text></g><circle cx="1090" cy="538" r="16" fill="#e35b28"/></svg>`;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><rect width="1200" height="630" fill="#f7f7f4"/><rect x="40" y="40" width="1120" height="550" rx="28" fill="white"/><g fill="#26251f" font-family="Noto Sans SC"><text x="84" y="110" font-size="24" fill="#77756c">Ricky Zhang · Writing</text>${title.map((line, index) => `<text x="84" y="${220 + index * 78}" font-size="58" font-weight="600">${xml(line)}</text>`).join("")}<text x="84" y="550" font-size="20" fill="#77756c">${article.published} · ${locale === "cn" ? "中文" : "English"} · rickyzhang.me</text></g><circle cx="1090" cy="538" r="16" fill="#e35b28"/></svg>`;
       hashes[key] = createHash("sha256")
         .update(svg)
         .update(fontHash)

@@ -46,7 +46,6 @@ export type ArticlePreviewBlock = {
 );
 
 export interface ArticleTranslation {
-  description: string;
   preview: ArticlePreviewBlock[];
   readingMinutes: number;
   title: string;

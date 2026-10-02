@@ -79,6 +79,7 @@ export default function Root() {
     ReadonlyMap<string, ArticleLocale>
   >(() => new Map());
   const triggerRef = useRef<HTMLElement | null>(null);
+  const escapeFocusTriggerRef = useRef<HTMLElement | null>(null);
   const source = useMemo(
     () => getArticleSource(location.state),
     [location.state]
@@ -116,15 +117,33 @@ export default function Root() {
     }
   }, [location.pathname]);
 
-  const restoreArticleFocus = useCallback(() => {
-    if (triggerRef.current?.isConnected) {
-      triggerRef.current.focus({ preventScroll: true });
+  const suppressArticleFocusRing = useCallback(() => {
+    const trigger = triggerRef.current;
+    escapeFocusTriggerRef.current = trigger;
+    if (trigger) {
+      trigger.dataset.suppressFocusRing = "";
     }
+  }, []);
+
+  const restoreArticleFocus = useCallback(() => {
+    const trigger = triggerRef.current;
+    const suppressRing = escapeFocusTriggerRef.current === trigger;
+    escapeFocusTriggerRef.current = null;
+    if (!trigger?.isConnected) {
+      return;
+    }
+    if (suppressRing) {
+      trigger.dataset.suppressFocusRing = "";
+      trigger.focus({ focusVisible: false, preventScroll: true });
+      return;
+    }
+    trigger.focus({ preventScroll: true });
   }, []);
 
   const openArticle = useCallback(
     (slug: string, articleSource: ArticleSource, trigger: HTMLElement) => {
       triggerRef.current = trigger;
+      escapeFocusTriggerRef.current = null;
       navigate(getArticlePath(slug, articleLocales.get(slug)), {
         state: { articleSource },
       });
@@ -142,6 +161,7 @@ export default function Root() {
       hasCanvas,
       openArticle,
       restoreArticleFocus,
+      suppressArticleFocusRing,
     }),
     [
       articleLocales,
@@ -151,6 +171,7 @@ export default function Root() {
       openArticle,
       showCanvas,
       restoreArticleFocus,
+      suppressArticleFocusRing,
     ]
   );
 

@@ -29,7 +29,7 @@ export function ArticlePaper({
     >
       <div className="mx-auto max-w-190">
         {navigation}
-        <header className="mb-10 border-b pb-10">
+        <header className="mb-10">
           <p className="mb-4 text-foreground2 text-sm">
             <time dateTime={article.published}>
               {getArticleDate(article.published, locale)}
@@ -40,9 +40,6 @@ export function ArticlePaper({
           <Heading className="font-medium text-4xl leading-tight tracking-tight sm:text-5xl">
             {translation.title}
           </Heading>
-          <p className="mt-5 text-foreground2 text-lg leading-relaxed">
-            {translation.description}
-          </p>
         </header>
         {children}
       </div>

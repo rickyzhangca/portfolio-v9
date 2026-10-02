@@ -52,7 +52,6 @@ export const meta: MetaFunction = ({ params }) => {
     const image = `https://rickyzhang.me/writing/og/${article.slug}-${locale}.png`;
     return [
       { title: `${translation?.title} — Ricky Zhang` },
-      { content: translation?.description, name: "description" },
       { href: canonical, rel: "canonical", tagName: "link" },
       ...Object.keys(article.translations).map((language) => ({
         href: `https://rickyzhang.me/writing/${language}/${article.slug}`,
@@ -62,7 +61,6 @@ export const meta: MetaFunction = ({ params }) => {
       })),
       { content: "article", property: "og:type" },
       { content: translation?.title, property: "og:title" },
-      { content: translation?.description, property: "og:description" },
       { content: canonical, property: "og:url" },
       { content: image, property: "og:image" },
       { content: "1200", property: "og:image:width" },
@@ -71,7 +69,6 @@ export const meta: MetaFunction = ({ params }) => {
       { content: "Ricky Zhang", property: "article:author" },
       { content: "summary_large_image", name: "twitter:card" },
       { content: translation?.title, name: "twitter:title" },
-      { content: translation?.description, name: "twitter:description" },
       { content: image, name: "twitter:image" },
     ];
   } catch {

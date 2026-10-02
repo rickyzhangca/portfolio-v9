@@ -293,7 +293,6 @@ function translation(
     throw new Error(`${file}: article must contain a paragraph`);
   }
   return {
-    description: localizedField(meta, "description", locale, file),
     headings,
     preview: previewBlocks(
       tree.children,
@@ -322,11 +321,7 @@ export function discoverArticles(
     }
     const meta = record(JSON.parse(readFileSync(file, "utf8")), file);
     const titles = record(meta.title, `${file}: title`);
-    const descriptions = record(meta.description, `${file}: description`);
-    for (const locale of new Set([
-      ...Object.keys(titles),
-      ...Object.keys(descriptions),
-    ])) {
+    for (const locale of Object.keys(titles)) {
       if (!LOCALES.some((supported) => supported === locale)) {
         throw new Error(`${file}: unsupported language ${locale}`);
       }
@@ -348,10 +343,7 @@ export function discoverArticles(
       const body = path.join(directory, slug, `${locale}.mdx`);
       if (existsSync(body)) {
         translations[locale] = translation(body, meta, locale);
-      } else if (
-        titles[locale] !== undefined ||
-        descriptions[locale] !== undefined
-      ) {
+      } else if (titles[locale] !== undefined) {
         throw new Error(
           `${file}: missing ${locale}.mdx for declared translation`
         );
@@ -381,7 +373,6 @@ export function generateArticles(
       const value = article.translations[locale];
       if (value) {
         translations[locale] = {
-          description: value.description,
           preview: value.preview,
           readingMinutes: value.readingMinutes,
           title: value.title,

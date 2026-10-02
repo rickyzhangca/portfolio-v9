@@ -31,6 +31,8 @@ interface ReaderShellProps {
   onClose: (method?: "button" | "keyboard" | "outside_click") => void;
   onExitComplete?: () => void;
   paperAspectRatio?: number;
+  /** Escape returns focus without Base UI forcing a visible focus ring. */
+  suppressEscapeFocusRing?: boolean;
   title: string;
 }
 
@@ -58,6 +60,7 @@ function ReaderDialog({
   clipDuringLayout = false,
   contentLayoutId,
   paperAspectRatio,
+  suppressEscapeFocusRing = false,
 }: Omit<ReaderShellProps, "isOpen" | "onExitComplete">) {
   const isPresent = useIsPresent();
   const reducedMotion = useReducedMotion();
@@ -113,6 +116,11 @@ function ReaderDialog({
             "fixed inset-0 z-50 outline-none",
             !contentLayoutId && "bg-white"
           )}
+          finalFocus={
+            suppressEscapeFocusRing
+              ? (closeType) => closeType !== "keyboard"
+              : undefined
+          }
           inert={!isPresent}
           initialFocus={viewportRef}
           render={
