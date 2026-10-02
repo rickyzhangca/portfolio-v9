@@ -11,7 +11,7 @@ const PROJECTION_ARTICLES = [
 
 async function expandWriting(page: Page) {
   await page.goto("/");
-  const folder = page.getByRole("button", { name: "Toggle Writing folder" });
+  const folder = page.getByRole("button", { name: "Toggle Thoughts folder" });
   await folder.press("Enter");
   await expect(folder).toHaveAttribute("aria-expanded", "true");
   const first = page.getByRole("link", {
