@@ -31,10 +31,6 @@ function article(
   writeFileSync(
     path.join(folder, "meta.json"),
     JSON.stringify({
-      description: {
-        en: "Description",
-        ...(options.chinese ? { cn: "简介" } : {}),
-      },
       draft: options.draft,
       published: options.published ?? "2026-02-23",
       title: { en: "An essay", ...(options.chinese ? { cn: "一篇文章" } : {}) },

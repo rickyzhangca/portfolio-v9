@@ -33,13 +33,19 @@ export function ArticleModal() {
   }
   const openRef = useRef(session.articleOpen);
   openRef.current = session.articleOpen;
-  const close = useCallback(() => {
-    if (!openRef.current) {
-      return;
-    }
-    openRef.current = false;
-    navigate(-1);
-  }, [navigate]);
+  const close = useCallback(
+    (method?: "button" | "keyboard" | "outside_click") => {
+      if (!openRef.current) {
+        return;
+      }
+      if (method === "keyboard") {
+        session.suppressArticleFocusRing?.();
+      }
+      openRef.current = false;
+      navigate(-1);
+    },
+    [navigate, session.suppressArticleFocusRing]
+  );
   const finishExit = useCallback(() => {
     if (!openRef.current) {
       setRetained(null);
@@ -68,6 +74,7 @@ export function ArticleModal() {
       onClose={close}
       onExitComplete={finishExit}
       paperAspectRatio={ARTICLE_CARD_SIZE.width / ARTICLE_CARD_SIZE.height}
+      suppressEscapeFocusRing
       title={article.translations[locale]?.title ?? "Article"}
     >
       <ArticleSheet article={article} isOverlay locale={locale} />

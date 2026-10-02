@@ -1,3 +1,4 @@
+import { CanvasSessionContext } from "@/context/canvas-session";
 import { cleanup, render, screen } from "@testing-library/react";
 import type { CSSProperties, ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -7,17 +8,30 @@ const reducedMotion = vi.hoisted(() => vi.fn(() => false));
 vi.mock("framer-motion", () => ({
   motion: {
     div: ({
+      animate,
       children,
       layoutId,
-      transition: _transition,
+      transition,
       ...elementProps
     }: {
+      animate?: { opacity?: number };
       children?: ReactNode;
       layoutId?: string;
       style?: CSSProperties;
-      transition?: unknown;
+      transition?: { duration?: number };
     }) => (
-      <div data-layout-id={layoutId} {...elementProps}>
+      <div
+        data-fade-duration={
+          transition?.duration === undefined
+            ? undefined
+            : String(transition.duration)
+        }
+        data-fade-opacity={
+          animate?.opacity === undefined ? undefined : String(animate.opacity)
+        }
+        data-layout-id={layoutId}
+        {...elementProps}
+      >
         {children}
       </div>
     ),
@@ -51,6 +65,12 @@ describe("paper card projection", () => {
     expect(frame?.classList.contains("overflow-hidden")).toBe(false);
     expect(frame?.style).toMatchObject({ height: "360px", width: "240px" });
     expect(surface?.classList.contains("pointer-events-none")).toBe(true);
+    expect(surface?.className).toContain(
+      "drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)]"
+    );
+    expect(surface?.className).toContain(
+      "group-hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
+    );
     expect(content?.classList.contains("pointer-events-none")).toBe(true);
     expect(surface?.style).toMatchObject({ height: "360px", width: "240px" });
     expect(content?.style).toMatchObject({
@@ -59,7 +79,9 @@ describe("paper card projection", () => {
       top: "24px",
       width: "208px",
     });
-    expect(content?.querySelector("div")?.style).toMatchObject({
+    const preview = content?.querySelector<HTMLElement>("[data-paper-preview]");
+    expect(preview?.dataset.fadeOpacity).toBe("1");
+    expect(preview?.style).toMatchObject({
       height: "360px",
       transform: `scale(${208 / 240})`,
       transformOrigin: "top left",
@@ -87,5 +109,25 @@ describe("paper card projection", () => {
     expect(surface?.getAttribute("data-layout-id")).toBeNull();
     expect(content?.getAttribute("data-layout-id")).toBeNull();
     expect(content?.style).toMatchObject({ left: "16px", top: "24px" });
+  });
+
+  it("fades the open card's preview out immediately", () => {
+    render(
+      <CanvasSessionContext.Provider
+        value={{
+          articleOpen: true,
+          articleSource: { cardId: "essay", itemId: "writing" },
+          canvasVisible: true,
+          hasCanvas: true,
+        }}
+      >
+        <PaperCardProjection {...props}>
+          <p>Preview body</p>
+        </PaperCardProjection>
+      </CanvasSessionContext.Provider>
+    );
+    const preview = screen.getByText("Preview body").parentElement;
+    expect(preview?.dataset.fadeOpacity).toBe("0");
+    expect(preview?.dataset.fadeDuration).toBe("0.1");
   });
 });

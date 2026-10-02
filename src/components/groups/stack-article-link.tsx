@@ -1,4 +1,5 @@
 import {
+  type FocusEvent,
   type MouseEvent,
   type PointerEvent,
   type ReactNode,
@@ -80,12 +81,19 @@ export function StackArticleLink({
     },
     []
   );
+  const clearSuppressedFocusRing = useCallback(
+    (event: FocusEvent<HTMLAnchorElement>) => {
+      delete event.currentTarget.dataset.suppressFocusRing;
+    },
+    []
+  );
   return (
     <a
       aria-label={`Read ${article?.translations[locale]?.title ?? "article"}`}
-      className="no-pan block rounded-3xl outline-none focus-visible:ring-3 focus-visible:ring-accent"
+      className="group no-pan block rounded-3xl outline-none focus-visible:ring-3 focus-visible:ring-accent data-suppress-focus-ring:focus-visible:ring-0"
       href={getArticlePath(card.content.slug, locale)}
       id={card.id}
+      onBlur={clearSuppressedFocusRing}
       onClick={handleClick}
       onPointerCancel={handlePointerCancel}
       onPointerDown={handlePointerDown}

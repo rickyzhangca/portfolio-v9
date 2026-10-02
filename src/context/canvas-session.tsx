@@ -13,6 +13,8 @@ export interface CanvasSession {
     trigger: HTMLElement
   ) => void;
   restoreArticleFocus?: () => void;
+  /** Marks the open trigger so Escape can return focus without the card ring. */
+  suppressArticleFocusRing?: () => void;
 }
 
 export const CanvasSessionContext = createContext<CanvasSession>({
