@@ -77,7 +77,7 @@ async function setup(close: "click" | "escape" = "click") {
   );
   render(<RouterProvider router={router} />);
   const folder = await screen.findByRole("button", {
-    name: "Toggle Writing folder",
+    name: "Toggle Thoughts folder",
   });
   fireEvent.keyDown(folder, { key: "Enter" });
   const link = screen.getByRole("link", { name: "Read Ephemeral Design" });

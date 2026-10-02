@@ -4,7 +4,7 @@ import type { CanvasStackItem } from "@/types/canvas";
 
 export const writingStack: CanvasStackItem = {
   cover: {
-    content: { count: articles.length, label: "Writing" },
+    content: { count: articles.length, label: "Thoughts" },
     id: "writing-cover",
     kind: "folder-cover",
     size: { height: 340, width: 240 },
