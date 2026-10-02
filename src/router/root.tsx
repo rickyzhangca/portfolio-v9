@@ -215,7 +215,7 @@ export function ErrorBoundary() {
       </h1>
       <p className="text-foreground2">
         {notFound
-          ? "Return to the portfolio to find an article in the Writing folder."
+          ? "Return to the portfolio to find an article in the Thoughts folder."
           : "Return to the portfolio or reload to retry."}
       </p>
       <a className="rounded-full bg-foreground1 px-5 py-3 text-white" href="/">
