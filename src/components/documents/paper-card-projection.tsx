@@ -9,14 +9,20 @@ import {
 import { motion, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
 
+interface PreviewFade {
+  delay?: number;
+  duration: number;
+  ease?: "easeOut";
+}
+
 /** Shared layout keeps the card text opaque until halfway through the expand. */
-const PREVIEW_FADE_OUT = { duration: 0.1, ease: "easeOut" } as const;
+const PREVIEW_FADE_OUT: PreviewFade = { duration: 0.1, ease: "easeOut" };
 /** Restore the preview once the reader text has started to leave. */
-const PREVIEW_FADE_IN = {
+const PREVIEW_FADE_IN: PreviewFade = {
   delay: 0.14,
   duration: 0.16,
   ease: "easeOut",
-} as const;
+};
 
 interface PaperCardProjectionProps {
   children: ReactNode;
@@ -39,7 +45,7 @@ export function PaperCardProjection({
     articleSource !== null &&
     layoutId ===
       getDocumentLayoutId(articleSource.itemId, articleSource.cardId);
-  let previewFade = PREVIEW_FADE_IN;
+  let previewFade: PreviewFade = PREVIEW_FADE_IN;
   if (reducedMotion) {
     previewFade = { duration: 0 };
   } else if (isOpening) {
