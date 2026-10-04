@@ -9,6 +9,10 @@ const PROJECTION_ARTICLES = [
   "verification-asymmetry",
 ] as const;
 
+test.beforeEach(() => {
+  test.skip(true, "The Thoughts writing group is hidden from the home canvas.");
+});
+
 async function expandWriting(page: Page) {
   await page.goto("/");
   const folder = page.getByRole("button", { name: "Toggle Thoughts folder" });
