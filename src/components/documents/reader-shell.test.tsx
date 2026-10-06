@@ -11,6 +11,24 @@ import { ReaderShell } from "./reader-shell";
 
 afterEach(cleanup);
 
+function ClosingProjectedReader() {
+  const [open, setOpen] = useState(true);
+  const close = useCallback(() => setOpen(false), []);
+  return (
+    <ReaderShell
+      clipDuringLayout
+      contentLayoutId="document:writing:essay:content"
+      isOpen={open}
+      layoutId="document:writing:essay"
+      onClose={close}
+      paperAspectRatio={2 / 3}
+      title="Projected essay"
+    >
+      <article>Long article body</article>
+    </ReaderShell>
+  );
+}
+
 function ClosingReader({ onExited }: { onExited: () => void }) {
   const [open, setOpen] = useState(true);
   const close = useCallback(() => setOpen(false), []);
@@ -51,6 +69,46 @@ describe("reader shell", () => {
     expect(content?.style.aspectRatio).toBe(`${2 / 3} / 1`);
     expect(content?.contains(screen.getByText("Long article body"))).toBe(true);
     expect(surface?.parentElement).toBe(content?.parentElement);
+    expect(content?.style.overflow).not.toBe("hidden");
+    expect(content?.classList.contains("overflow-hidden")).toBe(false);
+  });
+
+  it("clips projected content and eases a scrolled page back to the top on close", async () => {
+    render(<ClosingProjectedReader />);
+    const dialog = await screen.findByRole("dialog", {
+      name: "Projected essay",
+    });
+    const viewport = dialog.querySelector<HTMLElement>(
+      "[data-reader-viewport]"
+    );
+    expect(
+      dialog
+        .querySelector("[data-paper-content]")
+        ?.classList.contains("overflow-hidden")
+    ).toBe(false);
+    if (!viewport) {
+      throw new Error("Reader viewport is missing");
+    }
+    let scrollTop = 240;
+    Object.defineProperty(viewport, "scrollTop", {
+      configurable: true,
+      get: () => scrollTop,
+      set: (value: number) => {
+        scrollTop = value;
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Close reader" }));
+    expect(scrollTop).toBe(0);
+    expect(dialog.isConnected).toBe(true);
+    expect(
+      dialog.querySelector<HTMLElement>("[data-reader-document]")?.style
+        .transform
+    ).toBe("translateY(-240px)");
+    expect(
+      dialog
+        .querySelector("[data-paper-content]")
+        ?.classList.contains("overflow-hidden")
+    ).toBe(true);
   });
 
   it("releases pointer interception and modal isolation as soon as exit starts", async () => {

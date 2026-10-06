@@ -8,15 +8,27 @@ import {
   useMemo,
   useState,
 } from "react";
+import { ARTICLE_CARD_PREVIEW_INSET } from "@/cards/article/article-card";
 import { getInteractionPolicy } from "@/cards/registry";
 import { RenderCard } from "@/cards/render-card";
+import { PaperCardProjection } from "@/components/documents/paper-card-projection";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { getDocumentLayoutId } from "@/lib/document-motion";
 import { tw } from "@/lib/utils";
 import type { CanvasSingleItem, Position } from "@/types/canvas";
 
+const documentLabel = (kind: CanvasSingleItem["card"]["kind"]) => {
+  if (kind === "resume") {
+    return "Resume";
+  }
+  if (kind === "about") {
+    return "About";
+  }
+};
+
 interface SingleCardItemProps {
+  documentOpen?: boolean;
   dragDisabled: boolean;
   isFocused: boolean;
   item: CanvasSingleItem;
@@ -32,6 +44,7 @@ interface SingleCardItemProps {
 }
 
 export const SingleCardItem = ({
+  documentOpen = false,
   item,
   scale,
   isFocused,
@@ -87,6 +100,7 @@ export const SingleCardItem = ({
   );
 
   const interactionPolicy = getInteractionPolicy(item.card.kind);
+  const projectsPaper = interactionPolicy.activate === "open-modal";
   const isActivatable = interactionPolicy.activate !== "none";
   const focusScale =
     interactionPolicy.activate === "toggle-focus"
@@ -156,6 +170,14 @@ export const SingleCardItem = ({
     },
     [isActivatable, onActivate]
   );
+  const cardView = (
+    <RenderCard
+      card={hiResCard}
+      className="shadow-none hover:shadow-none"
+      isFocused={isFocused}
+      onMeasure={shouldRenderFocusHiRes ? undefined : handleCardMeasure}
+    />
+  );
 
   return (
     <motion.div
@@ -202,7 +224,12 @@ export const SingleCardItem = ({
             y: focusOffsetY,
           }}
           aria-label={isActivatable ? `Open ${item.card.kind}` : undefined}
-          className="absolute top-0 left-0 drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
+          className={tw(
+            "absolute top-0 left-0 will-change-transform",
+            projectsPaper
+              ? "group"
+              : "drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)] transition-[filter] hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
+          )}
           initial={{
             opacity: 0,
             scale: 0,
@@ -210,11 +237,6 @@ export const SingleCardItem = ({
             y: focusOffsetY,
           }}
           key={cardWithSize.id}
-          layoutId={
-            interactionPolicy.activate === "open-modal"
-              ? getDocumentLayoutId(item.id, item.card.id)
-              : undefined
-          }
           onClick={handleActivate}
           onKeyDown={handleKeyDown}
           role={isActivatable ? "button" : undefined}
@@ -225,12 +247,19 @@ export const SingleCardItem = ({
           tabIndex={isActivatable ? 0 : undefined}
           transition={{ ...SPRING_PRESETS.smooth, delay: 0.12 }}
         >
-          <RenderCard
-            card={hiResCard}
-            className="shadow-none hover:shadow-none"
-            isFocused={isFocused}
-            onMeasure={shouldRenderFocusHiRes ? undefined : handleCardMeasure}
-          />
+          {projectsPaper ? (
+            <PaperCardProjection
+              inset={ARTICLE_CARD_PREVIEW_INSET}
+              label={documentLabel(item.card.kind)}
+              layoutId={getDocumentLayoutId(item.id, item.card.id)}
+              open={documentOpen}
+              size={{ height: baseHeight, width: baseWidth }}
+            >
+              {cardView}
+            </PaperCardProjection>
+          ) : (
+            cardView
+          )}
         </motion.div>
       </motion.div>
     </motion.div>

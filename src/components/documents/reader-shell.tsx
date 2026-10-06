@@ -2,6 +2,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import {
   AnimatePresence,
+  animate,
   motion,
   type Transition,
   useIsPresent,
@@ -65,6 +66,8 @@ function ReaderDialog({
   const isPresent = useIsPresent();
   const reducedMotion = useReducedMotion();
   const viewportRef = useRef<HTMLDivElement>(null);
+  const documentRef = useRef<HTMLDivElement>(null);
+  const returnScrollRef = useRef(0);
   const wasPresentRef = useRef(isPresent);
   useLayoutEffect(() => {
     // A canceled exit reuses the open dialog, so Base UI's initialFocus won't rerun.
@@ -73,6 +76,39 @@ function ReaderDialog({
     }
     wasPresentRef.current = isPresent;
   }, [isPresent]);
+  useLayoutEffect(() => {
+    const documentElement = documentRef.current;
+    const offset = returnScrollRef.current;
+    if (!documentElement || isPresent || offset <= 0) {
+      return;
+    }
+    // The viewport is already at the top for the projection measurement.
+    // Slide the page down from the scrolled position on the same spring.
+    documentElement.style.transform = `translateY(${-offset}px)`;
+    const controls = animate(offset, 0, {
+      ...SPRING_PRESETS.smooth,
+      onUpdate: (value) => {
+        documentElement.style.transform =
+          value <= 0.5 ? "" : `translateY(${-value}px)`;
+      },
+    });
+    return () => {
+      controls.stop();
+      documentElement.style.transform = "";
+    };
+  }, [isPresent]);
+  const beginClose = useCallback(
+    (method: "button" | "keyboard" | "outside_click") => {
+      const viewport = viewportRef.current;
+      const offset = viewport?.scrollTop ?? 0;
+      returnScrollRef.current = reducedMotion ? 0 : offset;
+      if (viewport) {
+        viewport.scrollTop = 0;
+      }
+      onClose(method);
+    },
+    [onClose, reducedMotion]
+  );
   const handleOpenChange = useCallback(
     (open: boolean, details: Dialog.Root.ChangeEventDetails) => {
       if (!open && isPresent) {
@@ -84,10 +120,10 @@ function ReaderDialog({
         if (details.reason === "outside-press") {
           method = "outside_click";
         }
-        onClose(method);
+        beginClose(method);
       }
     },
-    [isPresent, onClose]
+    [beginClose, isPresent]
   );
   const handleBackgroundClick = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
@@ -96,10 +132,10 @@ function ReaderDialog({
         event.target === event.currentTarget &&
         event.clientX < event.currentTarget.clientWidth
       ) {
-        onClose("outside_click");
+        beginClose("outside_click");
       }
     },
-    [isPresent, onClose]
+    [beginClose, isPresent]
   );
   return (
     // Retain the projection for exit, but release modal isolation immediately.
@@ -182,6 +218,8 @@ function ReaderDialog({
                     paperAspectRatio &&
                     "absolute top-0 left-0 w-full"
                 )}
+                data-reader-document
+                ref={documentRef}
               >
                 {children}
               </div>
@@ -258,7 +296,6 @@ function ReaderPaper({
     return (
       <ReaderProjectedPaper
         className={className}
-        clipDuringLayout={clipDuringLayout}
         contentLayoutId={contentLayoutId}
         layoutId={layoutId}
         paperAspectRatio={paperAspectRatio}
@@ -299,56 +336,16 @@ function ReaderPaper({
 function ReaderProjectedPaper({
   children,
   className,
-  clipDuringLayout,
   contentLayoutId,
   layoutId,
   paperAspectRatio,
   reducedMotion,
 }: Pick<
   ReaderShellProps,
-  | "children"
-  | "className"
-  | "clipDuringLayout"
-  | "contentLayoutId"
-  | "layoutId"
-  | "paperAspectRatio"
+  "children" | "className" | "contentLayoutId" | "layoutId" | "paperAspectRatio"
 > & { reducedMotion: boolean }) {
   const isPresent = useIsPresent();
-  const presentRef = useRef(isPresent);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const animationsRef = useRef({ content: false, surface: false });
-  const syncClipping = useCallback(() => {
-    if (contentRef.current) {
-      contentRef.current.style.overflow =
-        clipDuringLayout &&
-        (!presentRef.current ||
-          animationsRef.current.content ||
-          animationsRef.current.surface)
-          ? "hidden"
-          : "";
-    }
-  }, [clipDuringLayout]);
-  useLayoutEffect(() => {
-    presentRef.current = isPresent;
-    syncClipping();
-  }, [isPresent, syncClipping]);
-  // Track clipping at lifecycle boundaries without animation-driven renders.
-  const startSurface = useCallback(() => {
-    animationsRef.current.surface = true;
-    syncClipping();
-  }, [syncClipping]);
-  const finishSurface = useCallback(() => {
-    animationsRef.current.surface = false;
-    syncClipping();
-  }, [syncClipping]);
-  const startContent = useCallback(() => {
-    animationsRef.current.content = true;
-    syncClipping();
-  }, [syncClipping]);
-  const finishContent = useCallback(() => {
-    animationsRef.current.content = false;
-    syncClipping();
-  }, [syncClipping]);
+  const transition = reducedMotion ? { duration: 0 } : SPRING_PRESETS.smooth;
   return (
     <div
       className={tw("relative mx-auto w-full max-w-210", className)}
@@ -359,23 +356,15 @@ function ReaderProjectedPaper({
         className="absolute inset-0 bg-white"
         data-paper-surface
         layoutId={reducedMotion ? undefined : layoutId}
-        onLayoutAnimationComplete={finishSurface}
-        onLayoutAnimationStart={startSurface}
         style={{ aspectRatio: paperAspectRatio, borderRadius: 0 }}
-        transition={reducedMotion ? { duration: 0 } : SPRING_PRESETS.smooth}
+        transition={transition}
       />
       <motion.div
-        className="relative w-full"
+        className={tw("relative w-full", !isPresent && "overflow-hidden")}
         data-paper-content
         layoutId={reducedMotion ? undefined : contentLayoutId}
-        onLayoutAnimationComplete={finishContent}
-        onLayoutAnimationStart={startContent}
-        ref={contentRef}
-        style={{
-          aspectRatio: paperAspectRatio,
-          overflow: clipDuringLayout ? "hidden" : undefined,
-        }}
-        transition={reducedMotion ? { duration: 0 } : SPRING_PRESETS.smooth}
+        style={{ aspectRatio: paperAspectRatio }}
+        transition={transition}
       >
         {children}
       </motion.div>

@@ -1,13 +1,13 @@
+import { motion, useReducedMotion } from "framer-motion";
+import type { ReactNode } from "react";
 import { useCanvasSession } from "@/context/canvas-session";
 import { SPRING_PRESETS } from "@/lib/animation";
 import {
-    getDocumentContentLayoutId,
-    getDocumentLayoutId,
-    getPaperPreviewLayout,
-    type PaperSize,
+  getDocumentContentLayoutId,
+  getDocumentLayoutId,
+  getPaperPreviewLayout,
+  type PaperSize,
 } from "@/lib/document-motion";
-import { motion, useReducedMotion } from "framer-motion";
-import type { ReactNode } from "react";
 
 interface PreviewFade {
   delay?: number;
@@ -24,27 +24,40 @@ const PREVIEW_FADE_IN: PreviewFade = {
   ease: "easeOut",
 };
 
+/** mt-2 + text-sm py-2 + mb-1. The paper starts directly under this block. */
+const DOCUMENT_LABEL_BLOCK = 48;
+
 interface PaperCardProjectionProps {
   children: ReactNode;
   inset: number;
+  label?: string;
   layoutId: string;
+  open?: boolean;
   size: PaperSize;
 }
 
 export function PaperCardProjection({
   children,
   inset,
+  label,
   layoutId,
+  open = false,
   size,
 }: PaperCardProjectionProps) {
   const reducedMotion = useReducedMotion();
   const { articleOpen, articleSource } = useCanvasSession();
   const preview = getPaperPreviewLayout(size, inset);
+  const contentTop = label ? DOCUMENT_LABEL_BLOCK : preview.y;
+  const contentHeight = label
+    ? size.height - contentTop - preview.y
+    : preview.height;
+  const previewHeight = contentHeight / preview.scale;
   const isOpening =
-    articleOpen &&
-    articleSource !== null &&
-    layoutId ===
-      getDocumentLayoutId(articleSource.itemId, articleSource.cardId);
+    open ||
+    (articleOpen &&
+      articleSource !== null &&
+      layoutId ===
+        getDocumentLayoutId(articleSource.itemId, articleSource.cardId));
   let previewFade: PreviewFade = PREVIEW_FADE_IN;
   if (reducedMotion) {
     previewFade = { duration: 0 };
@@ -64,7 +77,23 @@ export function PaperCardProjection({
         layoutId={reducedMotion ? undefined : layoutId}
         style={{ borderRadius: 24, height: size.height, width: size.width }}
         transition={SPRING_PRESETS.smooth}
-      />
+      >
+        {label ? (
+          <div
+            className="absolute top-0 left-0"
+            style={{
+              opacity: isOpening ? 0 : 1,
+              transition: reducedMotion
+                ? "none"
+                : `opacity ${previewFade.duration}s ease-out ${previewFade.delay ?? 0}s`,
+            }}
+          >
+            <p className="mx-2 mt-2 mb-1 w-fit rounded-full bg-background2 px-5 py-2 font-medium text-foreground1/50 text-sm">
+              {label}
+            </p>
+          </div>
+        ) : null}
+      </motion.div>
       <motion.div
         className="pointer-events-none absolute"
         data-paper-content
@@ -72,9 +101,9 @@ export function PaperCardProjection({
           reducedMotion ? undefined : getDocumentContentLayoutId(layoutId)
         }
         style={{
-          height: preview.height,
+          height: contentHeight,
           left: preview.x,
-          top: preview.y,
+          top: contentTop,
           width: preview.width,
         }}
         transition={SPRING_PRESETS.smooth}
@@ -84,7 +113,7 @@ export function PaperCardProjection({
           data-paper-preview
           initial={false}
           style={{
-            height: size.height,
+            height: previewHeight,
             transform: `scale(${preview.scale})`,
             transformOrigin: "top left",
             width: size.width,

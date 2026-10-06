@@ -7,6 +7,7 @@ import type { CanvasItem, Position } from "@/types/canvas";
 
 interface CanvasItemRendererProps {
   cardRepulsionOffsets?: ReadonlyMap<string, Position>;
+  documentOpen?: boolean;
   dragDisabled: boolean;
   isExpanded: boolean;
   isFocused: boolean;
@@ -29,6 +30,7 @@ interface CanvasItemRendererProps {
 
 const CanvasItemRendererComponent = ({
   cardRepulsionOffsets,
+  documentOpen = false,
   item,
   itemIndex,
   scale,
@@ -88,6 +90,7 @@ const CanvasItemRendererComponent = ({
   if (item.kind === "single") {
     return (
       <SingleCardItem
+        documentOpen={documentOpen}
         dragDisabled={dragDisabled}
         isFocused={isFocused}
         item={item}
