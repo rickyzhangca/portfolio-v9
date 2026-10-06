@@ -1,14 +1,15 @@
-import { describe, expect, it } from "vitest";
 import type { ProjectCardInstance } from "@/cards/registry";
 import type { CardInstance } from "@/cards/types";
 import { getAutoPanTarget } from "@/lib/auto-pan";
 import { createMockCover, createMockStack } from "@/test-utils/test-helpers";
+import { describe, expect, it } from "vitest";
 import {
-  getExpandedStackLayout,
-  getOffsets,
-  getRotatedBoundingBox,
-  getStackPage,
-  STACK_OFFSET_PX,
+    getExpandedStackLayout,
+    getOffsets,
+    getRotatedBoundingBox,
+    getStackPage,
+    getWritingCollapsedPose,
+    STACK_OFFSET_PX,
 } from "./card-layout";
 import { DEFAULT_FAN_CONFIG } from "./fan";
 
@@ -21,6 +22,36 @@ const createMockCard = (
   id,
   kind: "project",
   size: { height, width },
+});
+
+describe("writing collapsed stack", () => {
+  const cover = { height: 340, width: 240 };
+  const card = { height: 360, width: 240 };
+
+  it("tucks flat cards inside the folder, 8px apart and on one height", () => {
+    const front = getWritingCollapsedPose(0, cover, card, 8);
+    const back = getWritingCollapsedPose(1, cover, card, 8);
+    expect(front.rotate).toBe(0);
+    expect(back.rotate).toBe(0);
+    expect(front.scale).toBe(back.scale);
+    expect(front.scale * card.height).toBeLessThan(cover.height);
+    expect(front.scale * card.width).toBeLessThan(cover.width);
+    expect(front.y).toBe(back.y);
+    expect(back.x - front.x).toBe(8);
+    expect(front.x + front.scale * card.width).toBe(cover.width + 4);
+  });
+
+  it("opens the same stack a little further on hover", () => {
+    const resting = getWritingCollapsedPose(1, cover, card, 8);
+    const hovered = getWritingCollapsedPose(1, cover, card, 12);
+    expect(hovered.y).toBe(resting.y);
+    expect(hovered.scale).toBe(resting.scale);
+    expect(hovered.x - resting.x).toBe(8);
+    expect(
+      getWritingCollapsedPose(1, cover, card, 12).x -
+        getWritingCollapsedPose(0, cover, card, 12).x
+    ).toBe(12);
+  });
 });
 
 describe("bounded stack pages", () => {

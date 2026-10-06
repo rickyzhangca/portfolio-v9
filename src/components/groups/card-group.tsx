@@ -29,6 +29,9 @@ import {
     COLLAPSED_VISIBLE_COUNT,
     getExpandedStackLayout,
     getStackPage,
+    getWritingCollapsedPose,
+    WRITING_COLLAPSED_GAP_PX,
+    WRITING_COLLAPSED_HOVER_GAP_PX,
 } from "@/lib/card-layout";
 import { getDocumentLayoutId } from "@/lib/document-motion";
 import { tw } from "@/lib/utils";
@@ -209,7 +212,12 @@ export const CardStack = ({
   const [isPeeking, setIsPeeking] = useState(false);
   const peekTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const isWritingFolder = stack.cover.kind === "folder-cover";
   const triggerPeek = useCallback(() => {
+    if (isWritingFolder) {
+      setIsPeeking(true);
+      return;
+    }
     if (peekTimeoutRef.current) {
       clearTimeout(peekTimeoutRef.current);
     }
@@ -217,7 +225,12 @@ export const CardStack = ({
     peekTimeoutRef.current = setTimeout(() => {
       setIsPeeking(false);
     }, 200);
-  }, []);
+  }, [isWritingFolder]);
+  const releaseWritingPeek = useCallback(() => {
+    if (isWritingFolder) {
+      setIsPeeking(false);
+    }
+  }, [isWritingFolder]);
 
   // Cleanup timeout on unmount
   useEffect(
@@ -413,6 +426,7 @@ export const CardStack = ({
                 y: 0,
               }}
               key={coverWithSize.id}
+              onHoverEnd={releaseWritingPeek}
               onHoverStart={triggerPeek}
               onKeyDown={handleCoverKeyDown}
               onPointerCancel={handleCoverPointerCancel}
@@ -469,20 +483,31 @@ export const CardStack = ({
           const isHiddenWhenCollapsed =
             !isExpanded && index >= COLLAPSED_VISIBLE_COUNT;
 
-          // Specific collapsed positions for visible cards
-          // Card 1: 16px from left & top, -5deg rotation
-          // Card 2: 32px from left, 68px from top, no rotation
+          const collapsedSlot = Math.min(index, COLLAPSED_VISIBLE_COUNT - 1);
+          const collapsedPos = COLLAPSED_POSITIONS[collapsedSlot];
+          const writingPose = isWritingFolder
+            ? getWritingCollapsedPose(
+                collapsedSlot,
+                {
+                  height: coverWithSize?.size.height ?? 340,
+                  width: coverWidth,
+                },
+                {
+                  height: card.size.height ?? 360,
+                  width: card.size.width ?? 240,
+                },
+                isPeeking && index < COLLAPSED_VISIBLE_COUNT
+                  ? WRITING_COLLAPSED_HOVER_GAP_PX
+                  : WRITING_COLLAPSED_GAP_PX
+              )
+            : null;
 
-          const collapsedPos = COLLAPSED_POSITIONS[Math.min(index, 1)];
-
-          // Jig effect when hovering cover
-          // Card 1 (index 0): Move right 24px, up 4px, rotate +5deg
-          // Card 2 (index 1): Move right 28px, down 8px, rotate -4deg
+          // Company covers still nudge their previews on hover.
           let jigX = 0;
           let jigY = 0;
           let jigRotate = 0;
 
-          if (isPeeking && index < 2) {
+          if (!writingPose && isPeeking && index < 2) {
             if (index === 0) {
               jigX = 12;
               jigY = -8;
@@ -510,10 +535,13 @@ export const CardStack = ({
 
           const cardScale = (() => {
             if (!showProjects) {
-              return collapsedScale * 0.5;
+              return (writingPose?.scale ?? collapsedScale) * 0.5;
             }
             if (isExpanded) {
               return 1;
+            }
+            if (writingPose) {
+              return writingPose.scale;
             }
             return (
               collapsedScale *
@@ -523,25 +551,38 @@ export const CardStack = ({
 
           const rotate = isExpanded
             ? placement.rotate
-            : collapsedPos.rotate + jigRotate;
+            : (writingPose?.rotate ?? collapsedPos.rotate + jigRotate);
 
           const x = (() => {
             if (!showProjects) {
-              return collapsedPos.x - 12;
+              return (writingPose?.x ?? collapsedPos.x) - 12;
             }
-            return isExpanded ? placement.x : collapsedPos.x + jigX;
+            if (isExpanded) {
+              return placement.x;
+            }
+            return writingPose?.x ?? collapsedPos.x + jigX;
           })();
 
-          const y = isExpanded ? placement.y : collapsedPos.y + jigY;
+          const y = isExpanded
+            ? placement.y
+            : (writingPose?.y ?? collapsedPos.y + jigY);
           // Cards past the visible pair are unmounted while collapsed.
           // Without a collapsed start, the first expand paints them at the fan position.
-          const collapsedStackPose = {
-            opacity: 1,
-            rotate: collapsedPos.rotate,
-            scale: collapsedScale * Math.max(0.94, 1 - 2 * 0.02),
-            x: collapsedPos.x,
-            y: collapsedPos.y,
-          };
+          const collapsedStackPose = writingPose
+            ? {
+                opacity: 1,
+                rotate: writingPose.rotate,
+                scale: writingPose.scale,
+                x: writingPose.x,
+                y: writingPose.y,
+              }
+            : {
+                opacity: 1,
+                rotate: collapsedPos.rotate,
+                scale: collapsedScale * Math.max(0.94, 1 - 2 * 0.02),
+                x: collapsedPos.x,
+                y: collapsedPos.y,
+              };
 
           const content = (
             <RenderCard
@@ -592,7 +633,16 @@ export const CardStack = ({
                   >
                     <PaperCardProjection
                       inset={ARTICLE_CARD_PREVIEW_INSET}
+                      // Motion keeps the layout id from the first mount. The
+                      // tucked pair mounts while closed, so the id has to be
+                      // present immediately or their zoom never attaches.
+                      // Later cards mount already open. The dependency ignores
+                      // the hover gap.
+                      layoutDependency={
+                        index < COLLAPSED_VISIBLE_COUNT ? isExpanded : undefined
+                      }
                       layoutId={getDocumentLayoutId(stack.id, card.id)}
+                      shadow={isExpanded ? "lifted" : "soft"}
                       size={ARTICLE_CARD_SIZE}
                     >
                       {content}
