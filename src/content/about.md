@@ -11,7 +11,7 @@ Until I read about [Prototyping a Smoother Map](https://medium.com/google-design
 ## What is design engineering to me?
 
 
-> To me, it is about making designs happen and delivering experiences in their best form.
+To me, it is about making designs happen and delivering experiences in their best form.
 
 First, it's sad to see great designs being left on the shelf due to technical uncertainty or lack of buy-ins. And it eventually drains designers.
 
@@ -19,7 +19,7 @@ Second, it's sad to see designs not implemented well, making good products turni
 
 Third, it's sometimes better and faster to design in code. I jump between code and figma very often based on the needs. I code to get prototypes for people to try and ship things. I Figma to explore open-ended problems, and when creativity is needed.
 
-After all, I am still a designer. Engineering is my tool to design. Just like chefs picks the right knives based on the ingredients. I also write about design and engineering.
+After all, I am still a designer. Coding is a tool to design. Just like chefs picks the right knives based on the ingredients.
 
 ## Good software should be beautiful
 
