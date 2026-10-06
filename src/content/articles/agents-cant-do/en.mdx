@@ -1,0 +1,39 @@
+On two teams, I've worked with agents every day to design and build UI on top of a design system. Both design systems are mature, with components, tokens, docs and real adoption. At first I assumed that with all of that in place, agents would make decent UI.
+
+They didn't. On one team, the details and visual quality were nowhere near our bar, and the agent couldn't tell messing around from exploration or innovation. On the other, the product's context was too big for it to handle. It either ignored the context, got pulled off course by a few local examples instead of the overall direction, or copied legacy patterns instead of the parts worth copying.
+
+The designers I know feel conflicted too. Many feel that AI doesn't help them much, and at the same time worry it will replace them. Agents can now produce UI that meets functional requirements, which is the most visible part of design work. Some people find that exciting, others find it worrying. This mix of feelings is pretty much the consensus now.
+
+## Jagged frontier
+
+The jagged frontier is a widely shared idea in conversations about AI. AI does very well on some tasks and makes things worse on others that look about as hard, so the edge of what it can do is jagged. Designers feel conflicted because that edge cuts right through their job.
+
+In design, the edge roughly follows how verifiable the work is. Jason Wei's [verifier's rule](https://www.jasonwei.net/blog/asymmetry-of-verification-and-verifiers-law) says the easier a task is to verify, the easier it is to train AI to do it. Removing backgrounds, renaming layers, rewriting copy and generating images all produce results you can judge at a glance. Background removal is the easiest to verify, and AI does it best. Whether a generated image is good is harder to judge, and the results are weaker. Whether a design is good is much harder to verify still. I wrote about this in [Verification asymmetry](/writing/en/verification-asymmetry), an article inspired by that idea, and it's where AI struggles most.
+
+## Four ways agents fail
+
+From what my teams and I have seen, each way an agent fails maps to something designers do every day, work that's less visible to others than a Figma screen.
+
+The first is details that fall short. What the agent makes mostly works, but the spacing, hierarchy, states and motion don't hold up to a close look. Part of a designer's job is applying those standards well, and knowing the gap between something that works and something with quality. Constraints don't fix this. With too many, as in generative UI, the agent can't adapt the UI to different needs. With too few, which is where most teams are, it can't tell which rule to use when.
+
+The second is not telling messing around from innovation. Every exception to a design system rule is either a mistake or deliberate exploration, and the difference is whether there's a question behind it. Some people say: just have the AI make ten versions. But ten versions without intent are ten times the mess, and someone still has to judge each one. Designers explore differently. Each version tests a guess, and what you learn keeps changing the next one.
+
+The third is drowning in context. A large product has a huge number of screens and component usages. A few are good examples. Many more are noise, like misused components and legacy that should have been unshipped long ago. The agent can't tell them apart, so it grabs the few examples nearest at hand and treats them as the whole picture. A designer knows where the product is heading, which examples to learn from, and which to stop copying.
+
+The fourth is starting from zero every time. The agent doesn't remember why something changed last time, or what discussion sits behind a design that looks odd. Even a single screen often carries a huge amount of context, spread across several designers' heads, months of Figma history, Slack threads and DMs, tickets and a string of PRs. A designer won't remember all of it, but at least they don't start from zero.
+
+So agents still lack a few things good designers have: standards, intent, a sense of the whole, and memory.
+
+## The industry is already dividing the work
+
+The job market is already reacting. Lenny's Newsletter's [early-2026 job market report](https://www.lennysnewsletter.com/p/state-of-the-product-job-market-in-ee9) shows that since early 2023, PM and engineering roles have grown while design roles stayed flat. More of the design roles I see ask designers to prototype directly in code. On the fast-paced teams I've seen, a designer's workflow is basically Define → Prototype → Test → Polish → Ship, whether the last step means handing off to engineering or shipping straight to users.
+
+My guess is that producing functionally adequate UI got cheap. What AI makes is good enough in many cases, and PMs and engineers can use it too, so the part of the work that only designers used to do, especially junior designers, is shrinking. What's growing is the four things above, plus the ability to turn an idea into something usable with AI and put it in front of people quickly. On the best teams I've been on, designers already work this way: prototype in code with AI, use taste to polish and elevate, verify, and repeat.
+
+## The last peak
+
+If agents ever get good at these four things, it will probably be because someone built a good design eval, a way to score design automatically. AI could then be trained and optimized against it, and designers' workflows and ways of thinking would change as much as software engineers' have.
+
+But a design eval runs into nearly every hard part. Jason Wei lists a few conditions that make a task easy to verify: an agreed answer, fast verification, verification at scale, and a clean signal. Design fails almost all of them. There's no agreed answer for good and bad, the real experience takes a long time of use to show, it takes many real people, and the data is tangled with other factors. What we can check automatically today is mostly whether the design system was used correctly (possible in theory, very hard in practice), whether contrast is high enough, and whether accessibility guidelines are applied. None of that reaches the core of verifying a user experience.
+
+So evals are the biggest unknown in bringing AI into design, and what you call them depends on where you stand. For teams building AI design capabilities, a design eval is the highest peak, with no route found yet. For designers pushing AI adoption, it's the last obstacle. For designers worried about being replaced, it's their only insurance.
