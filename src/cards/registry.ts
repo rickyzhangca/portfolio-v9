@@ -48,6 +48,7 @@ export interface ArticleCardContent {
 
 export interface FolderCoverCardContent {
   count: number;
+  image?: string;
   label: string;
 }
 
