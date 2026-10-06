@@ -6,16 +6,16 @@ export const STACK_OFFSET_PX = 6;
 export const EXPAND_MAX_PER_ROW = 3;
 export const COLLAPSED_VISIBLE_COUNT = 2;
 export const FUN_STACK_LAYOUT = {
-  contentWidth: 680,
   contentGap: 24,
+  contentWidth: 680,
   estimatedCardHeight: 120,
   verticalGap: 16,
 } as const;
 export const SWAG_LAYOUT = {
   columns: 6,
-  itemSize: 180,
-  imageHeight: 120,
   expandedScale: 1.05,
+  imageHeight: 120,
+  itemSize: 180,
 } as const;
 
 export const getFanTransform = (
@@ -25,8 +25,8 @@ export const getFanTransform = (
 ) => {
   const column = index % columns;
   return {
-    rotate: (column + 1) * config.rotateStepDeg,
     arcY: (column + 1) ** 2 * config.arcStepPx,
+    rotate: (column + 1) * config.rotateStepDeg,
   };
 };
 
@@ -37,6 +37,7 @@ export const getSwagPosition = (
 ) => {
   const fan = getFanTransform(index, config, SWAG_LAYOUT.columns);
   return {
+    rotate: fan.rotate,
     x:
       coverWidth +
       config.expandGapPx +
@@ -46,7 +47,6 @@ export const getSwagPosition = (
       Math.floor(index / SWAG_LAYOUT.columns) *
         (SWAG_LAYOUT.itemSize + config.expandRowGapPx) +
       fan.arcY,
-    rotate: fan.rotate,
   };
 };
 
@@ -54,6 +54,40 @@ export const COLLAPSED_POSITIONS = [
   { rotate: 5, x: 18, y: 24 },
   { rotate: 0, x: 32, y: 72 },
 ];
+
+/** Resting offset between writing cards tucked behind the folder. */
+export const WRITING_COLLAPSED_GAP_PX = 8;
+/** Hover opens the same stack a little, without changing its alignment. */
+export const WRITING_COLLAPSED_HOVER_GAP_PX = 12;
+/** Keeps each tucked card slightly shorter than the folder. */
+const WRITING_COLLAPSED_INSET_PX = 8;
+/** Pulls the tucked stack slightly further under the folder. */
+const WRITING_COLLAPSED_SHIFT_X_PX = 4;
+
+export function getWritingCollapsedPose(
+  index: number,
+  cover: { height: number; width: number },
+  card: { height: number; width: number },
+  gapPx: number
+) {
+  const scale = Math.min(
+    1,
+    (cover.height - WRITING_COLLAPSED_INSET_PX * 2) / card.height,
+    (cover.width - WRITING_COLLAPSED_INSET_PX * 2) / card.width
+  );
+  const visualWidth = card.width * scale;
+  const visualHeight = card.height * scale;
+  return {
+    rotate: 0,
+    scale,
+    x:
+      cover.width -
+      visualWidth +
+      gapPx * (index + 1) -
+      WRITING_COLLAPSED_SHIFT_X_PX,
+    y: (cover.height - visualHeight) / 2,
+  };
+}
 
 export function getStackPage(stack: CanvasStackItem, requestedPage = 0) {
   const pageSize =

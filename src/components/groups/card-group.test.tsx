@@ -258,6 +258,22 @@ describe("Writing folder rendering", () => {
       Number(sibling?.style.zIndex)
     );
   });
+  it("stacks collapsed previews flat, slightly inside the folder, 8px apart", async () => {
+    const { container } = render(<CardStack {...props} isExpanded={false} />);
+    const cardAt = (index: number) =>
+      container.querySelector<HTMLElement>(
+        `[data-repulsion-card-id="article-${index}"] > div`
+      );
+    await waitFor(() => {
+      expect(cardAt(0)?.style.transform).toContain("translateX(28px)");
+      expect(cardAt(0)?.style.transform).toContain("scale(0.9)");
+    });
+    expect(cardAt(1)?.style.transform).toContain("translateX(36px)");
+    expect(cardAt(0)?.style.transform).toContain("translateY(8px)");
+    expect(cardAt(1)?.style.transform).toContain("translateY(8px)");
+    expect(cardAt(0)?.style.transform).not.toContain("rotate(");
+    expect(cardAt(1)?.style.transform).not.toContain("rotate(");
+  });
   it("mounts only two inert previews while 1000 articles are collapsed", () => {
     const { container } = render(<CardStack {...props} isExpanded={false} />);
     const links = container.querySelectorAll('a[id^="article-"]');

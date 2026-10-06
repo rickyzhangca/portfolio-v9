@@ -71,6 +71,17 @@ describe("paper card projection", () => {
     expect(surface?.className).toContain(
       "group-hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
     );
+    render(
+      <PaperCardProjection {...props} shadow="soft">
+        <p>Tucked preview</p>
+      </PaperCardProjection>
+    );
+    expect(
+      screen
+        .getByText("Tucked preview")
+        .closest("[data-paper-frame]")
+        ?.querySelector("[data-paper-surface]")?.className
+    ).toContain("drop-shadow-[0_6px_10px_rgba(0,0,0,0.06)]");
     expect(content?.classList.contains("pointer-events-none")).toBe(true);
     expect(surface?.style).toMatchObject({ height: "360px", width: "240px" });
     expect(content?.style).toMatchObject({
