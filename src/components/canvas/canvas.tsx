@@ -173,6 +173,11 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                         ? repulsion.cards
                         : undefined
                     }
+                    documentOpen={
+                      activeDocument?.itemId === item.id &&
+                      item.kind === "single" &&
+                      activeDocument.cardId === item.card.id
+                    }
                     dragDisabled={
                       state.expandedStackId !== null ||
                       interaction.isLocked ||
