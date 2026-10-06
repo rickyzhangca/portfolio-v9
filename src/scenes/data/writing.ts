@@ -1,10 +1,15 @@
+import thoughtsCover from "@/assets/covers/thoughts.webp";
 import { ARTICLE_CARD_SIZE } from "@/cards/article/article-card";
 import { articles } from "@/lib/articles/catalogue";
 import type { CanvasStackItem } from "@/types/canvas";
 
 export const writingStack: CanvasStackItem = {
   cover: {
-    content: { count: articles.length, label: "Thoughts" },
+    content: {
+      count: articles.length,
+      image: thoughtsCover,
+      label: "Thoughts",
+    },
     id: "writing-cover",
     kind: "folder-cover",
     size: { height: 340, width: 240 },
