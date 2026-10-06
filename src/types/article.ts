@@ -1,5 +1,5 @@
 import type { MDXProps } from "mdx/types";
-import type { ComponentType, ReactNode } from "react";
+import type { ComponentType } from "react";
 
 export type ArticleLocale = "en" | "cn";
 
@@ -58,7 +58,6 @@ export interface ArticleMetadata {
 }
 
 export interface ArticleModule {
-  credit?: ReactNode;
   default: ComponentType<MDXProps>;
 }
 

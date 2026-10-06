@@ -1,196 +1,69 @@
-For a long time, digital product teams have treated a particular workflow as "best practice": maintaining two highly detailed, mirror-image versions of the product as parallel sources of truth — one in Figma and one in code. But as designs become increasingly over-engineered (and expensive to maintain), and as AI expands what's possible in software development, this dual-truth model is frustrating designers and slowing teams down.
+Since 2024, I haven't seen a single Figma file that stayed up to date as a full replica of a product's UI. The only thing still carefully maintained is the design system. Every other design file gets opened when someone needs it and set aside when they're done.
 
-There's a way out of this tension. It's called **Ephemeral Design**. Design files return to what they fundamentally are: drafts and communication artifacts. The design system remains the only durable asset, while designers and engineers collaborate directly in a code-centered environment.
+At first I thought teams were just being lazy. Then I noticed almost every team works this way, and the ones that do haven't gotten worse. Many of them move faster. I started to think the design process was finding a better shape on its own.
 
-## The problem of two truths
+I call this Ephemeral Design. Design files go back to being drafts and communication tools, the design system is the only asset worth maintaining long term, and designers and engineers work together around the code.
 
-### Design was never meant to be the truth
+## Two sources of truth
 
-The principle of a single source of truth says that any piece of information should be owned and edited in only one place so the system stays consistent. But for years, digital product development has violated this principle by creating a dual-truth architecture:
+For a long time, teams treated it as best practice to maintain two high-fidelity versions of the product: one in Figma and one in code. Figma held the intent, what the product should look like. Code held the implementation, what the product actually looks like and how it works.
 
-* Truth of intent — lives in design tools like Figma and represents what the product *is supposed to* look like.
-* Truth of implementation — lives in code repositories like GitHub and represents what the product *actually* looks like and *how it works*.
+That made sense when code was expensive. Changing code was slow and costly, so you simulated everything in cheap design files before writing any. But the simulations kept getting more detailed. Designers started drawing every state, every response and every logic branch at pixel level, which amounts to building a parallel universe next to the code.
 
-This split made sense when engineering was expensive. Changing code used to be slow and costly, so teams simulated and validated everything in a cheaper design environment first. But over time, that structure became a burden. When designers model every state, every response, and every logic branch at pixel-level fidelity, they're essentially building a parallel universe.
+However high its fidelity, a design file is still a simulator. It has no real network latency, no messy real data, no browser rendering and no screen reader feedback. Users interact with the code, and only the code contains every detail of the system.
 
-And design files are, by nature, a flawed source of truth. No matter how polished they look, they're still a simulator. They don't account for network latency, data complexity, browser rendering behavior, or accessibility tooling. Code is what users actually interact with. It's the only artifact that contains the full reality of the system.
+Keeping that parallel universe running is expensive. The most common cost is designers going back after a feature ships to update Figma so it matches the implementation. That work creates no value for users. Its only purpose is to make the design file still look like the truth.
 
-### The cost of keeping things aligned
+High-fidelity mockups also hide implementation complexity. An input that looks simple in Figma may involve backend validation, error states and compatibility with legacy systems. A polished static mockup also suggests that every decision has already been made, so engineers hold back technical objections early, then have to raise them later, and the process gets messy. Both sides spend their time explaining details like "this shadow can't be rendered on Android" or "this data isn't available when the list first loads."
 
-A recurring pain point across teams is the cost of forcing design files to mirror the real product. That cost shows up as communication overhead and alignment overhead, and it doesn't grow linearly — it grows exponentially as products get more complex.
+Drift is unavoidable too. Shopify's Polaris team spent a year pushing design system coverage in their admin to 86.6%. Later, when they shipped a product-wide visual update, about 86% of the admin changed automatically once they updated Polaris. The hard part was the remaining 14% of code that had drifted off Polaris ([source](https://medium.com/shopify-ux/uplifting-shopify-polaris-7c54fc6564d9)). If a design system in the same codebase drifts that much, a separate replica in Figma has no chance of keeping up.
 
-In traditional product development, designers often go back after a feature is already built and update the Figma file to match the final implementation. That's busywork dressed up as documentation. It creates no user value. Its only purpose is to preserve the illusion that the design file is "the truth."
+Design and engineering often end up in something like a cold war. Designers add Dev Mode annotations, variables and tokens in Figma to get more control over the implementation. Engineers, under pressure to ship, ignore that complexity and build something that looks close enough in code. When a bug shows up, people first argue about whether the design file or the code is wrong, and the broken user experience comes second.
 
-#### Translation loss
+## Figma got heavy
 
-High-fidelity mockups often hide implementation complexity. A text input that looks simple in Figma may require backend validation, error handling, and compatibility work for legacy systems in code.
+The variables, modes and prototyping logic Figma has added in recent years were meant to close the gap between design and code. On many teams, the result was an over-engineered design system.
 
-When designers hand off a fully polished static mock, it creates the impression that all decisions have already been made. Engineers hold back technical objections early, only to raise them later when implementation constraints surface. That creates confusion and disruption midstream.
+Designers are now expected to think like software architects, keeping dependency trees in their heads and managing variable mappings across scenarios. Their attention moves from the user experience to system maintenance, and a lot of their time goes into fixing broken variable bindings and conflicting component properties. They end up working like Figma admins.
 
-Designers build a perfect utopia in a vacuum. Engineers wrestle with reality under constraints. Teams burn communication bandwidth on details like, "This shadow can't be rendered that way on Android," or "This data isn't available when the list first loads."
+This logic is also fragile. When you refactor code, the IDE, linting and tests have your back. In Figma, renaming a low-level variable can silently break hundreds of component connections across every team, with no error at all, until someone opens a file and finds the damage. Rolling back is much harder than in version-controlled code. So designers get more and more careful, and sometimes skip meaningful exploration just to avoid breaking the system.
 
-#### Drift is inevitable
+If all this configuration turned straight into code, or clearly made the whole team faster, it might be worth it. But very few teams have built a pipeline that syncs Figma variables into code. The interactions, hover states and responsive breakpoints designers set up in Figma are mostly ignored at handoff. Engineers look at the final visuals and rebuild them their own way. A "smart" component a designer spent hours building loses all its internal logic at handoff. It becomes zombie logic: carefully built and never used.
 
-Even top-tier teams with mature design systems can't fully prevent design-code drift. One internal audit at Shopify found that even with a robust design system, 14% of implementations in a highly standardized admin interface had drifted from the system within a year.
+## Code got cheap
 
-That drift doesn't happen because engineers are careless. It happens because code is dynamic and environment-dependent, while design files are static and controlled. As long as design and code live separately, drift is inevitable; synchronization is only temporary.
+Meanwhile, AI is changing the cost structure of building products.
 
-### Where the industry is now
+The old logic was that code is expensive and pixels are cheap, so you validate ideas thoroughly in mockups before writing expensive code. Componentization had already made code cheaper, and AI pushed it much further. A description or a rough sketch can become usable prototype code in minutes, and assembling a common screen from existing design system components takes almost no time. A prototype that used to take days now takes hours, sometimes less time than building a high-fidelity mockup in Figma with auto layout and variables. At that point, high-fidelity simulation in Figma is hard to justify.
 
-On most teams, the collaboration model has started to resemble a quiet cold war between design and engineering.
+Designers don't need to become programmers to benefit. With tools like Cursor, they describe the change they want, AI writes the code, and they open a PR. Adjusting spacing, tweaking an animation or fixing a visual bug no longer means filing a ticket and waiting. Designers on many great teams already work this way.
 
-Designers try to exert more control over implementation by introducing increasingly complex tooling in Figma — dev mode, variables, tokens. Engineers, under pressure to ship, often ignore that complexity and build something close enough in code.
+Handoff is fading too, especially on small, fast-moving teams. Engineers join during the design phase and use AI to build working prototypes quickly. Designers don't wait until development is done to do QA. They work in the development environment and take over a lot of the fine-tuning that used to belong to engineers. Design and development stop being upstream and downstream and happen at the same time, and you hear "the design can't be built" or "engineering got ahead of design" much less often.
 
-This doesn't just increase friction — it blurs the definition of what the product actually is. When a bug appears, teams end up debating whether "the design file is wrong" or "the code is wrong," instead of focusing on the only thing that matters: the user experience is broken.
+## Ephemeral Design
 
----
+Put all of this together and you get what I described at the start. Designers maintain very few design files and a lean but accurate design system. Feature design happens in draft files that get set aside once they've done their job. Ephemeral means design files are process tools, not long-term assets.
 
-## How Figma became a trap
+There are three principles.
 
-### The over-engineering of design systems
+First, Figma is a whiteboard. In Figma, the focus is on exploring widely and working through the logic, using rough drafts to try several directions fast. Rough here means skipping the tedious work of building and maintaining structure. Visually, these drafts are often still polished.
 
-Figma's newer capabilities — tokens, variables, modes — have made component systems more complex and increased overhead across the design industry. This has become a recurring theme in industry conversations since 2024.
+Second, archive after launch. Once a feature moves into development, its design file is no longer worth maintaining. Archive it as a historical record. When the feature needs to change later, start from the live product, which is the code, instead of a mockup from months ago.
 
-Figma introduced these capabilities with good intention: to close the gap between design and code, to make design files feel more like software systems. In practice, though, this often leads to over-engineering.
+Third, a lightweight design system is the only asset worth maintaining long term. The only thing in Figma worth keeping up is a lean component library tightly aligned with code, so designers can assemble ideas quickly. Its real source lives in code, which is also why 86% of Shopify's admin could update automatically.
 
-#### Cognitive load has shifted to designers
+This approach doesn't suit every team. Right now it works best for teams that are strong on product logic, move fast and have a high bar for talent. Where visual expression is the product itself, like marketing sites, landing pages and brand experiences, fully letting go of traditional design files needs more experimentation.
 
-Designers are now expected to think more like software architects. Building and maintaining a deeply layered system requires strong abstraction skills. Designers have to mentally model dependency trees and manage variable mappings across multiple scenarios.
+## Getting started
 
-The result is that attention shifts away from user experience and toward system maintenance. Designers don't design as much anymore. They become Figma admins — spending time debugging broken variable bindings and conflicting component properties instead of improving user flows or shaping product vision.
+The teams that made this transition smoothly mostly did a few things.
 
-#### Fragile logic, weak tooling
+First, they redefined what a draft is. They made it clear to stakeholders that Figma files are drafts and concept validation, not final contracts. At the end of each sprint, they marked the related design files as archived and stopped maintaining them. In decisions, they gave more weight to designers with taste and technical skills, and moved the team toward judging by results.
 
-Worse, the logic structures inside Figma are fragile.
+Next, they put the design system on a diet. If a component or piece of logic doesn't exist in code, it shouldn't exist in Figma, and the components, tokens and variants in Figma stay consistent with code.
 
-In a codebase, refactors are supported by IDEs, linting, and tests. In Figma, renaming a low-level variable can silently break hundreds of component connections across teams with no automated warnings. You don't discover the damage until you open the file and realize everything is broken. Rolling back is far messier than it would be in a version-controlled code environment.
+Then they made designers comfortable in the code environment. They encouraged AI coding tools like Cursor, and treated touching code as neither overstepping nor an extra burden, just another tool in the toolbox. They also improved the developer experience so anyone could easily pull the code, run Storybook, open a PR and spin up a staging environment for testing.
 
-This fragility makes designers overly cautious. Some avoid meaningful exploration because they're afraid of breaking the system. The tool that was supposed to amplify their capabilities becomes a constraint.
+Finally, they made code previews the new shared language. They used preview links from real code instead of, or alongside, Figma prototypes, so everyone got used to making decisions based on the real experience.
 
-### The ROI breakdown
-
-If all of this complexity in Figma translated directly into code or dramatically improved team-wide productivity, it might be worth the investment. But it usually doesn't.
-
-Very few organizations have a real automation pipeline that syncs Figma variables directly into the codebase, let alone anything more advanced.
-
-So in practice, designers spend hours configuring interactions, hover states, responsive breakpoints, and other details in Figma, only for developers to ignore most of it during implementation. Engineers look at the final visual and rebuild the UI from scratch to something they consider good enough.
-
-That creates massive waste on both sides. A designer spends 10 hours building an "intelligent" component in Figma, and all that internal logic dies at handoff. Zombie logic: painstakingly built, never used.
-
-This happens everywhere. One team had over 300 components in their Figma library with carefully configured variants, responsive behaviors, and interaction states. The codebase had about 120 components. Nobody could account for the gap, and nobody was using the Figma-only ones.
-
-The work required to maintain perfect replicas inside Figma just creates frustration and drains motivation over time. This is part of why so many designers are burning out or leaving the industry.
-
-### Economic and psychological pressure
-
-Beyond workflow friction, economics are pushing this shift too. Pricing changes in tools like Figma have triggered widespread frustration.
-
-For a lot of teams, the cost of full-feature seats is getting harder to justify in terms of ROI. That forces a hard question: do we really need to maintain a large, complex "truth" in Figma where only designers live?
-
-If the code repository — which the team already pays for and depends on — is the final source of truth, why are we investing so much budget and time in maintaining another one?
-
-Psychologically, designers are hitting tool fatigue. Constant feature changes, plus the expectation that they now need to understand and design pseudo-programmatic logic, is leading to burnout. A lot of designers feel powerless to meaningfully improve the real product experience, and over time, they just check out.
-
-The industry needs to get back to the two fundamentals of design: problem-solving and crafting.
-
----
-
-## Rebuilding collaboration in the AI era
-
-### The cost of code is falling fast
-
-AI is increasing engineering output fast, and it's changing the cost structure of product development.
-
-In traditional software economics, code was expensive and pixels were cheap. So teams tried to validate ideas thoroughly in cheap pixels (design mocks) before writing expensive code.
-
-But modern software engineering already lowered the cost of code through componentization, and now AI is pushing that even further by enabling teams to:
-
-* Generate working prototype code in minutes from natural-language prompts or rough sketches.
-* Instantly assemble common screens using an existing component library or design system.
-
-When a prototype that used to take three days can now be built in three hours — or even faster than creating a high-fidelity Figma mock with layers, auto layout, and variable setup — the economic case for high-fidelity simulation in Figma starts to collapse.
-
-### Vibe coding
-
-In this model, creators don't need to write every line of code manually. They describe functionality and interaction behavior in natural language, and AI handles the implementation.
-
-This approach still has limits. It won't replace full product development or solve every complex problem. But for designers, it's a big deal: they can make simple changes directly, inspect the real product state, and experiment in a live environment, without needing to become traditional programmers or spending excessive time coordinating with engineering.
-
-Some designers are already using tools like Cursor to adjust spacing, tweak animations, and fix visual bugs without filing a ticket. They describe the change they want, the AI writes the code, and they submit a PR. It's not theoretical — it's happening.
-
-### No handoff
-
-As AI accelerates software cycles and shortens development loops, the traditional design handoff process is starting to disappear. In its place, we're seeing tighter, more collaborative workflows between design and engineering, especially in fast-moving startups and small teams.
-
-In this model, design and development are no longer sequential upstream/downstream phases. They become parallel co-creation:
-
-* Engineers join during the design phase and use AI to rapidly build functional prototypes.
-* Designers no longer wait until implementation is "done" to do QA. They make refinements directly in the development environment, often taking over fine-tuning work that used to sit with engineers.
-
-This eliminates alignment overhead and ensures product decisions are validated in a real code environment early, avoiding the "the design can't be implemented" or "engineering shipped something before design caught up" situations.
-
----
-
-## A new paradigm: Ephemeral Design
-
-All of this points in the same direction.
-
-Designers maintain very few design files and a lean but accurate design system. Actual feature design happens through disposable draft files that support fast iteration. This is **Ephemeral Design**.
-
-"Ephemeral" means design files are no longer permanent assets. They're process tools, not long-term records of truth.
-
-The core principles:
-
-* **Figma as a whiteboard**: The priority in Figma is divergent thinking and clarifying logic. Teams use rough design drafts to explore multiple directions quickly. ("Rough" doesn't necessarily mean low-fidelity wireframes — it means bypassing the tedious work of setting everything up. Visually, these drafts may still look polished.)
-* **Archive after launch**: Once a feature moves into development, the related design file loses maintenance value. Archive it as historical context. If the feature needs updating later, reference the live product (the code), not a months-old mockup.
-* **A lightweight design system is the only durable asset**: The only thing in Figma worth maintaining long-term is a lean component system that stays tightly aligned with code, so designers can assemble ideas quickly.
-
----
-
-## How to put this into practice
-
-### Define the boundaries clearly
-
-Before rolling out a no-handoff workflow, teams need to be honest about where Ephemeral Design works best.
-
-Right now, it's most effective for teams that are strong in product logic, move quickly, and have a high bar for talent. In contexts where visual expression *is* the product — marketing sites, landing pages, brand-heavy experiences — fully abandoning traditional design deliverables requires more experimentation.
-
-### Concrete steps
-
-Teams leading this transition are typically adopting the following changes:
-
-**1) Reshape the culture: redefine what a "draft" is**
-
-* Make it explicit to stakeholders that Figma files are drafts and concept-validation tools, not final contracts.
-* Create an archive workflow: at the end of each sprint, mark related design files as archived and stop maintaining them.
-* Give more influence to designers with good taste and technical skills. Move the team toward outcome-driven decision-making.
-
-**2) Put the design system on a diet**
-
-* If a component or behavior doesn't exist in code, it shouldn't exist in Figma.
-* Components, tokens, and variants in Figma must stay synced to what exists in code.
-
-**3) Encourage designers to embrace AI and the code environment**
-
-* Encourage designers to use tools like Cursor or other AI coding tools.
-* Don't frame touching code as crossing a line or taking on extra responsibility. It's just another tool — use it when it helps.
-* Improve developer experience so anyone involved can easily pull code, run Storybook, submit PRs, and spin up staging environments for testing.
-
-**4) Make code previews the new shared language**
-
-* Encourage teams to use preview links from real code, either instead of or alongside Figma prototypes.
-* Help everyone get comfortable reviewing and making decisions based on the real product experience.
-
----
-
-### Back to first principles
-
-The shift toward Ephemeral Design is more than a workflow change. It's a correction — one that reflects how modern product work actually happens.
-
-The essence of design has always been planning and problem-solving, not producing polished specification documents that nobody maintains.
-
-Maintaining high-fidelity mocks used to be a necessary way to reduce engineering risk. But as software engineering got faster and cheaper, and as the design complexity in Figma went up, the marginal value of the old process fell close to zero. In a lot of cases, it's gone negative.
-
-Letting go of design as a source of truth isn't a loss. It means designers stop spending their weeks on pseudo-design work — updating files after the fact, debugging variable bindings, maintaining components that only exist in Figma — and start spending that time on the things that actually matter. Understanding users. Shaping product direction. Making hard calls about what to build and what to cut.
-
-That's what design was always supposed to be.
+Design has always been about planning and solving problems. Maintaining full sets of high-fidelity mockups used to be a necessary way to reduce engineering risk. Now that code is fast and cheap, and Figma keeps getting more complex, the marginal value of that process is close to zero, and often negative. Once designers let go of the idea that the design file is the truth, they can give their time back to what matters: understanding users, and deciding what to build and what to cut.

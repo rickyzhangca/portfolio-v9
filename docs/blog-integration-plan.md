@@ -68,9 +68,6 @@ src/content/articles/
     cn.mdx
     assets/
       0.svg ... 9.svg
-      jerry-wang.webp
-      ryan-yao.webp
-      anthony-ung.webp
   ephemeral-design/
     meta.json
     en.mdx
@@ -84,7 +81,7 @@ src/types/article.ts
 src/lib/articles/                 # 纯查询、locale、path 等函数
 src/cards/article/article-card.tsx
 src/cards/folder-cover/folder-cover-card.tsx
-src/components/articles/          # Reader、Sheet、Image、Credits、排版组件
+src/components/articles/          # Reader、Sheet、Image、排版组件
 src/components/documents/         # 共享文档阅读外壳
 src/scenes/data/writing.ts
 ```
@@ -100,11 +97,11 @@ src/scenes/data/writing.ts
 
 扫描器校验 JSON 形状、slug、真实日期、标题/简介、正文与语言的一致性、重复身份和本地资源引用。错误指出文件和字段，并使构建失败，避免沿用原 blog 静默跳过无效文章的行为。未来若支持 draft，必须在生成客户端 imports、预渲染、目录和 sitemap 前排除草稿，不能只在 UI 过滤。
 
-MDX 使用 `@mdx-js/rollup` 在构建时编译，配置 `remark-gfm`。把排版组件通过 MDX 的 `components` 参数传入，按需使用命名导出的 credit；不需要在浏览器加载 MDX 编译器，也不必为了这一用途引入 MDXProvider。MDX/Vite 的官方集成支持此编译方式。[MDX 文档](https://mdxjs.com/docs/getting-started/#vite)
+MDX 使用 `@mdx-js/rollup` 在构建时编译，配置 `remark-gfm`。把排版组件通过 MDX 的 `components` 参数传入；不需要在浏览器加载 MDX 编译器，也不必为了这一用途引入 MDXProvider。MDX/Vite 的官方集成支持此编译方式。[MDX 文档](https://mdxjs.com/docs/getting-started/#vite)
 
 Vite 的 glob imports 默认支持动态加载。直接做小规模实现时，metadata 可以 eager，正文必须 lazy；长期实现由同一个扫描器生成经过验证的 manifest，解决 metadata、正文、预渲染路径不一致的问题。[Vite 文档](https://vite.dev/guide/features.html#glob-import)
 
-资源建议与文章同目录，通过静态 imports 交给 Vite，得到有内容 hash 的文件名。迁移时改写原有 `/verification-asymmetry/...` 路径。Image 改为共享 ArticleImage，保留 width/height、alt、lazy loading 和 async decoding；credit 的重复头像 UI 改为共享 ArticleCredits。
+资源建议与文章同目录，通过静态 imports 交给 Vite，得到有内容 hash 的文件名。迁移时改写原有 `/verification-asymmetry/...` 路径。Image 改为共享 ArticleImage，保留 width/height、alt、lazy loading 和 async decoding。
 
 ## Card 与文档交互的重构边界
 
@@ -172,7 +169,7 @@ hash assets 长期 immutable 缓存；HTML 与无 hash 的 metadata 使用重新
 
 ### 第一步：验证内容和路由底座
 
-迁入全部文章、资源和元信息；接入 MDX/GFM、内容校验与自动 manifest。验证一篇带 JSX/credit 的文章和一篇带 GFM 表格的文章在 Vite 8、React Compiler、Router 组合下能构建和渲染。建立静态文章路由与客户端 canvas 边界。工具和 scripts 变化同步更新 AGENTS.md。
+迁入全部文章、资源和元信息；接入 MDX/GFM、内容校验与自动 manifest。验证一篇带 JSX 的文章和一篇带 GFM 表格的文章在 Vite 8、React Compiler、Router 组合下能构建和渲染。建立静态文章路由与客户端 canvas 边界。工具和 scripts 变化同步更新 AGENTS.md。
 
 验收：6 个 URL 均生成正文 HTML；没有 window/document SSR 错误和 hydration 差异；错误内容使构建失败；直接访问文章不引用 canvas/项目资源；动态路径由 catalogue 自动枚举。
 
