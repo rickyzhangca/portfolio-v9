@@ -1,6 +1,6 @@
 # Writing integration
 
-Blog content from `rickyzhangca/blog` at `e6b19d844d9eb73e3caa0d6e15116489630061cd` now lives in this repository. The three essays and six translations retain their text, diagrams, reviewer credits and publication dates. Only framework imports and asset references changed; SVG attribute order was normalized by Biome.
+Blog content from `rickyzhangca/blog` at `e6b19d844d9eb73e3caa0d6e15116489630061cd` now lives in this repository. The three essays and six translations retain their text, diagrams and publication dates. Only framework imports and asset references changed; SVG attribute order was normalized by Biome.
 
 ## User experience
 
@@ -51,7 +51,7 @@ An introductory paragraph.
 <ArticleImage src={diagram} alt="Describe the diagram" width={1000} height={600} />
 ```
 
-Supply meaningful alt text and the image's original dimensions. Static imports produce hashed deployment URLs. An optional `export const credit = <... />` renders a credit footer. MDX is trusted repository source and is compiled during the build.
+Supply meaningful alt text and the image's original dimensions. Static imports produce hashed deployment URLs. MDX is trusted repository source and is compiled during the build.
 
 `pnpm dev` validates content before starting and watches additions, deletions and edits. `pnpm content:generate` regenerates the catalogue, loaders, share images and sitemap. Share images refresh on content generation/build rather than each dev edit. `pnpm build` validates and prerenders every published translation automatically. Never edit `src/content/generated` or generated public files.
 

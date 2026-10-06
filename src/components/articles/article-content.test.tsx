@@ -7,7 +7,6 @@ import { ArticleContent, loadArticle } from "./article-content";
 const loaders = vi.hoisted(() => ({
   cache: vi.fn(),
   failed: vi.fn(),
-  noCredit: vi.fn(),
   preloaded: vi.fn(),
   render: vi.fn(),
 }));
@@ -15,7 +14,6 @@ vi.mock("@/content/generated/loaders", () => ({
   articleLoaders: {
     cache: { en: loaders.cache },
     failed: { en: loaders.failed },
-    noCredit: { en: loaders.noCredit },
     preloaded: { en: loaders.preloaded },
     render: { en: loaders.render },
   },
@@ -33,9 +31,8 @@ describe("article module boundary", () => {
       "translation not found"
     );
   });
-  it("renders a compiled body and optional credits", async () => {
+  it("renders a compiled body", async () => {
     loaders.render.mockResolvedValue({
-      credit: <p>Reviewers</p>,
       default: () => <p>Rendered MDX</p>,
     });
     await act(async () => {
@@ -49,20 +46,6 @@ describe("article module boundary", () => {
       await loadArticle("render", "en");
     });
     expect(await screen.findByText("Rendered MDX")).toBeTruthy();
-    expect(screen.getByText("Reviewers")).toBeTruthy();
-  });
-  it("omits absent credits", async () => {
-    loaders.noCredit.mockResolvedValue({ default: () => <p>No credits</p> });
-    await act(async () => {
-      render(
-        <Suspense>
-          <ArticleContent locale="en" slug="noCredit" />
-        </Suspense>
-      );
-      await loadArticle("noCredit", "en");
-    });
-    await screen.findByText("No credits");
-    expect(document.querySelector("footer")).toBeNull();
   });
   it("renders a route-preloaded body immediately without a loading flash", async () => {
     loaders.preloaded.mockResolvedValue({

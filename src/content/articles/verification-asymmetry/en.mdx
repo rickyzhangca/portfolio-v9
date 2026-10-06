@@ -1,173 +1,49 @@
-import { ArticleImage as Image } from "@/components/articles/article-image";
-import { ArticleCredits } from "@/components/articles/article-credits";
-import diagram0 from "./assets/0.svg";
-import diagram1 from "./assets/1.svg";
-import diagram2 from "./assets/2.svg";
-import diagram3 from "./assets/3.svg";
-import diagram4 from "./assets/4.svg";
-import diagram5 from "./assets/5.svg";
-import diagram6 from "./assets/6.svg";
-import diagram7 from "./assets/7.svg";
-import diagram8 from "./assets/8.svg";
-import diagram9 from "./assets/9.svg";
+My first job was designing the UI for a few 3D printers. I shared every version and every iteration with the team. But there was no way to put those screens on the actual machines, so nobody could use them. People looked at static Figma screens, imagined the rest, and gave me some light feedback.
 
-export const credit = <ArticleCredits locale="en" />;
+Later, as engineers built the UI piece by piece, I started to see that some of my designs didn't work well for users, and others could have been better. I hadn't seen any of it coming while designing. Nobody could have told me, and I had no way to verify it myself. By then, redesigning was expensive. I could make the designs. I just couldn't tell if they were good, so it was hard to get better.
 
-## The Two-Axis Framework
+At the time I thought I just lacked experience. Then I started writing code myself, and noticed that software engineers rarely have this problem. A feature might take a week to build, but tests tell you in minutes whether it works, and you can run them whenever you want. With test-driven development, you even start with a clear target. So engineers keep improving their work, and themselves along the way.
 
-Picture this: you're in a design review, and someone asks, "let's do another round." The designer smiles and has no choice. Everyone has opinions, but no proof. This scenario plays out thousands of times daily across design teams worldwide, revealing a fundamental problem in how we approach design work.
+In software engineering, verifying is often easier than building. Design often works the other way: making something is easy compared to knowing whether it's good. I call this verification asymmetry.
 
-Why do some design decisions feel impossibly subjective while others seem straightforward? Why do many designers struggle through stakeholder meetings while engineers can remain largely async? It comes down to two axes: how hard something is to craft, and how hard it is to verify.
+Take two extremes. A login page is easy to make and easy to verify. People can either log in or they can't, and we know which analytics to watch to confirm it works. A landing page is hard on both counts. It takes real creativity, and whether it worked only shows in the data after a while, tangled with so many other factors that it's hard to attribute. Most design work sits somewhere in between, but leans the same way: verifying takes more effort and more time than making.
 
-<Image
-  alt="Verification asymmetry image - 0"
-  height={412}
-  src={diagram0}
-  width={734}
-/>
+## Why design reviews go in circles
 
-Consider a login page - it's easy to craft (established patterns exist) and easy to verify (users either can or cannot log in). Now consider a brand identity - it's hard to craft (requiring deep creative work) and even harder to verify (many stakeholders involved, success only somewhat correlates to long-term market performance, which itself suffers from infinite colliding factors).
+The most direct cost of this asymmetry is the design review. Reviews are slow, and they rarely produce good decisions.
 
-<Image
-  alt="Verification asymmetry image - 1"
-  height={412}
-  src={diagram1}
-  width={734}
-/>
+Everyone looks at static screens or a simple prototype and imagines what it would feel like to use. Each person imagines something different. Everyone can explain their reasoning, and nobody can prove they're right. The meeting runs long, people run out of energy, someone makes one more revision, and next week it starts again.
 
-This difference isn't just academic - it fundamentally shapes how designers work, what designers value.
+We usually blame this on design being subjective. I think subjectivity is fine. User experience is a subjective feeling, after all. The problem is that nobody has used the thing yet, so all those feelings are imagined.
 
-> Design's core challenge isn't craft - it's verification.
+When nobody has used it, the only thing left to verify a design with is the taste you built up beforehand. Taste is a prediction: someone experienced looks at a design and can roughly guess how it will feel to use. It comes from years of watching, using all kinds of products and working on projects, a bit like a model trained on a lot of examples.
 
-Tackling this verification asymmetry is why the emergence of design engineers, not AI, is the most important shift in design practice today.
+If you're lucky, someone on the team has good taste. Obviously that isn't always the case. And without anything better to go on, decisions tend to follow seniority.
 
-## Verification Asymmetry in Design vs. Engineering
+## Another way
 
-Difficulty in verification is undesirable.
+It doesn't have to be like this. Teams can build better workflows, and at Wealthsimple I saw something completely different.
 
-Take software engineering as an example. It has never been just about writing fancy code - it's also about verifying code quality. Continuous integration turns "it works on my machine" into "it works everywhere." Unit tests transform "I think this works" into "I can prove this works."
+While we designed and built, changes showed up live in the real Wealthsimple app on our own phones. We'd make a change and feel it right away. If you wanted a coworker to try it on their phone, you didn't even need a PR review. They scanned a QR code and they were in.
 
-<Image
-  alt="Verification asymmetry image - 2"
-  height={412}
-  src={diagram2}
-  width={734}
-/>
+Some problems show up the moment you hold the phone: how an animated gradient looks under indoor light and in sunlight, or whether a transition feels snappy. Others take days to surface, like an order flow with enough steps to feel tedious, until using it stops being enjoyable.
 
-However, design lacks verification infrastructure to remove the unwanted difficulty.
+So everyone dogfooded every day. We used many features for weeks or even months before rollout. After launch, we were all on Reddit reading what users said, and we enjoyed it, because it meant seeing people talk about what we'd made. Even the complaints were fun.
 
-When an engineer says a feature is complete, they can point to passing tests, performance benchmarks, and error-free deployments. When a designer says a design is complete, they often can only point to stakeholder approval. It is a far weaker form of verification, because it is not based on a tangible, interactive, working product that people have used.
+This kind of design infrastructure gave us a steady stream of real feedback to verify designs with, and that feedback was convincing. Seniority settled far fewer arguments. Discussions came back to the experience itself, there was less back-and-forth, and working together got a lot easier and more fun.
 
-<Image
-  alt="Verification asymmetry image - 3"
-  height={412}
-  src={diagram3}
-  width={734}
-/>
+What I noticed at Wealthsimple is that we never made design more objective. It stayed subjective, often very opinionated. The difference was that those opinions came from many people using the real thing over a long time. The more people used a design, and the longer they used it, the closer their opinions got to real verification. And every round of it trained our taste.
 
-This undesirable verification gap creates compound costs, blocking quality and efficiency:
+## Now
 
-- Delayed decisions: Without clear verification criteria, debates drag on
-- Opinion-based battles: Whoever argues loudest or has the most seniority wins
-- Fear of iteration: When you can't verify improvements, change becomes risky
-- Talent misallocation: Designers spend energy in meetings defending decisions rather than crafting
-- Design industry challenges: Seasoned designers produce compelling designs with taste (a trained instinct), but students and juniors struggle to justify and learn from decision decisions
+Software engineering verifies with tests, and the same tests verify everyone's code. That's a big reason the field is so lively and so welcoming to newcomers. Design has no tests. We've mostly relied on luck, hoping someone on the team has enough taste to make the call.
 
-## Mapping the Design Landscape
+Wealthsimple showed me one way to shrink the asymmetry: let taste and real use form a loop. Use taste to verify quickly along the way, then let real use give the final verdict. Real use trains taste, so next time you take fewer wrong turns. Good design teams have a culture of verification. They value it as part of the work, get designs running in the real product early, and get more people using them sooner and for longer. That's how taste builds up across a whole team and becomes its most valuable long-term asset.
 
-Let's map some common design work across our two axes:
+The flip side is that without real use as the final check, taste doesn't build up. Many new grads and junior designers, and even some mid-level designers with years behind them, have worked on projects and sat through plenty of meetings, yet rarely seen their designs verified. Taste takes a long time to build and can't be handed to someone else, so it stays rare.
 
-<Image
-  alt="Verification asymmetry image - 4"
-  height={412}
-  src={diagram4}
-  width={734}
-/>
+Shrinking verification asymmetry is what I most want to do as a design engineer: make verification faster and easier, keep decisions grounded in the user experience, and spend less time on unproductive debates.
 
-Traditionally, designers derive their value and mature from tackling problems with increasing difficulty in either one or both axis.
+We haven't found a way for agents to verify design yet. An agent can't be the designer with taste, because taste is still too fuzzy. It can't be the user either, because it can't give feedback that matches a real user's.
 
-Notice something crucial: most design work are hard to verify and suffers from undesired difficulty. This is why design always feels so subjective and why designers often struggle to ship fast, improve product quality, and drive impact.
-
-## Design Engineer Improves Verification
-
-Design engineers aren't just designers who code or developers who care about pixels. Their core value is improving verification practices with privileged information (software engineering knowledge). It makes design easier and faster. Here are some examples:
-
-- Real prototypes
-
-  Instead of designers only asking stakeholders "how does this new navigation feel to users?", design engineers work with designers to build it and get buy-ins. Teams can click through it. Employees can dogfood it.
-
-- Performance Budgets
-
-  That gorgeous animation might delight users - or it might bring bad user reviews due to lag on older devices. Together with other engineers, design engineers establish performance budgets that make these decisions explicit and back them.
-
-- Technical Feasibility Gates
-
-  "Can we build this? How to build this?" often comes too late. Design engineers surface technical constraints early, turning them into design opportunities rather than last-minute compromises.
-
-<Image
-  alt="Verification asymmetry image - 5"
-  height={412}
-  src={diagram5}
-  width={734}
-/>
-
-## AI Disrupted Design In Unexpected Way
-
-The most-used AI features by product designers - from layer renaming to background removal to rewriting to image gen - all target the craft axis. They make some craft easier but not verification - the hardest part of design.
-
-<Image
-  alt="Verification asymmetry image - 6"
-  height={412}
-  src={diagram6}
-  width={734}
-/>
-
-This aligns with the AI's nature. AI always excels at problems with clear verification criteria. AI is best at generating code that either passes tests or doesn't. Software engineering tasks has been made dramatically easier to verify over the past decades (with lint, tests, containerization, metrics, …) so AI spreads out so fast for them.
-
-It explains a paradox: designer AI tools all have their hype, yet nothing revolutionizes design the way many imagined, let alone "replace designers."
-
-The above creates an interesting dynamic: product designers attempting to leverage AI for typical design tasks find themselves no better equipped. AI doesn't spit out good UI and UX. Meanwhile, AI makes design engineers more powerful than ever by making code cheaper to produce, so they now better accelerate verification, making design easier and faster for their teams.
-
-> The most valuable and long-term impact of AI on the design industry is the rise of design engineers.
-
-<Image
-  alt="Verification asymmetry image - 7"
-  height={412}
-  src={diagram7}
-  width={734}
-/>
-
-Some people may ask "wait, how about v0/Lovable/Bolt"? Well, they are a good place to start with, a quick peek into design engineering.
-
-If you found yourself in love with them, you might be interested in design engineering! Though the biggest value gain only starts when you are equipped to solve harder verification and craft without those tools. So don't get addicted to cheap codes.
-
-Imagine, prototype 2 variations of layout animations for a complex, multi-step stock-order flow with a designer, in an existing front-end, ship internally, iterate based on the feedback from employees dogfooding.
-
-Design engineer is able to plug themselves into the existing large codebase, business context, and team workflow. They solve these harder verifications that v0 couldn't get in yet. Craft wise, it is also a huge challenge to finetune animation easings and timings - beyond what v0 could handle.
-
-<Image
-  alt="Verification asymmetry image - 8"
-  height={412}
-  src={diagram8}
-  width={734}
-/>
-
-Design engineering reframes the eternal "should designers code?" debate. It's on a very surface level. The actual question is:
-
-> How do we make design decisions more verifiable?
-
-In the past, sometimes the answer is code. Sometimes it's better research methods. Sometimes it's new metrics. Right now in 2025, more people are coming to the agreement that answer is code.
-
-## Future
-
-AI is not replacing designers any time soon, but it boosted the emergence of design engineers. Seasoned designers should start thinking about the 2 directions to advance in (optionally adding the leadership layer on top):
-
-- **Adventurer**, focus and conquer the truly hard crafts and verifications - the ones that require the very best human creativity, empathy, and vision
-- **Architect**, push the problems out from verification asymmetry, let other designers reach their full potential
-
-<Image
-  alt="Verification asymmetry image - 9"
-  height={412}
-  src={diagram9}
-  width={734}
-/>
+Looking back at my first job, the company had no shortage of printers. I just didn't realize I should first build something that let me send designs to the team quickly for everyday use, so I could learn and improve.
