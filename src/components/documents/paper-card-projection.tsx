@@ -1,13 +1,14 @@
-import { motion, useReducedMotion } from "framer-motion";
-import type { ReactNode } from "react";
 import { useCanvasSession } from "@/context/canvas-session";
 import { SPRING_PRESETS } from "@/lib/animation";
 import {
-  getDocumentContentLayoutId,
-  getDocumentLayoutId,
-  getPaperPreviewLayout,
-  type PaperSize,
+    getDocumentContentLayoutId,
+    getDocumentLayoutId,
+    getPaperPreviewLayout,
+    type PaperSize,
 } from "@/lib/document-motion";
+import { tw } from "@/lib/utils";
+import { motion, useReducedMotion } from "framer-motion";
+import type { ReactNode } from "react";
 
 interface PreviewFade {
   delay?: number;
@@ -31,8 +32,15 @@ interface PaperCardProjectionProps {
   children: ReactNode;
   inset: number;
   label?: string;
-  layoutId: string;
+  /**
+   * Motion reads this only when the dependency changes. Leave it stable
+   * across hover so a tucked card does not remeasure.
+   */
+  layoutDependency?: boolean;
+  layoutId?: string;
   open?: boolean;
+  /** Quieter shadow while a card is tucked in a closed folder. */
+  shadow?: "lifted" | "soft";
   size: PaperSize;
 }
 
@@ -40,8 +48,10 @@ export function PaperCardProjection({
   children,
   inset,
   label,
+  layoutDependency,
   layoutId,
   open = false,
+  shadow = "lifted",
   size,
 }: PaperCardProjectionProps) {
   const reducedMotion = useReducedMotion();
@@ -54,7 +64,8 @@ export function PaperCardProjection({
   const previewHeight = contentHeight / preview.scale;
   const isOpening =
     open ||
-    (articleOpen &&
+    (layoutId !== undefined &&
+      articleOpen &&
       articleSource !== null &&
       layoutId ===
         getDocumentLayoutId(articleSource.itemId, articleSource.cardId));
@@ -72,9 +83,15 @@ export function PaperCardProjection({
       style={{ height: size.height, width: size.width }}
     >
       <motion.div
-        className="pointer-events-none absolute inset-0 bg-white drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)] transition-[filter] group-hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
+        className={tw(
+          "pointer-events-none absolute inset-0 bg-white transition-[filter]",
+          shadow === "soft"
+            ? "drop-shadow-[0_6px_10px_rgba(0,0,0,0.06)]"
+            : "drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)] group-hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
+        )}
         data-paper-surface
-        layoutId={reducedMotion ? undefined : layoutId}
+        layoutDependency={layoutDependency}
+        layoutId={reducedMotion || !layoutId ? undefined : layoutId}
         style={{ borderRadius: 24, height: size.height, width: size.width }}
         transition={SPRING_PRESETS.smooth}
       >
@@ -97,8 +114,11 @@ export function PaperCardProjection({
       <motion.div
         className="pointer-events-none absolute"
         data-paper-content
+        layoutDependency={layoutDependency}
         layoutId={
-          reducedMotion ? undefined : getDocumentContentLayoutId(layoutId)
+          reducedMotion || !layoutId
+            ? undefined
+            : getDocumentContentLayoutId(layoutId)
         }
         style={{
           height: contentHeight,
