@@ -1,6 +1,6 @@
-import { use } from "react";
 import { articleLoaders } from "@/content/generated/loaders";
 import type { ArticleLocale, ArticleModule } from "@/types/article";
+import { use } from "react";
 import { ARTICLE_COMPONENTS } from "./article-typography";
 
 const modulePromises = new Map<string, Promise<ArticleModule>>();
@@ -36,18 +36,11 @@ export function ArticleContent({
 }) {
   // The route awaits this module before opening the sheet. Reusing its resolved
   // value avoids a fresh Suspense fallback in the middle of the layout motion.
-  const { default: Body, credit } =
+  const { default: Body } =
     loadedModules.get(`${slug}/${locale}`) ?? use(loadArticle(slug, locale));
   return (
-    <>
-      <div className="article-prose">
-        <Body components={ARTICLE_COMPONENTS} />
-      </div>
-      {credit !== null && credit !== undefined && (
-        <footer className="mt-14 border-t pt-8 text-foreground2 text-sm">
-          {credit}
-        </footer>
-      )}
-    </>
+    <div className="article-prose">
+      <Body components={ARTICLE_COMPONENTS} />
+    </div>
   );
 }
