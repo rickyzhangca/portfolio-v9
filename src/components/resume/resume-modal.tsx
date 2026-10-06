@@ -5,6 +5,7 @@ import type { ResumeData } from "@/cards/types";
 import { ReaderShell } from "@/components/documents/reader-shell";
 import { AnalyticsEvents, track } from "@/lib/analytics";
 import { SPRING_PRESETS } from "@/lib/animation";
+import { getDocumentContentLayoutId } from "@/lib/document-motion";
 import { ResumeSheet } from "./resume-sheet";
 
 interface ResumeModalProps {
@@ -44,6 +45,8 @@ export function ResumeModal({
       }
       backdropExitDelay={0.2}
       backdropTransition={SPRING_PRESETS.smooth}
+      clipDuringLayout
+      contentLayoutId={getDocumentContentLayoutId(layoutId)}
       isOpen={isOpen}
       layoutId={layoutId}
       onClose={close}

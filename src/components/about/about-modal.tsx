@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { ABOUT_CARD_SIZE } from "@/cards/about/about-data";
 import { ReaderShell } from "@/components/documents/reader-shell";
 import { AnalyticsEvents, track } from "@/lib/analytics";
+import { getDocumentContentLayoutId } from "@/lib/document-motion";
 import { AboutSheet } from "./about-sheet";
 
 interface AboutModalProps {
@@ -27,6 +28,8 @@ export function AboutModal({
   );
   return (
     <ReaderShell
+      clipDuringLayout
+      contentLayoutId={getDocumentContentLayoutId(layoutId)}
       isOpen={isOpen}
       layoutId={layoutId}
       onClose={close}
