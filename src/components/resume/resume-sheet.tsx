@@ -18,7 +18,7 @@ export const ResumeSheet = ({
 }: ResumeSheetProps) => (
   <article
     className={tw(
-      "flex h-full w-full flex-col gap-10 bg-white pt-10",
+      "flex h-full w-full flex-col gap-10 bg-white pt-10 pb-16",
       !interactive && "pointer-events-none select-none",
       className
     )}
