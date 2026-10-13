@@ -84,6 +84,21 @@ describe("article content validation", () => {
     expect(
       readFileSync(path.join(output, "catalogue.ts"), "utf8")
     ).not.toContain("headings");
+    expect(
+      readFileSync(path.join(output, "previews.ts"), "utf8")
+    ).not.toContain("secret-draft");
+  });
+  it("keeps previews and their images out of the catalogue every route loads", () => {
+    imageArticle("published-essay", `Before.\n\n${IMAGE}`);
+    const output = path.join(directory, ".generated");
+    generateArticles(directory, output);
+    const catalogue = readFileSync(path.join(output, "catalogue.ts"), "utf8");
+    const previews = readFileSync(path.join(output, "previews.ts"), "utf8");
+    expect(catalogue).toContain('"title"');
+    expect(catalogue).not.toContain('"preview"');
+    expect(catalogue).not.toContain("articlePreviewImage");
+    expect(previews).toContain('"published-essay": {');
+    expect(previews).toContain('"src": articlePreviewImage0');
   });
   it("orders published articles deterministically and excludes drafts", () => {
     article("older", { published: "2025-01-01" });
@@ -244,7 +259,7 @@ describe("article content validation", () => {
     );
     const output = path.join(directory, ".generated");
     generateArticles(directory, output);
-    const source = readFileSync(path.join(output, "catalogue.ts"), "utf8");
+    const source = readFileSync(path.join(output, "previews.ts"), "utf8");
     expect(source.match(/import articlePreviewImage/g)).toHaveLength(1);
     expect(source).toContain('assets/diagram.svg?no-inline"');
     expect(source).toContain('"src": articlePreviewImage0');
@@ -266,7 +281,7 @@ describe("article content validation", () => {
     const output = path.join(directory, ".generated");
     generateArticles(directory, output);
     expect(
-      readFileSync(path.join(output, "catalogue.ts"), "utf8")
+      readFileSync(path.join(output, "previews.ts"), "utf8")
     ).not.toContain("secret-draft");
   });
   it("retains separators, lists, quotes and hard breaks without evaluating MDX", () => {

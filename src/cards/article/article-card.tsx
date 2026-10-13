@@ -3,6 +3,7 @@ import { ArticlePaper } from "@/components/articles/article-paper";
 import { ArticlePreview } from "@/components/articles/article-preview";
 import { PaperPreviewFrame } from "@/components/documents/paper-preview-frame";
 import { useReaderPaperWidth } from "@/components/documents/reader-paper-layout";
+import { articlePreviews } from "@/content/generated/previews";
 import { useCanvasSession } from "@/context/canvas-session";
 import { getArticle, getArticleLocale } from "@/lib/articles/catalogue";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -57,8 +58,10 @@ export function ArticleCard({ content }: { content: ArticleCardContent }) {
     return () => observer.disconnect();
   }, [article]);
   const locale = getArticleLocale(article, articleLocales?.get(content.slug));
-  const translation = article?.translations[locale];
-  if (!(article && translation)) {
+  const preview = article?.translations[locale]
+    ? articlePreviews[article.slug]?.[locale]
+    : undefined;
+  if (!(article && preview)) {
     return (
       <PaperPreviewFrame>
         <p className="p-6">Article unavailable</p>
@@ -82,7 +85,7 @@ export function ArticleCard({ content }: { content: ArticleCardContent }) {
           }}
         >
           <ArticlePaper article={article} heading="h2" locale={locale}>
-            <ArticlePreview blocks={translation.preview} />
+            <ArticlePreview blocks={preview} />
           </ArticlePaper>
         </div>
       </div>

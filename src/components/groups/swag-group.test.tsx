@@ -86,6 +86,22 @@ describe("SwagGroup", () => {
     expect(screen.getAllByRole("img")).toHaveLength(12);
   });
 
+  it("upgrades collapsed swag to labels only after the page goes idle", async () => {
+    vi.useRealTimers();
+    render(<SwagGroup {...props()} isExpanded={false} />, {
+      wrapper: Providers,
+    });
+    expect(
+      document.querySelectorAll('[data-slot="tooltip-trigger"]')
+    ).toHaveLength(0);
+    await waitFor(() =>
+      expect(
+        document.querySelectorAll('[data-slot="tooltip-trigger"]')
+      ).toHaveLength(6)
+    );
+    expect(screen.getAllByRole("img")).toHaveLength(6);
+  });
+
   it("handles cover click, cancellation and dragging independently", () => {
     const actions = props();
     render(<SwagGroup {...actions} isExpanded={false} />, {

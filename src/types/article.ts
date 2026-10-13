@@ -46,10 +46,15 @@ export type ArticlePreviewBlock = {
 );
 
 export interface ArticleTranslation {
-  preview: ArticlePreviewBlock[];
   readingMinutes: number;
   title: string;
 }
+
+/** Card previews by slug and locale, generated apart from the catalogue. */
+export type ArticlePreviews = Record<
+  string,
+  Partial<Record<ArticleLocale, ArticlePreviewBlock[]>>
+>;
 
 export interface ArticleMetadata {
   published: string;
