@@ -1,40 +1,62 @@
 import { CanvasSessionContext } from "@/context/canvas-session";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import type { CSSProperties, ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PaperCardProjection } from "./paper-card-projection";
 
 const reducedMotion = vi.hoisted(() => vi.fn(() => false));
+const paperLayout = vi.hoisted(() => ({
+  complete: undefined as (() => void) | undefined,
+  start: undefined as (() => void) | undefined,
+}));
+const frameLoop = vi.hoisted(() => ({
+  cancelled: [] as (() => void)[],
+  postRender: [] as (() => void)[],
+}));
 vi.mock("framer-motion", () => ({
+  cancelFrame: (callback: () => void) => frameLoop.cancelled.push(callback),
+  frame: {
+    postRender: (callback: () => void) => frameLoop.postRender.push(callback),
+  },
   motion: {
     div: ({
       animate,
       children,
       layoutId,
+      onLayoutAnimationComplete,
+      onLayoutAnimationStart,
       transition,
       ...elementProps
     }: {
       animate?: { opacity?: number };
       children?: ReactNode;
       layoutId?: string;
+      onLayoutAnimationComplete?: () => void;
+      onLayoutAnimationStart?: () => void;
       style?: CSSProperties;
       transition?: { duration?: number };
-    }) => (
-      <div
-        data-fade-duration={
-          transition?.duration === undefined
-            ? undefined
-            : String(transition.duration)
-        }
-        data-fade-opacity={
-          animate?.opacity === undefined ? undefined : String(animate.opacity)
-        }
-        data-layout-id={layoutId}
-        {...elementProps}
-      >
-        {children}
-      </div>
-    ),
+    }) => {
+      if (onLayoutAnimationStart) {
+        paperLayout.start = onLayoutAnimationStart;
+        paperLayout.complete = onLayoutAnimationComplete;
+      }
+      return (
+        <div
+          data-fade-duration={
+            transition?.duration === undefined
+              ? undefined
+              : String(transition.duration)
+          }
+          data-fade-opacity={
+            animate?.opacity === undefined ? undefined : String(animate.opacity)
+          }
+          data-layout-id={layoutId}
+          {...elementProps}
+        >
+          {children}
+        </div>
+      );
+    },
   },
   useReducedMotion: reducedMotion,
 }));
@@ -163,6 +185,44 @@ describe("paper card projection", () => {
       top: "48px",
       width: "208px",
     });
+  });
+
+  it("returns the label at once, held at its own size while the paper scales", () => {
+    const { container, rerender } = render(
+      <PaperCardProjection {...props} label="About" open>
+        <p>Preview body</p>
+      </PaperCardProjection>
+    );
+    const label = screen.getByText("About").parentElement;
+    expect(label?.style.opacity).toBe("0");
+    expect(label?.style.transition).toBe("none");
+
+    rerender(
+      <PaperCardProjection {...props} label="About">
+        <p>Preview body</p>
+      </PaperCardProjection>
+    );
+    expect(label?.style.opacity).toBe("1");
+    expect(label?.style.transition).toBe("opacity 0.16s ease-out");
+
+    const box = (width: number, height: number) =>
+      ({ height, width }) as DOMRect;
+    const card = container.querySelector<HTMLElement>("[data-paper-frame]");
+    const paper = container.querySelector<HTMLElement>("[data-paper-surface]");
+    vi.spyOn(card as HTMLElement, "getBoundingClientRect").mockReturnValue(
+      box(240, 360)
+    );
+    vi.spyOn(paper as HTMLElement, "getBoundingClientRect").mockReturnValue(
+      box(720, 1080)
+    );
+    act(() => paperLayout.start?.());
+    const correct = frameLoop.postRender.at(-1);
+    correct?.();
+    expect(label?.style.transform).toBe(`scale(${240 / 720}, ${360 / 1080})`);
+
+    act(() => paperLayout.complete?.());
+    expect(frameLoop.cancelled).toContain(correct);
+    expect(label?.style.transform).toBe("");
   });
 
   it("fades a resume or about preview while that document is open", () => {

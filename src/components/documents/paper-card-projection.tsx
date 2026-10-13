@@ -7,8 +7,8 @@ import {
   type PaperSize,
 } from "@/lib/document-motion";
 import { tw } from "@/lib/utils";
-import { motion, useReducedMotion } from "framer-motion";
-import type { ReactNode } from "react";
+import { cancelFrame, frame, motion, useReducedMotion } from "framer-motion";
+import { type ReactNode, useCallback, useEffect, useRef } from "react";
 
 interface PreviewFade {
   delay?: number;
@@ -24,6 +24,13 @@ const PREVIEW_FADE_IN: PreviewFade = {
   duration: 0.16,
   ease: "easeOut",
 };
+
+/**
+ * The label rides inside the shared paper, which scales between the reader and
+ * the card. It hides at once on open, and while the paper moves it is scaled
+ * back to its own size each frame, so it can return as soon as the paper does.
+ */
+const LABEL_FADE_IN = "opacity 0.16s ease-out";
 
 /** mt-2 + text-sm py-2 + mb-1. The paper starts directly under this block. */
 const DOCUMENT_LABEL_BLOCK = 48;
@@ -56,6 +63,37 @@ export function PaperCardProjection({
 }: PaperCardProjectionProps) {
   const reducedMotion = useReducedMotion();
   const { articleOpen, articleSource } = useCanvasSession();
+  const frameRef = useRef<HTMLDivElement>(null);
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLDivElement>(null);
+  const correctLabelRef = useRef<(() => void) | null>(null);
+  const stopCorrectingLabel = useCallback(() => {
+    if (correctLabelRef.current) {
+      cancelFrame(correctLabelRef.current);
+      correctLabelRef.current = null;
+    }
+    if (labelRef.current) {
+      labelRef.current.style.transform = "";
+    }
+  }, []);
+  const startCorrectingLabel = useCallback(() => {
+    stopCorrectingLabel();
+    // Runs after Motion has written the paper's transform for this frame.
+    // Both boxes share the canvas transform, so their ratio is the paper's own
+    // layout scale, which the label undoes from the paper's top-left corner.
+    const correct = () => {
+      const labelElement = labelRef.current;
+      const card = frameRef.current?.getBoundingClientRect();
+      const paper = surfaceRef.current?.getBoundingClientRect();
+      if (!(labelElement && card && paper?.width && paper.height)) {
+        return;
+      }
+      labelElement.style.transform = `scale(${card.width / paper.width}, ${card.height / paper.height})`;
+    };
+    correctLabelRef.current = correct;
+    frame.postRender(correct, true);
+  }, [stopCorrectingLabel]);
+  useEffect(() => stopCorrectingLabel, [stopCorrectingLabel]);
   const preview = getPaperPreviewLayout(size, inset);
   const contentTop = label ? DOCUMENT_LABEL_BLOCK : preview.y;
   const contentHeight = label
@@ -80,6 +118,7 @@ export function PaperCardProjection({
     <div
       className="relative"
       data-paper-frame
+      ref={frameRef}
       style={{ height: size.height, width: size.width }}
     >
       <motion.div
@@ -92,17 +131,20 @@ export function PaperCardProjection({
         data-paper-surface
         layoutDependency={layoutDependency}
         layoutId={reducedMotion || !layoutId ? undefined : layoutId}
+        onLayoutAnimationComplete={label ? stopCorrectingLabel : undefined}
+        onLayoutAnimationStart={label ? startCorrectingLabel : undefined}
+        ref={surfaceRef}
         style={{ borderRadius: 24, height: size.height, width: size.width }}
         transition={SPRING_PRESETS.smooth}
       >
         {label ? (
           <div
-            className="absolute top-0 left-0"
+            className="absolute top-0 left-0 origin-top-left"
+            data-paper-label
+            ref={labelRef}
             style={{
               opacity: isOpening ? 0 : 1,
-              transition: reducedMotion
-                ? "none"
-                : `opacity ${previewFade.duration}s ease-out ${previewFade.delay ?? 0}s`,
+              transition: reducedMotion || isOpening ? "none" : LABEL_FADE_IN,
             }}
           >
             <p className="mx-2 mt-2 mb-1 w-fit rounded-full bg-background2 px-5 py-2 font-medium text-foreground1/50 text-sm">
