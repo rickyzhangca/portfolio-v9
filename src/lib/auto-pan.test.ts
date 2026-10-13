@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { getCanvasLayout } from "@/lib/canvas-layout";
 import { DEFAULT_FAN_CONFIG } from "@/lib/fan";
 import {
   createMockCard,
@@ -81,29 +82,27 @@ const createMockFunStack = (
   cardWidth = 240,
   cardHeight = 360,
   itemsCount = 8
-): CanvasFunStackItem => {
-  return {
-    id,
-    kind: "funstack",
-    position: { x, y },
-    zIndex,
-    card: {
-      id: `${id}-card`,
-      kind: "funproject",
-      size: { width: cardWidth, height: cardHeight },
-      content: {
-        items: Array.from({ length: itemsCount }, (_, index) => ({
-          icon: "x",
-          title: `Item ${index}`,
-          description: "Description",
-          link: { url: "https://example.com" },
-          status: "Active",
-          image: "https://example.com/image.png",
-        })),
-      },
+): CanvasFunStackItem => ({
+  id,
+  kind: "funstack",
+  position: { x, y },
+  zIndex,
+  card: {
+    id: `${id}-card`,
+    kind: "funproject",
+    size: { width: cardWidth, height: cardHeight },
+    content: {
+      items: Array.from({ length: itemsCount }, (_, index) => ({
+        icon: "x",
+        title: `Item ${index}`,
+        description: "Description",
+        link: { url: "https://example.com" },
+        status: "Active",
+        image: "https://example.com/image.png",
+      })),
     },
-  };
-};
+  },
+});
 
 describe("measured fun stack bounds", () => {
   it("uses actual content height instead of centering an underestimated list", () => {
@@ -468,5 +467,124 @@ describe("getFunStackAutoPanTarget", () => {
     // Not enough horizontal space -> pin to top-left margin (both axes).
     expect(result?.x).toBe(40);
     expect(result?.y).toBe(40 - 400);
+  });
+});
+
+describe("compact layout auto-pan", () => {
+  const layout = getCanvasLayout(390);
+  const viewport = { scale: 1, positionX: 0, positionY: 0 };
+
+  it("slides a folder's cards to the margin, hiding the cover", () => {
+    const stack = createMockStack(
+      "stack",
+      80,
+      200,
+      1,
+      createMockCover("cover", 240, 340),
+      [createMockCard("a", 350, 400), createMockCard("b", 350, 400)]
+    );
+    const target = getAutoPanTarget(
+      stack,
+      DEFAULT_FAN_CONFIG,
+      viewport,
+      390,
+      664,
+      0,
+      layout
+    );
+    expect(target?.scale).toBe(1);
+    // The first card (right of the 240px cover and the gap) is centered.
+    const cardLeft = 80 + 240 + DEFAULT_FAN_CONFIG.expandGapPx;
+    expect((target?.x ?? 0) + cardLeft).toBeGreaterThanOrEqual(
+      layout.autoPanMargin
+    );
+    expect((target?.x ?? 0) + cardLeft).toBeLessThan(40);
+    // The first card sits a few pixels below the stack origin on the fan arc.
+    expect((target?.y ?? 0) + 200 + 3).toBe(layout.autoPanMargin);
+  });
+
+  it("pans even when the desktop layout would fit the screen", () => {
+    const stack = createMockStack("stack", 0, 0, 1, undefined, [
+      createMockCard("a", 100, 100),
+    ]);
+    expect(
+      getAutoPanTarget(stack, DEFAULT_FAN_CONFIG, viewport, 5000, 5000)
+    ).toBeNull();
+    expect(
+      getAutoPanTarget(
+        stack,
+        DEFAULT_FAN_CONFIG,
+        viewport,
+        5000,
+        5000,
+        0,
+        layout
+      )
+    ).not.toBeNull();
+  });
+
+  it("left-aligns content wider than the screen at the margin", () => {
+    const wide = createMockStack(
+      "stack",
+      100,
+      100,
+      1,
+      createMockCover("cover", 100, 100),
+      [createMockCard("a", 500, 100)]
+    );
+    const target = getAutoPanTarget(
+      wide,
+      DEFAULT_FAN_CONFIG,
+      viewport,
+      390,
+      664,
+      0,
+      layout
+    );
+    const cardLeft = 100 + 100 + DEFAULT_FAN_CONFIG.expandGapPx;
+    // Rotation swings the card's lower corner a pixel or so past its left edge.
+    expect(
+      Math.abs((target?.x ?? 0) + cardLeft - layout.autoPanMargin)
+    ).toBeLessThan(2);
+  });
+
+  it("slides to the fun project descriptions", () => {
+    const fun = {
+      ...createMockFunStack("fun", 16, 3840),
+    } as CanvasFunStackItem;
+    fun.card = { ...fun.card, size: { width: 358 } };
+    const target = getFunStackAutoPanTarget(
+      fun,
+      viewport,
+      390,
+      664,
+      undefined,
+      layout
+    );
+    // Content starts 24px right of the 358px card and is 358px wide.
+    expect((target?.x ?? 0) + 16 + 358 + 24).toBeCloseTo(16, 0);
+    expect((target?.y ?? 0) + 3840).toBe(layout.autoPanMargin);
+  });
+
+  it("slides to the swag grid instead of centering the cover with it", () => {
+    const swag = createMockSwagStack("swag", 125, 4036);
+    swag.swags = Array.from({ length: 6 }, (_, index) => ({
+      label: `${index}`,
+      src: `/${index}.webp`,
+    }));
+    const target = getSwagStackAutoPanTarget(
+      swag,
+      viewport,
+      390,
+      664,
+      DEFAULT_FAN_CONFIG,
+      layout
+    );
+    expect((target?.y ?? 0) + 4036).toBeLessThanOrEqual(layout.autoPanMargin);
+    // The two columns end up on screen.
+    const gridLeft =
+      (target?.x ?? 0) + 125 + 100 + DEFAULT_FAN_CONFIG.expandGapPx;
+    expect(gridLeft).toBeGreaterThanOrEqual(0);
+    expect(gridLeft).toBeLessThan(80);
   });
 });

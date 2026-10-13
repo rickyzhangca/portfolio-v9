@@ -9,7 +9,7 @@ const findItem = (kind: CanvasSingleItem["card"]["kind"]) => {
   const item = initialItems.find(
     (candidate) => candidate.kind === "single" && candidate.card.kind === kind
   );
-  if (!item || item.kind !== "single") {
+  if (item?.kind !== "single") {
     throw new Error(`No ${kind} card in the scene`);
   }
   return item;
@@ -28,23 +28,24 @@ const props = () => ({
 });
 
 describe("SingleCardItem", () => {
-  it.each([
-    "resume",
-    "about",
-    "macbook",
-  ] as const)("supports keyboard and click activation of %s", (kind) => {
-    const actions = props();
-    const item = findItem(kind);
-    const { rerender } = render(<SingleCardItem {...actions} item={item} />);
-    const trigger = screen.getByRole("button", { name: `Open ${kind}` });
-    fireEvent.keyDown(trigger, { key: "Enter" });
-    fireEvent.keyDown(trigger, { key: " " });
-    fireEvent.keyDown(trigger, { key: "ArrowRight" });
-    fireEvent.click(trigger);
-    expect(actions.onActivate).toHaveBeenCalledTimes(3);
-    rerender(<SingleCardItem {...actions} isFocused item={item} />);
-    expect(screen.getByRole("button", { name: `Open ${kind}` })).toBeDefined();
-  });
+  it.each(["resume", "about", "macbook"] as const)(
+    "supports keyboard and click activation of %s",
+    (kind) => {
+      const actions = props();
+      const item = findItem(kind);
+      const { rerender } = render(<SingleCardItem {...actions} item={item} />);
+      const trigger = screen.getByRole("button", { name: `Open ${kind}` });
+      fireEvent.keyDown(trigger, { key: "Enter" });
+      fireEvent.keyDown(trigger, { key: " " });
+      fireEvent.keyDown(trigger, { key: "ArrowRight" });
+      fireEvent.click(trigger);
+      expect(actions.onActivate).toHaveBeenCalledTimes(3);
+      rerender(<SingleCardItem {...actions} isFocused item={item} />);
+      expect(
+        screen.getByRole("button", { name: `Open ${kind}` })
+      ).toBeDefined();
+    }
+  );
 
   it("does not activate the card after a drag, and commits its position once", () => {
     const actions = props();

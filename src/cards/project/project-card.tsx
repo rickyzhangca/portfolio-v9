@@ -1,6 +1,6 @@
 import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
-import { memo, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { SPRING_PRESETS } from "@/lib/animation";
 import { tw } from "@/lib/utils";
 import type { ProjectCardContent } from "@/cards/registry";
@@ -18,6 +18,8 @@ const ProjectCardComponent = ({
 }: ProjectCardProps) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const handleImageError = useCallback(() => setImageError(true), []);
+  const handleImageLoad = useCallback(() => setImageLoaded(true), []);
 
   return (
     <div className="flex h-full flex-col gap-1.5">
@@ -44,8 +46,8 @@ const ProjectCardComponent = ({
             )}
             height="200"
             loading={priority ? "eager" : "lazy"}
-            onError={() => setImageError(true)}
-            onLoad={() => setImageLoaded(true)}
+            onError={handleImageError}
+            onLoad={handleImageLoad}
             src={content.image}
             width="200"
           />
@@ -62,7 +64,7 @@ const ProjectCardComponent = ({
         transition={SPRING_PRESETS.snappy}
       >
         <span className="font-medium">{content.title}</span>
-        {content.link?.url && (
+        {content.link?.url ? (
           <div className="flex items-center gap-1">
             <a
               className="no-drag flex items-center gap-1 text-accent"
@@ -75,14 +77,14 @@ const ProjectCardComponent = ({
                   weight={content.link.label ? "regular" : "bold"}
                 />
               )}
-              {content.link.label && (
+              {content.link.label ? (
                 <span className="text-sm">{content.link.label}</span>
-              )}
+              ) : null}
             </a>
           </div>
-        )}
+        ) : null}
       </motion.div>
-      {content.description && (
+      {content.description ? (
         <motion.p
           animate={{
             opacity: isExpanded ? 1 : 0,
@@ -98,7 +100,7 @@ const ProjectCardComponent = ({
         >
           {content.description}
         </motion.p>
-      )}
+      ) : null}
     </div>
   );
 };

@@ -18,6 +18,7 @@ test("initial canvas and resize preserve the scene origin", async ({
     { width: 1024, height: 768 },
     { width: 2000, height: 1080 },
   ]) {
+    // biome-ignore lint/performance/noAwaitInLoops: each step depends on the browser state left by the previous one
     await page.setViewportSize(viewport);
     await expect
       .poll(() =>

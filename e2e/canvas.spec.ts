@@ -29,6 +29,24 @@ test("keyboard activation keeps an oversized collection at its reading anchor", 
   });
   await cover.press("Enter");
   await expect(cover).toHaveAttribute("aria-expanded", "true");
+  if ((page.viewportSize()?.width ?? Number.POSITIVE_INFINITY) < 640) {
+    // Phones slide the camera onto the swag grid and leave the cover behind.
+    const firstSwag = page
+      .locator('[data-swag-stack-id] [data-slot="tooltip-trigger"]')
+      .first();
+    await expect
+      .poll(async () => {
+        const bounds = await firstSwag.boundingBox();
+        return bounds
+          ? Math.max(
+              bounds.x < 0 ? 1000 : bounds.x,
+              bounds.y < 0 ? 1000 : bounds.y
+            )
+          : Number.POSITIVE_INFINITY;
+      })
+      .toBeLessThan(60);
+    return;
+  }
   await expect
     .poll(async () => {
       const bounds = await cover.boundingBox();
@@ -47,6 +65,10 @@ test("wheel pan and reset synchronize the reset control", async ({
   test.skip(
     browserName === "webkit" && isMobile,
     "Playwright mobile WebKit does not support mouse wheel input"
+  );
+  test.skip(
+    (page.viewportSize()?.width ?? Number.POSITIVE_INFINITY) < 640,
+    "The phone layout has no reset control"
   );
   const reset = page.getByRole("button", { name: "Reset canvas", exact: true });
   await expect(reset).toBeDisabled();
@@ -140,6 +162,7 @@ test("document dialogs contain focus, close with Escape and restore the opener",
       name: `Open ${kind}`,
       exact: true,
     });
+    // biome-ignore lint/performance/noAwaitInLoops: each step depends on the browser state left by the previous one
     await opener.focus();
     await opener.press("Enter");
     const dialog = page.getByRole("dialog");
@@ -227,6 +250,9 @@ test("repeated open-close-reset cycles stay synchronized across resizes", async 
     exact: true,
   });
   const reset = page.getByRole("button", { name: "Reset canvas", exact: true });
+  // The phone layout has no controls to keep in view or to reset with.
+  const hasControls =
+    (page.viewportSize()?.width ?? Number.POSITIVE_INFINITY) >= 640;
   const viewports = [
     { width: 1440, height: 1000 },
     { width: 1024, height: 768 },
@@ -237,6 +263,10 @@ test("repeated open-close-reset cycles stay synchronized across resizes", async 
     width: number;
     height: number;
   }) => {
+    if (!hasControls) {
+      await expect(reset).toHaveCount(0);
+      return;
+    }
     const bounds = await reset.boundingBox();
     expect(bounds).not.toBeNull();
     if (!bounds) {
@@ -248,7 +278,9 @@ test("repeated open-close-reset cycles stay synchronized across resizes", async 
     expect(bounds.y + bounds.height).toBeLessThanOrEqual(viewport.height);
   };
 
-  if (browserName === "webkit" && isMobile) {
+  if (!hasControls) {
+    await expect(reset).toHaveCount(0);
+  } else if (browserName === "webkit" && isMobile) {
     const swagCollection = page.getByRole("button", {
       name: "Toggle swag collection",
       exact: true,
@@ -261,7 +293,8 @@ test("repeated open-close-reset cycles stay synchronized across resizes", async 
     await expect(swagCollection).toHaveAttribute("aria-expanded", "false");
   } else {
     await expect(reset).toBeDisabled();
-    for (let iteration = 0; iteration < 3; iteration++) {
+    for (let iteration = 0; iteration < 3; iteration += 1) {
+      // biome-ignore lint/performance/noAwaitInLoops: each step depends on the browser state left by the previous one
       await page.mouse.move(10, 10);
       await page.mouse.wheel(200, 100);
       await expect(reset).toBeEnabled();
@@ -270,19 +303,21 @@ test("repeated open-close-reset cycles stay synchronized across resizes", async 
     }
   }
 
-  for (let iteration = 0; iteration < 3; iteration++) {
+  for (let iteration = 0; iteration < 3; iteration += 1) {
+    // biome-ignore lint/performance/noAwaitInLoops: each step depends on the browser state left by the previous one
     await cover.click();
     await expect(cover).toHaveAttribute("aria-expanded", "true");
     await page.keyboard.press("Escape");
     await expect(cover).toHaveAttribute("aria-expanded", "false");
   }
 
-  for (let index = 0; index < viewports.length; index++) {
-    const viewport = viewports[index];
-    const resizedViewport = viewports[(index + 1) % viewports.length];
+  for (let index = 0; index < viewports.length; index += 1) {
+    const viewport = viewports.at(index);
+    const resizedViewport = viewports.at((index + 1) % viewports.length);
     if (!(viewport && resizedViewport)) {
       throw new Error("Resize scenario is missing a viewport");
     }
+    // biome-ignore lint/performance/noAwaitInLoops: each step depends on the browser state left by the previous one
     await page.setViewportSize(viewport);
     await expect(cover).toBeVisible();
     await expectResetWithinViewport(viewport);

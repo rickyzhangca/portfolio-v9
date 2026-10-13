@@ -10,13 +10,14 @@ import {
   useState,
 } from "react";
 import { RenderCard } from "@/cards/render-card";
+import { useCanvasEnvironment } from "@/context/canvas-layout";
 import { useDraggable } from "@/hooks/use-draggable";
+import { useTogglePress } from "@/hooks/use-toggle-press";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { FUN_STACK_LAYOUT } from "@/lib/card-layout";
 import { tw } from "@/lib/utils";
 import type { CanvasFunStackItem, Position } from "@/types/canvas";
 
-const CONTENT_WIDTH = FUN_STACK_LAYOUT.contentWidth;
 const CONTENT_GAP = FUN_STACK_LAYOUT.contentGap;
 const STAGGER_DELAY = 0.1;
 const VERTICAL_GAP = FUN_STACK_LAYOUT.verticalGap;
@@ -75,6 +76,8 @@ export const FunProjectGroup = ({
   onContentLayoutMeasured,
   setRootRef,
 }: FunProjectGroupProps) => {
+  const { layout } = useCanvasEnvironment();
+  const contentWidth = layout.funContentWidth;
   const [measuredHeight, setMeasuredHeight] = useState<number | undefined>(
     item.card.size.height
   );
@@ -97,22 +100,20 @@ export const FunProjectGroup = ({
     typeof setTimeout
   > | null>(null);
 
-  const cardPointerDownRef = useRef<{
-    clientX: number;
-    clientY: number;
-  } | null>(null);
   const hasPrewarmedMarkdownRef = useRef(false);
 
-  const cardWithSize = useMemo(() => {
-    return {
+  const cardWithSize = useMemo(
+    () => ({
       ...item.card,
       size: {
         ...item.card.size,
         height: measuredHeight ?? item.card.size.height,
       },
-    };
-  }, [item.card, measuredHeight]);
+    }),
+    [item.card, measuredHeight]
+  );
 
+  const togglePress = useTogglePress(onToggleExpanded);
   const { isDragging, handleMouseDown, currentPosition } = useDraggable({
     position: item.position,
     scale,
@@ -193,6 +194,7 @@ export const FunProjectGroup = ({
   }, []);
 
   const prewarmMarkdownRenderer = useCallback(() => {
+    // biome-ignore lint/suspicious/noUnnecessaryConditions: Biome narrows the ref's initial false, but loading flips it
     if (hasPrewarmedMarkdownRef.current) {
       return;
     }
@@ -271,18 +273,20 @@ export const FunProjectGroup = ({
     let offsetY = 0;
     return item.card.content.items.map((_, index) => {
       const currentOffset = offsetY;
-      const measuredHeight = contentCardHeights[index] ?? CONTENT_CARD_HEIGHT;
-      offsetY += measuredHeight + VERTICAL_GAP;
+      const cardHeight = contentCardHeights[index] ?? CONTENT_CARD_HEIGHT;
+      offsetY += cardHeight + VERTICAL_GAP;
       return currentOffset;
     });
   }, [item.card.content.items, contentCardHeights]);
 
-  const allContentCardsMeasured = useMemo(() => {
-    return item.card.content.items.every(
-      (_, index) =>
-        (contentCardHeights[index] ?? 0) > 0 && readyDescriptions.has(index)
-    );
-  }, [item.card.content.items, contentCardHeights, readyDescriptions]);
+  const allContentCardsMeasured = useMemo(
+    () =>
+      item.card.content.items.every(
+        (_, index) =>
+          (contentCardHeights[index] ?? 0) > 0 && readyDescriptions.has(index)
+      ),
+    [item.card.content.items, contentCardHeights, readyDescriptions]
+  );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Restart the settling window on every height change, even after all cards have a measurement.
   useEffect(() => {
@@ -380,54 +384,8 @@ export const FunProjectGroup = ({
           aria-expanded={isExpanded}
           aria-label="Toggle fun projects"
           className="absolute top-0 left-0"
-          onKeyDown={(event) => {
-            if (
-              event.target === event.currentTarget &&
-              (event.key === "Enter" || event.key === " ")
-            ) {
-              event.preventDefault();
-              onToggleExpanded();
-            }
-          }}
-          onPointerCancel={() => {
-            cardPointerDownRef.current = null;
-          }}
-          onPointerDown={(e) => {
-            const target = e.target as HTMLElement;
-            if (target.closest(".no-drag")) {
-              cardPointerDownRef.current = null;
-              return;
-            }
-
-            if (e.button !== 0) {
-              cardPointerDownRef.current = null;
-              return;
-            }
-
-            cardPointerDownRef.current = {
-              clientX: e.clientX,
-              clientY: e.clientY,
-            };
-          }}
+          {...togglePress}
           onPointerEnter={prewarmMarkdownRenderer}
-          onPointerUp={(e) => {
-            const start = cardPointerDownRef.current;
-            cardPointerDownRef.current = null;
-
-            if (!start) {
-              return;
-            }
-
-            const moved = Math.hypot(
-              e.clientX - start.clientX,
-              e.clientY - start.clientY
-            );
-
-            // Treat as a click only when the pointer didn't move
-            if (moved < 6) {
-              onToggleExpanded();
-            }
-          }}
           role="button"
           style={{
             pointerEvents: "auto",
@@ -444,118 +402,119 @@ export const FunProjectGroup = ({
         </motion.div>
 
         {/* Content cards that fly out to the right */}
-        {isExpanded &&
-          item.card.content.items.map((funItem, index) => {
-            const cardWidth = cardWithSize.size.width ?? 240;
-            const offsetY = contentCardOffsets[index] ?? 0;
-            const offsetX = cardWidth + CONTENT_GAP;
-            const shouldAnimateContent = isExpanded && isContentLayoutReady;
+        {isExpanded
+          ? item.card.content.items.map((funItem, index) => {
+              const cardWidth = cardWithSize.size.width ?? 240;
+              const offsetY = contentCardOffsets[index] ?? 0;
+              const offsetX = cardWidth + CONTENT_GAP;
+              const shouldAnimateContent = isExpanded && isContentLayoutReady;
 
-            return (
-              <motion.div
-                animate={{
-                  opacity: shouldAnimateContent ? 1 : 0,
-                  scale: shouldAnimateContent ? 1 : 0.8,
-                  x: offsetX,
-                  y: offsetY,
-                }}
-                className="absolute top-0 left-0 origin-top-left will-change-transform"
-                data-fun-content-card-index={index}
-                initial={false}
-                key={funItem.title}
-                style={{
-                  zIndex: item.card.content.items.length - index - 1,
-                  pointerEvents: shouldAnimateContent ? "auto" : "none",
-                  visibility: shouldAnimateContent ? "visible" : "hidden",
-                }}
-                transition={
-                  shouldAnimateContent
-                    ? {
-                        ...SPRING_PRESETS.snappy,
-                        delay: index * STAGGER_DELAY,
-                        opacity: {
+              return (
+                <motion.div
+                  animate={{
+                    opacity: shouldAnimateContent ? 1 : 0,
+                    scale: shouldAnimateContent ? 1 : 0.8,
+                    x: offsetX,
+                    y: offsetY,
+                  }}
+                  className="absolute top-0 left-0 origin-top-left will-change-transform"
+                  data-fun-content-card-index={index}
+                  initial={false}
+                  key={funItem.title}
+                  style={{
+                    zIndex: item.card.content.items.length - index - 1,
+                    pointerEvents: shouldAnimateContent ? "auto" : "none",
+                    visibility: shouldAnimateContent ? "visible" : "hidden",
+                  }}
+                  transition={
+                    shouldAnimateContent
+                      ? {
                           ...SPRING_PRESETS.snappy,
-                          delay: index * STAGGER_DELAY * 1.2,
-                        },
-                      }
-                    : TRANSITIONS.none
-                }
-              >
-                <div
-                  className="flex flex-col gap-5 rounded-3xl bg-background2 p-6 outline outline-border"
-                  ref={getContentCardRefCallback(index)}
-                  style={{ width: CONTENT_WIDTH }}
+                          delay: index * STAGGER_DELAY,
+                          opacity: {
+                            ...SPRING_PRESETS.snappy,
+                            delay: index * STAGGER_DELAY * 1.2,
+                          },
+                        }
+                      : TRANSITIONS.none
+                  }
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <img
-                        alt={funItem.title}
-                        height={36}
-                        src={funItem.icon}
-                        width={40}
-                      />
-                      <span className="font-semibold text-xl">
-                        {funItem.title}
+                  <div
+                    className="flex flex-col gap-5 rounded-3xl bg-background2 p-6 outline outline-border"
+                    ref={getContentCardRefCallback(index)}
+                    style={{ width: contentWidth }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <img
+                          alt={funItem.title}
+                          height={36}
+                          src={funItem.icon}
+                          width={40}
+                        />
+                        <span className="font-semibold text-xl">
+                          {funItem.title}
+                        </span>
+                      </div>
+                      <span
+                        className={tw(
+                          "inline-block rounded-full px-2.5 py-1 font-medium text-xs outline",
+                          funItem.status === "Active" &&
+                            "bg-green-500/10 text-green-700 outline-green-700/30",
+                          funItem.status === "Maintaining" &&
+                            "bg-blue-500/10 text-blue-700 outline-blue-700/30",
+                          funItem.status === "Archived" &&
+                            "bg-gray-500/10 text-gray-700 outline-gray-700/30"
+                        )}
+                      >
+                        {funItem.status}
                       </span>
                     </div>
-                    <span
-                      className={tw(
-                        "inline-block rounded-full px-2.5 py-1 font-medium text-xs outline",
-                        funItem.status === "Active" &&
-                          "bg-green-500/10 text-green-700 outline-green-700/30",
-                        funItem.status === "Maintaining" &&
-                          "bg-blue-500/10 text-blue-700 outline-blue-700/30",
-                        funItem.status === "Archived" &&
-                          "bg-gray-500/10 text-gray-700 outline-gray-700/30"
-                      )}
-                    >
-                      {funItem.status}
-                    </span>
-                  </div>
 
-                  {funItem.image && (
-                    <img
-                      alt={funItem.title}
-                      className="w-full rounded-md outline outline-border"
-                      height={200}
-                      src={funItem.image}
-                      width={380}
-                    />
-                  )}
-
-                  <div className="prose prose-sm max-w-none text-foreground1/80">
-                    <Suspense fallback={null}>
-                      <ProjectDescription
-                        content={funItem.description}
-                        index={index}
-                        onReady={handleDescriptionReady}
+                    {funItem.image ? (
+                      <img
+                        alt={funItem.title}
+                        className="w-full rounded-md outline outline-border"
+                        height={200}
+                        src={funItem.image}
+                        width={380}
                       />
-                    </Suspense>
-                  </div>
+                    ) : null}
 
-                  {funItem.link && (
-                    <a
-                      className="relative flex w-full items-center justify-center gap-3 rounded-full bg-linear-to-b from-background3 to-background4 px-6 py-3 text-center text-foreground1 shadow outline outline-border transition hover:from-background4 hover:shadow-md"
-                      href={funItem.link.url}
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      View
-                      {funItem.link.type
-                        ? ` on ${funItem.link.type === "Figma" ? "Figma" : "GitHub"}`
-                        : ""}
-                      {funItem.link.count && (
-                        <span className="flex items-center gap-0.5 text-foreground2">
-                          <ArrowUpRightIcon />
-                          {funItem.link.count}
-                        </span>
-                      )}
-                    </a>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
+                    <div className="prose prose-sm max-w-none text-foreground1/80">
+                      <Suspense fallback={null}>
+                        <ProjectDescription
+                          content={funItem.description}
+                          index={index}
+                          onReady={handleDescriptionReady}
+                        />
+                      </Suspense>
+                    </div>
+
+                    {funItem.link ? (
+                      <a
+                        className="relative flex w-full items-center justify-center gap-3 rounded-full bg-linear-to-b from-background3 to-background4 px-6 py-3 text-center text-foreground1 shadow outline outline-border transition hover:from-background4 hover:shadow-md"
+                        href={funItem.link.url}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        View
+                        {funItem.link.type
+                          ? ` on ${funItem.link.type === "Figma" ? "Figma" : "GitHub"}`
+                          : ""}
+                        {funItem.link.count ? (
+                          <span className="flex items-center gap-0.5 text-foreground2">
+                            <ArrowUpRightIcon />
+                            {funItem.link.count}
+                          </span>
+                        ) : null}
+                      </a>
+                    ) : null}
+                  </div>
+                </motion.div>
+              );
+            })
+          : null}
       </motion.div>
     </motion.div>
   );

@@ -7,14 +7,19 @@ import {
 } from "react";
 import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { AUTO_PAN_DURATION_MS, AUTO_PAN_EASING } from "@/lib/auto-pan";
+import { clampToRange, type PanBounds } from "@/lib/pan-bounds";
 import type { ViewportState } from "@/types/canvas";
 
 export const useCanvasViewport = (
   initialViewport: ViewportState,
   onCommit: (viewport: ViewportState) => void,
-  isLocked: boolean
+  isLocked: boolean,
+  /** Pan vertically only: the scene is a single column with nothing to the side. */
+  lockAxisX = false,
+  /** Where the camera may rest; null leaves panning unbounded. */
+  getPanBounds?: () => PanBounds | null
 ) => {
-  const transformRef = useRef<ReactZoomPanPinchRef>(null);
+  const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef(initialViewport);
   const frameRef = useRef<number | null>(null);
@@ -46,8 +51,24 @@ export const useCanvasViewport = (
     [commit]
   );
 
+  const panBoundsRef = useRef(getPanBounds);
+  panBoundsRef.current = getPanBounds;
+
   const onTransformed = useCallback(
     (ref: ReactZoomPanPinchRef) => {
+      const bounds = panBoundsRef.current?.();
+      const transform = transformRef.current;
+      // Camera moves we start ourselves already end inside the bounds, and
+      // they may cross them on the way: only drags and momentum are held.
+      if (bounds && transform && !transform.instance.isAnimating) {
+        const { positionX, positionY, scale: currentScale } = ref.state;
+        const x = bounds.x ? clampToRange(positionX, bounds.x) : positionX;
+        const y = bounds.y ? clampToRange(positionY, bounds.y) : positionY;
+        if (x !== positionX || y !== positionY) {
+          transform.setTransform(x, y, currentScale, 0);
+          return;
+        }
+      }
       sync(ref.state);
     },
     [sync]
@@ -87,12 +108,23 @@ export const useCanvasViewport = (
 
   useLayoutEffect(() => {
     const resize = () =>
-      setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
+      setDimensions((current) =>
+        current.width === window.innerWidth &&
+        current.height === window.innerHeight
+          ? current
+          : { width: window.innerWidth, height: window.innerHeight }
+      );
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
+  }, []);
+
+  useEffect(() => {
+    // The library only listens for touchend, so a touch the system cancels
+    // (edge swipe, incoming call) would leave the canvas stuck mid-pan.
+    const onTouchCancel = (event: TouchEvent) =>
+      transformRef.current?.instance.onTouchPanningStop(event);
+    window.addEventListener("touchcancel", onTouchCancel);
+    return () => window.removeEventListener("touchcancel", onTouchCancel);
   }, []);
 
   useEffect(() => {
@@ -122,8 +154,10 @@ export const useCanvasViewport = (
       }
       // Zoom remains disabled: scaled Motion layout animations are unreliable.
       transform.setTransform(
-        current.positionX -
-          event.deltaX * (event.deltaMode === 2 ? dimensions.width : unit),
+        lockAxisX
+          ? current.positionX
+          : current.positionX -
+              event.deltaX * (event.deltaMode === 2 ? dimensions.width : unit),
         current.positionY - event.deltaY * unit,
         current.scale,
         0
@@ -135,7 +169,13 @@ export const useCanvasViewport = (
     }
     container.addEventListener("wheel", onWheel, { passive: false });
     return () => container.removeEventListener("wheel", onWheel);
-  }, [cancelPendingPan, dimensions.height, dimensions.width, isLocked]);
+  }, [
+    cancelPendingPan,
+    dimensions.height,
+    dimensions.width,
+    isLocked,
+    lockAxisX,
+  ]);
 
   useEffect(
     () => () => {

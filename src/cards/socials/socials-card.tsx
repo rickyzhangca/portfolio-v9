@@ -1,4 +1,4 @@
-import { memo, type ReactNode, useState } from "react";
+import { memo, type ReactNode, useCallback, useState } from "react";
 import type { SocialsCardContent } from "@/cards/registry";
 import { tw } from "@/lib/utils";
 
@@ -8,46 +8,51 @@ const Key = ({
 }: {
   mode: "logi" | "apple";
   children: ReactNode;
-}) => {
-  return (
+}) => (
+  <div
+    className={tw("relative", mode === "logi" ? "rounded-2xl" : "rounded-md")}
+  >
     <div
-      className={tw("relative", mode === "logi" ? "rounded-2xl" : "rounded-md")}
+      className={tw(
+        "absolute flex size-18 -translate-y-2 items-center justify-center border-2 border-foreground1/80 transition duration-75 hover:-translate-y-1.5 active:translate-y-0",
+        mode === "logi" ? "rounded-2xl" : "rounded-md"
+      )}
+      style={{
+        background:
+          mode === "logi"
+            ? "linear-gradient(195deg, rgba(65.58, 66.47, 68.23, 0.50) 0%, rgba(26.62, 27.04, 27.88, 0.50) 100%), linear-gradient(225deg, #5A5B5D 0%, #393A3C 100%)"
+            : "linear-gradient(180deg, #4D4E50 0%, #222325 40%)",
+        boxShadow: "-3px 4px 6px rgba(0, 0, 0, 0.16)",
+      }}
     >
       <div
         className={tw(
-          "absolute flex size-18 -translate-y-2 items-center justify-center border-2 border-foreground1/80 transition duration-75 hover:-translate-y-1.5 active:translate-y-0",
-          mode === "logi" ? "rounded-2xl" : "rounded-md"
+          "flex size-16 items-center justify-center rounded-full transition",
+          mode === "apple" ? "opacity-0" : "opacity-100"
         )}
         style={{
           background:
-            mode === "logi"
-              ? "linear-gradient(195deg, rgba(65.58, 66.47, 68.23, 0.50) 0%, rgba(26.62, 27.04, 27.88, 0.50) 100%), linear-gradient(225deg, #5A5B5D 0%, #393A3C 100%)"
-              : "linear-gradient(180deg, #4D4E50 0%, #222325 40%)",
-          boxShadow: "-3px 4px 6px rgba(0, 0, 0, 0.16)",
+            "radial-gradient(ellipse 104.51% 104.51% at 13.64% 87.50%, rgba(102, 103, 105, 0.50) 0%, rgba(0, 0, 0, 0.50) 100%), linear-gradient(225deg, #3A3B3D 0%, #666769 100%)",
         }}
-      >
-        <div
-          className={tw(
-            "flex size-16 items-center justify-center rounded-full transition",
-            mode === "apple" ? "opacity-0" : "opacity-100"
-          )}
-          style={{
-            background:
-              "radial-gradient(ellipse 104.51% 104.51% at 13.64% 87.50%, rgba(102, 103, 105, 0.50) 0%, rgba(0, 0, 0, 0.50) 100%), linear-gradient(225deg, #3A3B3D 0%, #666769 100%)",
-          }}
-        />
-        <div className="absolute inset-0 flex items-center justify-center">
-          {children}
-        </div>
-      </div>
-      <div
-        className={tw(
-          "z-20 size-18 bg-foreground1",
-          mode === "logi" ? "rounded-2xl" : "rounded-md"
-        )}
       />
+      <div className="absolute inset-0 flex items-center justify-center">
+        {children}
+      </div>
     </div>
-  );
+    <div
+      className={tw(
+        "z-20 size-18 bg-foreground1",
+        mode === "logi" ? "rounded-2xl" : "rounded-md"
+      )}
+    />
+  </div>
+);
+
+/** Lets the key press animation play before the tab opens. */
+const openLinkAfterKeyPress = (url: string) => {
+  setTimeout(() => {
+    window.open(url, "_blank");
+  }, 400);
 };
 
 interface SocialsCardProps {
@@ -61,11 +66,18 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
     setMode((prev) => (prev === "logi" ? "apple" : "logi"));
   };
 
-  const handleLinkClick = (url: string) => {
-    setTimeout(() => {
-      window.open(url, "_blank");
-    }, 400);
-  };
+  const openLinkedin = useCallback(
+    () => openLinkAfterKeyPress(content.linkedinUrl),
+    [content.linkedinUrl]
+  );
+  const openTwitter = useCallback(
+    () => openLinkAfterKeyPress(content.twitterUrl),
+    [content.twitterUrl]
+  );
+  const openGithub = useCallback(
+    () => openLinkAfterKeyPress(content.githubUrl),
+    [content.githubUrl]
+  );
 
   return (
     <div className="relative flex h-full">
@@ -86,7 +98,7 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
           <button
             aria-label="LinkedIn"
             className="cursor-pointer focus:outline-none"
-            onClick={() => handleLinkClick(content.linkedinUrl)}
+            onClick={openLinkedin}
             type="button"
           >
             <Key mode={mode}>
@@ -109,7 +121,7 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
           <button
             aria-label="Twitter"
             className="cursor-pointer focus:outline-none"
-            onClick={() => handleLinkClick(content.twitterUrl)}
+            onClick={openTwitter}
             type="button"
           >
             <Key mode={mode}>
@@ -132,7 +144,7 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
           <button
             aria-label="GitHub"
             className="cursor-pointer focus:outline-none"
-            onClick={() => handleLinkClick(content.githubUrl)}
+            onClick={openGithub}
             type="button"
           >
             <Key mode={mode}>

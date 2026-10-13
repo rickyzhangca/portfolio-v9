@@ -8,9 +8,11 @@ export const ResumeSkills = ({ data }: ResumeSkillsProps) => {
   const skillCategories = data || [];
 
   return (
-    <div className="flex gap-10">
-      <p className="w-32 text-end font-medium text-lg">Skills</p>
-      <div className="flex gap-12">
+    <div className="flex flex-col gap-4 sm:flex-row sm:gap-10">
+      <p className="font-medium text-lg sm:w-32 sm:min-w-32 sm:text-end">
+        Skills
+      </p>
+      <div className="flex flex-wrap gap-x-12 gap-y-6">
         {skillCategories.map((category) => (
           <div className="flex flex-col gap-1.5" key={category.category}>
             <p className="font-medium text-foreground2 text-lg">

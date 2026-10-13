@@ -10,6 +10,7 @@ import {
   getSwagStackAutoPanTarget,
 } from "@/lib/auto-pan";
 import { getCanvasCard } from "@/lib/canvas-card";
+import { type CanvasLayout, DESKTOP_CANVAS_LAYOUT } from "@/lib/canvas-layout";
 import { getStackPage } from "@/lib/card-layout";
 import type { FanConfig } from "@/lib/fan";
 import type { CanvasState, ViewportState } from "@/types/canvas";
@@ -20,6 +21,7 @@ interface InteractionOptions {
   cancelPendingPan: () => void;
   fanConfig: FanConfig;
   getViewport: () => ViewportState;
+  layout?: CanvasLayout;
   panTo: (target: ViewportState) => void;
   setActiveDocument: (document: ActiveDocument) => void;
   setExpandedStack: (id: string | null) => void;
@@ -39,6 +41,7 @@ export const useCanvasInteractions = ({
   setActiveDocument,
   fanConfig,
   getViewport,
+  layout = DESKTOP_CANVAS_LAYOUT,
   panTo,
   cancelPendingPan,
   bringItemToFront,
@@ -222,17 +225,26 @@ export const useCanvasInteractions = ({
               viewport,
               width,
               height,
-              stackPages[id] ?? 0
+              stackPages[id] ?? 0,
+              layout
             );
           case "funstack":
-            return getFunStackAutoPanTarget(item, viewport, width, height);
+            return getFunStackAutoPanTarget(
+              item,
+              viewport,
+              width,
+              height,
+              undefined,
+              layout
+            );
           case "swagstack":
             return getSwagStackAutoPanTarget(
               item,
               viewport,
               width,
               height,
-              fanConfig
+              fanConfig,
+              layout
             );
           default:
             return null;
@@ -268,6 +280,7 @@ export const useCanvasInteractions = ({
       fanConfig,
       getViewport,
       isLocked,
+      layout,
       panTo,
       setExpandedStack,
       state.expandedStackId,
@@ -293,7 +306,8 @@ export const useCanvasInteractions = ({
         current,
         window.innerWidth,
         window.innerHeight,
-        nextPage
+        nextPage,
+        layout
       );
       if (target) {
         preStackViewportRef.current ??= { ...current };
@@ -304,11 +318,16 @@ export const useCanvasInteractions = ({
         });
       }
     },
-    [fanConfig, getViewport, isLocked, panTo, state.items]
+    [fanConfig, getViewport, isLocked, layout, panTo, state.items]
   );
+
+  const contentHeightsRef = useRef<Record<string, number>>({});
+  const getContentHeights = useCallback(() => contentHeightsRef.current, []);
 
   const measureContentLayout = useCallback(
     (id: string, height: number) => {
+      // Remembered even when no camera correction follows: it bounds scrolling.
+      contentHeightsRef.current[id] = height;
       const pending = pendingLayoutRef.current;
       if (pending?.id !== id || state.expandedStackId !== id) {
         return;
@@ -325,7 +344,8 @@ export const useCanvasInteractions = ({
         current,
         window.innerWidth,
         window.innerHeight,
-        height
+        height,
+        layout
       );
       // Refine once per expansion, never continuously follow late media changes.
       if (
@@ -341,8 +361,30 @@ export const useCanvasInteractions = ({
         });
       }
     },
-    [isLocked, panTo, state.expandedStackId, state.items]
+    [isLocked, layout, panTo, state.expandedStackId, state.items]
   );
+
+  /** Touch has no Escape key: closes whichever stack or focused card is open. */
+  const closeActive = useCallback(() => {
+    if (isLocked) {
+      return;
+    }
+    if (state.expandedStackId) {
+      closeStack();
+      track(AnalyticsEvents.STACK_CLOSE, {
+        close_method: "close_button",
+        stack_type: state.expandedStackId,
+      });
+    } else if (state.focusedItemId) {
+      closeFocus();
+    }
+  }, [
+    closeFocus,
+    closeStack,
+    isLocked,
+    state.expandedStackId,
+    state.focusedItemId,
+  ]);
 
   const clearReturnPositions = useCallback(() => {
     pendingLayoutRef.current = null;
@@ -360,7 +402,9 @@ export const useCanvasInteractions = ({
     cancelLayoutCorrection,
     changePage,
     clearReturnPositions,
+    closeActive,
     closeDocument,
+    getContentHeights,
     isLocked,
     measureContentLayout,
     registerElement,

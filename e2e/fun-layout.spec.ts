@@ -137,6 +137,7 @@ test("late fun-project content avoids overlap without overriding manual pan", as
 
     const resolvedCards = await contentCards.all();
     for (const card of resolvedCards) {
+      // biome-ignore lint/performance/noAwaitInLoops: each step depends on the browser state left by the previous one
       await expect(card).toBeVisible();
     }
 
@@ -168,7 +169,7 @@ test("late fun-project content avoids overlap without overriding manual pan", as
           .sort((first, second) => first.index - second.index)
       );
       expect(cardBounds).toHaveLength(contentCardCount);
-      for (let index = 1; index < cardBounds.length; index++) {
+      for (let index = 1; index < cardBounds.length; index += 1) {
         const previous = cardBounds[index - 1];
         const current = cardBounds[index];
         expect(previous).toBeDefined();

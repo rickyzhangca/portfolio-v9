@@ -7,19 +7,17 @@ interface CodeHighlighterProps {
 }
 
 export const CodeHighlighter = memo(
-  ({ code, language = "text" }: CodeHighlighterProps) => {
-    return (
-      <div className="my-4 overflow-x-auto rounded-lg text-sm outline outline-border">
-        <ShikiHighlighter
-          language={language}
-          theme={{
-            light: "github-dark",
-            dark: "github-dark",
-          }}
-        >
-          {code}
-        </ShikiHighlighter>
-      </div>
-    );
-  }
+  ({ code, language = "text" }: CodeHighlighterProps) => (
+    <div className="my-4 overflow-x-auto rounded-lg text-sm outline outline-border">
+      <ShikiHighlighter
+        language={language}
+        theme={{
+          light: "github-dark",
+          dark: "github-dark",
+        }}
+      >
+        {code}
+      </ShikiHighlighter>
+    </div>
+  )
 );

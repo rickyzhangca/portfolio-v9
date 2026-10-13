@@ -1,22 +1,18 @@
 import type { CardInstance } from "@/cards/types";
+import { DESKTOP_CANVAS_LAYOUT, type SwagLayout } from "@/lib/canvas-layout";
 import type { FanConfig } from "@/lib/fan";
 import type { CanvasStackItem } from "@/types/canvas";
 
 export const STACK_OFFSET_PX = 6;
-export const EXPAND_MAX_PER_ROW = 3;
+export const EXPAND_MAX_PER_ROW = DESKTOP_CANVAS_LAYOUT.stackColumns;
 export const COLLAPSED_VISIBLE_COUNT = 2;
 export const FUN_STACK_LAYOUT = {
   contentGap: 24,
-  contentWidth: 680,
+  contentWidth: DESKTOP_CANVAS_LAYOUT.funContentWidth,
   estimatedCardHeight: 120,
   verticalGap: 16,
 } as const;
-export const SWAG_LAYOUT = {
-  columns: 6,
-  expandedScale: 1.05,
-  imageHeight: 120,
-  itemSize: 180,
-} as const;
+export const SWAG_LAYOUT = DESKTOP_CANVAS_LAYOUT.swag;
 
 export const getFanTransform = (
   index: number,
@@ -33,19 +29,19 @@ export const getFanTransform = (
 export const getSwagPosition = (
   index: number,
   coverWidth: number,
-  config: FanConfig
+  config: FanConfig,
+  swag: SwagLayout = SWAG_LAYOUT
 ) => {
-  const fan = getFanTransform(index, config, SWAG_LAYOUT.columns);
+  const fan = getFanTransform(index, config, swag.columns);
   return {
     rotate: fan.rotate,
     x:
       coverWidth +
       config.expandGapPx +
-      (index % SWAG_LAYOUT.columns) *
-        (SWAG_LAYOUT.itemSize + config.expandGapPx),
+      (index % swag.columns) * (swag.itemSize + config.expandGapPx),
     y:
-      Math.floor(index / SWAG_LAYOUT.columns) *
-        (SWAG_LAYOUT.itemSize + config.expandRowGapPx) +
+      Math.floor(index / swag.columns) *
+        (swag.itemSize + config.expandRowGapPx) +
       fan.arcY,
   };
 };
@@ -109,11 +105,12 @@ export function getStackPage(stack: CanvasStackItem, requestedPage = 0) {
 export function getExpandedStackLayout(
   cover: CardInstance | undefined,
   cards: CardInstance[],
-  fanConfig: FanConfig
+  fanConfig: FanConfig,
+  columns = EXPAND_MAX_PER_ROW
 ) {
-  const offsets = getOffsets(cover, cards, true, fanConfig);
+  const offsets = getOffsets(cover, cards, true, fanConfig, columns);
   const placements = cards.map((card, index) => {
-    const col = index % EXPAND_MAX_PER_ROW;
+    const col = index % columns;
     return {
       ...offsets[index],
       card,
@@ -126,6 +123,13 @@ export function getExpandedStackLayout(
     maxY: cover ? (cover.size.height ?? 360) : 0,
     minX: 0,
     minY: 0,
+  };
+  // The same box without the cover: what the camera reveals on small screens.
+  const contentBounds = {
+    maxX: Number.NEGATIVE_INFINITY,
+    maxY: Number.NEGATIVE_INFINITY,
+    minX: Number.POSITIVE_INFINITY,
+    minY: Number.POSITIVE_INFINITY,
   };
   for (const { card, x, y, rotate } of placements) {
     const angle = (rotate * Math.PI) / 180;
@@ -148,9 +152,17 @@ export function getExpandedStackLayout(
       bounds.minY = Math.min(bounds.minY, pointY);
       bounds.maxX = Math.max(bounds.maxX, pointX);
       bounds.maxY = Math.max(bounds.maxY, pointY);
+      contentBounds.minX = Math.min(contentBounds.minX, pointX);
+      contentBounds.minY = Math.min(contentBounds.minY, pointY);
+      contentBounds.maxX = Math.max(contentBounds.maxX, pointX);
+      contentBounds.maxY = Math.max(contentBounds.maxY, pointY);
     }
   }
-  return { bounds, placements };
+  return {
+    bounds,
+    contentBounds: placements.length > 0 ? contentBounds : bounds,
+    placements,
+  };
 }
 
 export const getRotatedBoundingBox = (
@@ -172,7 +184,8 @@ export const getOffsets = (
   cover: CardInstance | undefined,
   projects: CardInstance[],
   expanded: boolean,
-  fanConfig: FanConfig
+  fanConfig: FanConfig,
+  columns = EXPAND_MAX_PER_ROW
 ) => {
   if (!expanded) {
     return projects.map((_, index) => ({
@@ -200,7 +213,7 @@ export const getOffsets = (
       continue;
     }
 
-    if (col === EXPAND_MAX_PER_ROW) {
+    if (col === columns) {
       y += rowMaxHeight + fanConfig.expandRowGapPx;
       x = baseX;
       rowMaxHeight = 0;

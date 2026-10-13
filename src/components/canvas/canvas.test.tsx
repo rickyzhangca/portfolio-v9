@@ -10,9 +10,11 @@ import { type ReactNode, type Ref, useImperativeHandle } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fanConfigAtom } from "@/context/atoms";
 import { getAutoPanTarget, getSwagStackAutoPanTarget } from "@/lib/auto-pan";
+import { getCanvasLayout } from "@/lib/canvas-layout";
 import { initialItems } from "@/scenes/home-scene";
 import {
   createMockCard,
+  createMockCover,
   createMockFunStack,
   createMockSingle,
   createMockStack,
@@ -32,6 +34,7 @@ const transform = vi.hoisted(() => ({
   onTransformed: undefined as
     | ((ref: { state: ViewportState }) => void)
     | undefined,
+  lockAxisX: false as boolean | undefined,
   panDisabled: false,
   setTransform: vi.fn(),
 }));
@@ -51,11 +54,12 @@ vi.mock("react-zoom-pan-pinch", () => ({
     ref: Ref<unknown>;
     onTransform: typeof transform.onTransformed;
     onPanningStop: typeof transform.onPanningStop;
-    panning: { disabled: boolean };
+    panning: { disabled: boolean; lockAxisX?: boolean };
   }) => {
     transform.onTransformed = onTransform;
     transform.onPanningStop = onPanningStop;
     transform.panDisabled = panning.disabled;
+    transform.lockAxisX = panning.lockAxisX;
     useImperativeHandle(
       ref,
       () => ({
@@ -109,9 +113,11 @@ vi.mock("./canvas-item", () => ({
         data-expanded={isExpanded}
         data-focused={isFocused}
         data-testid={item.id}
+        // biome-ignore lint/performance/noJsxPropsBind: test double rendered once per case
         ref={(el) => setRootRef(item.id, el)}
       >
         <button
+          // biome-ignore lint/performance/noJsxPropsBind: test double rendered once per case
           onClick={() =>
             item.kind === "single"
               ? onActivate(item.id)
@@ -122,6 +128,7 @@ vi.mock("./canvas-item", () => ({
           {item.id}
         </button>
         <button
+          // biome-ignore lint/performance/noJsxPropsBind: test double rendered once per case
           onClick={() => onPositionUpdate(item.id, { x: 123, y: 456 })}
           type="button"
         >
@@ -144,6 +151,7 @@ vi.mock("./canvas-controls", () => ({
     <button
       data-no-collapse
       disabled={isResetDisabled}
+      // biome-ignore lint/performance/noJsxPropsBind: test double rendered once per case
       onClick={() => {
         onReset();
         onResetPositions();
@@ -542,5 +550,153 @@ describe("Canvas interaction contracts", () => {
     unmount();
     settle();
     expect(transform.setTransform).not.toHaveBeenCalled();
+  });
+  describe("Canvas on touch screens", () => {
+    const originalMatchMedia = window.matchMedia;
+    beforeEach(() => {
+      window.matchMedia = vi.fn(() => ({
+        addEventListener: vi.fn(),
+        matches: true,
+        removeEventListener: vi.fn(),
+      })) as unknown as typeof window.matchMedia;
+    });
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it("offers a close button, since touch has no Escape key", () => {
+      render(<Canvas initialItems={[stack()]} />);
+      expect(screen.queryByText("Close")).toBeNull();
+      pan();
+      fireEvent.click(screen.getByText("stack"));
+      settle();
+      expect(screen.getByTestId("stack").dataset.expanded).toBe("true");
+      fireEvent.click(screen.getByText("Close"));
+      settle();
+      expect(screen.getByTestId("stack").dataset.expanded).toBe("false");
+      // The camera returns to where the visitor left it.
+      expect(transform.current).toEqual(changedViewport);
+    });
+
+    it("keeps cards from being dragged so swipes always pan", () => {
+      render(<Canvas initialItems={[stack()]} />);
+      expect(screen.getByTestId("stack").dataset.dragDisabled).toBe("true");
+    });
+
+    it("lets a mouse drag cards", () => {
+      window.matchMedia = vi.fn(() => ({
+        addEventListener: vi.fn(),
+        matches: false,
+        removeEventListener: vi.fn(),
+      })) as unknown as typeof window.matchMedia;
+      render(<Canvas initialItems={[stack()]} />);
+      expect(screen.getByTestId("stack").dataset.dragDisabled).toBe("false");
+    });
+
+    it("pans vertically only in the single-column layout, except around the focused laptop", () => {
+      const macbook = initialItems.find(
+        (item) => item.kind === "single" && item.card.kind === "macbook"
+      );
+      if (!macbook) {
+        throw new Error("Missing macbook scene fixture");
+      }
+      render(
+        <Canvas
+          initialItems={[macbook, stack()]}
+          layout={getCanvasLayout(390)}
+        />
+      );
+      expect(transform.lockAxisX).toBe(true);
+      fireEvent.click(screen.getByText("stack"));
+      expect(transform.lockAxisX).toBe(true);
+      fireEvent.keyDown(window, { key: "Escape" });
+      settle();
+      fireEvent.click(screen.getByText(macbook.id));
+      expect(transform.lockAxisX).toBe(false);
+    });
+
+    it("ignores sideways wheel and trackpad movement in the single-column layout", () => {
+      render(<Canvas initialItems={[stack()]} layout={getCanvasLayout(390)} />);
+      fireEvent.wheel(screen.getByText("stack"), { deltaX: 40, deltaY: 25 });
+      expect(transform.current.positionX).toBe(0);
+      expect(transform.current.positionY).toBe(-25);
+    });
+
+    it("stops scrolling at the end of the single column instead of into empty canvas", () => {
+      render(<Canvas initialItems={[stack()]} layout={getCanvasLayout(390)} />);
+      fireEvent.wheel(screen.getByText("stack"), { deltaY: 5000 });
+      // The folder is 100px tall at y=800; the end margin is 48px.
+      expect(transform.current.positionY).toBe(window.innerHeight - 48 - 900);
+      fireEvent.wheel(screen.getByText("stack"), { deltaY: -9000 });
+      expect(transform.current.positionY).toBe(0);
+    });
+
+    it("keeps an opened folder scrollable only across its own cards", () => {
+      const folder = createMockStack(
+        "stack",
+        80,
+        1000,
+        1,
+        createMockCover("cover", 240, 340),
+        Array.from({ length: 6 }, (_, index) =>
+          createMockCard(`card-${index}`, 350, 400)
+        )
+      );
+      render(<Canvas initialItems={[folder]} layout={getCanvasLayout(390)} />);
+      fireEvent.click(screen.getByText("stack"));
+      settle();
+      const revealed = transform.current.positionY;
+      fireEvent.wheel(screen.getByText("stack"), { deltaY: -9000 });
+      // Already at the top of the list: nothing above to scroll to.
+      expect(transform.current.positionY).toBe(revealed);
+      fireEvent.wheel(screen.getByText("stack"), { deltaY: 90_000 });
+      expect(transform.current.positionY).toBeLessThan(revealed - 1000);
+      expect(transform.current.positionY).toBeGreaterThan(
+        -1000 - 6 * 420 - 100
+      );
+    });
+
+    it("keeps free two-axis panning on the desktop layout", () => {
+      render(<Canvas initialItems={[stack()]} />);
+      expect(transform.lockAxisX).toBe(false);
+      fireEvent.wheel(screen.getByText("stack"), { deltaX: 40, deltaY: 25 });
+      expect(transform.current.positionX).toBe(-40);
+    });
+
+    it("does not render the close button for a mouse", () => {
+      window.matchMedia = vi.fn(() => ({
+        addEventListener: vi.fn(),
+        matches: false,
+        removeEventListener: vi.fn(),
+      })) as unknown as typeof window.matchMedia;
+      render(<Canvas initialItems={[stack()]} />);
+      fireEvent.click(screen.getByText("stack"));
+      expect(screen.queryByText("Close")).toBeNull();
+    });
+
+    it("slides the camera onto an opened folder with the compact layout", () => {
+      const item = createMockStack(
+        "stack",
+        80,
+        200,
+        1,
+        createMockCover("cover", 240, 340),
+        [createMockCard("a", 350, 400)]
+      );
+      const layout = getCanvasLayout(390);
+      render(<Canvas initialItems={[item]} layout={layout} />);
+      fireEvent.click(screen.getByText("stack"));
+      settle();
+      const cardLeft = 80 + 240 + 18;
+      // The cover slides out of view and the 350px card is centered.
+      expect(
+        Math.abs(
+          transform.current.positionX + cardLeft - (window.innerWidth - 350) / 2
+        )
+      ).toBeLessThan(2);
+      expect(transform.current.positionY + 200).toBeLessThan(
+        layout.autoPanMargin + 1
+      );
+    });
   });
 });

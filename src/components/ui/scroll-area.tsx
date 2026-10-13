@@ -30,8 +30,8 @@ function ScrollArea({
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
-      {showScrollbar && <ScrollBar orientation="vertical" />}
-      {showScrollbar && <ScrollBar orientation="horizontal" />}
+      {showScrollbar ? <ScrollBar orientation="vertical" /> : null}
+      {showScrollbar ? <ScrollBar orientation="horizontal" /> : null}
       <ScrollAreaPrimitive.Corner data-slot="scroll-area-corner" />
     </ScrollAreaPrimitive.Root>
   );

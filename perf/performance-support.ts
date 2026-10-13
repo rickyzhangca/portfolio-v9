@@ -271,6 +271,7 @@ class ChromiumHeapSampler {
   }
 
   async takeSample(): Promise<void> {
+    // biome-ignore lint/suspicious/noUnnecessaryConditions: both flags change across awaits and timer callbacks
     if (this.sampling || this.unavailableReason) {
       return;
     }
@@ -293,8 +294,9 @@ class ChromiumHeapSampler {
         this.droppedSamples += 1;
       }
 
+      this.nextSequence += 1;
       this.samples.push({
-        sequence: ++this.nextSequence,
+        sequence: this.nextSequence,
         capturedAt: new Date().toISOString(),
         usedBytes: usage.usedSize,
         totalBytes: usage.totalSize,
@@ -1078,6 +1080,7 @@ const createLab = async (
     finishCapture,
     attachSamples: async (samples) => {
       for (const sample of samples) {
+        // biome-ignore lint/performance/noAwaitInLoops: attachments are written in sample order
         await testInfo.attach(
           `performance-${sample.scenario}-${sample.phase}.json`,
           {

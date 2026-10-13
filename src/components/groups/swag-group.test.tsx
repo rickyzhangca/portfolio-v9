@@ -4,6 +4,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import { Provider } from "jotai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -68,6 +69,21 @@ describe("SwagGroup", () => {
     ).toBe(true);
     rerender(<SwagGroup {...actions} isExpanded={false} />);
     expect(screen.getAllByRole("img")).toHaveLength(6);
+  });
+
+  it("renders swag before the tooltip module loads, then upgrades it", async () => {
+    vi.useRealTimers();
+    render(<SwagGroup {...props()} isExpanded={true} />, {
+      wrapper: Providers,
+    });
+    expect(screen.getAllByRole("img")).toHaveLength(12);
+    await screen.findAllByRole("button", { name: "Swag 0" });
+    await waitFor(() =>
+      expect(
+        document.querySelectorAll('[data-slot="tooltip-trigger"]')
+      ).toHaveLength(12)
+    );
+    expect(screen.getAllByRole("img")).toHaveLength(12);
   });
 
   it("handles cover click, cancellation and dragging independently", () => {

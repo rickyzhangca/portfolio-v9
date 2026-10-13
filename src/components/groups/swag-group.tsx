@@ -1,20 +1,24 @@
 import { motion } from "framer-motion";
 import { useAtomValue } from "jotai";
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { RenderCard } from "@/cards/render-card";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  lazy,
+  Suspense,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
+import { RenderCard } from "@/cards/render-card";
 import { fanConfigAtom } from "@/context/atoms";
+import { useCanvasEnvironment } from "@/context/canvas-layout";
 import { useDraggable } from "@/hooks/use-draggable";
+import { useTogglePress } from "@/hooks/use-toggle-press";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
-import { getSwagPosition, SWAG_LAYOUT } from "@/lib/card-layout";
+import { getSwagPosition } from "@/lib/card-layout";
 import { tw } from "@/lib/utils";
 import type { CanvasSwagStackItem, Position } from "@/types/canvas";
+import { SwagImageButton } from "./swag-image";
 
-const SWAG_ITEM_SIZE = SWAG_LAYOUT.itemSize;
 const STAGGER_DELAY = 0.01;
 
 // Collapsed positions for swag items (stacked under cover)
@@ -26,6 +30,12 @@ const COLLAPSED_POSITIONS = [
   { x: 130, y: 60, rotate: -3 },
   { x: 120, y: 100, rotate: 3 },
 ];
+
+// Tooltip positioning only matters once someone hovers or taps a swag item, so
+// it stays out of the initial canvas bundle.
+const SwagLabel = lazy(() =>
+  import("./swag-label").then((module) => ({ default: module.SwagLabel }))
+);
 
 interface SwagGroupProps {
   item: CanvasSwagStackItem;
@@ -63,33 +73,36 @@ export const SwagGroup = ({
   );
   const [hasMounted, setHasMounted] = useState(false);
 
-  const cardPointerDownRef = useRef<{
-    clientX: number;
-    clientY: number;
-  } | null>(null);
-
   // Track initial mount for animation delays
   useLayoutEffect(() => {
     setHasMounted(true);
   }, []);
 
   const fanConfig = useAtomValue(fanConfigAtom);
+  const { layout } = useCanvasEnvironment();
+  const swagLayout = layout.swag;
 
-  const cardWithSize = useMemo(() => {
-    return {
+  const cardWithSize = useMemo(
+    () => ({
       ...item.cover,
       size: {
         ...item.cover.size,
         height: measuredHeight ?? item.cover.size.height,
       },
-    };
-  }, [item.cover, measuredHeight]);
+    }),
+    [item.cover, measuredHeight]
+  );
 
   const coverWidth = cardWithSize.size.width ?? 240;
 
   const getSwagOffset = useCallback(
     (index: number) => {
-      const expanded = getSwagPosition(index, coverWidth, fanConfig);
+      const expanded = getSwagPosition(
+        index,
+        coverWidth,
+        fanConfig,
+        swagLayout
+      );
 
       // Collapsed position: stacked under cover
       const collapsedPos = COLLAPSED_POSITIONS[Math.min(index, 5)];
@@ -103,9 +116,10 @@ export const SwagGroup = ({
         fanRotate: expanded.rotate,
       };
     },
-    [coverWidth, fanConfig]
+    [coverWidth, fanConfig, swagLayout]
   );
 
+  const togglePress = useTogglePress(onToggleExpanded);
   const { isDragging, handleMouseDown, currentPosition } = useDraggable({
     position: item.position,
     scale,
@@ -178,47 +192,7 @@ export const SwagGroup = ({
             scale: 0,
             rotate: -5,
           }}
-          onKeyDown={(event) => {
-            if (
-              event.target === event.currentTarget &&
-              (event.key === "Enter" || event.key === " ")
-            ) {
-              event.preventDefault();
-              onToggleExpanded();
-            }
-          }}
-          onPointerCancel={() => {
-            cardPointerDownRef.current = null;
-          }}
-          onPointerDown={(e) => {
-            if (e.button !== 0) {
-              cardPointerDownRef.current = null;
-              return;
-            }
-
-            cardPointerDownRef.current = {
-              clientX: e.clientX,
-              clientY: e.clientY,
-            };
-          }}
-          onPointerUp={(e) => {
-            const start = cardPointerDownRef.current;
-            cardPointerDownRef.current = null;
-
-            if (!start) {
-              return;
-            }
-
-            const moved = Math.hypot(
-              e.clientX - start.clientX,
-              e.clientY - start.clientY
-            );
-
-            // Treat as a click only when the pointer didn't move
-            if (moved < 6) {
-              onToggleExpanded();
-            }
-          }}
+          {...togglePress}
           role="button"
           style={{
             pointerEvents: "auto",
@@ -257,7 +231,7 @@ export const SwagGroup = ({
             <motion.div
               animate={{
                 opacity: 1,
-                scale: isExpanded ? SWAG_LAYOUT.expandedScale : 0.6,
+                scale: isExpanded ? swagLayout.expandedScale : 0.6,
                 x: isExpanded ? offset.expandedX : offset.collapsedX,
                 y: isExpanded ? offset.expandedY : offset.collapsedY,
                 rotate: isExpanded ? offset.fanRotate : offset.collapsedRotate,
@@ -272,7 +246,7 @@ export const SwagGroup = ({
               }}
               key={swag.src}
               style={{
-                width: SWAG_ITEM_SIZE,
+                width: swagLayout.itemSize,
                 zIndex: item.swags.length - index - 1,
                 pointerEvents: isExpanded ? "auto" : "none",
               }}
@@ -303,25 +277,9 @@ export const SwagGroup = ({
                   : collapsedTransition
               }
             >
-              <Tooltip>
-                <TooltipTrigger className="cursor-help border-0 bg-transparent p-0">
-                  <img
-                    alt={swag.label}
-                    className="aspect-3/2 w-full object-contain"
-                    decoding="async"
-                    height={120}
-                    loading="lazy"
-                    src={swag.src}
-                    width={180}
-                  />
-                </TooltipTrigger>
-                <TooltipContent className="items-center text-center">
-                  <p>{swag.label}</p>
-                  {swag.caption && (
-                    <p className="text-foreground2">{swag.caption}</p>
-                  )}
-                </TooltipContent>
-              </Tooltip>
+              <Suspense fallback={<SwagImageButton swag={swag} />}>
+                <SwagLabel swag={swag} />
+              </Suspense>
             </motion.div>
           );
         })}

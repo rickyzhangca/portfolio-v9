@@ -4,11 +4,16 @@ import {
   getRotatedBoundingBox,
   getStackPage,
   getSwagPosition,
-  SWAG_LAYOUT,
 } from "@/lib/card-layout";
+import {
+  type CanvasLayout,
+  DESKTOP_CANVAS_LAYOUT,
+  type SwagLayout,
+} from "@/lib/canvas-layout";
 import { DEFAULT_FAN_CONFIG, type FanConfig } from "@/lib/fan";
 import type {
   CanvasFunStackItem,
+  CanvasItem,
   CanvasStackItem,
   CanvasSwagStackItem,
   ViewportState,
@@ -19,13 +24,12 @@ export const AUTO_PAN_DURATION_MS = 360;
 export const AUTO_PAN_EASING = "easeInOutCubic";
 
 const {
-  contentWidth: CONTENT_WIDTH,
   contentGap: CONTENT_GAP,
   estimatedCardHeight: FUN_STACK_CONTENT_CARD_HEIGHT,
   verticalGap: FUN_STACK_VERTICAL_GAP,
 } = FUN_STACK_LAYOUT;
 
-interface BoundingBox {
+export interface BoundingBox {
   maxX: number;
   maxY: number;
   minX: number;
@@ -47,6 +51,7 @@ const getFunStackExpandedBoundingBox = (
   cardWidth: number,
   cardHeight: number,
   itemsCount: number,
+  contentWidth: number,
   measuredContentHeight?: number
 ): BoundingBox => {
   const listHeight =
@@ -57,7 +62,7 @@ const getFunStackExpandedBoundingBox = (
       : 0);
 
   return {
-    maxX: itemsCount > 0 ? cardWidth + CONTENT_GAP + CONTENT_WIDTH : cardWidth,
+    maxX: itemsCount > 0 ? cardWidth + CONTENT_GAP + contentWidth : cardWidth,
     // Content cards fly out to the right and stack vertically starting at y=0.
     maxY: Math.max(cardHeight, listHeight),
     minX: 0,
@@ -168,6 +173,28 @@ const canCenterContent = (
 };
 
 /**
+ * Small screens cannot show a cover next to its content, so the camera slides
+ * onto the content instead: pinned to the top, centered when narrower than the
+ * screen and left-aligned at the margin when wider.
+ */
+const getCompactRevealTarget = (
+  origin: { x: number; y: number },
+  content: BoundingBox,
+  scale: number,
+  windowWidth: number,
+  margin: number
+) => ({
+  scale,
+  x:
+    Math.max(
+      margin,
+      (windowWidth - (content.maxX - content.minX) * scale) / 2
+    ) -
+    (origin.x + content.minX) * scale,
+  y: margin - (origin.y + content.minY) * scale,
+});
+
+/**
  * Main function that determines if auto-pan is needed and returns target transform.
  * Returns null if no pan needed, otherwise target transform {x, y, scale}.
  *
@@ -182,14 +209,26 @@ export const getAutoPanTarget = (
   viewportState: ViewportState,
   windowWidth: number,
   windowHeight: number,
-  page = 0
+  page = 0,
+  layout: CanvasLayout = DESKTOP_CANVAS_LAYOUT
 ): { x: number; y: number; scale: number } | null => {
   // Calculate bounding box of expanded content
-  const expandedBbox = getExpandedStackLayout(
+  const expandedLayout = getExpandedStackLayout(
     stack.cover,
     getStackPage(stack, page).cards,
-    fanConfig
-  ).bounds;
+    fanConfig,
+    layout.stackColumns
+  );
+  const expandedBbox = expandedLayout.bounds;
+  if (layout.compact) {
+    return getCompactRevealTarget(
+      stack.position,
+      expandedLayout.contentBounds,
+      viewportState.scale,
+      windowWidth,
+      layout.autoPanMargin
+    );
+  }
 
   // Get current visible viewport in canvas coordinates
   const visibleViewport = getVisibleViewport(
@@ -246,7 +285,8 @@ export const getFunStackAutoPanTarget = (
   viewportState: ViewportState,
   windowWidth: number,
   windowHeight: number,
-  measuredContentHeight?: number
+  measuredContentHeight?: number,
+  layout: CanvasLayout = DESKTOP_CANVAS_LAYOUT
 ): { x: number; y: number; scale: number } | null => {
   const cardWidth = funStack.card.size.width ?? 240;
   const cardHeight = funStack.card.size.height ?? 360;
@@ -256,8 +296,18 @@ export const getFunStackAutoPanTarget = (
     cardWidth,
     cardHeight,
     funStack.card.content.items.length,
+    layout.funContentWidth,
     measuredContentHeight
   );
+  if (layout.compact && funStack.card.content.items.length > 0) {
+    return getCompactRevealTarget(
+      funStack.position,
+      { ...expandedBbox, minX: cardWidth + CONTENT_GAP },
+      viewportState.scale,
+      windowWidth,
+      layout.autoPanMargin
+    );
+  }
 
   // Get current visible viewport in canvas coordinates
   const visibleViewport = getVisibleViewport(
@@ -320,8 +370,9 @@ export const getFunStackAutoPanTarget = (
  */
 const getSwagStackExpandedBoundingBox = (
   stack: CanvasSwagStackItem,
-  fanConfig: FanConfig
-): BoundingBox => {
+  fanConfig: FanConfig,
+  swag: SwagLayout
+): { bounds: BoundingBox; contentBounds: BoundingBox } => {
   const coverWidth = stack.cover.size.width ?? 240;
   const bounds = {
     maxX: coverWidth,
@@ -329,20 +380,31 @@ const getSwagStackExpandedBoundingBox = (
     minX: 0,
     minY: 0,
   };
+  const contentBounds = {
+    maxX: Number.NEGATIVE_INFINITY,
+    maxY: Number.NEGATIVE_INFINITY,
+    minX: Number.POSITIVE_INFINITY,
+    minY: Number.POSITIVE_INFINITY,
+  };
   for (let index = 0; index < stack.swags.length; index += 1) {
-    const position = getSwagPosition(index, coverWidth, fanConfig);
-    const width = SWAG_LAYOUT.itemSize * SWAG_LAYOUT.expandedScale;
-    const height = SWAG_LAYOUT.imageHeight * SWAG_LAYOUT.expandedScale;
+    const position = getSwagPosition(index, coverWidth, fanConfig, swag);
+    const width = swag.itemSize * swag.expandedScale;
+    const height = swag.imageHeight * swag.expandedScale;
     const radians = (position.rotate * Math.PI) / 180;
     const rotated = getRotatedBoundingBox(width, height, position.rotate);
     const minX = position.x - Math.max(0, height * Math.sin(radians));
     const minY = position.y + Math.min(0, width * Math.sin(radians));
-    bounds.minX = Math.min(bounds.minX, minX);
-    bounds.minY = Math.min(bounds.minY, minY);
-    bounds.maxX = Math.max(bounds.maxX, minX + rotated.width);
-    bounds.maxY = Math.max(bounds.maxY, minY + rotated.height);
+    for (const box of [bounds, contentBounds]) {
+      box.minX = Math.min(box.minX, minX);
+      box.minY = Math.min(box.minY, minY);
+      box.maxX = Math.max(box.maxX, minX + rotated.width);
+      box.maxY = Math.max(box.maxY, minY + rotated.height);
+    }
   }
-  return bounds;
+  return {
+    bounds,
+    contentBounds: stack.swags.length > 0 ? contentBounds : bounds,
+  };
 };
 
 /**
@@ -354,9 +416,20 @@ export const getSwagStackAutoPanTarget = (
   viewportState: ViewportState,
   windowWidth: number,
   windowHeight: number,
-  fanConfig: FanConfig = DEFAULT_FAN_CONFIG
+  fanConfig: FanConfig = DEFAULT_FAN_CONFIG,
+  layout: CanvasLayout = DESKTOP_CANVAS_LAYOUT
 ): { x: number; y: number; scale: number } | null => {
-  const expandedBbox = getSwagStackExpandedBoundingBox(swagStack, fanConfig);
+  const { bounds: expandedBbox, contentBounds } =
+    getSwagStackExpandedBoundingBox(swagStack, fanConfig, layout.swag);
+  if (layout.compact) {
+    return getCompactRevealTarget(
+      swagStack.position,
+      contentBounds,
+      viewportState.scale,
+      windowWidth,
+      layout.autoPanMargin
+    );
+  }
 
   // Get current visible viewport in canvas coordinates
   const visibleViewport = getVisibleViewport(
@@ -407,4 +480,57 @@ export const getSwagStackAutoPanTarget = (
   };
 
   return result;
+};
+
+interface ExpandedContentOptions {
+  fanConfig: FanConfig;
+  /** Measured height of the fun-project description list, once known. */
+  funContentHeight?: number;
+  layout: CanvasLayout;
+  page?: number;
+}
+
+/**
+ * Canvas-space box of what an expanded item reveals, without its cover: the
+ * region the compact camera is allowed to scroll across.
+ */
+export const getExpandedContentBox = (
+  item: CanvasItem,
+  { fanConfig, funContentHeight, layout, page = 0 }: ExpandedContentOptions
+): BoundingBox | null => {
+  const offset = (box: BoundingBox): BoundingBox => ({
+    maxX: item.position.x + box.maxX,
+    maxY: item.position.y + box.maxY,
+    minX: item.position.x + box.minX,
+    minY: item.position.y + box.minY,
+  });
+  switch (item.kind) {
+    case "stack":
+      return offset(
+        getExpandedStackLayout(
+          item.cover,
+          getStackPage(item, page).cards,
+          fanConfig,
+          layout.stackColumns
+        ).contentBounds
+      );
+    case "funstack": {
+      const cardWidth = item.card.size.width ?? 240;
+      const box = getFunStackExpandedBoundingBox(
+        cardWidth,
+        item.card.size.height ?? 360,
+        item.card.content.items.length,
+        layout.funContentWidth,
+        funContentHeight
+      );
+      return offset({ ...box, minX: cardWidth + CONTENT_GAP });
+    }
+    case "swagstack":
+      return offset(
+        getSwagStackExpandedBoundingBox(item, fanConfig, layout.swag)
+          .contentBounds
+      );
+    default:
+      return null;
+  }
 };

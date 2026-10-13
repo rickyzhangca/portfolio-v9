@@ -29,7 +29,7 @@ export const useDraggable = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
   const didDragRef = useRef<boolean>(false);
-  const isDraggingRef = useRef(false);
+  const isDraggingRef = useRef<boolean>(false);
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const dragInputRef = useRef<DragInput | null>(null);
   const dragOffsetRef = useRef<Position>({ x: 0, y: 0 });
@@ -112,15 +112,13 @@ export const useDraggable = ({
           return;
         }
         input = { type: "touch", identifier: touch.identifier };
-        clientX = touch.clientX;
-        clientY = touch.clientY;
+        ({ clientX, clientY } = touch);
       } else {
         if (event.button !== 0) {
           return;
         }
         input = { type: "mouse" };
-        clientX = event.clientX;
-        clientY = event.clientY;
+        ({ clientX, clientY } = event);
       }
 
       event.stopPropagation();
@@ -162,14 +160,12 @@ export const useDraggable = ({
         if (!touch) {
           return;
         }
-        clientX = touch.clientX;
-        clientY = touch.clientY;
+        ({ clientX, clientY } = touch);
       } else {
         if (isTouchEvent(event)) {
           return;
         }
-        clientX = event.clientX;
-        clientY = event.clientY;
+        ({ clientX, clientY } = event);
       }
 
       const rawDeltaX = clientX - startPosition.x;

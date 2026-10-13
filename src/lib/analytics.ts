@@ -41,7 +41,7 @@ export interface AnalyticsEventProperties {
   stack_expand?: { stack_type: string; item_count: number };
   stack_close?: {
     stack_type: string;
-    close_method: "keyboard" | "outside_click";
+    close_method: "close_button" | "keyboard" | "outside_click";
   };
   canvas_view_reset?: { zoom_level: number };
   canvas_position_reset?: Record<string, never>;
@@ -59,11 +59,9 @@ export const track = (
     return;
   }
 
-  const umami = (
-    window as unknown as {
-      umami?: { track: (e: string, p?: Record<string, unknown>) => void };
-    }
-  ).umami;
+  const { umami } = window as unknown as {
+    umami?: { track: (e: string, p?: Record<string, unknown>) => void };
+  };
 
   if (umami) {
     umami.track(eventName, properties);
