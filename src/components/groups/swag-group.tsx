@@ -4,6 +4,7 @@ import {
   lazy,
   Suspense,
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useState,
@@ -12,6 +13,7 @@ import { RenderCard } from "@/cards/render-card";
 import { fanConfigAtom } from "@/context/atoms";
 import { useCanvasEnvironment } from "@/context/canvas-layout";
 import { useDraggable } from "@/hooks/use-draggable";
+import { whenPageIdle } from "@/hooks/page-idle";
 import { useTogglePress } from "@/hooks/use-toggle-press";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { getSwagPosition } from "@/lib/card-layout";
@@ -32,10 +34,11 @@ const COLLAPSED_POSITIONS = [
 ];
 
 // Tooltip positioning only matters once someone hovers or taps a swag item, so
-// it stays out of the initial canvas bundle.
-const SwagLabel = lazy(() =>
-  import("./swag-label").then((module) => ({ default: module.SwagLabel }))
-);
+// it stays out of the initial canvas bundle and is fetched once the first view
+// has loaded, or when the collection opens before that.
+const loadSwagLabel = () =>
+  import("./swag-label").then((module) => ({ default: module.SwagLabel }));
+const SwagLabel = lazy(loadSwagLabel);
 
 interface SwagGroupProps {
   item: CanvasSwagStackItem;
@@ -72,10 +75,31 @@ export const SwagGroup = ({
     item.cover.size.height
   );
   const [hasMounted, setHasMounted] = useState(false);
+  // Labels stay once shown: swapping the trigger back would remount images.
+  const [showLabels, setShowLabels] = useState(isExpanded);
+  if (isExpanded && !showLabels) {
+    setShowLabels(true);
+  }
 
   // Track initial mount for animation delays
   useLayoutEffect(() => {
     setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    // Rendering the loaded labels before the first expansion keeps 100+ items
+    // from suspending at once when the collection opens.
+    whenPageIdle()
+      .then(loadSwagLabel)
+      .then(() => {
+        if (active) {
+          setShowLabels(true);
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const fanConfig = useAtomValue(fanConfigAtom);
@@ -277,9 +301,13 @@ export const SwagGroup = ({
                   : collapsedTransition
               }
             >
-              <Suspense fallback={<SwagImageButton swag={swag} />}>
-                <SwagLabel swag={swag} />
-              </Suspense>
+              {showLabels ? (
+                <Suspense fallback={<SwagImageButton swag={swag} />}>
+                  <SwagLabel swag={swag} />
+                </Suspense>
+              ) : (
+                <SwagImageButton swag={swag} />
+              )}
             </motion.div>
           );
         })}

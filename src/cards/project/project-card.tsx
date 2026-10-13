@@ -4,6 +4,7 @@ import { memo, useCallback, useState } from "react";
 import { SPRING_PRESETS } from "@/lib/animation";
 import { tw } from "@/lib/utils";
 import type { ProjectCardContent } from "@/cards/registry";
+import { getResponsiveImageSources } from "@/cards/responsive-image";
 
 interface ProjectCardProps {
   content: ProjectCardContent;
@@ -20,6 +21,7 @@ const ProjectCardComponent = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const handleImageError = useCallback(() => setImageError(true), []);
   const handleImageLoad = useCallback(() => setImageLoaded(true), []);
+  const { src, srcSet } = getResponsiveImageSources(content.image);
 
   return (
     <div className="flex h-full flex-col gap-1.5">
@@ -48,7 +50,8 @@ const ProjectCardComponent = ({
             loading={priority ? "eager" : "lazy"}
             onError={handleImageError}
             onLoad={handleImageLoad}
-            src={content.image}
+            src={src}
+            srcSet={srcSet}
             width="200"
           />
         )}

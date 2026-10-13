@@ -1,4 +1,5 @@
 import type { FolderCoverCardContent } from "@/cards/registry";
+import { getResponsiveImageSources } from "@/cards/responsive-image";
 
 export function FolderCoverCard({
   content,
@@ -12,8 +13,8 @@ export function FolderCoverCard({
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
           height={1020}
-          src={content.image}
           width={720}
+          {...getResponsiveImageSources(content.image)}
         />
       ) : null}
       <p className="wrap-break-word relative translate-x-1 translate-y-1 whitespace-pre-wrap font-hand text-sm">
