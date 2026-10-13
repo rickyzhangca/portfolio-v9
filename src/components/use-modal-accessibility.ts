@@ -91,21 +91,20 @@ const unregisterModal = (entry: ModalEntry) => {
   }
 };
 
-const getFocusableElements = (dialog: HTMLElement) => {
-  return Array.from(
-    dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
-  ).filter((element) => {
-    if (
-      element.matches(":disabled") ||
-      element.closest("[hidden], [inert], [aria-hidden='true']")
-    ) {
-      return false;
-    }
+const getFocusableElements = (dialog: HTMLElement) =>
+  Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    (element) => {
+      if (
+        element.matches(":disabled") ||
+        element.closest("[hidden], [inert], [aria-hidden='true']")
+      ) {
+        return false;
+      }
 
-    const style = window.getComputedStyle(element);
-    return style.display !== "none" && style.visibility !== "hidden";
-  });
-};
+      const style = window.getComputedStyle(element);
+      return style.display !== "none" && style.visibility !== "hidden";
+    }
+  );
 
 export const useModalAccessibility = (onEscape?: () => void) => {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -156,9 +155,9 @@ export const useModalAccessibility = (onEscape?: () => void) => {
         return;
       }
 
-      const firstElement = focusableElements[0];
+      const [firstElement] = focusableElements;
       const lastElement = focusableElements.at(-1);
-      const activeElement = document.activeElement;
+      const { activeElement } = document;
 
       if (
         event.shiftKey &&

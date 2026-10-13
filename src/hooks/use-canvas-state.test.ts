@@ -426,7 +426,7 @@ describe("useCanvasState - Reducer Action Coverage", () => {
       if (stack.kind === "stack") {
         const s1 = newState.items.get("s1");
         if (s1?.kind === "stack") {
-          expect(s1.cover?.size.height).toBe(300);
+          expect(s1.cover.size.height).toBe(300);
         }
       }
     });

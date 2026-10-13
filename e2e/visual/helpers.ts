@@ -49,7 +49,8 @@ const waitForMotionToSettle = async (page: Page) => {
 
       let lastMotionState = getMotionState();
       let stableFrames = 0;
-      for (let frame = 0; frame < maxFrames; frame++) {
+      for (let frame = 0; frame < maxFrames; frame += 1) {
+        // biome-ignore lint/performance/noAwaitInLoops: frames are awaited one at a time
         await new Promise<void>((resolve) => {
           requestAnimationFrame(() => resolve());
         });
@@ -203,6 +204,7 @@ export const freezeVisibleVideosAtStart = async (videos: Locator) => {
       });
       element.currentTime = 0;
       if (element.seeking) {
+        // biome-ignore lint/performance/noAwaitInLoops: frames are awaited one at a time
         await seeked;
       }
       element.pause();

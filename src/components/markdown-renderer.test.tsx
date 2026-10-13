@@ -330,7 +330,7 @@ describe("MarkdownRenderer", () => {
       <MarkdownRenderer content={"![Demo Video](/demo.mov)"} />
     );
 
-    const observer = observers[0];
+    const [observer] = observers;
     unmount();
 
     expect(observer?.disconnect).toHaveBeenCalledTimes(1);

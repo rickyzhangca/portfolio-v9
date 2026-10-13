@@ -1,37 +1,38 @@
 import {
-    ARTICLE_CARD_PREVIEW_INSET,
-    ARTICLE_CARD_SIZE,
+  ARTICLE_CARD_PREVIEW_INSET,
+  ARTICLE_CARD_SIZE,
 } from "@/cards/article/article-card";
 import { RenderCard } from "@/cards/render-card";
 import { PaperCardProjection } from "@/components/documents/paper-card-projection";
 import { fanConfigAtom } from "@/context/atoms";
+import { useCanvasEnvironment } from "@/context/canvas-layout";
 import { useDraggable } from "@/hooks/use-draggable";
 import { AnalyticsEvents, track } from "@/lib/analytics";
 import type { CanvasStackItem, Position } from "@/types/canvas";
 import { motion } from "framer-motion";
 import { useAtomValue } from "jotai";
 import {
-    type KeyboardEvent,
-    type PointerEvent,
-    type ReactNode,
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
 } from "react";
 
 const CARD_MASK_DATA_URI = `url("data:image/svg+xml,%3Csvg viewBox='0 0 240 340' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 301.6C0 315.041 0 321.762 2.61584 326.896C4.9168 331.412 8.58834 335.083 13.1042 337.384C18.2381 340 24.9587 340 38.4 340H201.6C215.041 340 221.762 340 226.896 337.384C231.412 335.083 235.083 331.412 237.384 326.896C240 321.762 240 315.041 240 301.6V250.875C240 245.342 240 242.576 239.541 239.894C239.133 237.514 238.457 235.187 237.526 232.958C236.476 230.448 234.994 228.112 232.03 223.441L231.47 222.559C228.506 217.888 227.024 215.552 225.974 213.042C225.043 210.813 224.367 208.486 223.959 206.106C223.5 203.424 223.5 200.658 223.5 195.125V134.875C223.5 129.342 223.5 126.576 223.959 123.894C224.367 121.514 225.043 119.187 225.974 116.958C227.024 114.448 228.506 112.112 231.47 107.441L232.03 106.559C234.994 101.888 236.476 99.5523 237.526 97.0418C238.457 94.8133 239.133 92.4865 239.541 90.1058C240 87.424 240 84.6577 240 79.1251V38.4C240 24.9587 240 18.2381 237.384 13.1042C235.083 8.58834 231.412 4.9168 226.896 2.61584C221.762 0 215.041 0 201.6 0H38.4C24.9587 0 18.2381 0 13.1042 2.61584C8.58834 4.9168 4.9168 8.58834 2.61584 13.1042C0 18.2381 0 24.9587 0 38.4V301.6Z'/%3E%3C/svg%3E")`;
 
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import {
-    COLLAPSED_POSITIONS,
-    COLLAPSED_VISIBLE_COUNT,
-    getExpandedStackLayout,
-    getStackPage,
-    getWritingCollapsedPose,
-    WRITING_COLLAPSED_GAP_PX,
-    WRITING_COLLAPSED_HOVER_GAP_PX,
+  COLLAPSED_POSITIONS,
+  COLLAPSED_VISIBLE_COUNT,
+  getExpandedStackLayout,
+  getStackPage,
+  getWritingCollapsedPose,
+  WRITING_COLLAPSED_GAP_PX,
+  WRITING_COLLAPSED_HOVER_GAP_PX,
 } from "@/lib/card-layout";
 import { getDocumentLayoutId } from "@/lib/document-motion";
 import { tw } from "@/lib/utils";
@@ -44,6 +45,8 @@ const COVER_BASE_DELAY = 0.05; // seconds before first cover appears
 const COVER_STAGGER = 0.05; // seconds between each group's cover
 const PROJECT_DELAY_AFTER_COVER = 0.2; // seconds after cover before projects appear
 const ZERO_REPULSION_OFFSET = { x: 0, y: 0 } as const;
+/** The camera move after a toggle, plus time for the cards to settle. */
+const PEEK_LOCK_AFTER_TOGGLE_MS = 700;
 
 interface CardRepulsionFrameProps {
   cardId: string;
@@ -112,6 +115,7 @@ export const CardStack = ({
   setRootRef,
 }: CardStackProps) => {
   const fanConfig = useAtomValue(fanConfigAtom);
+  const { layout } = useCanvasEnvironment();
   const stackPage = useMemo(() => getStackPage(stack, page), [stack, page]);
   const [retainExpandedCards, setRetainExpandedCards] = useState(isExpanded);
   useEffect(() => {
@@ -199,8 +203,14 @@ export const CardStack = ({
   );
 
   const expandedLayout = useMemo(
-    () => getExpandedStackLayout(coverWithSize, projectsWithSizes, fanConfig),
-    [coverWithSize, projectsWithSizes, fanConfig]
+    () =>
+      getExpandedStackLayout(
+        coverWithSize,
+        projectsWithSizes,
+        fanConfig,
+        layout.stackColumns
+      ),
+    [coverWithSize, projectsWithSizes, fanConfig, layout.stackColumns]
   );
   const renderedCards =
     isExpanded || retainExpandedCards
@@ -213,7 +223,19 @@ export const CardStack = ({
   const peekTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isWritingFolder = stack.cover.kind === "folder-cover";
+  const peekLockedUntilRef = useRef(0);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: isExpanded is the trigger, not a value the effect reads
+  useEffect(() => {
+    // Opening or closing moves the camera. A cover that slides under or away
+    // from a still pointer is not a hover, and reading it as one makes the
+    // tucked cards shift again once the camera settles.
+    peekLockedUntilRef.current = performance.now() + PEEK_LOCK_AFTER_TOGGLE_MS;
+    setIsPeeking(false);
+  }, [isExpanded]);
   const triggerPeek = useCallback(() => {
+    if (performance.now() < peekLockedUntilRef.current) {
+      return;
+    }
     if (isWritingFolder) {
       setIsPeeking(true);
       return;
@@ -633,15 +655,19 @@ export const CardStack = ({
                   >
                     <PaperCardProjection
                       inset={ARTICLE_CARD_PREVIEW_INSET}
-                      // Motion keeps the layout id from the first mount. The
-                      // tucked pair mounts while closed, so the id has to be
-                      // present immediately or their zoom never attaches.
-                      // Later cards mount already open. The dependency ignores
-                      // the hover gap.
-                      layoutDependency={
-                        index < COLLAPSED_VISIBLE_COUNT ? isExpanded : undefined
+                      // Motion registers a shared layout id when a node mounts
+                      // and re-measures every node in the canvas whenever any
+                      // of them updates. A tucked card still holding its id gets
+                      // re-measured against the expanded pose while the folder
+                      // closes, which makes its paper jump. Tucked cards cannot
+                      // be opened, so they carry no id: it mounts with the card
+                      // when the folder opens, and the key remounts it per state.
+                      key={isExpanded ? "open" : "tucked"}
+                      layoutId={
+                        isExpanded
+                          ? getDocumentLayoutId(stack.id, card.id)
+                          : undefined
                       }
-                      layoutId={getDocumentLayoutId(stack.id, card.id)}
                       shadow={isExpanded ? "lifted" : "soft"}
                       size={ARTICLE_CARD_SIZE}
                     >
@@ -661,7 +687,15 @@ export const CardStack = ({
             aria-label="Folder pages"
             className="no-drag no-pan absolute flex items-center gap-3 rounded-full bg-white px-4 py-2 text-sm shadow-lg"
             initial={false}
-            style={{ left: 0, top: (coverWithSize?.size.height ?? 340) + 24 }}
+            // The compact layout hides the cover, so the pager sits under the cards.
+            style={
+              layout.compact
+                ? {
+                    left: expandedLayout.contentBounds.minX,
+                    top: expandedLayout.contentBounds.maxY + 24,
+                  }
+                : { left: 0, top: (coverWithSize?.size.height ?? 340) + 24 }
+            }
             transition={SPRING_PRESETS.smooth}
           >
             <button

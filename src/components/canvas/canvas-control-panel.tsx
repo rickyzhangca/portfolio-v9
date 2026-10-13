@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useAtom } from "jotai";
+import { useCallback } from "react";
 import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
 import { SPRING_PRESETS } from "@/lib/animation";
 import { EXPAND_MAX_PER_ROW, getFanTransform } from "@/lib/card-layout";
@@ -30,7 +31,7 @@ export const CanvasControlPanel = () => {
     // Apply fan formulas from card-group.tsx, scaled down for preview
     const SCALE = 0.15; // Scale factor for preview area
     const fan = getFanTransform(cardIndex, fanConfig);
-    const rotate = fan.rotate;
+    const { rotate } = fan;
     const arcY = fan.arcY * SCALE;
     const gapX = (colInRow + 1) * fanConfig.expandGapPx * SCALE;
     const gapY = row * fanConfig.expandRowGapPx * SCALE;
@@ -47,6 +48,55 @@ export const CanvasControlPanel = () => {
     fanConfig.arcStepPx !== DEFAULT_FAN_CONFIG.arcStepPx ||
     fanConfig.expandGapPx !== DEFAULT_FAN_CONFIG.expandGapPx ||
     fanConfig.expandRowGapPx !== DEFAULT_FAN_CONFIG.expandRowGapPx;
+
+  const handleRadiusChange = useCallback(
+    (value: number | readonly number[]) =>
+      setConfig((current) => ({
+        ...current,
+        radiusPx: toSingleNumber(value),
+      })),
+    [setConfig]
+  );
+  const handleStrengthChange = useCallback(
+    (value: number | readonly number[]) =>
+      setConfig((current) => ({
+        ...current,
+        strengthPx: toSingleNumber(value),
+      })),
+    [setConfig]
+  );
+  const handleRotateStepChange = useCallback(
+    (value: number | readonly number[]) =>
+      setFanConfig((current) => ({
+        ...current,
+        rotateStepDeg: toSingleNumber(value),
+      })),
+    [setFanConfig]
+  );
+  const handleArcStepChange = useCallback(
+    (value: number | readonly number[]) =>
+      setFanConfig((current) => ({
+        ...current,
+        arcStepPx: toSingleNumber(value),
+      })),
+    [setFanConfig]
+  );
+  const handleExpandGapChange = useCallback(
+    (value: number | readonly number[]) =>
+      setFanConfig((current) => ({
+        ...current,
+        expandGapPx: toSingleNumber(value),
+      })),
+    [setFanConfig]
+  );
+  const handleExpandRowGapChange = useCallback(
+    (value: number | readonly number[]) =>
+      setFanConfig((current) => ({
+        ...current,
+        expandRowGapPx: toSingleNumber(value),
+      })),
+    [setFanConfig]
+  );
 
   const handleResetRepulsion = () => {
     setConfig({ ...DEFAULT_REPULSION_CONFIG });
@@ -112,9 +162,7 @@ export const CanvasControlPanel = () => {
                 aria-label="Radius"
                 max={2000}
                 min={200}
-                onValueChange={(value) =>
-                  setConfig({ ...config, radiusPx: toSingleNumber(value) })
-                }
+                onValueChange={handleRadiusChange}
                 step={100}
                 value={config.radiusPx}
               />
@@ -136,9 +184,7 @@ export const CanvasControlPanel = () => {
                 aria-label="Strength"
                 max={500}
                 min={0}
-                onValueChange={(value) =>
-                  setConfig({ ...config, strengthPx: toSingleNumber(value) })
-                }
+                onValueChange={handleStrengthChange}
                 step={50}
                 value={config.strengthPx}
               />
@@ -231,12 +277,7 @@ export const CanvasControlPanel = () => {
                 aria-label="Rotation step"
                 max={5}
                 min={0}
-                onValueChange={(value) =>
-                  setFanConfig({
-                    ...fanConfig,
-                    rotateStepDeg: toSingleNumber(value),
-                  })
-                }
+                onValueChange={handleRotateStepChange}
                 step={0.5}
                 value={fanConfig.rotateStepDeg}
               />
@@ -258,12 +299,7 @@ export const CanvasControlPanel = () => {
                 aria-label="Arc step"
                 max={20}
                 min={0}
-                onValueChange={(value) =>
-                  setFanConfig({
-                    ...fanConfig,
-                    arcStepPx: toSingleNumber(value),
-                  })
-                }
+                onValueChange={handleArcStepChange}
                 step={1}
                 value={fanConfig.arcStepPx}
               />
@@ -285,12 +321,7 @@ export const CanvasControlPanel = () => {
                 aria-label="Horizontal gap"
                 max={70}
                 min={-70}
-                onValueChange={(value) =>
-                  setFanConfig({
-                    ...fanConfig,
-                    expandGapPx: toSingleNumber(value),
-                  })
-                }
+                onValueChange={handleExpandGapChange}
                 step={1}
                 value={fanConfig.expandGapPx}
               />
@@ -312,12 +343,7 @@ export const CanvasControlPanel = () => {
                 aria-label="Vertical gap"
                 max={70}
                 min={-70}
-                onValueChange={(value) =>
-                  setFanConfig({
-                    ...fanConfig,
-                    expandRowGapPx: toSingleNumber(value),
-                  })
-                }
+                onValueChange={handleExpandRowGapChange}
                 step={1}
                 value={fanConfig.expandRowGapPx}
               />

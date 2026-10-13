@@ -45,6 +45,7 @@ it("updates real config atoms through named keyboard sliders and resets each tab
     "Horizontal gap",
     "Vertical gap",
   ]) {
+    // biome-ignore lint/performance/noAwaitInLoops: each slider is looked up after the previous change settles
     fireEvent.keyDown(await screen.findByRole("slider", { name: label }), {
       key: "ArrowRight",
     });

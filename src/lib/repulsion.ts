@@ -1,4 +1,8 @@
-import { getExpandedStackLayout, getStackPage } from "@/lib/card-layout";
+import {
+  EXPAND_MAX_PER_ROW,
+  getExpandedStackLayout,
+  getStackPage,
+} from "@/lib/card-layout";
 import type { FanConfig } from "@/lib/fan";
 import type { CanvasItem, CanvasStackItem, Position } from "@/types/canvas";
 
@@ -21,6 +25,8 @@ export interface RepulsionSource {
 
 interface StackCardRepulsionOptions {
   cardId: string;
+  /** Cards per row of the expanded folder; narrower on small screens. */
+  columns?: number;
   config?: Partial<RepulsionConfig>;
   fanConfig: FanConfig;
   page?: number;
@@ -116,12 +122,18 @@ export const computeRepulsionOffsets = (
 export function computeStackCardRepulsion({
   stack,
   cardId,
+  columns = EXPAND_MAX_PER_ROW,
   fanConfig,
   page = 0,
   config = {},
 }: StackCardRepulsionOptions) {
   const { cards } = getStackPage(stack, page);
-  const { placements } = getExpandedStackLayout(stack.cover, cards, fanConfig);
+  const { placements } = getExpandedStackLayout(
+    stack.cover,
+    cards,
+    fanConfig,
+    columns
+  );
   const centers = new Map<string, Position>();
   for (const { card, x, y, rotate } of placements) {
     const angle = (rotate * Math.PI) / 180;

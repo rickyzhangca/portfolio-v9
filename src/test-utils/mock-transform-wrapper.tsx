@@ -49,9 +49,9 @@ export const MockTransformWrapper = ({
   children,
   className,
   wrapperClass,
-}: MockTransformWrapperProps) => {
-  return <div className={className || wrapperClass}>{children}</div>;
-};
+}: MockTransformWrapperProps) => (
+  <div className={className || wrapperClass}>{children}</div>
+);
 
 export const MockTransformComponent = ({
   children,
@@ -59,6 +59,4 @@ export const MockTransformComponent = ({
 }: {
   children: ReactNode;
   className?: string;
-}) => {
-  return <div className={className}>{children}</div>;
-};
+}) => <div className={className}>{children}</div>;

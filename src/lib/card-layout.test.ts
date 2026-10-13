@@ -4,12 +4,12 @@ import { getAutoPanTarget } from "@/lib/auto-pan";
 import { createMockCover, createMockStack } from "@/test-utils/test-helpers";
 import { describe, expect, it } from "vitest";
 import {
-    getExpandedStackLayout,
-    getOffsets,
-    getRotatedBoundingBox,
-    getStackPage,
-    getWritingCollapsedPose,
-    STACK_OFFSET_PX,
+  getExpandedStackLayout,
+  getOffsets,
+  getRotatedBoundingBox,
+  getStackPage,
+  getWritingCollapsedPose,
+  STACK_OFFSET_PX,
 } from "./card-layout";
 import { DEFAULT_FAN_CONFIG } from "./fan";
 

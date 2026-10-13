@@ -19,7 +19,7 @@ export const AboutSheet = ({
 }: AboutSheetProps) => (
   <article
     className={tw(
-      "flex h-full w-full flex-col bg-white px-10 pt-10",
+      "flex h-full w-full flex-col bg-white px-5 pt-8 sm:px-10 sm:pt-10",
       !interactive && "pointer-events-none select-none",
       className
     )}

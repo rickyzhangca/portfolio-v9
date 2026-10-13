@@ -75,7 +75,8 @@ describe("useDraggable", () => {
     rafCallbacks.clear();
 
     vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
-      const id = nextRafId++;
+      const id = nextRafId;
+      nextRafId += 1;
       rafCallbacks.set(id, callback);
       return id;
     });

@@ -1,6 +1,6 @@
 import { EnvelopeSimpleIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { memo, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { SPRING_PRESETS } from "@/lib/animation";
 import type { EmailCardContent } from "@/cards/registry";
 
@@ -27,6 +27,12 @@ const EmailCardComponent = ({ content }: EmailCardProps) => {
       setCopied(false);
     }, 700);
   };
+
+  const finishAnimating = useCallback(() => {
+    if (!copied) {
+      setIsAnimating(false);
+    }
+  }, [copied]);
 
   const textVariants = {
     initial: {
@@ -65,7 +71,7 @@ const EmailCardComponent = ({ content }: EmailCardProps) => {
           <AnimatePresence
             initial={false}
             mode="popLayout"
-            onExitComplete={() => !copied && setIsAnimating(false)}
+            onExitComplete={finishAnimating}
           >
             {copied ? (
               <motion.span

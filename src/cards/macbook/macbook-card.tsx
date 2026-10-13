@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import type { PointerEvent } from "react";
+import type { MouseEvent, PointerEvent } from "react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { MacbookCardContent } from "@/cards/registry";
 import { tw } from "@/lib/utils";
@@ -26,6 +26,10 @@ const MacbookCardComponent = ({
 }: MacbookCardProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const stickerRefs = useRef<Map<string, HTMLImageElement | null>>(new Map());
+  const pointerTypeRef = useRef("mouse");
+  const stickerRefCallbacksRef = useRef(
+    new Map<string, (element: HTMLImageElement | null) => void>()
+  );
   const [tooltip, setTooltip] = useState<StickerTooltipState | null>(null);
 
   const resolveTooltipPosition = useCallback((event: PointerEvent<Element>) => {
@@ -51,18 +55,8 @@ const MacbookCardComponent = ({
     };
   }, []);
 
-  const handleStickerPointerMove = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => {
-      if (!isFocused) {
-        return;
-      }
-
-      const position = resolveTooltipPosition(event);
-      let hoveredSticker: {
-        description: string;
-        stickerSrc: string;
-      } | null = null;
-
+  const findStickerAt = useCallback(
+    (clientX: number, clientY: number) => {
       for (const sticker of content.stickers) {
         const element = stickerRefs.current.get(sticker.src);
         if (!element) {
@@ -71,18 +65,30 @@ const MacbookCardComponent = ({
 
         const rect = element.getBoundingClientRect();
         if (
-          event.clientX >= rect.left &&
-          event.clientX <= rect.right &&
-          event.clientY >= rect.top &&
-          event.clientY <= rect.bottom
+          clientX >= rect.left &&
+          clientX <= rect.right &&
+          clientY >= rect.top &&
+          clientY <= rect.bottom
         ) {
-          hoveredSticker = {
+          return {
             description: sticker.description,
             stickerSrc: sticker.src,
           };
-          break;
         }
       }
+      return null;
+    },
+    [content.stickers]
+  );
+
+  const handleStickerPointerMove = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (!isFocused) {
+        return;
+      }
+
+      const position = resolveTooltipPosition(event);
+      const hoveredSticker = findStickerAt(event.clientX, event.clientY);
 
       setTooltip((prev) => {
         if (!(hoveredSticker && position)) {
@@ -105,11 +111,50 @@ const MacbookCardComponent = ({
         };
       });
     },
-    [content.stickers, isFocused, resolveTooltipPosition]
+    [findStickerAt, isFocused, resolveTooltipPosition]
   );
 
-  const handleStickerPointerLeave = useCallback(() => {
-    setTooltip(null);
+  const handlePointerDown = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      pointerTypeRef.current = event.pointerType;
+      handleStickerPointerMove(event);
+    },
+    [handleStickerPointerMove]
+  );
+
+  // A tap on a sticker reads its note; only the rest of the laptop unfocuses it.
+  const handleClickCapture = useCallback(
+    (event: MouseEvent<HTMLDivElement>) => {
+      if (
+        isFocused &&
+        pointerTypeRef.current !== "mouse" &&
+        findStickerAt(event.clientX, event.clientY)
+      ) {
+        event.stopPropagation();
+      }
+    },
+    [findStickerAt, isFocused]
+  );
+
+  const handleStickerPointerLeave = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      // A finger lifting is not leaving: the note stays until the next tap.
+      if (event.pointerType === "mouse") {
+        setTooltip(null);
+      }
+    },
+    []
+  );
+
+  const getStickerRef = useCallback((src: string) => {
+    let callback = stickerRefCallbacksRef.current.get(src);
+    if (!callback) {
+      callback = (element: HTMLImageElement | null) => {
+        stickerRefs.current.set(src, element);
+      };
+      stickerRefCallbacksRef.current.set(src, callback);
+    }
+    return callback;
   }, []);
 
   useEffect(() => {
@@ -121,6 +166,8 @@ const MacbookCardComponent = ({
   return (
     <div
       className="relative h-full w-full"
+      onClickCapture={handleClickCapture}
+      onPointerDown={handlePointerDown}
       onPointerLeave={handleStickerPointerLeave}
       onPointerMove={handleStickerPointerMove}
       ref={containerRef}
@@ -147,9 +194,7 @@ const MacbookCardComponent = ({
           data-sticker-src={sticker.src}
           height={sticker.height}
           key={sticker.src}
-          ref={(element) => {
-            stickerRefs.current.set(sticker.src, element);
-          }}
+          ref={getStickerRef(sticker.src)}
           src={sticker.src}
           style={{
             left: `${sticker.x}%`,
@@ -162,7 +207,7 @@ const MacbookCardComponent = ({
         />
       ))}
       <AnimatePresence>
-        {isFocused && tooltip && (
+        {isFocused && tooltip ? (
           <motion.div
             animate={{
               opacity: 1,
@@ -202,7 +247,7 @@ const MacbookCardComponent = ({
               {tooltip.description}
             </div>
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
     </div>
   );

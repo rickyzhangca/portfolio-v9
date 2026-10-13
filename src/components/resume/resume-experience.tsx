@@ -8,8 +8,10 @@ export const ResumeExperience = ({ data }: ResumeExperienceProps) => {
   const experiences = data || [];
 
   return (
-    <div className="flex gap-10">
-      <p className="w-32 min-w-32 text-end font-medium text-lg">Experience</p>
+    <div className="flex flex-col gap-4 sm:flex-row sm:gap-10">
+      <p className="font-medium text-lg sm:w-32 sm:min-w-32 sm:text-end">
+        Experience
+      </p>
       <div className="flex flex-col gap-7">
         {experiences.map((experience) => (
           <div
@@ -23,7 +25,7 @@ export const ResumeExperience = ({ data }: ResumeExperienceProps) => {
               width={28}
             />
             <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2 font-medium text-lg">
+              <div className="flex flex-wrap items-baseline gap-x-2 font-medium text-lg">
                 <p>{experience.title}</p>
                 <p className="text-foreground2">{experience.company}</p>
               </div>

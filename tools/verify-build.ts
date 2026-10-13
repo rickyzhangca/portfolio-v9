@@ -68,6 +68,16 @@ for (const article of articles) {
     translations += 1;
   }
 }
+const manifest = JSON.parse(
+  readFileSync(path.join(output, ".vite/manifest.json"), "utf8")
+);
+const homeHtml = readFileSync(path.join(output, "index.html"), "utf8");
+assert.ok(
+  homeHtml.includes(
+    `<link rel="modulepreload" href="/${manifest["src/app.tsx"].file}"/>`
+  ),
+  "Home must preload the canvas App chunk"
+);
 assert.ok(
   existsSync(path.join(output, "404.html")),
   "Static 404 page is missing"

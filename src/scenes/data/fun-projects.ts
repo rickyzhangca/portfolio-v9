@@ -4,7 +4,7 @@ import communityLoveContent from "@/assets/fun-projects/content/community-love.w
 import slidesDemoContent from "@/assets/fun-projects/content/demo.webm";
 import figKiwiContent from "@/assets/fun-projects/content/fig-kiwi.webp";
 import fprintsContent from "@/assets/fun-projects/content/fprints.webp";
-import kiboUiContent from "@/assets/fun-projects/content/kibo-ui.mov";
+import kiboUiContent from "@/assets/fun-projects/content/kibo-ui.mp4";
 import octiconsFigmaContent from "@/assets/fun-projects/content/octicons-figma.webp";
 import octiconsWebContent from "@/assets/fun-projects/content/octicons-web.webp";
 import paopaoContent from "@/assets/fun-projects/content/paopao.webp";

@@ -11,9 +11,9 @@ export function FolderCoverCard({
         <img
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
-          height={1360}
+          height={1020}
           src={content.image}
-          width={960}
+          width={720}
         />
       ) : null}
       <p className="wrap-break-word relative translate-x-1 translate-y-1 whitespace-pre-wrap font-hand text-sm">

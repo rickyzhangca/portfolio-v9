@@ -179,7 +179,7 @@ const summarizeScenarios = (
   }
 
   return [...groups.values()].map((group) => {
-    const first = group[0];
+    const [first] = group;
     if (!first) {
       throw new Error("Scenario grouping produced an empty sample set");
     }
@@ -547,8 +547,7 @@ export default class PerformanceReporter implements Reporter {
       this.validationErrors.length === 0;
     this.buildRevision = buildFingerprint.value;
     this.buildFingerprintSource = buildFingerprint.source;
-    const buildRevision = this.buildRevision;
-    const trackedWorktreeChangesPresent = this.trackedWorktreeChangesPresent;
+    const { buildRevision, trackedWorktreeChangesPresent } = this;
     const browserVersions = [
       ...new Set(this.samples.map((sample) => sample.browser.version)),
     ];

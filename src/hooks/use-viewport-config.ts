@@ -60,8 +60,8 @@ export const useViewportConfig = ({
 export const useArePositionsModified = (
   currentItems: Map<string, CanvasItem>,
   initialItems: CanvasItem[]
-): boolean => {
-  return useMemo(() => {
+): boolean =>
+  useMemo(() => {
     if (currentItems.size !== initialItems.length) {
       return true;
     }
@@ -83,4 +83,3 @@ export const useArePositionsModified = (
     }
     return false;
   }, [currentItems, initialItems]);
-};

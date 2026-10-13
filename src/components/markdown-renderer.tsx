@@ -2,7 +2,9 @@ import {
   lazy,
   memo,
   type ReactElement,
+  type SyntheticEvent,
   Suspense,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -266,6 +268,23 @@ const MarkdownVideo = ({ src, alt }: MarkdownVideoProps) => {
   }, [isVisible, src]);
 
   const showVideo = isReady || isAutoplayBlocked;
+  const handleError = useCallback(() => {
+    setIsAutoplayBlocked(false);
+    setHasError(true);
+  }, []);
+  const handleLoadedMetadata = useCallback(
+    (event: SyntheticEvent<HTMLVideoElement>) => {
+      const { videoWidth, videoHeight } = event.currentTarget;
+      if (videoWidth > 0 && videoHeight > 0) {
+        setAspectRatio(`${videoWidth / videoHeight}`);
+      }
+    },
+    []
+  );
+  const handlePlaying = useCallback(() => {
+    setIsReady(true);
+    setHasError(false);
+  }, []);
 
   return (
     <span className="relative mt-4 not-last:mb-4 w-full">
@@ -281,20 +300,9 @@ const MarkdownVideo = ({ src, alt }: MarkdownVideoProps) => {
         controls={isAutoplayBlocked}
         loop
         muted
-        onError={() => {
-          setIsAutoplayBlocked(false);
-          setHasError(true);
-        }}
-        onLoadedMetadata={(event) => {
-          const { videoWidth, videoHeight } = event.currentTarget;
-          if (videoWidth > 0 && videoHeight > 0) {
-            setAspectRatio(`${videoWidth / videoHeight}`);
-          }
-        }}
-        onPlaying={() => {
-          setIsReady(true);
-          setHasError(false);
-        }}
+        onError={handleError}
+        onLoadedMetadata={handleLoadedMetadata}
+        onPlaying={handlePlaying}
         playsInline
         preload={isVisible ? "auto" : "none"}
         ref={videoRef}
@@ -305,14 +313,14 @@ const MarkdownVideo = ({ src, alt }: MarkdownVideoProps) => {
           opacity: showVideo ? 1 : 0,
         }}
       />
-      {hasError && (
+      {hasError ? (
         <span
           className="absolute inset-0 flex items-center justify-center rounded-xl bg-background3 text-foreground2 text-sm"
           role="alert"
         >
           Video could not be loaded.
         </span>
-      )}
+      ) : null}
     </span>
   );
 };
@@ -326,7 +334,9 @@ const MarkdownRendererComponent = ({ content }: MarkdownRendererProps) => {
     <ReactMarkdown
       components={{
         h1: ({ children }) => (
-          <h1 className="not-last:mb-8 font-medium text-5xl">{children}</h1>
+          <h1 className="not-last:mb-8 font-medium text-4xl sm:text-5xl">
+            {children}
+          </h1>
         ),
         h2: ({ children }) => (
           <h2 className="mt-5 not-last:mb-4 font-medium text-2xl">

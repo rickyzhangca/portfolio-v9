@@ -1,11 +1,17 @@
+import { XIcon } from "@phosphor-icons/react";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useAtomValue } from "jotai";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import { getInteractionPolicy } from "@/cards/registry";
 import { AboutModal } from "@/components/about/about-modal";
 import { ArticleModal } from "@/components/articles/article-modal";
 import { ResumeModal } from "@/components/resume/resume-modal";
 import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
+import {
+  CanvasEnvironmentContext,
+  useCanvasEnvironment,
+} from "@/context/canvas-layout";
 import { useCanvasSession } from "@/context/canvas-session";
 import {
   type ActiveDocument,
@@ -14,9 +20,15 @@ import {
 import { useCanvasState } from "@/hooks/use-canvas-state";
 import { useCanvasViewport } from "@/hooks/use-canvas-viewport";
 import {
+  useCoarsePointer,
+  useIgnoreSyntheticMouseEvents,
+} from "@/hooks/use-touch-input";
+import {
   useArePositionsModified,
   useViewportConfig,
 } from "@/hooks/use-viewport-config";
+import { type CanvasLayout, DESKTOP_CANVAS_LAYOUT } from "@/lib/canvas-layout";
+import { getCompactPanBounds, type PanBounds } from "@/lib/pan-bounds";
 import { getDocumentLayoutId } from "@/lib/document-motion";
 import {
   computeRepulsionOffsets,
@@ -28,22 +40,56 @@ import { CanvasItemRenderer } from "./canvas-item";
 
 interface CanvasProps {
   initialItems: CanvasItem[];
+  layout?: CanvasLayout;
 }
 
 const ZERO_OFFSET = { x: 0, y: 0 } as const;
 
-export const Canvas = ({ initialItems }: CanvasProps) => {
+/** A long press would open the browser's image and text menu over the canvas. */
+const suppressTouchContextMenu = (event: Event) => {
+  if (!(event.target instanceof Element && event.target.closest("a[href]"))) {
+    event.preventDefault();
+  }
+};
+
+export const Canvas = ({
+  initialItems,
+  layout = DESKTOP_CANVAS_LAYOUT,
+}: CanvasProps) => {
+  const isCoarsePointer = useCoarsePointer();
+  const environment = useMemo(
+    () => ({ isCoarsePointer, layout }),
+    [isCoarsePointer, layout]
+  );
+  return (
+    <CanvasEnvironmentContext.Provider value={environment}>
+      <CanvasScene initialItems={initialItems} />
+    </CanvasEnvironmentContext.Provider>
+  );
+};
+
+const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
+  const { isCoarsePointer, layout } = useCanvasEnvironment();
   const [baselineItems] = useState(initialItems);
   const { state, actions } = useCanvasState(baselineItems);
   const [isDragging, setIsDragging] = useState(false);
   const [activeDocument, setActiveDocument] = useState<ActiveDocument>(null);
   const session = useCanvasSession();
+  useIgnoreSyntheticMouseEvents();
   const fanConfig = useAtomValue(fanConfigAtom);
   const repulsionConfig = useAtomValue(repulsionConfigAtom);
+  // Phones show one column and reveal content at its own width, so sideways
+  // drags only reach empty canvas. The focused laptop is wider than the screen.
+  const lockAxisX = layout.compact && state.focusedItemId === null;
+  // The bounds depend on interaction state that is created after the viewport.
+  const panBoundsRef = useRef<() => PanBounds | null>(() => null);
+  const getPanBounds = useCallback(() => panBoundsRef.current(), []);
   const viewport = useCanvasViewport(
     state.viewportState,
     actions.updateViewport,
-    activeDocument !== null || session.articleOpen || !session.canvasVisible
+    activeDocument !== null || session.articleOpen || !session.canvasVisible,
+    lockAxisX,
+    getPanBounds
   );
   const getViewport = useCallback(
     () => viewport.viewportRef.current,
@@ -55,12 +101,30 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     cancelPendingPan: viewport.cancelPendingPan,
     fanConfig,
     getViewport,
+    layout,
     panTo: viewport.panTo,
     setActiveDocument,
     setExpandedStack: actions.setExpandedStack,
     setFocusedItem: actions.setFocusedItem,
     state,
   });
+  panBoundsRef.current = () =>
+    getCompactPanBounds({
+      expandedStackId: state.expandedStackId,
+      fanConfig,
+      focusedItemId: state.focusedItemId,
+      funContentHeights: interaction.getContentHeights(),
+      getFocusScale: (item) =>
+        getInteractionPolicy(item.card.kind).focusScale ?? 1,
+      items: state.items,
+      layout,
+      stackPages: interaction.stackPages,
+      viewport: {
+        height: window.innerHeight,
+        scale: viewport.viewportRef.current.scale,
+        width: window.innerWidth,
+      },
+    });
   const { effectiveRepulsionConfig } = useViewportConfig({
     baseRepulsionConfig: repulsionConfig,
     viewportDimensions: viewport.dimensions,
@@ -79,6 +143,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
       documentSource && sourceItem?.kind === "stack"
         ? computeStackCardRepulsion({
             cardId: documentSource.cardId,
+            columns: layout.stackColumns,
             config,
             fanConfig,
             page: interaction.stackPages[sourceItem.id] ?? 0,
@@ -100,6 +165,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
     documentItemId,
     documentSource,
     fanConfig,
+    layout.stackColumns,
     interaction.stackPages,
     effectiveRepulsionConfig,
     repulsionConfig,
@@ -132,11 +198,40 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
   const overlays = [state.expandedStackId, state.focusedItemId].filter(
     (id): id is string => id !== null
   );
+  const showCloseButton =
+    isCoarsePointer &&
+    !interaction.isLocked &&
+    (state.expandedStackId !== null || state.focusedItemId !== null);
+  const { canvasVisible } = session;
+  const { containerRef } = viewport;
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!(container && isCoarsePointer)) {
+      return;
+    }
+    container.addEventListener("contextmenu", suppressTouchContextMenu);
+    return () =>
+      container.removeEventListener("contextmenu", suppressTouchContextMenu);
+  }, [containerRef, isCoarsePointer]);
+
+  useEffect(() => {
+    if (!canvasVisible) {
+      return;
+    }
+    // Pulling the page down must not refresh or bounce while the canvas pans.
+    const root = document.documentElement;
+    const previous = root.style.overscrollBehavior;
+    root.style.overscrollBehavior = "none";
+    return () => {
+      root.style.overscrollBehavior = previous;
+    };
+  }, [canvasVisible]);
 
   return (
     <LayoutGroup>
       <div
-        className="h-screen w-screen overflow-clip"
+        className="h-full w-full overflow-clip"
         onPointerDownCapture={interaction.cancelLayoutCorrection}
         onWheelCapture={interaction.cancelLayoutCorrection}
         ref={viewport.containerRef}
@@ -153,7 +248,9 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
           onZoomStop={viewport.onStopped}
           panning={{
             disabled: isDragging || interaction.isLocked,
-            excluded: ["no-pan"],
+            // A finger has no empty gutter to grab: swipes must pan from cards too.
+            excluded: isCoarsePointer ? [] : ["no-pan"],
+            lockAxisX,
             velocityDisabled: false,
           }}
           pinch={{ disabled: true }}
@@ -164,7 +261,7 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
             <>
               <TransformComponent
                 contentClass="relative !w-full !h-full"
-                wrapperClass="!w-screen !h-screen !overflow-clip"
+                wrapperClass="!w-full !h-full !overflow-clip touch-none [&_img]:[-webkit-touch-callout:none]"
               >
                 {Array.from(state.items.values()).map((item, itemIndex) => (
                   <CanvasItemRenderer
@@ -179,6 +276,8 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                       activeDocument.cardId === item.card.id
                     }
                     dragDisabled={
+                      // On touch a swipe must pan, never lift the card under it.
+                      isCoarsePointer ||
                       state.expandedStackId !== null ||
                       interaction.isLocked ||
                       state.focusedItemId !== null
@@ -227,11 +326,35 @@ export const Canvas = ({ initialItems }: CanvasProps) => {
                   })}
                 </AnimatePresence>
               </TransformComponent>
-              <CanvasControls
-                isResetDisabled={isViewportReset && !arePositionsModified}
-                onReset={resetViewport}
-                onResetPositions={resetItems}
-              />
+              {/* Phones keep one bounded column: nothing to tune or reset. */}
+              {layout.compact ? null : (
+                <CanvasControls
+                  isResetDisabled={isViewportReset && !arePositionsModified}
+                  onReset={resetViewport}
+                  onResetPositions={resetItems}
+                />
+              )}
+              <AnimatePresence>
+                {showCloseButton ? (
+                  <motion.div
+                    animate={{ opacity: 1, y: 0 }}
+                    className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center"
+                    exit={{ opacity: 0, y: 16 }}
+                    initial={{ opacity: 0, y: 16 }}
+                    key="close"
+                  >
+                    <button
+                      className="pointer-events-auto flex items-center gap-2 rounded-full bg-foreground1/80 px-5 py-3.5 font-medium text-white shadow-lg backdrop-blur active:bg-foreground1"
+                      data-no-collapse
+                      onClick={interaction.closeActive}
+                      type="button"
+                    >
+                      <XIcon size={16} weight="bold" />
+                      Close
+                    </button>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </>
           )}
         </TransformWrapper>

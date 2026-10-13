@@ -189,6 +189,5 @@ export const createMockTouchEvent = (
     stopPropagation: vi.fn(),
   }) as unknown as React.TouchEvent;
 
-export const renderWithProviders = (ui: React.ReactNode) => {
-  return render(<MockProvider>{ui}</MockProvider>);
-};
+export const renderWithProviders = (ui: React.ReactNode) =>
+  render(<MockProvider>{ui}</MockProvider>);
