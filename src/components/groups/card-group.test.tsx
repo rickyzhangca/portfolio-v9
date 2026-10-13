@@ -1,17 +1,17 @@
 import { COLLAPSED_POSITIONS } from "@/lib/card-layout";
 import {
-    createMockCard,
-    createMockStack,
-    createMockStickyNote,
+  createMockCard,
+  createMockStack,
+  createMockStickyNote,
 } from "@/test-utils/test-helpers";
 import type { CanvasStackItem } from "@/types/canvas";
 import {
-    act,
-    cleanup,
-    fireEvent,
-    render,
-    screen,
-    waitFor,
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
 } from "@testing-library/react";
 import { Provider } from "jotai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

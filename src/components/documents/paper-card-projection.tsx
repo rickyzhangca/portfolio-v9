@@ -1,10 +1,10 @@
 import { useCanvasSession } from "@/context/canvas-session";
 import { SPRING_PRESETS } from "@/lib/animation";
 import {
-    getDocumentContentLayoutId,
-    getDocumentLayoutId,
-    getPaperPreviewLayout,
-    type PaperSize,
+  getDocumentContentLayoutId,
+  getDocumentLayoutId,
+  getPaperPreviewLayout,
+  type PaperSize,
 } from "@/lib/document-motion";
 import { tw } from "@/lib/utils";
 import { motion, useReducedMotion } from "framer-motion";
