@@ -2,7 +2,8 @@ import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { PaperPreviewFrame } from "./paper-preview-frame";
 import { useReaderPaperWidth } from "./reader-paper-layout";
 
-const PREVIEW_FADE = 40;
+const PREVIEW_FADE = 80;
+const PREVIEW_FADE_GAP = 16;
 
 interface PreviewSize {
   fadeEnd: number;
@@ -62,7 +63,7 @@ export function ScaledPaperPreview({
         className="h-full overflow-hidden"
         ref={clipRef}
         style={{
-          maskImage: `linear-gradient(to bottom, black ${Math.max(0, previewSize.fadeEnd - PREVIEW_FADE)}px, transparent ${previewSize.fadeEnd}px)`,
+          maskImage: `linear-gradient(to bottom, black ${Math.max(0, previewSize.fadeEnd - PREVIEW_FADE_GAP - PREVIEW_FADE)}px, transparent ${Math.max(0, previewSize.fadeEnd - PREVIEW_FADE_GAP)}px)`,
         }}
       >
         <div
