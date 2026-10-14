@@ -25,7 +25,8 @@ export function ArticleLanguageSwitch({
           <Link
             aria-current={locale === language ? "page" : undefined}
             className={tw(
-              "px-4 py-4 transition focus-visible:outline-2 focus-visible:outline-offset-[-4px]",
+              "py-4 pl-4 transition focus-visible:outline-2 focus-visible:outline-offset-[-4px]",
+              language === "cn" ? "pr-5" : "pr-4",
               locale === language
                 ? "bg-white/15"
                 : "text-white/60 hover:bg-white/10 hover:text-white"
