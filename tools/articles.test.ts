@@ -9,7 +9,11 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { discoverArticles, generateArticles } from "./articles.ts";
+import {
+  describeParagraphs,
+  discoverArticles,
+  generateArticles,
+} from "./articles.ts";
 
 let directory: string;
 beforeEach(() => {
@@ -23,6 +27,7 @@ function article(
     published?: string;
     draft?: unknown;
     body?: string;
+    description?: unknown;
     chinese?: boolean;
   } = {}
 ) {
@@ -31,6 +36,7 @@ function article(
   writeFileSync(
     path.join(folder, "meta.json"),
     JSON.stringify({
+      description: options.description,
       draft: options.draft,
       published: options.published ?? "2026-02-23",
       title: { en: "An essay", ...(options.chinese ? { cn: "一篇文章" } : {}) },
@@ -333,6 +339,45 @@ describe("article content validation", () => {
     });
     expect(() => discoverArticles(directory)).toThrow(
       "missing imported asset ./missing.svg"
+    );
+  });
+});
+
+describe("article descriptions", () => {
+  it("uses short opening prose as is and joins paragraphs up to the limit", () => {
+    expect(describeParagraphs(["Short  opening\nline."], "en")).toBe(
+      "Short opening line."
+    );
+    expect(describeParagraphs(["One.", "Two."], "en")).toBe("One. Two.");
+  });
+  it("ends on a sentence when one fits, otherwise on a word with an ellipsis", () => {
+    const sentence = `${"word ".repeat(20).trim()}.`;
+    expect(
+      describeParagraphs([`${sentence} ${"more ".repeat(30)}`], "en")
+    ).toBe(sentence);
+    const run = describeParagraphs(["alpha ".repeat(60)], "en");
+    expect(run.endsWith("alpha…")).toBe(true);
+    expect(Array.from(run).length).toBeLessThanOrEqual(155);
+  });
+  it("cuts Chinese prose by character", () => {
+    const description = describeParagraphs(["设计".repeat(60)], "cn");
+    expect(Array.from(description)).toHaveLength(80);
+    expect(description.endsWith("…")).toBe(true);
+  });
+  it("derives a description from the body and honours a localized override", () => {
+    article("derived", { body: "Opening paragraph.\n\n## Section\n\nMore." });
+    article("override", { description: { en: "Hand-written summary." } });
+    article("invalid", { description: { en: " " } });
+    expect(() => discoverArticles(directory)).toThrow(
+      "description.en must be a non-empty string"
+    );
+    rmSync(path.join(directory, "invalid"), { recursive: true });
+    const [derived, override] = discoverArticles(directory).sort((a, b) =>
+      a.slug.localeCompare(b.slug)
+    );
+    expect(derived?.translations.en?.description).toBe("Opening paragraph.");
+    expect(override?.translations.en?.description).toBe(
+      "Hand-written summary."
     );
   });
 });

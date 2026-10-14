@@ -32,9 +32,23 @@ for (const article of articles) {
       `${route}: prerendered body is missing`
     );
     assert.ok(
-      html.includes(`https://rickyzhang.me${route}`),
+      html.includes(
+        `<link href="https://rickyzhang.me${route}" rel="canonical"/>`
+      ),
       `${route}: canonical URL is missing`
     );
+    assert.ok(
+      !html.includes('<template id="B:'),
+      `${route}: body must be inline, not a streamed Suspense segment`
+    );
+    for (const tag of [
+      'name="description"',
+      'property="og:description"',
+      'hrefLang="x-default"',
+      '<script type="application/ld+json">',
+    ]) {
+      assert.ok(html.includes(tag), `${route}: missing ${tag}`);
+    }
     assert.ok(
       html.includes(`lang="${locale === "cn" ? "zh-CN" : "en"}"`),
       `${route}: language is missing`
@@ -78,9 +92,32 @@ assert.ok(
   ),
   "Home must preload the canvas App chunk"
 );
+for (const tag of [
+  '<link href="https://rickyzhang.me/" rel="canonical"/>',
+  'property="og:image"',
+  '<script type="application/ld+json">',
+  '<h1 class="sr-only">',
+]) {
+  assert.ok(homeHtml.includes(tag), `Home: missing ${tag}`);
+}
+for (const article of articles) {
+  assert.ok(
+    homeHtml.includes(`href="/writing/`) && homeHtml.includes(article.slug),
+    `Home: static HTML must link to ${article.slug}`
+  );
+}
+for (const file of ["og.png", "apple-touch-icon.png"]) {
+  assert.ok(existsSync(path.join(output, file)), `Missing ${file}`);
+}
 assert.ok(
   existsSync(path.join(output, "404.html")),
   "Static 404 page is missing"
+);
+assert.ok(
+  readFileSync(path.join(output, "404.html"), "utf8").includes(
+    '<meta content="noindex" name="robots"/>'
+  ),
+  "404 page must not be indexed"
 );
 assert.ok(
   !existsSync(path.join(output, "tools/fonts")),

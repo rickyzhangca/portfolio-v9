@@ -1,4 +1,10 @@
-import { Link } from "react-router";
+import { Link, type MetaFunction } from "react-router";
+import { SITE_NAME } from "@/lib/site";
+
+export const meta: MetaFunction = () => [
+  { title: `Page not found — ${SITE_NAME}` },
+  { content: "noindex", name: "robots" },
+];
 
 export default function NotFoundRoute() {
   return (
