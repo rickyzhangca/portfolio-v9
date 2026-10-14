@@ -25,7 +25,7 @@ export const ResumeHeader = ({ data }: ResumeHeaderProps) => (
       <a className={LINK_CLASS} href={`mailto:${data?.email}`}>
         {data?.email}
       </a>
-      <p className="tabular-nums">{data?.phone}</p>
+      <p>{data?.phone}</p>
     </div>
   </ResumeSection>
 );

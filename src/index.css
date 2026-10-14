@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: "Google Sans", sans-serif;
+  --font-sans: "Inter", sans-serif;
   --font-hand: "Playpen Sans", sans-serif;
 }
 
@@ -125,10 +125,10 @@ body,
     @apply font-semibold text-foreground1/65 text-sm/[18px] tabular-nums;
   }
   .reader-title {
-    @apply text-balance font-semibold text-[32px]/[36px] tracking-[-0.01em] sm:text-[40px]/[44px] lg:text-5xl/[52px];
+    @apply text-balance font-semibold text-[32px]/[36px] sm:text-[40px]/[44px] lg:text-5xl/[52px];
   }
   .reader-title:lang(zh) {
-    @apply text-[32px]/[40px] tracking-normal sm:text-[40px]/[50px] lg:text-5xl/[60px];
+    @apply text-[32px]/[40px] sm:text-[40px]/[50px] lg:text-5xl/[60px];
   }
   .article-prose {
     @apply text-foreground1 leading-[1.47] lg:leading-[1.42];

@@ -71,7 +71,7 @@ export function Layout({ children }: { children: ReactNode }) {
 // A stylesheet link lets the browser fetch fonts in parallel with the app CSS;
 // a CSS @import would wait for that CSS to download first.
 const FONT_STYLESHEET =
-  "https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Playpen+Sans&display=swap";
+  "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..700&family=Playpen+Sans&display=swap";
 
 export function links() {
   return [

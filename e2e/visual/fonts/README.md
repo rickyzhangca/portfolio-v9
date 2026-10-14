@@ -1,18 +1,18 @@
 The visual-test font files are pinned Latin WOFF2 subsets from Google Fonts:
 
-- Google Sans v70 normal and italic (`google-sans*-latin-variable.woff2`)
+- Inter v20 normal and italic (`inter*-latin-variable.woff2`)
 - Playpen Sans v22 (`playpen-sans-latin-variable.woff2`)
 
 Their SIL Open Font License 1.1 notices are included alongside the files. The
 visual fixture replaces the remote stylesheet with embedded font data under
-the same production font-family names. It does not substitute Google Sans Flex
-or override production font tokens.
+the same production font-family names. It does not override production font
+tokens.
 
-Google Sans sources (normal and italic, weights 400-700, optical size 17-18):
+Inter sources (normal and italic, weights 400-700, optical size 14-32):
 
-- https://fonts.gstatic.com/s/googlesans/v70/4UaRrENHsxJlGDuGo1OIlJfC6l_24rlCK1Yo_Iq2vgCI.woff2
-- https://fonts.gstatic.com/s/googlesans/v70/4UaXrENHsxJlGDuGo1OIlL3L2JB874GPhFI9_IqmuTCKjsg.woff2
-- https://github.com/google/fonts/tree/main/ofl/googlesans
+- https://fonts.gstatic.com/s/inter/v20/UcCo3FwrK3iLTcviYwYZ8UA3.woff2
+- https://fonts.gstatic.com/s/inter/v20/UcCm3FwrK3iLTcvnUwQT9mI1F54.woff2
+- https://github.com/google/fonts/tree/main/ofl/inter
 
 Playpen Sans is requested at its production weight of 400. Upgrade fixtures
 deliberately with the font licenses and review new screenshot baselines.
