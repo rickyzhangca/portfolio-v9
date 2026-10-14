@@ -67,7 +67,7 @@ Drafts are excluded from browser manifests, cards, prerender paths, sitemap and 
 - `getStackPage` and `getExpandedStackLayout` are shared by drawing and auto-pan. Bounds account for rotation about the actual top-left origin.
 - ReaderShell uses Base UI Dialog for focus trapping and closing, plus reduced-motion-aware animation. Gesture suppression belongs to the canvas, while article content scrolls and remains selectable.
 - The broad vendor matcher was removed; Markdown/Shiki resources are split from the main graph. Existing About previews still use their lazy Markdown renderer.
-- The OFL-licensed Noto Sans SC font in `tools/fonts` makes Chinese/English OG generation deterministic without network access or platform fonts. Its full character coverage supports future essays. It is a build dependency and is never served.
+- The OFL-licensed fonts in `tools/fonts` make OG generation deterministic without network access or platform fonts: Google Sans (static Regular/SemiBold) draws Latin and a CJK-only Noto Sans SC SemiBold draws Chinese. They are build dependencies and are never served.
 
 ## Validation
 

@@ -25,10 +25,13 @@ import {
   getArticleSource,
 } from "@/context/canvas-session";
 import {
+  articles,
   getArticle,
+  getArticleLocale,
   getArticlePath,
   isArticleLocale,
 } from "@/lib/articles/catalogue";
+import { PROFILE_LINKS, SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site";
 import type { ArticleLocale, ArticleSource } from "@/types/article";
 import "../index.css";
 
@@ -46,6 +49,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <meta charSet="utf-8" />
         <meta content="width=device-width, initial-scale=1" name="viewport" />
         <link href="/fav.svg" rel="icon" type="image/svg+xml" />
+        <link href="/apple-touch-icon.png" rel="apple-touch-icon" />
         <Meta />
         <Links />
       </head>
@@ -81,10 +85,11 @@ export function links() {
   ];
 }
 
+// Fallback for routes without their own meta, such as the SPA shell.
 export function meta() {
   return [
-    { title: "Ricky Zhang" },
-    { content: "Design engineer, builder, and writer.", name: "description" },
+    { title: SITE_TITLE },
+    { content: SITE_DESCRIPTION, name: "description" },
   ];
 }
 
@@ -211,13 +216,60 @@ export default function Root() {
   );
 }
 
+// The canvas is client-only, so this placeholder is all that prerendered HTML
+// holds for the home page. Its links let crawlers and readers without
+// JavaScript reach the writing and profiles; they surface on keyboard focus.
 function PortfolioLoading() {
   return (
     <main
       aria-busy="true"
-      className="flex min-h-screen items-center justify-center text-foreground2"
+      className="flex min-h-screen flex-col items-center justify-center gap-6 text-foreground2"
     >
       <p>Opening Ricky’s portfolio…</p>
+      <nav
+        aria-label="Site index"
+        className="sr-only focus-within:not-sr-only focus-within:text-sm"
+      >
+        <ul className="flex flex-col items-center gap-2">
+          {articles.map((article) => {
+            const locale = getArticleLocale(article);
+            return (
+              <li key={article.slug}>
+                <a
+                  className="underline underline-offset-4"
+                  href={getArticlePath(article.slug, locale)}
+                >
+                  {article.translations[locale]?.title}
+                </a>
+              </li>
+            );
+          })}
+          <li>
+            <a
+              className="underline underline-offset-4"
+              href="/RickyZhang_Resume.pdf"
+            >
+              Resume
+            </a>
+          </li>
+          <li>
+            <a
+              className="underline underline-offset-4"
+              href={PROFILE_LINKS.github}
+            >
+              GitHub
+            </a>
+          </li>
+          <li>
+            <a
+              className="underline underline-offset-4"
+              href={PROFILE_LINKS.linkedin}
+            >
+              LinkedIn
+            </a>
+          </li>
+        </ul>
+      </nav>
     </main>
   );
 }

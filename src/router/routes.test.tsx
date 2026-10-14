@@ -20,8 +20,8 @@ import ArticleRoute, {
   loader as articleLoader,
   meta as articleMeta,
 } from "./article";
-import HomeRoute from "./home";
-import NotFound from "./not-found";
+import HomeRoute, { meta as homeMeta } from "./home";
+import NotFound, { meta as notFoundMeta } from "./not-found";
 import Root, { ErrorBoundary, meta as rootMeta } from "./root";
 
 vi.mock("@/app", () => ({ App: TestCanvas }));
@@ -65,6 +65,17 @@ function TestCanvas() {
 function TestArticleRoute() {
   const data = useLoaderData<typeof articleLoader>();
   return <ArticleRoute loaderData={data} />;
+}
+
+function metaArgs(pathname: string) {
+  return {
+    data: undefined,
+    error: undefined,
+    loaderData: undefined,
+    location: { hash: "", key: "default", pathname, search: "", state: null },
+    matches: [],
+    params: {},
+  };
 }
 
 function setup(path: string, history = [path]) {
@@ -190,7 +201,7 @@ describe("writing route and canvas session", () => {
       matches: [],
       params: { locale: "cn", slug: "ephemeral-design" },
     };
-    const metadata = articleMeta(args);
+    const metadata = articleMeta(args) ?? [];
     expect(metadata).toContainEqual({ title: "瞬时设计 — Ricky Zhang" });
     expect(metadata).toContainEqual({
       href: "https://rickyzhang.me/writing/cn/ephemeral-design",
@@ -201,9 +212,66 @@ describe("writing route and canvas session", () => {
       content: "https://rickyzhang.me/writing/og/ephemeral-design-cn.png",
       property: "og:image",
     });
+    expect(metadata).toContainEqual({
+      href: "https://rickyzhang.me/writing/en/ephemeral-design",
+      hrefLang: "x-default",
+      rel: "alternate",
+      tagName: "link",
+    });
+    expect(metadata).toContainEqual({
+      content: "zh_CN",
+      property: "og:locale",
+    });
+    const description = metadata.find(
+      (tag) => tag && "name" in tag && tag.name === "description"
+    );
+    expect(description).toMatchObject({ content: expect.any(String) });
+    expect(
+      metadata.find(
+        (tag) => tag && "property" in tag && tag.property === "og:description"
+      )
+    ).toMatchObject({ content: (description as { content: string }).content });
+    expect(
+      metadata.find((tag) => tag && "script:ld+json" in tag)
+    ).toMatchObject({
+      "script:ld+json": {
+        "@type": "BlogPosting",
+        datePublished: "2026-02-20",
+        headline: "瞬时设计",
+        inLanguage: "zh-CN",
+      },
+    });
     expect(
       articleMeta({ ...args, params: { locale: "xx", slug: "missing" } })
-    ).toEqual([{ title: "Article not found — Ricky Zhang" }]);
-    expect(rootMeta()).toContainEqual({ title: "Ricky Zhang" });
+    ).toEqual([
+      { title: "Article not found — Ricky Zhang" },
+      { content: "noindex", name: "robots" },
+    ]);
+    expect(rootMeta()).toContainEqual({
+      title: "Ricky Zhang — Design Engineer",
+    });
+  });
+  it("gives the home page sharing metadata and a document title", async () => {
+    const metadata = homeMeta(metaArgs("/"));
+    expect(metadata).toContainEqual({
+      href: "https://rickyzhang.me/",
+      rel: "canonical",
+      tagName: "link",
+    });
+    expect(metadata).toContainEqual({
+      content: "https://rickyzhang.me/og.png",
+      property: "og:image",
+    });
+    expect(notFoundMeta(metaArgs("/missing"))).toContainEqual({
+      content: "noindex",
+      name: "robots",
+    });
+    setup("/");
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Ricky Zhang — Design Engineer",
+      })
+    ).toBeTruthy();
   });
 });

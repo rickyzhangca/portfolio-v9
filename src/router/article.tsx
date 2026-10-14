@@ -13,6 +13,13 @@ import {
   getArticlePath,
   isArticleLocale,
 } from "@/lib/articles/catalogue";
+import {
+  absoluteUrl,
+  PERSON_SCHEMA,
+  SITE_NAME,
+  SITE_URL,
+  X_HANDLE,
+} from "@/lib/site";
 
 function resolveArticle(params: Record<string, string | undefined>) {
   const article = getArticle(params.slug ?? "");
@@ -44,35 +51,83 @@ export function clientLoader({ params }: ClientLoaderFunctionArgs) {
   return prepareArticle(params);
 }
 
+const LANGUAGE_TAGS = { cn: "zh-CN", en: "en" } as const;
+const OPEN_GRAPH_LOCALES = { cn: "zh_CN", en: "en_US" } as const;
+const NOT_FOUND_META = [
+  { title: `Article not found — ${SITE_NAME}` },
+  { content: "noindex", name: "robots" },
+];
+
 export const meta: MetaFunction = ({ params }) => {
   try {
     const { article, locale } = resolveArticle(params);
     const translation = article.translations[locale];
-    const canonical = `https://rickyzhang.me${getArticlePath(article.slug, locale)}`;
-    const image = `https://rickyzhang.me/writing/og/${article.slug}-${locale}.png`;
+    if (!translation) {
+      return NOT_FOUND_META;
+    }
+    const canonical = absoluteUrl(getArticlePath(article.slug, locale));
+    const image = absoluteUrl(`/writing/og/${article.slug}-${locale}.png`);
+    const languages = Object.keys(article.translations).filter(isArticleLocale);
+    const title = `${translation.title} — ${SITE_NAME}`;
     return [
-      { title: `${translation?.title} — Ricky Zhang` },
+      { title },
+      { content: translation.description, name: "description" },
+      { content: SITE_NAME, name: "author" },
       { href: canonical, rel: "canonical", tagName: "link" },
-      ...Object.keys(article.translations).map((language) => ({
-        href: `https://rickyzhang.me/writing/${language}/${article.slug}`,
-        hrefLang: language === "cn" ? "zh-CN" : "en",
+      ...languages.map((language) => ({
+        href: absoluteUrl(getArticlePath(article.slug, language)),
+        hrefLang: LANGUAGE_TAGS[language],
         rel: "alternate",
         tagName: "link",
       })),
+      {
+        href: absoluteUrl(getArticlePath(article.slug)),
+        hrefLang: "x-default",
+        rel: "alternate",
+        tagName: "link",
+      },
       { content: "article", property: "og:type" },
-      { content: translation?.title, property: "og:title" },
+      { content: SITE_NAME, property: "og:site_name" },
+      { content: OPEN_GRAPH_LOCALES[locale], property: "og:locale" },
+      ...languages
+        .filter((language) => language !== locale)
+        .map((language) => ({
+          content: OPEN_GRAPH_LOCALES[language],
+          property: "og:locale:alternate",
+        })),
+      { content: translation.title, property: "og:title" },
+      { content: translation.description, property: "og:description" },
       { content: canonical, property: "og:url" },
       { content: image, property: "og:image" },
       { content: "1200", property: "og:image:width" },
       { content: "630", property: "og:image:height" },
+      { content: translation.title, property: "og:image:alt" },
       { content: article.published, property: "article:published_time" },
-      { content: "Ricky Zhang", property: "article:author" },
+      { content: `${SITE_URL}/`, property: "article:author" },
       { content: "summary_large_image", name: "twitter:card" },
-      { content: translation?.title, name: "twitter:title" },
+      { content: X_HANDLE, name: "twitter:creator" },
+      { content: translation.title, name: "twitter:title" },
+      { content: translation.description, name: "twitter:description" },
       { content: image, name: "twitter:image" },
+      { content: translation.title, name: "twitter:image:alt" },
+      {
+        "script:ld+json": {
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          author: PERSON_SCHEMA,
+          dateModified: article.published,
+          datePublished: article.published,
+          description: translation.description,
+          headline: translation.title,
+          image,
+          inLanguage: LANGUAGE_TAGS[locale],
+          mainEntityOfPage: canonical,
+          url: canonical,
+        },
+      },
     ];
   } catch {
-    return [{ title: "Article not found — Ricky Zhang" }];
+    return NOT_FOUND_META;
   }
 };
 

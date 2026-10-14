@@ -13,6 +13,8 @@ dist-ssr
 src/content/generated
 public/writing/og
 public/sitemap.xml
+public/og.png
+public/apple-touch-icon.png
 *.local
 
 .vscode/*

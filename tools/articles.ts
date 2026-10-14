@@ -37,6 +37,11 @@ const IMPORT_PATTERN = /\bimport\s+\w+\s+from\s+["'](\.\.?\/[^"']+)["']/g;
 const PREVIEW_CHARACTER_LIMIT = 4000;
 const PREVIEW_BLOCK_LIMIT = 16;
 const PREVIEW_NODE_LIMIT = 256;
+// Search results show roughly 155 Latin or 80 Han characters of a description.
+const DESCRIPTION_LIMIT: Record<ArticleLocale, number> = { cn: 80, en: 155 };
+const SENTENCE_END = /[.!?](?=\s)|[。！？]/gu;
+const HAN_CHARACTER = /\p{Script=Han}/u;
+const TRAILING_PUNCTUATION = /[\s,.;:!?，。；：！？、]+$/u;
 const processor = createProcessor({ remarkPlugins: [remarkGfm] });
 
 interface ValidatedTranslation extends ArticleTranslation {
@@ -81,6 +86,59 @@ function localizedField(
     throw new Error(`${file}: ${field}.${locale} must be a non-empty string`);
   }
   return value.trim();
+}
+
+function optionalLocalizedField(
+  meta: Record<string, unknown>,
+  field: string,
+  locale: ArticleLocale,
+  file: string
+): string | undefined {
+  return meta[field] === undefined
+    ? undefined
+    : localizedField(meta, field, locale, file);
+}
+
+/** Opening prose, cut at a word boundary, for search and sharing snippets. */
+export function describeParagraphs(
+  paragraphs: string[],
+  locale: ArticleLocale
+): string {
+  const limit = DESCRIPTION_LIMIT[locale];
+  const characters = Array.from(
+    paragraphs
+      .map((paragraph) => paragraph.replace(/\s+/g, " ").trim())
+      .filter(Boolean)
+      .join(" ")
+  );
+  if (characters.length <= limit) {
+    return characters.join("");
+  }
+  let cut = characters.slice(0, limit - 1).join("");
+  const sentences = [...cut.matchAll(SENTENCE_END)];
+  const lastSentence = sentences.at(-1);
+  if (
+    lastSentence?.index !== undefined &&
+    lastSentence.index > cut.length / 2
+  ) {
+    return cut.slice(0, lastSentence.index + 1);
+  }
+  const space = cut.lastIndexOf(" ");
+  if (!HAN_CHARACTER.test(characters[limit - 1] ?? "") && space > limit / 2) {
+    cut = cut.slice(0, space);
+  }
+  return `${cut.replace(TRAILING_PUNCTUATION, "")}…`;
+}
+
+/** Paragraphs before the first heading, or the first paragraph without one. */
+function introduction(nodes: RootContent[]): RootContent[] {
+  const firstHeading = nodes.findIndex((node) => node.type === "heading");
+  const intro = (
+    firstHeading === -1 ? nodes : nodes.slice(0, firstHeading)
+  ).filter((node) => node.type === "paragraph");
+  return intro.length
+    ? intro
+    : nodes.filter((node) => node.type === "paragraph").slice(0, 1);
 }
 
 interface PreviewBudget {
@@ -295,6 +353,9 @@ function translation(
     throw new Error(`${file}: article must contain a paragraph`);
   }
   return {
+    description:
+      optionalLocalizedField(meta, "description", locale, file) ??
+      describeParagraphs(introduction(tree.children).map(text), locale),
     headings,
     preview: previewBlocks(
       tree.children,
@@ -380,6 +441,7 @@ export function generateArticles(
       const value = article.translations[locale];
       if (value) {
         translations[locale] = {
+          description: value.description,
           readingMinutes: value.readingMinutes,
           title: value.title,
         };

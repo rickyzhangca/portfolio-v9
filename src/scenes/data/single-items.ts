@@ -10,6 +10,7 @@ import profilePicAlt from "@/assets/profile-pic/ricky-alt.webp";
 import { shuffledSwags } from "@/assets/swag/swag";
 import { ABOUT_CARD_SIZE } from "@/cards/about/about-data";
 import { RESUME_CARD_SIZE, resumeData } from "@/cards/resume/resume-data";
+import { PROFILE_LINKS } from "@/lib/site";
 import type {
   CanvasFunStackItem,
   CanvasSingleItem,
@@ -71,9 +72,9 @@ export const socialsItem: CanvasSingleItem = {
     kind: "socials",
     size: {},
     content: {
-      githubUrl: "https://github.com/rickyzhangca",
-      linkedinUrl: "https://www.linkedin.com/in/ricky-zhang/",
-      twitterUrl: "https://x.com/rickyrickyriri",
+      githubUrl: PROFILE_LINKS.github,
+      linkedinUrl: PROFILE_LINKS.linkedin,
+      twitterUrl: PROFILE_LINKS.x,
     },
   },
 };
