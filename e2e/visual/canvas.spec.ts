@@ -91,8 +91,12 @@ test("captures the about dialog", async ({ page }) => {
 test("captures the canvas after reset", async ({ page }) => {
   const reset = page.getByRole("button", { name: "Reset canvas", exact: true });
   await page.mouse.move(10, 10);
-  await page.mouse.wheel(240, 160);
-  await expect(reset).toBeEnabled();
+  // The canvas mounts lazily; a wheel before the pan handlers attach is lost.
+  // Reset returns to the same baseline however far the camera moved.
+  await expect(async () => {
+    await page.mouse.wheel(240, 160);
+    await expect(reset).toBeEnabled({ timeout: 500 });
+  }).toPass();
   await reset.click();
   await expect(reset).toBeDisabled();
   await expect(
