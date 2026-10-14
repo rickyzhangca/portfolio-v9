@@ -14,7 +14,7 @@ However high its fidelity, a design file is still a simulator. It has no real ne
 
 Keeping that parallel universe running is expensive. The most common cost is designers going back after a feature ships to update Figma so it matches the implementation. That work creates no value for users. Its only purpose is to make the design file still look like the truth.
 
-High-fidelity mockups also hide implementation complexity. An input that looks simple in Figma may involve backend validation, error states and compatibility with legacy systems. A polished static mockup also suggests that every decision has already been made, so engineers hold back technical objections early, then have to raise them later, and the process gets messy. Both sides spend their time explaining details like "this shadow can't be rendered on Android" or "this data isn't available when the list first loads."
+High-fidelity mockups also hide implementation complexity. An input that looks simple in Figma may involve backend validation, error states and compatibility with legacy systems. A polished static mockup suggests that every decision has already been made, so engineers hold back technical objections early, then have to raise them later, and the process gets messy. Both sides spend their time explaining details like "this shadow can't be rendered on Android" or "this data isn't available when the list first loads."
 
 Drift is unavoidable too. Shopify's Polaris team spent a year pushing design system coverage in their admin to 86.6%. Later, when they shipped a product-wide visual update, about 86% of the admin changed automatically once they updated Polaris. The hard part was the remaining 14% of code that had drifted off Polaris ([source](https://medium.com/shopify-ux/uplifting-shopify-polaris-7c54fc6564d9)). If a design system in the same codebase drifts that much, a separate replica in Figma has no chance of keeping up.
 
@@ -32,8 +32,6 @@ If all this configuration turned straight into code, or clearly made the whole t
 
 ## Code got cheap
 
-Meanwhile, AI is changing the cost structure of building products.
-
 The old logic was that code is expensive and pixels are cheap, so you validate ideas thoroughly in mockups before writing expensive code. Componentization had already made code cheaper, and AI pushed it much further. A description or a rough sketch can become usable prototype code in minutes, and assembling a common screen from existing design system components takes almost no time. A prototype that used to take days now takes hours, sometimes less time than building a high-fidelity mockup in Figma with auto layout and variables. At that point, high-fidelity simulation in Figma is hard to justify.
 
 Designers don't need to become programmers to benefit. With tools like Cursor, they describe the change they want, AI writes the code, and they open a PR. Adjusting spacing, tweaking an animation or fixing a visual bug no longer means filing a ticket and waiting. Designers on many great teams already work this way.
@@ -50,7 +48,7 @@ First, Figma is a whiteboard. In Figma, the focus is on exploring widely and wor
 
 Second, archive after launch. Once a feature moves into development, its design file is no longer worth maintaining. Archive it as a historical record. When the feature needs to change later, start from the live product, which is the code, instead of a mockup from months ago.
 
-Third, a lightweight design system is the only asset worth maintaining long term. The only thing in Figma worth keeping up is a lean component library tightly aligned with code, so designers can assemble ideas quickly. Its real source lives in code, which is also why 86% of Shopify's admin could update automatically.
+Third, the only thing in Figma worth maintaining long term is a lean component library tightly aligned with code, so designers can assemble ideas quickly. Its real source lives in code, which is also why 86% of Shopify's admin could update automatically.
 
 This approach doesn't suit every team. Right now it works best for teams that are strong on product logic, move fast and have a high bar for talent. Where visual expression is the product itself, like marketing sites, landing pages and brand experiences, fully letting go of traditional design files needs more experimentation.
 

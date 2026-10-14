@@ -1,8 +1,8 @@
 Design systems have come a long way from static style guides and loose UI kits. At this point, a well-run design system is an internal product with its own release cycle, a team behind it, versioned packages, and a support channel.
 
-The teams that build and maintain these systems don't get good at it all at once. The trajectory tends to follow three stages, and the progression is as much organizational as it is technical. How the team relates to product squads, how much trust it has, how much influence it can actually wield across the stack: that all changes at each stage.
+The teams that build and maintain these systems don't get good at it all at once. The trajectory tends to follow three stages, and the progression is as much organizational as it is technical. At each stage, how the team relates to product squads, how much trust it holds, and how much reach it has across the stack all change.
 
-Stage one is about serving components. You're shipping a shared library, getting designers and engineers on the same page, and trying to keep things consistent while the product scales underneath you. Stage two is enforcement. The team stops just handing out components and starts governing how they're used. You tighten APIs, add linters to block slop, and take ownership of migrations instead of tossing them over the wall. You also start building a cross-product perspective that no individual squad has. Stage three is about elevating global UX. The team starts tackling problems that improve the experience everywhere at once. The design system is deployed so deep in the stack that changes at the core propagate instantly.
+Stage one is about serving components. You're shipping a shared library, getting designers and engineers on the same page, and trying to keep things consistent while the product scales underneath you. Stage two is enforcement. The team stops just handing out components and starts governing how they're used. You tighten APIs, add linters to block slop, and take ownership of migrations instead of tossing them over the wall. You also start building a cross-product perspective that no individual squad has. Stage three is when the system becomes core infrastructure. The team starts tackling problems that improve the experience everywhere at once, and because the system sits so deep in the stack, changes at the core propagate immediately.
 
 ## Stage 1: Serving components
 
@@ -14,9 +14,9 @@ The main technical job here is abstracting UI complexity so teams don't have to 
 
 ### Shared language between design and engineering
 
-The less obvious but longer-lasting effect of stage one is giving designers and engineers a common vocabulary. Without a system, designers hand off static mocks and engineers guess at the details. Shadow depth is wrong. Easing curves don't match. Small stuff, but it accumulates into real friction over time.
+The less obvious but longer-lasting effect of stage one is giving designers and engineers a common vocabulary. Without a system, designers hand off static mocks and engineers guess at the details. Shadow depth is off, and easing curves don't match. It's small stuff, but it adds up to real friction over time.
 
-A design system fixes this by making the mapping explicit. A designer labels something `bg-primary` in Figma; an engineer uses the same token in code. No guesswork, no arguing about what shade of gray that was supposed to be.
+A design system fixes this by making the mapping explicit. A designer labels something `bg-primary` in Figma; an engineer uses the same token in code. Nobody has to guess or argue about what shade of gray that was supposed to be.
 
 ### How the system starts matters
 
@@ -27,56 +27,56 @@ The origin story shapes stage one more than most people expect. Systems usually 
 | Top-down | Executive sponsor, dedicated headcount, real budget, clear goals. | You need to find the right partner teams fast and prove the efficiency gains with real numbers. | Don't force adoption so hard that teams resent you. Win them over with convenience, not mandates. |
 | Bottom-up | No sponsor, no resources. An engineer or designer just started building it. Low stakes, high friction. | You're squeezing in work without formal time allocation, and getting other teams to adopt is a slog. | Find the teams that are hurting the most and help them first. Word of mouth does the rest. |
 
-Either way, the end of stage one looks the same: the system team has to start thinking of itself as a product team. You need docs, onboarding, maybe even some internal marketing. Once the system becomes part of how teams build by default, you've made it out of infancy. Now the hard part starts.
+Either way, the end of stage one looks the same: the system team has to start thinking of itself as a product team. You need docs, onboarding, and maybe even some internal marketing. Once the system becomes part of how teams build by default, you've made it out of infancy.
 
 ## Stage 2: Enforcement
 
-When the system has real adoption across multiple product lines, it hits an awkward phase. Adoption isn't the problem anymore, scale is. Teams use components in ways you never intended. Feature requests pile up faster than you can handle them. Heavy usage surfaces bugs and architectural decisions that were fine at small scale but buckle under load.
+When the system has real adoption across multiple product lines, it hits an awkward phase. Adoption isn't the problem anymore; scale is. Teams use components in ways you never intended. Feature requests pile up faster than you can handle them. Heavy usage surfaces bugs and architectural decisions that were fine at small scale but buckle under load.
 
 To keep things from falling apart, the team has to shift from serving components to enforcing standards. That means redesigning APIs, automating governance, doing migration work yourself, and sorting out how to share ownership without losing control.
 
 ### Tightening APIs
 
-In stage one, you ship flexible components to get adoption. Let teams pass in custom styles, override internals, do whatever they need. It works. But at scale, all that flexibility turns into liability. Someone overrides a button's padding. Someone else injects weird interaction logic into an input. Now you can't update either component without breaking their stuff.
+In stage one, you ship flexible components to get adoption, letting teams pass in custom styles, override internals, and do whatever they need. At scale, all that flexibility turns into a liability. Someone overrides a button's padding, and someone else injects custom interaction logic into an input. Soon you can't update either component without breaking someone's page.
 
 The move is constraining APIs without killing usability. Mature teams handle this by offering multiple abstraction levels so consumers can pick the right trade-off. Spotify's Encore system does this well with three tiers:
 
 | Tier | How it works | When to use it |
 | :---- | :---- | :---- |
-| Config (high abstraction) | Component accepts preset options only. It fully owns its rendering. | Standard use cases. Most widely used. System upgrades land automatically, zero work from product teams. |
+| Config (high abstraction) | Component accepts preset options only. It fully owns its rendering. | Standard use cases. Most widely used. System upgrades land automatically, with no work from product teams. |
 | Slots (medium abstraction) | Component exposes specific regions where teams can drop in child components. | When you need local customization (an icon before a heading, say) but want the system to control layout and behavior. Keeps prop counts sane. |
 | Custom (low abstraction) | Unstyled headless primitives. Accessibility logic and keyboard nav, no visuals. | Edge cases and complex product needs. Teams build whatever UI they want but still get standardized a11y and interaction patterns for free. |
 
 ### Preventing slop
 
-Documentation alone won't keep the system clean at this scale. Manual code review is slow, inconsistent, and people take it personally. The better move is encoding standards into the toolchain directly.
+Documentation alone won't keep the system clean at this scale. Manual code review is slow and inconsistent, and people take it personally. The better move is encoding standards into the toolchain directly.
 
-Strict linting rules, build-time checks, runtime validations. If a container component that's supposed to render children gets none, the editor flags it, the build fails, the PR is blocked. You catch the violation before it hits the codebase, not after. And there's a useful side effect: engineers end up learning the system's conventions just by fixing lint errors over time. Turns out repeated friction is a decent teacher.
+This means strict lint rules, build-time checks, and runtime validation. If a container component that's supposed to render children gets none, the editor flags it, the build fails, and the PR is blocked. You catch the violation before it hits the codebase. And there's a useful side effect: engineers end up learning the system's conventions just by fixing lint errors over time.
 
 ### Owning migrations
 
-Design systems change. Visual language gets refreshed, components get overhauled, old APIs get deprecated. Breaking changes are part of the deal.
+Design systems change. Visual language gets refreshed, components get overhauled, and old APIs get deprecated. Breaking changes are part of the deal.
 
-Don't make product teams do the migration work. I've seen this play out too many times: you ship a breaking change, blast out a message telling everyone to update, and then watch as migration timelines slip for months. Product teams are annoyed. Half the company is on v2, the other half is stuck on v1. Nobody is happy.
+Don't make product teams do the migration work. I've seen this play out too many times: you ship a breaking change, blast out a message telling everyone to update, and then watch as migration timelines slip for months. Product teams are annoyed. Half the company is on v2, the other half is stuck on v1, and nobody is happy.
 
-The system team should do the migration. Go into product codebases, update the UI, ask for a code review. Use codemods where you can. Sourcegraph's team automated 95% of one migration with codemods.
+The system team should do the migration. Go into product codebases, update the UI, and ask for a code review. Use codemods where you can. Sourcegraph's team automated 95% of one migration with codemods.
 
 ### Ownership tensions
 
 As the system grows, tension between the system team and product teams is inevitable. You want consistency and rigor. They want to ship fast and experiment. If you centralize too much, their request backlog grows, cycle times stretch, and eventually they just build their own components anyway.
 
-You can't org-chart your way out of this. It comes down to partnering more closely with product squads, investing in test coverage so they trust your releases, and showing up when they need you. Trust comes from reliability.
+You can't org-chart your way out of this. It comes down to partnering more closely with product squads, investing in test coverage so they trust your releases, and showing up when they need you.
 
 ### Cross-product awareness
 
 As trust builds, the system team becomes an informal consultant. You're embedded with enough teams to see patterns nobody else can see. Two squads on opposite sides of the org have the same problem, and neither knows the other exists. A pain point that looks local turns out to be systemic.
 
-Product teams start acting like co-owners once they feel heard. They file better bugs, suggest real improvements, push back constructively. And the system team, through all of this collaboration, develops a cross-org perspective that no single product squad could have. You spot redundant work, generalize one-off solutions, route teams toward each other.
+Product teams start acting like co-owners once they feel heard. They file better bugs, suggest real improvements, and push back constructively. And through all of this collaboration, the system team develops a cross-org perspective that no single product squad could have. You spot redundant work, generalize one-off solutions, and connect teams working on the same problem.
 
 ## Stage 3: Core infrastructure
 
-Once you've worked through the ownership tensions, built solid automated checks, and have real working relationships with product squads, the system reaches its final form. It stops being a component library that makes devs faster and becomes infrastructure that the entire product ecosystem runs on.
+Once you've worked through the ownership tensions, built solid automated checks, and formed real working relationships with product squads, the system reaches its final stage. It stops being just a component library that makes developers faster and becomes infrastructure that the entire product runs on.
 
 What defines this stage is reach. The team has enough headroom beyond day-to-day maintenance to work on things that improve the experience everywhere at once. The system sits at the bottom of the dependency tree, so a change at the core shows up across every product surface immediately.
 
-Take accessibility. In a large product with light and dark themes, color and contrast decisions affect usability across the entire surface. GitHub's Primer team reworked their contrast strategy during a major system overhaul, and the new tokens fixed hundreds of a11y contrast issues across over 1,000 spots on the platform. Not a quarter-long migration, just a token update that propagated everywhere. Atlassian did something similar during their rebrand, using their design system to roll out new custom typefaces across 18+ products without it becoming a multi-month coordination nightmare.
+Take accessibility. In a large product with light and dark themes, color and contrast decisions affect usability across the entire surface. GitHub's Primer team reworked their contrast strategy during a major system overhaul, and the new tokens fixed hundreds of a11y contrast issues across over 1,000 spots on the platform. It didn't take a quarter-long migration; a token update at the core propagated everywhere. Atlassian did something similar during their rebrand, using their design system to roll out new custom typefaces across 18+ products without it becoming a multi-month coordination nightmare.
