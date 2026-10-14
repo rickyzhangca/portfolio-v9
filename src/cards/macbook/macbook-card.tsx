@@ -1,7 +1,15 @@
 import { AnimatePresence, motion } from "framer-motion";
 import type { MouseEvent, PointerEvent } from "react";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import type { MacbookCardContent } from "@/cards/registry";
+import { fitSpan } from "@/lib/fit-span";
 import { tw } from "@/lib/utils";
 import macbookImage from "@/assets/macbook/macbook.webp";
 
@@ -19,6 +27,8 @@ interface StickerTooltipState {
 }
 
 const TOOLTIP_WIDTH_THRESHOLD = 200;
+/** Gap the note keeps from the screen edge on narrow screens. */
+const TOOLTIP_EDGE_MARGIN = 16;
 
 const MacbookCardComponent = ({
   content,
@@ -30,7 +40,9 @@ const MacbookCardComponent = ({
   const stickerRefCallbacksRef = useRef(
     new Map<string, (element: HTMLImageElement | null) => void>()
   );
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
   const [tooltip, setTooltip] = useState<StickerTooltipState | null>(null);
+  const [edgeShift, setEdgeShift] = useState(0);
 
   const resolveTooltipPosition = useCallback((event: PointerEvent<Element>) => {
     const rect = containerRef.current?.getBoundingClientRect();
@@ -157,6 +169,28 @@ const MacbookCardComponent = ({
     return callback;
   }, []);
 
+  // The note can be wider than the room on either side of the pointer, so
+  // measure it and slide it back inside the screen. Layout sizes are
+  // untransformed, so the canvas scale converts them to screen pixels.
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const note = tooltipRef.current;
+    if (!(tooltip && container && note)) {
+      return;
+    }
+    const rect = container.getBoundingClientRect();
+    const scale = container.offsetWidth
+      ? rect.width / container.offsetWidth
+      : 1;
+    const width = note.offsetWidth * scale;
+    const start =
+      rect.left + tooltip.x * scale - (tooltip.side === "left" ? width : 0);
+    setEdgeShift(
+      (fitSpan(start, width, window.innerWidth, TOOLTIP_EDGE_MARGIN) - start) /
+        scale
+    );
+  }, [tooltip]);
+
   useEffect(() => {
     if (!isFocused) {
       setTooltip(null);
@@ -197,11 +231,11 @@ const MacbookCardComponent = ({
           ref={getStickerRef(sticker.src)}
           src={sticker.src}
           style={{
+            height: `${sticker.height}px`,
             left: `${sticker.x}%`,
             top: `${sticker.y}%`,
-            width: `${sticker.width}px`,
-            height: `${sticker.height}px`,
             transform: "translate(-50%, -50%)",
+            width: `${sticker.width}px`,
           }}
           width={sticker.width}
         />
@@ -214,7 +248,7 @@ const MacbookCardComponent = ({
               scale: 1,
               x: tooltip.side === "left" ? "-100%" : 0,
             }}
-            className="pointer-events-none absolute top-0 left-0 z-10"
+            className="pointer-events-none absolute top-0 left-0 z-10 w-max max-w-[calc(100vw-2rem)]"
             exit={{
               opacity: 0,
               scale: 0,
@@ -226,22 +260,23 @@ const MacbookCardComponent = ({
               x: tooltip.side === "left" ? "-100%" : 0,
             }}
             key={tooltip.stickerSrc}
+            ref={tooltipRef}
             style={{
-              left: tooltip.x,
+              left: tooltip.x + edgeShift,
               top: tooltip.y,
               transformOrigin:
                 tooltip.side === "right"
                   ? "-12px -12px"
                   : "calc(100% + 12px) -12px",
             }}
-            transition={{ type: "spring", bounce: 0.24, duration: 0.48 }}
+            transition={{ bounce: 0.24, duration: 0.48, type: "spring" }}
           >
             <div
               className={tw(
-                "text-nowrap bg-background1 px-4 py-3 shadow-lg outline outline-border",
+                "bg-background1 px-4 py-3 shadow-lg outline outline-border",
                 tooltip.side === "right"
-                  ? "rounded-b-full rounded-tr-full"
-                  : "rounded-b-full rounded-tl-full"
+                  ? "rounded-b-3xl rounded-tr-3xl"
+                  : "rounded-b-3xl rounded-tl-3xl"
               )}
             >
               {tooltip.description}
