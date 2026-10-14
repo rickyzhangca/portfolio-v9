@@ -202,6 +202,14 @@ Use `pnpm` only (`packageManager` is pinned in `package.json`).
 - Prefer updating existing files over creating parallel alternatives.
 - If scripts/tooling change, update this file in the same PR.
 
+## Commit messages
+- Subject format: `type(scope): subject`, where type is one of `feat`, `fix`, `docs`, `perf`, `refactor`, `test`, `chore`, `style`, `build`, `ci`. Omit the scope only when no area fits (`feat: commit in-progress canvas work`).
+- Scope names the area changed, in lowercase: `canvas`, `cards`, `writing`, `resume`, `about`, `swag`, `documents`, `deps`, `ui`.
+- Subject is imperative, lowercase, has no trailing period, and stays under about 72 characters. Say what changed for a reader, e.g. `fix(canvas): keep auto-pan from overshooting fun cards`.
+- Never use placeholder subjects such as `up`, `tweak`, `clean`, `Tests`, `Save uncommitted changes` or `WIP`. Read the diff and describe it.
+- Body is optional. Use it for the why or a non-obvious tradeoff, as short wrapped bullets or sentences, not a file list.
+- Do not add `Co-Authored-By` or any other attribution trailer, even when tooling suggests one.
+
 ## Cursor and Copilot rules status
 - `.cursor/rules/`: not present in this repository.
 - `.cursorrules`: not present in this repository.
