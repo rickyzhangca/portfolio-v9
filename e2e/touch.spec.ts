@@ -137,18 +137,22 @@ test("an opened folder keeps its first card on screen", async ({ page }) => {
     await cover.press("Enter");
   }
   await expect(cover).toHaveAttribute("aria-expanded", "true");
-  const firstCard = page
-    .locator(
-      '[data-card-stack-id="wealthsimple-stack"] a, [data-card-stack-id="wealthsimple-stack"] img'
-    )
-    .first();
+  // The first card after the cover: the compact reveal may slide the cover
+  // itself off to the side, and its logo is the first image in the stack.
   await expect
-    .poll(async () => {
-      const bounds = await firstCard.boundingBox();
-      return bounds
-        ? bounds.x >= 0 && bounds.x + bounds.width <= viewport.width
-        : false;
-    })
+    .poll(() =>
+      page.evaluate((width) => {
+        const card = Array.from(
+          document.querySelectorAll(
+            '[data-card-stack-id="wealthsimple-stack"] :is(a, img)'
+          )
+        ).find(
+          (element) => !element.closest('[aria-label="Toggle Wealthsimple"]')
+        );
+        const bounds = card?.getBoundingClientRect();
+        return bounds ? bounds.x >= 0 && bounds.right <= width : false;
+      }, viewport.width)
+    )
     .toBe(true);
 });
 

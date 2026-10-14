@@ -187,8 +187,13 @@ async function recordProjection(
 
 for (const slug of PROJECTION_ARTICLES) {
   test(`opening and closing interpolate ${slug} without stretching or reflowing text`, async ({
+    browserName,
     page,
   }, testInfo) => {
+    // Hosted WebKit and Firefox draw a few frames per projection (~250ms
+    // apart), so only Chromium can observe mid-motion choreography. The
+    // geometry below must hold in every sampled frame, in every browser.
+    const samplesMotion = browserName === "chromium";
     await expandWriting(page);
     const articlePath = `/writing/en/${slug}`;
     const opening = await recordProjection(page, "open", articlePath);
@@ -200,9 +205,6 @@ for (const slug of PROJECTION_ARTICLES) {
     const frames = [...opening, ...closing];
     expect(opening.length).toBeGreaterThan(2);
     expect(closing.length).toBeGreaterThan(2);
-    expect(
-      frames.some((frame) => frame.scaleX > 0.35 && frame.scaleX < 0.9)
-    ).toBe(true);
     expect(
       Math.max(...frames.map((frame) => Math.abs(frame.scaleX - frame.scaleY)))
     ).toBeLessThan(0.005);
@@ -233,27 +235,33 @@ for (const slug of PROJECTION_ARTICLES) {
         )
       )
     ).toBeLessThan(0.025);
-    // The backdrop starts fading while the paper is still mostly reader-sized.
-    // Slow runners sample sparsely, so don't require a frame in a narrow band.
-    expect(
-      closing.some(
-        (frame) =>
-          frame.surfaceWidth > readerWidth * 0.75 && frame.backdropOpacity < 0.9
-      )
-    ).toBe(true);
-
     const returningPaper = closing.filter(
       (frame) =>
         frame.sourceSurfaceWidth > frame.sourceFrameWidth * 1.1 &&
         frame.sourceSurfaceOpacity > 0.8
     );
-    expect(returningPaper.length).toBeGreaterThan(0);
     expect(
       returningPaper.every(
         (frame) =>
           !frame.sourceFrameClipsProjection && frame.sourceContentFitsSurface
       )
     ).toBe(true);
+
+    if (samplesMotion) {
+      expect(
+        frames.some((frame) => frame.scaleX > 0.35 && frame.scaleX < 0.9)
+      ).toBe(true);
+      // The backdrop starts fading while the paper is still mostly
+      // reader-sized; don't require a frame in a narrow width band.
+      expect(
+        closing.some(
+          (frame) =>
+            frame.surfaceWidth > readerWidth * 0.75 &&
+            frame.backdropOpacity < 0.9
+        )
+      ).toBe(true);
+      expect(returningPaper.length).toBeGreaterThan(0);
+    }
   });
 }
 
@@ -355,6 +363,7 @@ test("inset previews preserve reader typography, scroll reachability and return 
 });
 
 test("closing and immediately opening a sibling keeps both projections and the folder usable", async ({
+  browserName,
   page,
   isMobile,
 }) => {
@@ -374,7 +383,9 @@ test("closing and immediately opening a sibling keeps both projections and the f
     exact: true,
     name: "Read Verification asymmetry",
   });
-  if (isMobile) {
+  // Hosted WebKit and Firefox move the card several pixels per frame, so a
+  // click aimed at it can land on the canvas and collapse the folder.
+  if (isMobile || browserName !== "chromium") {
     await next.press("Enter");
   } else {
     // Wait for the returning card to enter the viewport, not for it to settle.
