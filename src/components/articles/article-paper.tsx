@@ -7,7 +7,6 @@ interface ArticlePaperProps {
   children: ReactNode;
   heading?: "h1" | "h2";
   locale: ArticleLocale;
-  navigation?: ReactNode;
 }
 
 /** One layout for the reader and its scaled canvas preview. */
@@ -16,7 +15,6 @@ export function ArticlePaper({
   children,
   heading: Heading = "h1",
   locale,
-  navigation,
 }: ArticlePaperProps) {
   const translation = article.translations[locale];
   if (!translation) {
@@ -28,7 +26,6 @@ export function ArticlePaper({
       lang={locale === "cn" ? "zh-CN" : "en"}
     >
       <div className="reader-column">
-        {navigation}
         <header className="mb-8 sm:mb-9 lg:mb-11">
           <p className="reader-meta mb-4">
             <time dateTime={article.published}>

@@ -18,6 +18,11 @@ import {
 } from "react";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { tw } from "@/lib/utils";
+import {
+  READER_TOOLBAR_BUTTON_CLASS,
+  READER_TOOLBAR_CLASS,
+  READER_TOOLBAR_SHADOW,
+} from "./reader-toolbar";
 
 interface ReaderShellProps {
   actions?: ReactNode;
@@ -227,11 +232,11 @@ function ReaderDialog({
           </motion.div>
           <motion.div
             animate={{
-              boxShadow: "0 12px 24px -12px rgba(0,0,0,0.48)",
+              boxShadow: READER_TOOLBAR_SHADOW,
               x: "-50%",
               y: 0,
             }}
-            className="fixed bottom-6 left-1/2 flex items-center overflow-hidden rounded-full bg-foreground1/80 text-white backdrop-blur"
+            className={READER_TOOLBAR_CLASS}
             exit={{
               boxShadow: "0 0 0 rgba(0,0,0,0)",
               transition: { duration: reducedMotion ? 0 : 0.24 },
@@ -254,7 +259,7 @@ function ReaderDialog({
           >
             <Dialog.Close
               aria-label="Close reader"
-              className="flex cursor-pointer items-center gap-2 px-6 py-4 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-[-4px]"
+              className={READER_TOOLBAR_BUTTON_CLASS}
               type="button"
             >
               <ArrowLeftIcon size={20} weight="bold" />

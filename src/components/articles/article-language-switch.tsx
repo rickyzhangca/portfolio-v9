@@ -6,25 +6,18 @@ import type { ArticleLocale, ArticleMetadata } from "@/types/article";
 interface ArticleLanguageSwitchProps {
   article: ArticleMetadata;
   locale: ArticleLocale;
-  variant?: "sheet" | "reader";
 }
 
+/** Language links for the reader toolbar. */
 export function ArticleLanguageSwitch({
   article,
   locale,
-  variant = "sheet",
 }: ArticleLanguageSwitchProps) {
   const location = useLocation();
-  const isReader = variant === "reader";
   return (
     <nav
       aria-label="Article language"
-      className={tw(
-        "flex",
-        isReader
-          ? "border-white/20 border-l"
-          : "gap-1 rounded-full bg-background2 p-1"
-      )}
+      className="flex border-white/20 border-l"
     >
       {(["en", "cn"] as const)
         .filter((language) => article.translations[language])
@@ -32,18 +25,10 @@ export function ArticleLanguageSwitch({
           <Link
             aria-current={locale === language ? "page" : undefined}
             className={tw(
-              "focus-visible:outline-2",
-              isReader
-                ? "px-4 py-4 transition focus-visible:outline-offset-[-4px]"
-                : "rounded-full px-3 py-1.5",
-              isReader && locale === language && "bg-white/15",
-              isReader &&
-                locale !== language &&
-                "text-white/60 hover:bg-white/10 hover:text-white",
-              !isReader && locale === language && "bg-white shadow-sm",
-              !isReader &&
-                locale !== language &&
-                "text-foreground2 hover:text-foreground1"
+              "px-4 py-4 transition focus-visible:outline-2 focus-visible:outline-offset-[-4px]",
+              locale === language
+                ? "bg-white/15"
+                : "text-white/60 hover:bg-white/10 hover:text-white"
             )}
             key={language}
             lang={language === "cn" ? "zh-CN" : "en"}
