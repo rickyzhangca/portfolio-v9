@@ -5,8 +5,8 @@ const REQUIRED_STABLE_FRAMES = 10;
 export const waitForPinnedFonts = async (page: Page) => {
   await page.evaluate(async () => {
     const loadedFaces = await Promise.all([
-      document.fonts.load('16px "Google Sans"', "Canvas visuals"),
-      document.fonts.load('italic 16px "Google Sans"', "Canvas visuals"),
+      document.fonts.load('16px "Inter"', "Canvas visuals"),
+      document.fonts.load('italic 16px "Inter"', "Canvas visuals"),
       document.fonts.load('16px "Playpen Sans"', "Canvas visuals"),
     ]);
     await document.fonts.ready;

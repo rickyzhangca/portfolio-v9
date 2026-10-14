@@ -16,13 +16,15 @@ import { writeChanged } from "./files.ts";
 // Static instances: resvg ignores variable-font axes and would draw the
 // default (thinnest) weight. The Noto build font is subset to CJK ranges:
 // resvg moves a whole mixed-script line to its fallback font, so Noto must
-// have no Latin glyphs for "Design engineer 的…" to keep Latin in Google Sans.
+// have no Latin glyphs for "Design engineer 的…" to keep Latin in Inter.
+// Inter is instanced at its Display optical size (opsz 32), as browsers
+// render these title sizes.
 const FONT_FILES = [
-  "google-sans-regular.ttf",
-  "google-sans-semibold.ttf",
+  "inter-regular.ttf",
+  "inter-semibold.ttf",
   "noto-sans-sc-semibold.ttf",
 ].map((file) => path.join(PROJECT_ROOT, "tools/fonts", file));
-const FONT_FAMILY = "'Google Sans', 'Noto Sans SC'";
+const FONT_FAMILY = "'Inter', 'Noto Sans SC'";
 const CJK = "\\p{Script=Han}\\u3000-\\u303f\\uff00-\\uffef";
 const CJK_CHARACTER = new RegExp(`[${CJK}]`, "u");
 const WRAP_TOKEN = new RegExp(`[${CJK}]|[^\\s${CJK}]+`, "gu");
@@ -77,7 +79,7 @@ function renderPng(svg: string, width?: number) {
   return new Resvg(svg, {
     fitTo: width ? { mode: "width", value: width } : { mode: "original" },
     font: {
-      defaultFontFamily: "Google Sans",
+      defaultFontFamily: "Inter",
       fontFiles: FONT_FILES,
       loadSystemFonts: false,
     },
