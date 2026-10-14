@@ -158,7 +158,7 @@ export default function ArticleRoute({
   // Canvas owns the overlay's presence and shared layout; this route owns its
   // URL, loader and static page. Unmounting a route must not abort the exit.
   return articleOpen ? null : (
-    <main className="min-h-screen bg-white px-6 pt-8 pb-20 sm:px-10 sm:pt-12">
+    <main className="min-h-screen bg-white px-5 pt-12 pb-24">
       <ArticleSheet article={article} locale={locale} />
     </main>
   );

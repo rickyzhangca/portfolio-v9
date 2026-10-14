@@ -13,18 +13,18 @@ export const resumeData: ResumeData = {
       "Courses: Computer Science, Artificial Intelligence, Psychology, Linguistics",
     institution: "Queen's University",
     logo: queensLogo,
-    years: "2017-2021",
+    years: "2017–2021",
   },
   experiences: [
     {
-      caption: "03/2026 - Current",
+      caption: "03/2026 – Current",
       company: "GitHub",
       description: ["Exploring AI x design system"],
       logo: githubResumeLogo,
       title: "Senior Design Engineer, Core UX",
     },
     {
-      caption: "09/2024 - 03/2026",
+      caption: "09/2024 – 03/2026",
       company: "Wealthsimple",
       description: [
         "Shipped web dark mode, snackbar, chart segments and animations, rolling ticker",
@@ -36,7 +36,7 @@ export const resumeData: ResumeData = {
       title: "Design Engineer, Design Systems",
     },
     {
-      caption: "06/2024 - 09/2024",
+      caption: "06/2024 – 09/2024",
       company: "Mintlify",
       description: [
         "Shipped new search & chat menu and Mintlify widget",
@@ -47,7 +47,7 @@ export const resumeData: ResumeData = {
       title: "Design Engineer",
     },
     {
-      caption: "02/2023 - 06/2024",
+      caption: "02/2023 – 06/2024",
       company: "RBC",
       description: [
         "Owned product design and front-end for 4 AIOps products end-to-end",
@@ -59,7 +59,7 @@ export const resumeData: ResumeData = {
     },
     {
       caption:
-        "05/2021 - 02/2023\u00a0\u00a0\u00a0Full-time \n 10/2020 - 04/2021\u00a0\u00a0\u00a0Part-time \n 05/2020 - 08/2020\u00a0\u00a0Intern",
+        "05/2021 – 02/2023 · Full-time\n10/2020 – 04/2021 · Part-time\n05/2020 – 08/2020 · Intern",
       company: "Mosaic Manufacturing",
       description: [
         "Built a scalable and multi-device design system with 64% less components",

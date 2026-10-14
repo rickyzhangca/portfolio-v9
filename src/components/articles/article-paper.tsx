@@ -24,22 +24,20 @@ export function ArticlePaper({
   }
   return (
     <article
-      className="article-paper mx-auto w-full max-w-210 px-5 pt-8 sm:px-10 sm:pt-12"
+      className="article-paper reader-paper mx-auto w-full max-w-210"
       lang={locale === "cn" ? "zh-CN" : "en"}
     >
-      <div className="mx-auto max-w-190">
+      <div className="reader-column">
         {navigation}
-        <header className="mb-10">
-          <p className="mb-4 text-foreground2 text-sm">
+        <header className="mb-8 sm:mb-9 lg:mb-11">
+          <p className="reader-meta mb-4">
             <time dateTime={article.published}>
               {getArticleDate(article.published, locale)}
             </time>{" "}
             · {translation.readingMinutes}{" "}
             {locale === "cn" ? "分钟阅读" : "min read"}
           </p>
-          <Heading className="font-medium text-4xl leading-tight tracking-tight sm:text-5xl">
-            {translation.title}
-          </Heading>
+          <Heading className="reader-title">{translation.title}</Heading>
         </header>
         {children}
       </div>

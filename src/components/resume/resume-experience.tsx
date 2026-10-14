@@ -1,4 +1,6 @@
 import type { Experience } from "@/cards/types";
+import { ResumeEntry } from "./resume-entry";
+import { ResumeSection } from "./resume-section";
 
 interface ResumeExperienceProps {
   data?: Experience[];
@@ -8,45 +10,29 @@ export const ResumeExperience = ({ data }: ResumeExperienceProps) => {
   const experiences = data || [];
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:gap-10">
-      <p className="font-medium text-lg sm:w-32 sm:min-w-32 sm:text-end">
-        Experience
-      </p>
-      <div className="flex flex-col gap-7">
+    <ResumeSection label="Experience">
+      <div className="flex flex-col gap-8">
         {experiences.map((experience) => (
-          <div
-            className="flex items-start gap-3"
+          <ResumeEntry
+            dates={experience.caption}
             key={`${experience.company}-${experience.title}`}
+            logo={experience.logo}
+            logoAlt={experience.company}
+            subtitle={experience.company}
+            title={experience.title}
           >
-            <img
-              alt={experience.company}
-              height={28}
-              src={experience.logo}
-              width={28}
-            />
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-baseline gap-x-2 font-medium text-lg">
-                <p>{experience.title}</p>
-                <p className="text-foreground2">{experience.company}</p>
-              </div>
-              {experience.description.length > 1 ? (
-                <ul className="list-disc pl-5">
-                  {experience.description.map((description) => (
-                    <li className="mb-0.5" key={description}>
-                      {description}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>{experience.description}</p>
-              )}
-              <p className="whitespace-pre-line text-foreground2">
-                {experience.caption}
-              </p>
-            </div>
-          </div>
+            {experience.description.length > 1 ? (
+              <ul className="list-disc space-y-1.5 pl-5 marker:text-foreground1/40">
+                {experience.description.map((description) => (
+                  <li key={description}>{description}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-pretty">{experience.description}</p>
+            )}
+          </ResumeEntry>
         ))}
       </div>
-    </div>
+    </ResumeSection>
   );
 };
