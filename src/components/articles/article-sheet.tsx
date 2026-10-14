@@ -31,7 +31,7 @@ export function ArticleSheet({
             className="mb-12 flex items-center justify-between gap-4 text-sm"
           >
             <Link
-              className="text-foreground2 hover:text-foreground1 focus-visible:outline-2"
+              className="text-foreground1/65 hover:text-foreground1 focus-visible:outline-2"
               to="/"
             >
               ← {locale === "cn" ? "返回主页" : "Portfolio"}

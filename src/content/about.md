@@ -6,7 +6,7 @@ I'm a design engineer specializing in design systems, passionate about fintech a
 
 I designed my first UI in grade 8. I immediately knew this would be what I want to do for the rest of my life. I also loved programming but I hadn't found a way to combine the two.
 
-Until I read about [Prototyping a Smoother Map](https://medium.com/google-design/google-maps-cb0326d165f5) by a Google's UX engineer - I was fascinated by the idea of being at the intersection of design and engineering.
+Until I read about [Prototyping a Smoother Map](https://medium.com/google-design/google-maps-cb0326d165f5) by a Google's UX engineer — I was fascinated by the idea of being at the intersection of design and engineering.
 
 ## What is design engineering to me?
 
@@ -27,7 +27,7 @@ It is the natural outcome of solving problems and taking care.
 
 Details and crafts are a glimpse into the creator's passion and dedication. It is a reflection of the creator's commitment to excellence and a desire to create something meaningful.
 
-The chase of craft proves the love and sacrifice went into our beliefs - for the benefit of user's experience. Look and feel is the quickest to way to tell the quality of the software and make users trust it.
+The chase of craft proves the love and sacrifice went into our beliefs — for the benefit of user's experience. Look and feel is the quickest to way to tell the quality of the software and make users trust it.
 
 ## My values
 
@@ -35,7 +35,7 @@ The chase of craft proves the love and sacrifice went into our beliefs - for the
 - **Care about work**: life is short, I make the most of it by creating what we will be proud of
 - **Remote first**: the energy spent commuting should be spent building
 - **Iterative approach**: consistent small wins > brain our momentum in going back and forth
-- **Openess**: I am a deep believer of the free flow of information - I share and post a lot
+- **Openess**: I am a deep believer of the free flow of information — I share and post a lot
 
 ## What Drives Me
 

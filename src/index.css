@@ -108,46 +108,85 @@ body,
   margin: 0;
 }
 
+/*
+ * Reading documents (articles, About, resume) follow Apple Newsroom's type
+ * system: 17/25 body and 32/40/48 titles, then 19/27 body from 1024px, a
+ * ~34em measure and a 24px phone gutter (20px reader viewport + 4px paper).
+ * Chinese keeps the sizes but needs taller lines.
+ */
 @layer components {
-  .article-prose {
-    @apply text-base leading-[1.85] text-foreground1/90 sm:text-lg;
+  .reader-paper {
+    @apply px-1 pt-8 antialiased sm:px-14 sm:pt-12 lg:pt-16;
   }
-  .article-prose p {
-    @apply my-5;
+  .reader-column {
+    @apply mx-auto max-w-[34em] text-[17px] lg:text-[19px];
+  }
+  .reader-meta {
+    @apply font-semibold text-foreground1/65 text-sm/[18px] tabular-nums;
+  }
+  .reader-title {
+    @apply text-balance font-semibold text-[32px]/[36px] tracking-[-0.01em] sm:text-[40px]/[44px] lg:text-5xl/[52px];
+  }
+  .reader-title:lang(zh) {
+    @apply text-[32px]/[40px] tracking-normal sm:text-[40px]/[50px] lg:text-5xl/[60px];
+  }
+  .article-prose {
+    @apply text-foreground1 leading-[1.47] lg:leading-[1.42];
+  }
+  .article-prose:lang(zh) {
+    @apply leading-[1.65];
+  }
+  .article-prose :is(p, ul, ol) {
+    @apply my-[1.4em] text-pretty;
+  }
+  .article-prose :is(h2, h3, h4) {
+    @apply scroll-mt-8 text-balance font-semibold;
+  }
+  .article-prose :is(h2, h3, h4) + * {
+    @apply mt-0;
   }
   .article-prose h2 {
-    @apply mt-14 mb-5 scroll-mt-8 font-medium text-2xl leading-snug tracking-tight sm:text-3xl;
+    @apply mt-11 mb-4 text-[21px]/[25px] sm:mt-12 lg:mt-13 lg:text-2xl/[28px];
+  }
+  .article-prose h2:lang(zh) {
+    @apply text-[21px]/[29px] lg:text-2xl/[32px];
   }
   .article-prose h3 {
-    @apply mt-9 mb-4 scroll-mt-8 font-medium text-xl leading-snug;
+    @apply mt-9 mb-3 text-[19px]/[24px] lg:text-[21px]/[26px];
+  }
+  .article-prose h3:lang(zh) {
+    @apply leading-[1.4];
   }
   .article-prose h4 {
-    @apply mt-7 mb-3 scroll-mt-8 font-medium text-lg;
+    @apply mt-7 mb-2;
   }
   .article-prose a,
   .article-prose .article-preview-link {
-    @apply text-accent underline decoration-accent/30 underline-offset-4 hover:decoration-accent;
+    @apply text-accent underline decoration-accent/30 underline-offset-[0.2em] hover:decoration-accent;
   }
   .article-prose .heading-link {
     @apply text-inherit no-underline hover:underline;
   }
   .article-prose strong {
-    @apply font-semibold text-foreground1;
+    @apply font-semibold;
   }
   .article-prose ul {
-    @apply my-5 list-disc space-y-2 pl-6;
+    @apply list-disc pl-[1.25em];
   }
   .article-prose ol {
-    @apply my-5 list-decimal space-y-2 pl-6;
+    @apply list-decimal pl-[1.25em];
+  }
+  .article-prose li {
+    @apply mt-[0.5em] pl-[0.25em] marker:text-foreground1/50;
   }
   .article-prose li > p {
-    @apply my-2;
+    @apply my-[0.5em];
   }
   .article-prose blockquote {
-    @apply my-8 rounded-r-xl border-accent border-l-3 bg-background2 px-6 py-2 text-foreground1/70;
+    @apply my-[1.8em] rounded-r-xl border-accent border-l-3 bg-background2 px-6 py-[0.2em] text-foreground1/75;
   }
   .article-prose hr {
-    @apply my-12;
+    @apply my-12 lg:my-14;
   }
   .article-prose table {
     @apply w-full min-w-140 border-collapse text-left text-sm leading-relaxed;
@@ -162,7 +201,7 @@ body,
     @apply rounded bg-background2 px-1.5 py-0.5 font-mono text-[0.85em];
   }
   .article-prose pre {
-    @apply my-7 overflow-x-auto rounded-xl bg-background2 p-5 text-sm;
+    @apply my-8 overflow-x-auto rounded-xl bg-background2 p-5 text-sm/[1.6];
   }
   .article-prose pre code {
     @apply bg-transparent p-0;

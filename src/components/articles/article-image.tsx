@@ -11,7 +11,10 @@ export function ArticleImage({
   return (
     <img
       alt={alt}
-      className={tw("my-8 h-auto w-full rounded-xl", className)}
+      className={tw(
+        "my-8 h-auto w-full rounded-xl sm:my-9 lg:my-11",
+        className
+      )}
       decoding="async"
       height={height}
       loading="lazy"
