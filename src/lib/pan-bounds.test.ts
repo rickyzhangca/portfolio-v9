@@ -129,6 +129,18 @@ describe("getCompactPanBounds", () => {
     expect(bounds?.y?.min).toBeLessThan(bounds?.y?.max ?? 0);
   });
 
+  it("scrolls an opened folder's last card clear of the Close button", () => {
+    const fun = createMockFunStack("f", 16, 500);
+    const bounds = getCompactPanBounds({
+      ...base,
+      expandedStackId: "f",
+      funContentHeights: { f: 3000 },
+      items: toMap(fun),
+    });
+    // 88px: the pill's 16px offset, its height and some air.
+    expect(bounds?.y?.min).toBe(664 - 88 - (500 + 3000));
+  });
+
   it("follows the measured height of the fun project list", () => {
     const fun = createMockFunStack("f", 16, 500);
     const estimated = getCompactPanBounds({
@@ -142,7 +154,7 @@ describe("getCompactPanBounds", () => {
       funContentHeights: { f: 3000 },
       items: toMap(fun),
     });
-    expect(measured?.y?.min).toBe(664 - 16 - (500 + 3000));
+    expect(measured?.y?.min).toBe(664 - 88 - (500 + 3000));
     expect(measured?.y?.min).toBeLessThan(estimated?.y?.min ?? 0);
   });
 

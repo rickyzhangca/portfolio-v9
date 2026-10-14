@@ -21,6 +21,11 @@ interface Extent {
 
 /** Room left below the last card so it is not jammed against the screen edge. */
 const SCENE_END_MARGIN_PX = 48;
+/**
+ * Room the last line of an opened folder needs to scroll clear of the fixed
+ * Close pill (16px offset plus its ~52px height) with a little air above it.
+ */
+const CLOSE_BUTTON_CLEARANCE_PX = 88;
 const DEFAULT_CARD_HEIGHT = 360;
 const DEFAULT_FUN_COVER_HEIGHT = 156;
 
@@ -143,7 +148,7 @@ export const getCompactPanBounds = ({
         { max: box.maxY, min: box.minY },
         height,
         scale,
-        { end: margin, start: margin },
+        { end: CLOSE_BUTTON_CLEARANCE_PX, start: margin },
         "start"
       ),
     };
