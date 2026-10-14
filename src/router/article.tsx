@@ -1,12 +1,19 @@
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { useEffect } from "react";
 import {
   type ClientLoaderFunctionArgs,
+  Link,
   type LoaderFunctionArgs,
   type MetaFunction,
   useLocation,
 } from "react-router";
 import { loadArticle } from "@/components/articles/article-content";
+import { ArticleLanguageSwitch } from "@/components/articles/article-language-switch";
 import { ArticleSheet } from "@/components/articles/article-sheet";
+import {
+  READER_TOOLBAR_BUTTON_CLASS,
+  ReaderToolbar,
+} from "@/components/documents/reader-toolbar";
 import { useCanvasSession } from "@/context/canvas-session";
 import {
   getArticle,
@@ -157,9 +164,22 @@ export default function ArticleRoute({
 
   // Canvas owns the overlay's presence and shared layout; this route owns its
   // URL, loader and static page. Unmounting a route must not abort the exit.
+  // A direct visit matches the canvas reader, including its toolbar.
   return articleOpen ? null : (
-    <main className="min-h-screen bg-white px-5 pt-12 pb-24">
-      <ArticleSheet article={article} locale={locale} />
-    </main>
+    <>
+      <main className="min-h-screen bg-white px-5 pt-12 pb-48">
+        <ArticleSheet article={article} locale={locale} />
+      </main>
+      <ReaderToolbar>
+        <Link
+          aria-label={locale === "cn" ? "返回主页" : "Back to portfolio"}
+          className={READER_TOOLBAR_BUTTON_CLASS}
+          to="/"
+        >
+          <ArrowLeftIcon size={20} weight="bold" />
+        </Link>
+        <ArticleLanguageSwitch article={article} locale={locale} />
+      </ReaderToolbar>
+    </>
   );
 }

@@ -137,18 +137,22 @@ test("an opened folder keeps its first card on screen", async ({ page }) => {
     await cover.press("Enter");
   }
   await expect(cover).toHaveAttribute("aria-expanded", "true");
-  const firstCard = page
-    .locator(
-      '[data-card-stack-id="wealthsimple-stack"] a, [data-card-stack-id="wealthsimple-stack"] img'
-    )
-    .first();
+  // The first card after the cover: the compact reveal may slide the cover
+  // itself off to the side, and its logo is the first image in the stack.
   await expect
-    .poll(async () => {
-      const bounds = await firstCard.boundingBox();
-      return bounds
-        ? bounds.x >= 0 && bounds.x + bounds.width <= viewport.width
-        : false;
-    })
+    .poll(() =>
+      page.evaluate((width) => {
+        const card = Array.from(
+          document.querySelectorAll(
+            '[data-card-stack-id="wealthsimple-stack"] :is(a, img)'
+          )
+        ).find(
+          (element) => !element.closest('[aria-label="Toggle Wealthsimple"]')
+        );
+        const bounds = card?.getBoundingClientRect();
+        return bounds ? bounds.x >= 0 && bounds.right <= width : false;
+      }, viewport.width)
+    )
     .toBe(true);
 });
 
@@ -179,9 +183,21 @@ test("a tapped swag item names itself and a second tap elsewhere hides it", asyn
     '[data-swag-stack-id] [data-slot="tooltip-trigger"]'
   );
   await expect(items.first()).toBeVisible();
+  // Tap once the camera has landed: on a slow runner it moves hundreds of
+  // pixels per frame, and a tap aimed mid-flight lands on empty canvas.
+  let previous = "";
   await expect
-    .poll(async () => (await items.first().boundingBox())?.x ?? -1)
-    .toBeGreaterThanOrEqual(0);
+    .poll(
+      async () => {
+        const box = await items.first().boundingBox();
+        const position = box ? `${Math.round(box.x)},${Math.round(box.y)}` : "";
+        const settled = Boolean(box && box.x >= 0) && position === previous;
+        previous = position;
+        return settled;
+      },
+      { intervals: [250] }
+    )
+    .toBe(true);
   const popup = page.locator('[data-slot="tooltip-popup"]');
   await items.first().tap();
   await expect(popup).toHaveCount(1);

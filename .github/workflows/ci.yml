@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       PW_VISUAL: "1"
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -38,8 +38,10 @@ jobs:
       - run: pnpm coverage
       - run: pnpm build && pnpm check:bundle
       - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      # One worker: parallel browsers starve each other's animation frames on
+      # the hosted runner, and frame-sampling specs then miss motion.
       - name: Run browser regressions
-        run: pnpm test:e2e
+        run: pnpm test:e2e --workers=1
       - name: Check development canvas initialization
         env:
           PW_DEV: "1"
