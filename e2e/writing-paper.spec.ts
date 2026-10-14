@@ -238,8 +238,7 @@ for (const slug of PROJECTION_ARTICLES) {
     expect(
       closing.some(
         (frame) =>
-          frame.surfaceWidth > readerWidth * 0.75 &&
-          frame.backdropOpacity < 0.9
+          frame.surfaceWidth > readerWidth * 0.75 && frame.backdropOpacity < 0.9
       )
     ).toBe(true);
 

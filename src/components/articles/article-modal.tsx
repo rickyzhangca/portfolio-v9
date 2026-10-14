@@ -60,13 +60,7 @@ export function ArticleModal() {
   const layoutId = getDocumentLayoutId(source.itemId, source.cardId);
   return (
     <ReaderShell
-      actions={
-        <ArticleLanguageSwitch
-          article={article}
-          locale={locale}
-          variant="reader"
-        />
-      }
+      actions={<ArticleLanguageSwitch article={article} locale={locale} />}
       clipDuringLayout
       contentLayoutId={getDocumentContentLayoutId(layoutId)}
       isOpen={session.articleOpen}
@@ -77,7 +71,7 @@ export function ArticleModal() {
       suppressEscapeFocusRing
       title={article.translations[locale]?.title ?? "Article"}
     >
-      <ArticleSheet article={article} isOverlay locale={locale} />
+      <ArticleSheet article={article} locale={locale} />
     </ReaderShell>
   );
 }

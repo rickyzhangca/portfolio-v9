@@ -141,7 +141,7 @@ describe("writing route and canvas session", () => {
     expect(screen.queryByTestId("canvas")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByText("Loaded article body")).toBeTruthy();
-    const portfolio = screen.getByRole("link", { name: "← Portfolio" });
+    const portfolio = screen.getByRole("link", { name: "Back to portfolio" });
     expect(portfolio.getAttribute("href")).toBe("/");
     fireEvent.click(portfolio);
     await screen.findByRole("button", { name: "Open essay" });
