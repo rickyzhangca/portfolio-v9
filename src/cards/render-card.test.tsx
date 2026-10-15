@@ -39,7 +39,7 @@ describe("RenderCard measurement", () => {
     vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(180);
     const onMeasure = vi.fn();
     const card = createMockCover("cover");
-    card.content.image = "/cover.png";
+    card.content.logo = "/logo.svg";
     render(<RenderCard card={card} onMeasure={onMeasure} />);
     const entry = {
       borderBoxSize: [],
@@ -54,7 +54,7 @@ describe("RenderCard measurement", () => {
   it("observes once, reports a changed height once, and disconnects on cleanup", () => {
     const onMeasure = vi.fn();
     const card = createMockCover("cover-1");
-    card.content.image = "/cover.png";
+    card.content.logo = "/logo.svg";
     const { unmount } = render(
       <RenderCard card={card} onMeasure={onMeasure} />
     );

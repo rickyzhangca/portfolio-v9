@@ -6,6 +6,8 @@ import {
   getPaperPreviewLayout,
   type PaperSize,
 } from "@/lib/document-motion";
+import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
+import { PaperLighting } from "@/components/lighting/lit-paper";
 import { tw } from "@/lib/utils";
 import { cancelFrame, frame, motion, useReducedMotion } from "framer-motion";
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
@@ -46,6 +48,8 @@ interface PaperCardProjectionProps {
   layoutDependency?: boolean;
   layoutId?: string;
   open?: boolean;
+  /** Paper stock under the lamp: smooth for documents, fibrous for articles. */
+  stock?: "fibre" | "smooth";
   /** Quieter shadow while a card is tucked in a closed folder. */
   shadow?: "lifted" | "soft";
   size: PaperSize;
@@ -60,6 +64,7 @@ export function PaperCardProjection({
   open = false,
   shadow = "lifted",
   size,
+  stock = "fibre",
 }: PaperCardProjectionProps) {
   const reducedMotion = useReducedMotion();
   const { articleOpen, articleSource } = useCanvasSession();
@@ -116,7 +121,8 @@ export function PaperCardProjection({
   // The shared paper exceeds the fixed hit area while returning.
   return (
     <div
-      className="relative"
+      // Isolated so the lamp's paper shading multiplies over paper and text only.
+      className="relative isolate"
       data-paper-frame
       ref={frameRef}
       style={{ height: size.height, width: size.width }}
@@ -128,6 +134,9 @@ export function PaperCardProjection({
             ? "drop-shadow-[0_6px_10px_rgba(0,0,0,0.06)]"
             : "drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)] group-hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
         )}
+        data-lamp-shadow={
+          shadow === "soft" ? LAMP_LIFT.flatPaper : LAMP_LIFT.card
+        }
         data-paper-surface
         layoutDependency={layoutDependency}
         layoutId={reducedMotion || !layoutId ? undefined : layoutId}
@@ -185,6 +194,7 @@ export function PaperCardProjection({
           {children}
         </motion.div>
       </motion.div>
+      <PaperLighting hidden={isOpening} kind={stock} radius={24} />
     </div>
   );
 }

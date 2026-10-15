@@ -21,7 +21,7 @@ export const resumeData: ResumeData = {
       company: "GitHub",
       description: ["Exploring AI x design system"],
       logo: githubResumeLogo,
-      title: "Senior Design Engineer, Core UX",
+      title: "Senior Design Engineer, Design System",
     },
     {
       caption: "09/2024 – 03/2026",

@@ -98,7 +98,7 @@ describe("modal accessibility", () => {
       expect(screen.queryByRole("button", { name: "Background" })).toBeNull();
       if (name === "Resume") {
         expect(
-          screen.getByText("Senior Design Engineer, Core UX")
+          screen.getByText("Senior Design Engineer, Design System")
         ).toBeTruthy();
         expect(screen.getByText("Design")).toBeTruthy();
         expect(screen.getByText("Dev tools")).toBeTruthy();

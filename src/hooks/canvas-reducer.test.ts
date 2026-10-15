@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CanvasState, CanvasStackItem } from "@/types/canvas";
 import { canvasReducer } from "./use-canvas-state";
+import { TEST_COVER_BOARD } from "@/test-utils/test-helpers";
 
 // Helper to create mock state
 const createMockState = (items: CanvasStackItem[] = []): CanvasState => {
@@ -35,7 +36,7 @@ const createMockStack = (
     id: "c",
     kind: "cover",
     size: { width: 100 },
-    content: { company: "C", image: "" },
+    content: { board: TEST_COVER_BOARD, company: "C", logo: "" },
   },
   stack: [],
 });

@@ -1,8 +1,9 @@
-import githubLogo from "@/assets/covers/github-logo.webp";
-import mintlifyLogo from "@/assets/covers/mintlify-logo.webp";
-import mosaicLogo from "@/assets/covers/mosaic-logo.webp";
-import rbcLogo from "@/assets/covers/rbc-logo.webp";
-import wealthsimpleLogo from "@/assets/covers/wealthsimple-logo.webp";
+// Served as files, not inlined: data URIs would land in the home page's JS.
+import githubLogo from "@/assets/logos/github.svg?no-inline";
+import mintlifyLogo from "@/assets/logos/mintlify.svg?no-inline";
+import mosaicLogo from "@/assets/logos/mosaic.svg?no-inline";
+import rbcLogo from "@/assets/logos/rbc.svg?no-inline";
+import wealthsimpleLogo from "@/assets/logos/wealthsimple.svg?no-inline";
 import auth from "@/assets/mintlify/auth.webp";
 import chat from "@/assets/mintlify/chat.webp";
 import editor from "@/assets/mintlify/editor.webp";
@@ -34,7 +35,62 @@ import ticker from "@/assets/wealthsimple/ticker.webp";
 import webChart from "@/assets/wealthsimple/web-chart.webp";
 import widget from "@/assets/wealthsimple/widget.webp";
 import wsSans from "@/assets/wealthsimple/ws-sans.webp";
+import type { CoverBoard } from "@/cards/registry";
 import type { CanvasStackItem } from "@/types/canvas";
+
+// Boards sampled from the covers' original artwork: vertical gradients, the
+// title colour, and how each logo was applied.
+const DARK_BOARD = {
+  accent: "#bbbbbb",
+  logoFinish: "foil",
+  material: "board",
+} as const;
+
+const BOARDS = {
+  github: {
+    ...DARK_BOARD,
+    // A solid disc outweighs the other marks; drawn a little smaller.
+    logoFit: { scale: 0.93 },
+    background:
+      "linear-gradient(180deg, #0f0f0f 0%, #171717 50%, #212121 100%)",
+    base: "#171717",
+  },
+  mintlify: {
+    accent: "#3be6a9",
+    background:
+      "radial-gradient(130% 22% at 50% 0%, #016642 0%, transparent 100%), radial-gradient(140% 26% at 50% 100%, #047343 0%, transparent 100%), #020f12",
+    base: "#031a15",
+    logoFinish: "glass",
+    material: "board",
+  },
+  mosaic: {
+    ...DARK_BOARD,
+    // The mark starts 15px into its artwork; pulled back to the text's edge.
+    logoFit: { x: -15 },
+    background:
+      "linear-gradient(180deg, #0a0a0a 0%, #1c1c1c 50%, #2b2b2b 100%)",
+    base: "#1c1c1c",
+    logoFinish: "print",
+    pattern: "grid",
+  },
+  rbc: {
+    accent: "#9be4ff",
+    background:
+      "linear-gradient(180deg, #347eca 0%, #2a6cb6 50%, #205ca5 100%)",
+    base: "#2a6cb6",
+    logoFinish: "foil",
+    material: "cardstock",
+  },
+  wealthsimple: {
+    ...DARK_BOARD,
+    // A short W in the middle of its artwork: larger, and raised to the
+    // other marks' top edge.
+    logoFit: { scale: 1.08, y: -10 },
+    background:
+      "linear-gradient(180deg, #0a0a0a 0%, #212121 55%, #1b1b1b 100%)",
+    base: "#1b1b1b",
+  },
+} satisfies Record<string, CoverBoard>;
 
 const GAP_X = 285;
 const GAP_Y = 18;
@@ -51,9 +107,10 @@ export const githubStack: CanvasStackItem = {
     kind: "cover",
     size: { width: 240, height: 340 },
     content: {
+      board: BOARDS.github,
       company: "GitHub",
-      title: "Sr Software Engineer, Core UX",
-      image: githubLogo,
+      title: "Senior Design Engineer, DS",
+      logo: githubLogo,
     },
   },
   stack: [
@@ -79,9 +136,10 @@ export const wealthsimpleStack: CanvasStackItem = {
     kind: "cover",
     size: { width: 240, height: 340 },
     content: {
+      board: BOARDS.wealthsimple,
       company: "Wealthsimple",
-      title: "Design Engineer, Design System",
-      image: wealthsimpleLogo,
+      title: "Design Engineer, DS",
+      logo: wealthsimpleLogo,
     },
   },
   stack: [
@@ -224,9 +282,10 @@ export const mintlifyStack: CanvasStackItem = {
     kind: "cover",
     size: { width: 240, height: 340 },
     content: {
+      board: BOARDS.mintlify,
       company: "Mintlify",
       title: "Design Engineer",
-      image: mintlifyLogo,
+      logo: mintlifyLogo,
     },
   },
   stack: [
@@ -306,9 +365,10 @@ export const rbcStack: CanvasStackItem = {
     kind: "cover",
     size: { width: 240, height: 340 },
     content: {
+      board: BOARDS.rbc,
       company: "RBC",
       title: "UX Engineer, AIOps",
-      image: rbcLogo,
+      logo: rbcLogo,
     },
   },
   stack: [
@@ -361,9 +421,10 @@ export const mosaicStack: CanvasStackItem = {
     kind: "cover",
     size: { width: 240, height: 340 },
     content: {
+      board: BOARDS.mosaic,
       company: "Mosaic",
       title: "UI/UX Designer",
-      image: mosaicLogo,
+      logo: mosaicLogo,
     },
   },
   stack: [

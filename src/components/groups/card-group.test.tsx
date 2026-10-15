@@ -24,7 +24,7 @@ const stack = createMockStack("company", 20, 30, 1, undefined, [
   createMockStickyNote("note"),
 ]);
 if (stack.cover.kind === "cover") {
-  stack.cover.content.image = "/cover.webp";
+  stack.cover.content.logo = "/logo.svg";
 }
 for (const card of stack.stack) {
   if (card.kind === "project") {

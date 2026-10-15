@@ -16,6 +16,7 @@ import { useDraggable } from "@/hooks/use-draggable";
 import { whenPageIdle } from "@/hooks/page-idle";
 import { useTogglePress } from "@/hooks/use-toggle-press";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
+import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
 import { getSwagPosition } from "@/lib/card-layout";
 import { tw } from "@/lib/utils";
 import type { CanvasSwagStackItem, Position } from "@/types/canvas";
@@ -261,6 +262,7 @@ export const SwagGroup = ({
                 rotate: isExpanded ? offset.fanRotate : offset.collapsedRotate,
               }}
               className="absolute top-0 left-0 origin-top-left will-change-transform"
+              data-lamp-shadow={LAMP_LIFT.swag}
               initial={{
                 opacity: 0,
                 scale: 0.6,

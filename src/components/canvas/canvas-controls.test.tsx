@@ -133,4 +133,24 @@ describe("CanvasControls", () => {
     expect(timeMachineLink.getAttribute("target")).toBe("_blank");
     expect(timeMachineLink.getAttribute("rel")).toBe("noopener noreferrer");
   });
+
+  it("hides the desk lamp without WebGPU", () => {
+    render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
+
+    expect(screen.queryByRole("button", { name: "Desk lamp" })).toBeNull();
+  });
+
+  it("toggles the desk lamp when WebGPU is available", () => {
+    vi.stubGlobal("navigator", { ...navigator, gpu: {} });
+    try {
+      render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
+
+      const lamp = screen.getByRole("button", { name: "Desk lamp" });
+      expect(lamp.getAttribute("aria-pressed")).toBe("false");
+      fireEvent.click(lamp);
+      expect(lamp.getAttribute("aria-pressed")).toBe("true");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

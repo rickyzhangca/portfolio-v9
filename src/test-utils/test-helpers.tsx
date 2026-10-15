@@ -1,5 +1,6 @@
 import { render } from "@testing-library/react";
 import { vi } from "vitest";
+import type { CoverBoard } from "@/cards/registry";
 import type {
   CardInstance,
   CoverCardInstance,
@@ -28,6 +29,15 @@ export const createMockCard = (
   content: { title: "Test", description: "Test", image: "" },
 });
 
+/** A plain dark board for company-folder covers in tests. */
+export const TEST_COVER_BOARD: CoverBoard = {
+  accent: "#bbbbbb",
+  background: "#171717",
+  base: "#171717",
+  logoFinish: "print",
+  material: "board",
+};
+
 export const createMockCover = (
   id: string,
   width = 100,
@@ -36,7 +46,7 @@ export const createMockCover = (
   id,
   kind: "cover",
   size: { width, height },
-  content: { company: "Test Company", image: "" },
+  content: { board: TEST_COVER_BOARD, company: "Test Company", logo: "" },
 });
 
 export const createMockStickyNote = (
@@ -69,7 +79,7 @@ export const createMockStack = (
       id: `${id}-cover`,
       kind: "cover",
       size: { width: 100, height: 100 },
-      content: { company: "Test Company", image: "" },
+      content: { board: TEST_COVER_BOARD, company: "Test Company", logo: "" },
     } satisfies CoverCardInstance),
   stack: stack ?? [],
 });

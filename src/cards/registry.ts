@@ -36,9 +36,34 @@ export interface InteractionPolicy {
 // Card Content Types
 // ============================================================================
 
+/** How a logo is applied to a folder's board; the desk lamp lights it. */
+export type CoverLogoFinish = "foil" | "glass" | "print";
+
+/** A company folder's board, drawn as layers instead of a baked image. */
+export interface CoverBoard {
+  /** Title colour. */
+  accent: string;
+  /** CSS background of the board. */
+  background: string;
+  /** Solid colour standing in for the board, e.g. its back panel. */
+  base: string;
+  logoFinish: CoverLogoFinish;
+  /**
+   * Optical balancing for marks of different weight and padding: a scale of
+   * COVER_LOGO's box, and an offset of it in CSS px.
+   */
+  logoFit?: { scale?: number; x?: number; y?: number };
+  /** Folder material under the lamp: coated board or paper-like stock. */
+  material: "board" | "cardstock";
+  /** A printed grid that fades down the board. */
+  pattern?: "grid";
+}
+
 export interface CoverCardContent {
+  board: CoverBoard;
   company: string;
-  image: string;
+  /** Square logo artwork, drawn at COVER_LOGO's size. */
+  logo: string;
   title?: string;
 }
 
