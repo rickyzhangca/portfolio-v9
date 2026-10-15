@@ -35,7 +35,7 @@ struct Folder {
   // w: rim catch-light.
   shading: vec4f,
   // x: glint on the rim facing away (glass), y: metal grain sparkle,
-  // z: glass depth glow, w: mirror image of the lamp (smooth materials).
+  // zw: unused.
   effects: vec4f,
 }
 
@@ -61,8 +61,6 @@ fn vs(@builtin(vertex_index) index: u32) -> VertexOut {
 }
 
 const LAMP_COLOR = vec3f(1.0, 0.94, 0.84);
-// Half the angle the lamp's bulb spans, seen from the desk, in radians.
-const LAMP_RADIUS = 0.035;
 // Board thickness, in local px.
 const THICKNESS = 2.0;
 
@@ -202,16 +200,10 @@ fn kraftFibres(p: vec2f) -> vec2f {
   return vec2f(ridge, shade);
 }
 
-// Corrugated paperboard's flutes: soft ribs behind the facing, seen only as
-// faint bands under raking light.
-const FLUTE_PITCH = 7.0;
-
 fn kraft(p: vec2f, footprint: f32) -> f32 {
   let pulp = cardstock(p * 1.3, footprint) * 1.2;
   let fibres = kraftFibres(p).x * 0.07 * resolved(1.0, footprint);
-  let flute = (0.5 - 0.5 * cos(p.x * 6.28318 / FLUTE_PITCH)) * 0.18
-    * resolved(FLUTE_PITCH, footprint);
-  return pulp + fibres + flute;
+  return pulp + fibres;
 }
 
 fn seamAt(p: vec2f) -> vec4f {
@@ -250,30 +242,6 @@ fn height(p: vec2f, footprint: f32) -> f32 {
   return rimHeight(p) + body + surfaceHeight(p, footprint) + mark;
 }
 
-// Glass cut like a gem: facets inside it, each tipped its own way, seen
-// through the surface and so shifting against it as the lamp moves. Returns
-// how brightly the facet under p reflects the lamp.
-const FACET = 30.0;
-fn facetFlash(p: vec2f, halfway: vec3f) -> f32 {
-  let q = p / FACET + folder.seed;
-  let cell = floor(q);
-  let f = fract(q);
-  var nearest = 8.0;
-  var id = cell;
-  for (var y = -1; y <= 1; y++) {
-    for (var x = -1; x <= 1; x++) {
-      let offset = vec2f(f32(x), f32(y));
-      let d = length(offset + hash2(cell + offset) - f);
-      if (d < nearest) {
-        nearest = d;
-        id = cell + offset;
-      }
-    }
-  }
-  let facet = normalize(vec3f((hash2(id + 5.3) - 0.5) * 0.8, 1.0));
-  return pow(max(dot(facet, halfway), 0.0), 40.0);
-}
-
 @fragment
 fn fs(in: VertexOut) -> @location(0) vec4f {
   let p = in.local;
@@ -310,11 +278,7 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
   let halfway = normalize(l + vec3f(0.0, 0.0, 1.0));
   let nh = max(dot(n, halfway), 0.0);
   let lobes = folder.lobes;
-  // A smooth surface mirrors the bulb itself: a crisp disc that the
-  // panel's waves and bulge bend.
-  let mirror = 1.0 - smoothstep(LAMP_RADIUS * 0.6, LAMP_RADIUS, acos(min(nh, 1.0)));
-  let sheen = pow(nh, max(lobes.x, 1.0)) * lobes.y + pow(nh, max(lobes.z, 1.0)) * lobes.w
-    + mirror * folder.effects.w;
+  let sheen = pow(nh, max(lobes.x, 1.0)) * lobes.y + pow(nh, max(lobes.z, 1.0)) * lobes.w;
   let color = mix(vec3f(1.0), folder.tint.rgb, folder.tint.w);
 
   // The rounded cut edge catches the lamp on the side that faces it; glass
@@ -337,14 +301,6 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
     let facet = normalize(n + vec3f(tilt, 0.0));
     let glint = pow(max(dot(facet, halfway), 0.0), 60.0) * pow(hash(cell + 3.7), 3.0);
     extra += color * glint * folder.effects.y * resolved(1.4, footprint);
-  }
-  if (folder.effects.z > 0.0) {
-    // Light carried into the glass and coloured by it: a soft glow under the
-    // lamp, in which facets a few px below the surface flash as it moves.
-    // Away from the lamp the glass stays clear.
-    let depth = -l.xy / max(l.z, 0.25) * 8.0;
-    let carried = pow(nh, 10.0) * (0.5 + facetFlash(p + depth, halfway) * 0.5);
-    extra += folder.tint.rgb * carried * folder.effects.z;
   }
 
   // The logo's own finish: foil mirrors the lamp in its own colour, glass
