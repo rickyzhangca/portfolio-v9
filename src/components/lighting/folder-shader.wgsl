@@ -12,7 +12,7 @@ struct Folder {
   // 0 leaves the DOM cover untouched, 1 is the full lamp.
   intensity: f32,
   // The material's fine relief: 0 cardstock, 1 silicone, 2 frosted metal,
-  // 3 glass, 4 leather, 5 plastic.
+  // 3 glass, 4 leather, 5 kraft.
   surface: f32,
   // xyz: lamp position in local px; w: transparent margin around the outline
   // in the coverage texture, in local px.
@@ -139,11 +139,9 @@ fn silicone(p: vec2f, footprint: f32) -> f32 {
   return skin + unevenness;
 }
 
-// Bead-blasted metal: a dense, even grain of tiny dents.
+// Bead-blasted metal: a dense, even grain of tiny dents, only just visible.
 fn frostedMetal(p: vec2f, footprint: f32) -> f32 {
-  let fine = (valueNoise(p * 1.9 + folder.seed) - 0.5) * 0.06 * resolved(0.53, footprint);
-  let coarse = (valueNoise(p * 0.7 + folder.seed.yx) - 0.5) * 0.05 * resolved(1.4, footprint);
-  return fine + coarse;
+  return (valueNoise(p * 2.2 + folder.seed) - 0.5) * 0.025 * resolved(0.45, footprint);
 }
 
 // Pebbled leather: rounded grains of irregular size, with creases between.
@@ -173,11 +171,47 @@ fn leather(p: vec2f, footprint: f32) -> f32 {
   return grain * depth;
 }
 
-// Moulded plastic: smooth, but the moulding leaves long, gentle waves that
-// bend the highlight.
-fn plastic(p: vec2f) -> f32 {
-  return (valueNoise(p / 42.0 + folder.seed) - 0.5) * 0.35
-    + (valueNoise(p / 17.0 + folder.seed.yx) - 0.5) * 0.12;
+// Kraft fibres: short strands lying every which way, a few per cell. Returns
+// how close p is to a strand (x), and that strand's shade (y): -1 dark to
+// 1 light, as recycled pulp mixes them.
+const FIBRE_CELL = 3.0;
+fn kraftFibres(p: vec2f) -> vec2f {
+  let q = p / FIBRE_CELL + folder.seed;
+  let cell = floor(q);
+  var ridge = 0.0;
+  var shade = 0.0;
+  for (var y = -1; y <= 1; y++) {
+    for (var x = -1; x <= 1; x++) {
+      let id = cell + vec2f(f32(x), f32(y));
+      let jitter = hash2(id);
+      let angle = hash(id + 11.3) * 3.14159;
+      let along = vec2f(cos(angle), sin(angle));
+      let center = id + jitter;
+      let reach = 0.2 + 0.4 * hash(id + 4.1);
+      // Distance to the strand, in cells.
+      let offset = q - center;
+      let t = clamp(dot(offset, along), -reach, reach);
+      let d = length(offset - along * t) * FIBRE_CELL;
+      let strand = (1.0 - smoothstep(0.1, 0.5, d)) * (0.4 + 0.6 * hash(id + 2.9));
+      if (strand > ridge) {
+        ridge = strand;
+        shade = hash(id + 7.7) * 2.0 - 1.0;
+      }
+    }
+  }
+  return vec2f(ridge, shade);
+}
+
+// Corrugated paperboard's flutes: soft ribs behind the facing, seen only as
+// faint bands under raking light.
+const FLUTE_PITCH = 7.0;
+
+fn kraft(p: vec2f, footprint: f32) -> f32 {
+  let pulp = cardstock(p * 1.3, footprint) * 1.2;
+  let fibres = kraftFibres(p).x * 0.07 * resolved(1.0, footprint);
+  let flute = (0.5 - 0.5 * cos(p.x * 6.28318 / FLUTE_PITCH)) * 0.18
+    * resolved(FLUTE_PITCH, footprint);
+  return pulp + fibres + flute;
 }
 
 fn seamAt(p: vec2f) -> vec4f {
@@ -204,7 +238,7 @@ fn surfaceHeight(p: vec2f, footprint: f32) -> f32 {
     return leather(p, footprint) * (1.0 - stitch.g) - stitch.g * 0.5 + stitch.r * 0.75;
   }
   if (surfaceIs(5.0)) {
-    return plastic(p);
+    return kraft(p, footprint);
   }
   // Glass is polished flat.
   return 0.0;
@@ -264,7 +298,12 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
     // The change in light against a flat panel, not their ratio, which
     // explodes under grazing light.
     let delta = max(dot(n, l), 0.0) - flatLight.z;
-    let tone = clamp(folder.shading.y + delta * folder.shading.x * falloff, 0.0, 1.0);
+    var tone = clamp(folder.shading.y + delta * folder.shading.x * falloff, 0.0, 1.0);
+    if (surfaceIs(5.0)) {
+      // Darker strands in the pulp.
+      let fibre = kraftFibres(p);
+      tone *= 1.0 - fibre.x * max(-fibre.y, 0.0) * 0.07 * resolved(1.0, footprint);
+    }
     return vec4f(vec3f(mix(1.0, tone, folder.intensity)), 1.0);
   }
 
@@ -293,18 +332,18 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
   if (folder.effects.y > 0.0) {
     // Metal grain: each tiny dent is a facet tipped its own way, and the few
     // that face the lamp glint.
-    let cell = floor(p / 0.9 + folder.seed);
-    let tilt = (hash2(cell) - 0.5) * 0.35;
+    let cell = floor(p / 0.7 + folder.seed);
+    let tilt = (hash2(cell) - 0.5) * 0.25;
     let facet = normalize(n + vec3f(tilt, 0.0));
-    let glint = pow(max(dot(facet, halfway), 0.0), 140.0) * hash(cell + 3.7);
-    extra += color * glint * folder.effects.y * resolved(1.8, footprint);
+    let glint = pow(max(dot(facet, halfway), 0.0), 60.0) * pow(hash(cell + 3.7), 3.0);
+    extra += color * glint * folder.effects.y * resolved(1.4, footprint);
   }
   if (folder.effects.z > 0.0) {
     // Light carried into the glass and coloured by it: a soft glow under the
-    // lamp, and facets a few px below the surface flashing as it moves.
+    // lamp, in which facets a few px below the surface flash as it moves.
+    // Away from the lamp the glass stays clear.
     let depth = -l.xy / max(l.z, 0.25) * 8.0;
-    let carried = pow(nh, 10.0) * 0.5
-      + facetFlash(p + depth, halfway) * (0.3 + 0.7 * pow(nh, 6.0));
+    let carried = pow(nh, 10.0) * (0.5 + facetFlash(p + depth, halfway) * 0.5);
     extra += folder.tint.rgb * carried * folder.effects.z;
   }
 
@@ -319,6 +358,14 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
   if (surfaceIs(4.0)) {
     // The thread is a shade lighter than the hide it is sewn into.
     added += LAMP_COLOR * seamAt(p).r * 0.05;
+  }
+  if (surfaceIs(5.0)) {
+    // Lighter strands in the pulp catch the lamp, over the board's cloudy
+    // formation, where the pulp lies thicker or thinner.
+    let fibre = kraftFibres(p);
+    let formation = valueNoise(p / 14.0 + folder.seed) * valueNoise(p / 5.0 + folder.seed.yx);
+    added += LAMP_COLOR * (fibre.x * max(fibre.y, 0.0) * 0.08 * resolved(1.0, footprint)
+      + formation * 0.06);
   }
   return vec4f(added * falloff * folder.intensity, 1.0);
 }
