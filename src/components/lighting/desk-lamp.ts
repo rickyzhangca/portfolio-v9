@@ -73,5 +73,29 @@ export const subscribeLamp = (listener: LampListener) => {
   };
 };
 
-export const isWebGpuAvailable = () =>
-  typeof navigator !== "undefined" && "gpu" in navigator;
+/** Chromium's client hints; the DOM lib does not type them yet. */
+interface UserAgentData {
+  brands: { brand: string }[];
+  mobile: boolean;
+}
+
+/**
+ * Whether this browser gets the desk lamp: desktop Google Chrome with
+ * WebGPU. Everywhere else keeps the DOM rendering and hides the lamp's
+ * switch. Chrome's own brand in its client hints tells it apart from Edge,
+ * Opera, Brave and other Chromium browsers, which share its user agent
+ * string; browsers without client hints (Safari, Firefox, Chrome on iOS) are
+ * not Chrome here.
+ */
+export const isDeskLampSupported = () => {
+  if (typeof navigator === "undefined" || !("gpu" in navigator)) {
+    return false;
+  }
+  const hints = (navigator as Navigator & { userAgentData?: UserAgentData })
+    .userAgentData;
+  return Boolean(
+    hints &&
+      !hints.mobile &&
+      hints.brands.some(({ brand }) => brand === "Google Chrome")
+  );
+};

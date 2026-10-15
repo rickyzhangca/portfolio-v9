@@ -140,8 +140,44 @@ describe("CanvasControls", () => {
     expect(screen.queryByRole("button", { name: "Desk lamp" })).toBeNull();
   });
 
-  it("toggles the desk lamp when WebGPU is available", () => {
+  it.each([
+    ["another Chromium browser", "Microsoft Edge", false],
+    ["Chrome on a phone", "Google Chrome", true],
+  ])("hides the desk lamp in %s", (_, brand, mobile) => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      gpu: {},
+      userAgentData: { brands: [{ brand: "Chromium" }, { brand }], mobile },
+    });
+    try {
+      render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
+
+      expect(screen.queryByRole("button", { name: "Desk lamp" })).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("hides the desk lamp in browsers without client hints", () => {
     vi.stubGlobal("navigator", { ...navigator, gpu: {} });
+    try {
+      render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
+
+      expect(screen.queryByRole("button", { name: "Desk lamp" })).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("toggles the desk lamp in desktop Chrome with WebGPU", () => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      gpu: {},
+      userAgentData: {
+        brands: [{ brand: "Chromium" }, { brand: "Google Chrome" }],
+        mobile: false,
+      },
+    });
     try {
       render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
 
