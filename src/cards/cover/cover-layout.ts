@@ -1,3 +1,16 @@
+import type { BoardGlow } from "@/cards/registry";
+
+const percent = (fraction: number) => `${Math.round(fraction * 1000) / 10}%`;
+
+/** A board's glows as CSS radial gradients, topmost first. */
+export const getBoardGlowGradients = (glows: readonly BoardGlow[]) =>
+  glows
+    .map(
+      ({ at, color, size }) =>
+        `radial-gradient(${percent(size.x)} ${percent(size.y)} at ${percent(at.x)} ${percent(at.y)}, ${color} 0%, transparent 100%)`
+    )
+    .join(", ");
+
 /**
  * Where a company folder's logo sits on its board, in CSS px. The DOM logo
  * and the lamp's relief of it (lit-folder) must agree.

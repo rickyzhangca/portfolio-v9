@@ -2,11 +2,17 @@ import { useAtomValue } from "jotai";
 import { useEffect, useRef, useState } from "react";
 import { deskLampAtom } from "@/context/atoms";
 import { FOLDER_SHAPE_SIZE } from "@/lib/folder-shape";
-import type { CoverLogoFinish, FolderMaterial } from "@/cards/registry";
+import type {
+  BoardGlow,
+  CoverLogoFinish,
+  FolderMaterial,
+} from "@/cards/registry";
 import type { FolderLogo } from "./folder-renderer";
 import { runLitSurface } from "./lit-surface";
 
 interface FolderLightingProps {
+  /** Coloured light pooled in the board, brightened by the lamp. */
+  glows?: BoardGlow[];
   /** A logo printed or stamped on the board, given relief by the lamp. */
   logo?: {
     finish: CoverLogoFinish;
@@ -35,12 +41,13 @@ const BULGE_RATE = 7;
 
 /**
  * Foil is stamped slightly proud and mirrors the lamp in its own colour;
- * glass catches a tight highlight; print is ink, nearly flat and matte.
+ * glass catches a tight highlight and lights up in its own colour as the
+ * lamp nears; print is ink, nearly flat and matte.
  */
 const LOGO_FINISHES: Record<CoverLogoFinish, FolderLogo["finish"]> = {
-  foil: { gloss: 0.55, relief: 0.45, shininess: 60, tint: 1 },
-  glass: { gloss: 0.45, relief: 0.6, shininess: 140, tint: 0.4 },
-  print: { gloss: 0.06, relief: 0.08, shininess: 10, tint: 0 },
+  foil: { glow: 0, gloss: 0.55, relief: 0.45, shininess: 60, tint: 1 },
+  glass: { glow: 0.9, gloss: 0.45, relief: 0.6, shininess: 140, tint: 0.4 },
+  print: { glow: 0, gloss: 0.06, relief: 0.08, shininess: 10, tint: 0 },
 };
 
 const bulgeFor = (papers: number) =>
@@ -52,7 +59,13 @@ const bulgeFor = (papers: number) =>
  * the cover's masked container, which clips it to the outline and isolates
  * its blend modes to the cover.
  */
-const LitFolder = ({ logo, material, papers, tint }: FolderLightingProps) => {
+const LitFolder = ({
+  glows,
+  logo,
+  material,
+  papers,
+  tint,
+}: FolderLightingProps) => {
   const shadeRef = useRef<HTMLCanvasElement | null>(null);
   const lightRef = useRef<HTMLCanvasElement | null>(null);
   const [isReady, setReady] = useState(false);
@@ -96,6 +109,7 @@ const LitFolder = ({ logo, material, papers, tint }: FolderLightingProps) => {
               }
             : null,
           material,
+          glows ?? [],
           signal
         );
       },
@@ -123,7 +137,7 @@ const LitFolder = ({ logo, material, papers, tint }: FolderLightingProps) => {
         return [Math.round(bulge * 4) / 4];
       },
     });
-  }, [logoFinish, logoRect, logoSrc, material, tint]);
+  }, [glows, logoFinish, logoRect, logoSrc, material, tint]);
 
   const style = { opacity: isReady ? 1 : 0 };
   return (

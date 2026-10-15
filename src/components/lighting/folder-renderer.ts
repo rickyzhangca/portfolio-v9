@@ -1,4 +1,4 @@
-import type { FolderMaterial } from "@/cards/registry";
+import type { BoardGlow, FolderMaterial } from "@/cards/registry";
 import { FOLDER_SHAPE_PATH, FOLDER_SHAPE_SIZE } from "@/lib/folder-shape";
 import shaderSource from "./folder-shader.wgsl?raw";
 import {
@@ -12,7 +12,7 @@ import {
   UNIFORM_USAGE,
 } from "./gpu";
 
-const FOLDER_FLOATS = 36;
+const FOLDER_FLOATS = 40;
 /** Logo texels per local px: crisp at the camera's closest zoom. */
 const LOGO_DENSITY = 3;
 /** Transparent margin around the outline, so its blur fades to nothing. */
@@ -22,6 +22,10 @@ const SHAPE_DENSITY = 2;
 /** Blur radii (standard deviations) of the outline, in local px. */
 const BEVEL_BLUR = 1.5;
 const BULGE_BLUR = 18;
+/** Glow texels per local px: the glows are smooth gradients. */
+const GLOW_DENSITY = 0.5;
+/** How brightly the board's glows answer the lamp. */
+const GLOW_RESPONSE = 1.4;
 /** Seam texels per local px: the thread is about a pixel wide. */
 const SEAM_DENSITY = 3;
 /** A leather folder's stitching: inset from the edge, in local px. */
@@ -122,8 +126,17 @@ const hexToRgb = (hex: string | undefined) => {
 
 /** The logo on a folder's board and how it is applied. */
 export interface FolderLogo {
-  /** Raised height in local px, gloss, shininess and colour tint (0 to 1). */
-  finish: { gloss: number; relief: number; shininess: number; tint: number };
+  /**
+   * How brightly it lights up in its own colour as the lamp nears, raised
+   * height in local px, gloss, shininess and colour tint (0 to 1).
+   */
+  finish: {
+    glow: number;
+    gloss: number;
+    relief: number;
+    shininess: number;
+    tint: number;
+  };
   rect: { height: number; width: number; x: number; y: number };
   src: string;
 }
@@ -223,6 +236,42 @@ const rasterizeOutline = (size: { height: number; width: number }) => {
   });
 };
 
+// The board's glows as a texture covering the board, drawn as the CSS
+// background draws them (getBoardGlowGradients): bottom layer first. Each
+// fades to its own colour at zero alpha, as CSS interpolates to transparent.
+const rasterizeGlows = (
+  size: { height: number; width: number },
+  glows: readonly BoardGlow[]
+) => {
+  const canvas = new OffscreenCanvas(
+    Math.ceil(size.width * GLOW_DENSITY),
+    Math.ceil(size.height * GLOW_DENSITY)
+  );
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("No 2D context for the folder glows");
+  }
+  for (const { at, color, size: radius } of [...glows].reverse()) {
+    context.setTransform(
+      radius.x * canvas.width,
+      0,
+      0,
+      radius.y * canvas.height,
+      at.x * canvas.width,
+      at.y * canvas.height
+    );
+    const gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(1, `${color}00`);
+    context.fillStyle = gradient;
+    context.fillRect(-1, -1, 2, 2);
+  }
+  return createImageBitmap(canvas, {
+    colorSpaceConversion: "none",
+    premultiplyAlpha: "premultiply",
+  });
+};
+
 // A stitched seam following the outline at SEAM.inset: dashes of thread (red)
 // lying in a pressed groove (green). Each is the band between two strokes of
 // the outline, clipped inside it; the dashed strokes share their pattern, so
@@ -286,6 +335,7 @@ export const attachFolder = async (
   size: { height: number; width: number },
   logo: FolderLogo | null,
   material: FolderMaterial,
+  glows: readonly BoardGlow[],
   signal: AbortSignal
 ): Promise<FolderSurface> => {
   const look = MATERIALS[material];
@@ -304,10 +354,18 @@ export const attachFolder = async (
     material === "leather"
       ? await createMipmappedTexture(gpu.device, await rasterizeSeam(size))
       : createBlankTexture(gpu.device);
+  const glowTexture =
+    glows.length > 0
+      ? await createMipmappedTexture(
+          gpu.device,
+          await rasterizeGlows(size, glows)
+        )
+      : createBlankTexture(gpu.device);
   if (signal.aborted) {
     outline.destroy();
     logoTexture.destroy();
     seam.destroy();
+    glowTexture.destroy();
     signal.throwIfAborted();
   }
 
@@ -324,6 +382,7 @@ export const attachFolder = async (
           { binding: 2, resource: sampler },
           { binding: 3, resource: logoTexture.createView() },
           { binding: 4, resource: seam.createView() },
+          { binding: 5, resource: glowTexture.createView() },
         ],
         layout: pipeline.getBindGroupLayout(0),
       }),
@@ -344,6 +403,7 @@ export const attachFolder = async (
       outline.destroy();
       logoTexture.destroy();
       seam.destroy();
+      glowTexture.destroy();
     },
     render: (frame) => {
       const tint = hexToRgb(frame.tint);
@@ -378,6 +438,10 @@ export const attachFolder = async (
           look.rim.strength,
           look.rim.back ?? 0,
           look.sparkle ?? 0,
+          0,
+          0,
+          glows.length > 0 ? GLOW_RESPONSE : 0,
+          logo?.finish.glow ?? 0,
           0,
           0,
         ]);

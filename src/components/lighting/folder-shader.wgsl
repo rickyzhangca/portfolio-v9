@@ -37,6 +37,9 @@ struct Folder {
   // x: glint on the rim facing away (glass), y: metal grain sparkle,
   // zw: unused.
   effects: vec4f,
+  // How brightly coloured light answers the lamp: x the board's glows,
+  // y the logo's own colour. zw: unused.
+  response: vec4f,
 }
 
 @group(0) @binding(0) var<uniform> folder: Folder;
@@ -45,6 +48,8 @@ struct Folder {
 @group(0) @binding(3) var logo: texture_2d<f32>;
 // Leather stitching (folder-renderer.ts): r thread, g the groove it lies in.
 @group(0) @binding(4) var seam: texture_2d<f32>;
+// Coloured light pooled in the board (folder-renderer.ts), over the board.
+@group(0) @binding(5) var glows: texture_2d<f32>;
 
 struct VertexOut {
   @builtin(position) position: vec4f,
@@ -310,7 +315,14 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
   let markTint = mix(vec3f(1.0), markColor, folder.logoFinish.w);
   let markShine = pow(nh, max(folder.logoFinish.z, 1.0)) * folder.logoFinish.y * mark.a;
 
-  var added = LAMP_COLOR * (color * (sheen + rim) + extra + markTint * markShine);
+  // Coloured light in the board and the logo lights up in its own colour as
+  // the lamp nears: strongest right under it, fading with distance.
+  let nearness = max(dot(n, l), 0.0) * falloff * (0.4 + pow(nh, 6.0));
+  let pooled = textureSampleLevel(glows, shapeSampler, p / folder.size, 0.0).rgb;
+  let colored = pooled * folder.response.x + mark.rgb * folder.response.y;
+
+  var added = LAMP_COLOR * (color * (sheen + rim) + extra + markTint * markShine
+    + colored * nearness);
   if (surfaceIs(4.0)) {
     // The thread is a shade lighter than the hide it is sewn into.
     added += LAMP_COLOR * seamAt(p).r * 0.05;
