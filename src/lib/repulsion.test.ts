@@ -5,6 +5,7 @@ import {
   computeRepulsionOffsets,
   computeStackCardRepulsion,
 } from "./repulsion";
+import { TEST_COVER_BOARD } from "@/test-utils/test-helpers";
 
 // Helper to create minimal mock stack items
 const createMockGroup = (
@@ -14,7 +15,7 @@ const createMockGroup = (
   size = { height: 200, width: 200 }
 ): CanvasStackItem => ({
   cover: {
-    content: { company: "Test", image: "" },
+    content: { board: TEST_COVER_BOARD, company: "Test", logo: "" },
     id: `${id}-cover`,
     kind: "cover",
     size,

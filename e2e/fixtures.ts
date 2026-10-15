@@ -14,6 +14,10 @@ export const test = base.extend<E2EOptions>({
 
     const appOrigin = new URL(baseURL).origin;
     await page.addInitScript(() => {
+      // The desk lamp switches on wherever WebGPU works, and hosted runners
+      // differ in GPU support. Hide WebGPU so every run gets the DOM shading.
+      Reflect.deleteProperty(Navigator.prototype, "gpu");
+
       let seed = 0x7a_4d_13_5b;
       Math.random = () => {
         seed = (seed * 48_271) % 2_147_483_647;

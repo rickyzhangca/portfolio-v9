@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
+import { useAtom } from "jotai";
 import type { MouseEvent, PointerEvent } from "react";
 import {
   memo,
@@ -9,6 +10,8 @@ import {
   useState,
 } from "react";
 import type { MacbookCardContent } from "@/cards/registry";
+import { LitMacbook } from "@/components/lighting/lit-macbook";
+import { deskLampAtom } from "@/context/atoms";
 import { fitSpan } from "@/lib/fit-span";
 import { tw } from "@/lib/utils";
 import macbookImage from "@/assets/macbook/macbook.webp";
@@ -43,6 +46,18 @@ const MacbookCardComponent = ({
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const [tooltip, setTooltip] = useState<StickerTooltipState | null>(null);
   const [edgeShift, setEdgeShift] = useState(0);
+  const [isLampOn, setLampOn] = useAtom(deskLampAtom);
+  const [isLitReady, setLitReady] = useState(false);
+  // The DOM images give way once WebGPU has drawn its first frame.
+  const isDomHidden = isLampOn && isLitReady;
+  const handleLitFail = useCallback(() => setLampOn(false), [setLampOn]);
+  const handleLitReady = useCallback(() => setLitReady(true), []);
+
+  useEffect(() => {
+    if (!isLampOn) {
+      setLitReady(false);
+    }
+  }, [isLampOn]);
 
   const resolveTooltipPosition = useCallback((event: PointerEvent<Element>) => {
     const rect = containerRef.current?.getBoundingClientRect();
@@ -210,7 +225,10 @@ const MacbookCardComponent = ({
       {/* biome-ignore lint/correctness/useImageSize: dimensions set by CSS classes */}
       <img
         alt="MacBook"
-        className="pointer-events-none h-full w-full object-contain"
+        className={tw(
+          "pointer-events-none h-full w-full object-contain",
+          isDomHidden && "opacity-0"
+        )}
         src={macbookImage}
       />
 
@@ -222,7 +240,8 @@ const MacbookCardComponent = ({
             "pointer-events-auto absolute drop-shadow-xs transition",
             isFocused &&
               tooltip?.stickerSrc === sticker.src &&
-              "-translate-y-0.5 drop-shadow-md"
+              "-translate-y-0.5 drop-shadow-md",
+            isDomHidden && "opacity-0"
           )}
           data-description={sticker.description}
           data-sticker-src={sticker.src}
@@ -240,6 +259,15 @@ const MacbookCardComponent = ({
           width={sticker.width}
         />
       ))}
+      {isLampOn ? (
+        <LitMacbook
+          hoveredSticker={isFocused ? (tooltip?.stickerSrc ?? null) : null}
+          lidSrc={macbookImage}
+          onFail={handleLitFail}
+          onReady={handleLitReady}
+          stickers={content.stickers}
+        />
+      ) : null}
       <AnimatePresence>
         {isFocused && tooltip ? (
           <motion.div

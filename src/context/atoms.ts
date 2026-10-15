@@ -12,3 +12,6 @@ export const repulsionConfigAtom = atom<RepulsionConfig>({
 export const fanConfigAtom = atom<FanConfig>({
   ...DEFAULT_FAN_CONFIG,
 });
+
+/** Whether the desk lamp (WebGPU lighting) is switched on. */
+export const deskLampAtom = atom(false);

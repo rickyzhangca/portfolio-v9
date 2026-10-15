@@ -17,7 +17,7 @@ export const writingStack: CanvasStackItem = {
   id: "writing-stack",
   kind: "stack",
   pageSize: 6,
-  position: { x: 575, y: 935 },
+  position: { x: 590, y: 975 },
   stack: articles.map((article) => ({
     content: { slug: article.slug },
     id: `article-${article.slug}`,

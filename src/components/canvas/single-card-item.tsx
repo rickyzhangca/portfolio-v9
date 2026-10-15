@@ -1,6 +1,7 @@
 "use no memo";
 
 import { motion } from "framer-motion";
+import { useAtomValue } from "jotai";
 import {
   type KeyboardEvent,
   type MouseEvent,
@@ -12,6 +13,8 @@ import { ARTICLE_CARD_PREVIEW_INSET } from "@/cards/article/article-card";
 import { getInteractionPolicy } from "@/cards/registry";
 import { RenderCard } from "@/cards/render-card";
 import { PaperCardProjection } from "@/components/documents/paper-card-projection";
+import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
+import { deskLampAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { getDocumentLayoutId } from "@/lib/document-motion";
@@ -101,6 +104,13 @@ export const SingleCardItem = ({
 
   const interactionPolicy = getInteractionPolicy(item.card.kind);
   const projectsPaper = interactionPolicy.activate === "open-modal";
+  const isLampOn = useAtomValue(deskLampAtom);
+  const isLampLit = isLampOn && item.card.kind === "macbook";
+  // Papers cast from their own surface; the lit laptop draws its own shadow.
+  let castShadowLift: number | undefined;
+  if (!(projectsPaper || isLampLit)) {
+    castShadowLift = isDragging ? LAMP_LIFT.dragged : LAMP_LIFT.card;
+  }
   const isActivatable = interactionPolicy.activate !== "none";
   const focusScale =
     interactionPolicy.activate === "toggle-focus"
@@ -224,11 +234,13 @@ export const SingleCardItem = ({
             y: focusOffsetY,
           }}
           aria-label={isActivatable ? `Open ${item.card.kind}` : undefined}
+          data-lamp-shadow={castShadowLift}
           className={tw(
             "absolute top-0 left-0 will-change-transform",
-            projectsPaper
-              ? "group"
-              : "drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)] transition-[filter] hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
+            projectsPaper && "group",
+            // Under the desk lamp the lit laptop casts its own shadow.
+            !(projectsPaper || isLampLit) &&
+              "drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)] transition-[filter] hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
           )}
           initial={{
             opacity: 0,
@@ -254,6 +266,7 @@ export const SingleCardItem = ({
               layoutId={getDocumentLayoutId(item.id, item.card.id)}
               open={documentOpen}
               size={{ height: baseHeight, width: baseWidth }}
+              stock="smooth"
             >
               {cardView}
             </PaperCardProjection>

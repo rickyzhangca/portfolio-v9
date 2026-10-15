@@ -4,7 +4,7 @@ import {
 } from "@/cards/article/article-card";
 import { RenderCard } from "@/cards/render-card";
 import { PaperCardProjection } from "@/components/documents/paper-card-projection";
-import { fanConfigAtom } from "@/context/atoms";
+import { deskLampAtom, fanConfigAtom } from "@/context/atoms";
 import { useCanvasEnvironment } from "@/context/canvas-layout";
 import { useDraggable } from "@/hooks/use-draggable";
 import { AnalyticsEvents, track } from "@/lib/analytics";
@@ -22,9 +22,15 @@ import {
   useState,
 } from "react";
 
-const CARD_MASK_DATA_URI = `url("data:image/svg+xml,%3Csvg viewBox='0 0 240 340' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 301.6C0 315.041 0 321.762 2.61584 326.896C4.9168 331.412 8.58834 335.083 13.1042 337.384C18.2381 340 24.9587 340 38.4 340H201.6C215.041 340 221.762 340 226.896 337.384C231.412 335.083 235.083 331.412 237.384 326.896C240 321.762 240 315.041 240 301.6V250.875C240 245.342 240 242.576 239.541 239.894C239.133 237.514 238.457 235.187 237.526 232.958C236.476 230.448 234.994 228.112 232.03 223.441L231.47 222.559C228.506 217.888 227.024 215.552 225.974 213.042C225.043 210.813 224.367 208.486 223.959 206.106C223.5 203.424 223.5 200.658 223.5 195.125V134.875C223.5 129.342 223.5 126.576 223.959 123.894C224.367 121.514 225.043 119.187 225.974 116.958C227.024 114.448 228.506 112.112 231.47 107.441L232.03 106.559C234.994 101.888 236.476 99.5523 237.526 97.0418C238.457 94.8133 239.133 92.4865 239.541 90.1058C240 87.424 240 84.6577 240 79.1251V38.4C240 24.9587 240 18.2381 237.384 13.1042C235.083 8.58834 231.412 4.9168 226.896 2.61584C221.762 0 215.041 0 201.6 0H38.4C24.9587 0 18.2381 0 13.1042 2.61584C8.58834 4.9168 4.9168 8.58834 2.61584 13.1042C0 18.2381 0 24.9587 0 38.4V301.6Z'/%3E%3C/svg%3E")`;
-
-import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
+import {
+  FLIGHT_SCALE,
+  getStackFlightTransition,
+  SPRING_PRESETS,
+  STACK_FLIGHT_MS,
+  STACK_RETURN_MS,
+  type StackFlight,
+  TRANSITIONS,
+} from "@/lib/animation";
 import {
   COLLAPSED_POSITIONS,
   COLLAPSED_VISIBLE_COUNT,
@@ -34,6 +40,11 @@ import {
   WRITING_COLLAPSED_GAP_PX,
   WRITING_COLLAPSED_HOVER_GAP_PX,
 } from "@/lib/card-layout";
+import { getCoverLogoRect } from "@/cards/cover/cover-layout";
+import { FolderBack } from "@/components/lighting/folder-back";
+import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
+import { FolderLighting } from "@/components/lighting/lit-folder";
+import { FOLDER_MASK_IMAGE } from "@/lib/folder-shape";
 import { getDocumentLayoutId } from "@/lib/document-motion";
 import { tw } from "@/lib/utils";
 import { StackArticleLink } from "./stack-article-link";
@@ -45,6 +56,11 @@ const COVER_BASE_DELAY = 0.05; // seconds before first cover appears
 const COVER_STAGGER = 0.05; // seconds between each group's cover
 const PROJECT_DELAY_AFTER_COVER = 0.2; // seconds after cover before projects appear
 const ZERO_REPULSION_OFFSET = { x: 0, y: 0 } as const;
+/** How far a folder gives under a press, and how quickly. */
+const COVER_PRESS_SCALE = 0.975;
+const COVER_PRESS = { damping: 30, stiffness: 900, type: "spring" } as const;
+/** FolderCoverCard's board colour, for its back panel. */
+const FOLDER_COVER_COLOR = "#d7e4d4";
 /** The camera move after a toggle, plus time for the cards to settle. */
 const PEEK_LOCK_AFTER_TOGGLE_MS = 700;
 
@@ -115,6 +131,7 @@ export const CardStack = ({
   setRootRef,
 }: CardStackProps) => {
   const fanConfig = useAtomValue(fanConfigAtom);
+  const isLampOn = useAtomValue(deskLampAtom);
   const { layout } = useCanvasEnvironment();
   const stackPage = useMemo(() => getStackPage(stack, page), [stack, page]);
   const [retainExpandedCards, setRetainExpandedCards] = useState(isExpanded);
@@ -123,9 +140,28 @@ export const CardStack = ({
       setRetainExpandedCards(true);
       return;
     }
-    const timer = setTimeout(() => setRetainExpandedCards(false), 500);
+    const timer = setTimeout(
+      () => setRetainExpandedCards(false),
+      STACK_RETURN_MS
+    );
     return () => clearTimeout(timer);
   }, [isExpanded]);
+  // Derived while rendering, not in an effect: the render that flips
+  // isExpanded must already carry the flight transitions, or Motion starts
+  // the cards with the hover spring.
+  const [flight, setFlight] = useState<StackFlight | null>(null);
+  const [flightFor, setFlightFor] = useState(isExpanded);
+  if (flightFor !== isExpanded) {
+    setFlightFor(isExpanded);
+    setFlight(isExpanded ? "out" : "in");
+  }
+  useEffect(() => {
+    if (!flight) {
+      return;
+    }
+    const timer = setTimeout(() => setFlight(null), STACK_FLIGHT_MS);
+    return () => clearTimeout(timer);
+  }, [flight]);
   const [measuredSizes, setMeasuredSizes] = useState<Record<string, number>>(
     {}
   );
@@ -166,6 +202,9 @@ export const CardStack = ({
     };
   }, []);
 
+  const [isCoverPressed, setCoverPressed] = useState(false);
+  const isFolderPressed = isCoverPressed && !isExpanded;
+  const isPanelPressed = isCoverPressed && isExpanded;
   const coverPointerDownRef = useRef<{
     clientX: number;
     clientY: number;
@@ -184,6 +223,18 @@ export const CardStack = ({
     };
   }, [stack.cover, measuredSizes]);
 
+  // The lamp's relief of the logo follows the DOM logo's balanced box.
+  const coverLogoFit =
+    coverWithSize?.kind === "cover"
+      ? coverWithSize.content.board.logoFit
+      : undefined;
+  const coverLogoRect = useMemo(
+    () => getCoverLogoRect(coverLogoFit),
+    [coverLogoFit]
+  );
+  const coverPressOrigin = `${(coverWithSize?.size.width ?? 240) / 2}px ${
+    (coverWithSize?.size.height ?? 340) / 2
+  }px`;
   const projectsWithSizes = useMemo(
     () =>
       stackPage.cards.map((card) => {
@@ -253,6 +304,11 @@ export const CardStack = ({
       setIsPeeking(false);
     }
   }, [isWritingFolder]);
+  // Leaving the cover mid-press releases it, as a pointer cancel would.
+  const handleCoverHoverEnd = useCallback(() => {
+    releaseWritingPeek();
+    setCoverPressed(false);
+  }, [releaseWritingPeek]);
 
   // Cleanup timeout on unmount
   useEffect(
@@ -338,6 +394,7 @@ export const CardStack = ({
         clientX: e.clientX,
         clientY: e.clientY,
       };
+      setCoverPressed(true);
     },
     []
   );
@@ -346,6 +403,7 @@ export const CardStack = ({
     (e: PointerEvent<HTMLDivElement>) => {
       const start = coverPointerDownRef.current;
       coverPointerDownRef.current = null;
+      setCoverPressed(false);
 
       if (!start) {
         return;
@@ -383,6 +441,7 @@ export const CardStack = ({
     [onToggleExpanded]
   );
   const handleCoverPointerCancel = useCallback(() => {
+    setCoverPressed(false);
     coverPointerDownRef.current = null;
   }, []);
 
@@ -419,268 +478,363 @@ export const CardStack = ({
         initial={false}
         transition={isDragging ? TRANSITIONS.none : SPRING_PRESETS.quick}
       >
-        {coverWithSize && (
-          <CardRepulsionFrame
-            cardId={coverWithSize.id}
-            offset={cardRepulsionOffsets?.get(coverWithSize.id)}
-            zIndex={projectsWithSizes.length + 1}
-          >
-            <motion.div
-              animate={{
-                opacity: 1,
-                rotate: 0,
-                scale: 1,
-                x: 0,
-                y: 0,
-              }}
-              aria-expanded={isExpanded}
-              aria-label={
-                stack.cover.kind === "folder-cover"
-                  ? `Toggle ${stack.cover.content.label} folder`
-                  : `Toggle ${stack.cover.content.company}`
-              }
-              className="absolute top-0 left-0 drop-shadow-[0_8px_16px_rgba(0,0,0,0.16)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_20px_rgba(0,0,0,0.32)]"
-              initial={{
-                opacity: 0,
-                rotate: -5,
-                scale: 0,
-                x: 0,
-                y: 0,
-              }}
-              key={coverWithSize.id}
-              onHoverEnd={releaseWritingPeek}
-              onHoverStart={triggerPeek}
-              onKeyDown={handleCoverKeyDown}
-              onPointerCancel={handleCoverPointerCancel}
-              onPointerDown={handleCoverPointerDown}
-              onPointerUp={handleCoverPointerUp}
-              role="button"
-              style={{
-                pointerEvents: "auto",
-                zIndex: (stack.cover ? 1 : 0) + projectsWithSizes.length,
-              }}
-              tabIndex={0}
-              transition={{
-                ...SPRING_PRESETS.snappy,
-                delay: coverEntranceDelay,
-              }}
+        {/* A press gives the whole closed folder a little, around the
+            cover's center: back panel, tucked papers and cover together. */}
+        <motion.div
+          animate={{ scale: isFolderPressed ? COVER_PRESS_SCALE : 1 }}
+          className="absolute top-0 left-0"
+          initial={false}
+          style={{ transformOrigin: coverPressOrigin }}
+          transition={COVER_PRESS}
+        >
+          {coverWithSize && isLampOn ? (
+            // Under the lamp the papers sit inside the folder, on its back
+            // panel, which enters with the cover and moves with it.
+            <CardRepulsionFrame
+              cardId={`${coverWithSize.id}-back`}
+              offset={cardRepulsionOffsets?.get(coverWithSize.id)}
+              zIndex={0}
             >
-              <div
-                style={{
-                  maskImage: CARD_MASK_DATA_URI,
-                  maskPosition: "center",
-                  maskRepeat: "no-repeat",
-                  maskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
-                  WebkitMaskImage: CARD_MASK_DATA_URI,
-                  WebkitMaskPosition: "center",
-                  WebkitMaskRepeat: "no-repeat",
-                  WebkitMaskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
+              <motion.div
+                animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                className="absolute top-0 left-0"
+                initial={{ opacity: 0, rotate: -5, scale: 0 }}
+                transition={{
+                  ...SPRING_PRESETS.snappy,
+                  delay: coverEntranceDelay,
                 }}
               >
-                <RenderCard
-                  card={coverWithSize}
-                  className="shadow-none hover:shadow-none"
-                  onMeasure={
-                    coverWithSize.kind === "folder-cover"
-                      ? undefined
-                      : (h) => handleCardMeasure(coverWithSize.id, h)
-                  }
-                />
-              </div>
-            </motion.div>
-          </CardRepulsionFrame>
-        )}
-        {renderedCards.map((card, index) => {
-          const placement = expandedLayout.placements[index];
-
-          // Calculate scale factor to fit project card within cover width when collapsed
-          const coverWidth =
-            coverWithSize?.size.width ?? card.size.width ?? 240;
-          const collapsedScale = Math.min(
-            1,
-            coverWidth / (card.size.width ?? 350)
-          );
-
-          // When collapsed: only first 2 cards visible, others stack behind 2nd card
-          const isHiddenWhenCollapsed =
-            !isExpanded && index >= COLLAPSED_VISIBLE_COUNT;
-
-          const collapsedSlot = Math.min(index, COLLAPSED_VISIBLE_COUNT - 1);
-          const collapsedPos = COLLAPSED_POSITIONS[collapsedSlot];
-          const writingPose = isWritingFolder
-            ? getWritingCollapsedPose(
-                collapsedSlot,
-                {
-                  height: coverWithSize?.size.height ?? 340,
-                  width: coverWidth,
-                },
-                {
-                  height: card.size.height ?? 360,
-                  width: card.size.width ?? 240,
-                },
-                isPeeking && index < COLLAPSED_VISIBLE_COUNT
-                  ? WRITING_COLLAPSED_HOVER_GAP_PX
-                  : WRITING_COLLAPSED_GAP_PX
-              )
-            : null;
-
-          // Company covers still nudge their previews on hover.
-          let jigX = 0;
-          let jigY = 0;
-          let jigRotate = 0;
-
-          if (!writingPose && isPeeking && index < 2) {
-            if (index === 0) {
-              jigX = 12;
-              jigY = -8;
-              jigRotate = 0;
-            } else {
-              jigX = 4;
-              jigY = 8;
-              jigRotate = 0;
-            }
-          }
-
-          // Calculate collapsed opacity - hidden cards get 0, visible cards get gradual reduction
-          const collapsedOpacity = isHiddenWhenCollapsed ? 0 : 1;
-
-          // Calculate collapsed scale based on index (for visible cards)
-          const collapsedScaleIndex = isHiddenWhenCollapsed ? 1 : index;
-
-          // Compute animation values to avoid nested ternaries
-          const opacity = (() => {
-            if (!showProjects) {
-              return 0;
-            }
-            return isExpanded ? 1 : collapsedOpacity;
-          })();
-
-          const cardScale = (() => {
-            if (!showProjects) {
-              return (writingPose?.scale ?? collapsedScale) * 0.5;
-            }
-            if (isExpanded) {
-              return 1;
-            }
-            if (writingPose) {
-              return writingPose.scale;
-            }
-            return (
-              collapsedScale *
-              Math.max(0.94, 1 - (collapsedScaleIndex + 1) * 0.02)
-            );
-          })();
-
-          const rotate = isExpanded
-            ? placement.rotate
-            : (writingPose?.rotate ?? collapsedPos.rotate + jigRotate);
-
-          const x = (() => {
-            if (!showProjects) {
-              return (writingPose?.x ?? collapsedPos.x) - 12;
-            }
-            if (isExpanded) {
-              return placement.x;
-            }
-            return writingPose?.x ?? collapsedPos.x + jigX;
-          })();
-
-          const y = isExpanded
-            ? placement.y
-            : (writingPose?.y ?? collapsedPos.y + jigY);
-          // Cards past the visible pair are unmounted while collapsed.
-          // Without a collapsed start, the first expand paints them at the fan position.
-          const collapsedStackPose = writingPose
-            ? {
-                opacity: 1,
-                rotate: writingPose.rotate,
-                scale: writingPose.scale,
-                x: writingPose.x,
-                y: writingPose.y,
-              }
-            : {
-                opacity: 1,
-                rotate: collapsedPos.rotate,
-                scale: collapsedScale * Math.max(0.94, 1 - 2 * 0.02),
-                x: collapsedPos.x,
-                y: collapsedPos.y,
-              };
-
-          const content = (
-            <RenderCard
-              card={card}
-              isExpanded={isExpanded}
-              onMeasure={
-                card.kind === "article"
-                  ? undefined
-                  : (h) => handleCardMeasure(card.id, h)
-              }
-              priority={false}
-            />
-          );
-
-          return (
+                <motion.div
+                  animate={{ scale: isPanelPressed ? COVER_PRESS_SCALE : 1 }}
+                  initial={false}
+                  style={{ transformOrigin: coverPressOrigin }}
+                  transition={COVER_PRESS}
+                >
+                  <FolderBack
+                    color={
+                      coverWithSize.kind === "folder-cover"
+                        ? FOLDER_COVER_COLOR
+                        : coverWithSize.content.board.base
+                    }
+                    image={
+                      coverWithSize.kind === "folder-cover"
+                        ? coverWithSize.content.image
+                        : undefined
+                    }
+                    size={{
+                      height: coverWithSize.size.height ?? 340,
+                      width: coverWithSize.size.width ?? 240,
+                    }}
+                  />
+                </motion.div>
+              </motion.div>
+            </CardRepulsionFrame>
+          ) : null}
+          {coverWithSize && (
             <CardRepulsionFrame
-              cardId={card.id}
-              key={card.id}
-              offset={cardRepulsionOffsets?.get(card.id)}
-              zIndex={projectsWithSizes.length - index}
+              cardId={coverWithSize.id}
+              offset={cardRepulsionOffsets?.get(coverWithSize.id)}
+              zIndex={projectsWithSizes.length + 1}
             >
               <motion.div
                 animate={{
-                  opacity,
-                  rotate,
-                  scale: cardScale,
-                  x,
-                  y,
+                  opacity: 1,
+                  rotate: 0,
+                  scale: 1,
+                  x: 0,
+                  y: 0,
                 }}
-                aria-hidden={!isExpanded}
-                className={tw("absolute top-0 left-0 will-change-transform")}
-                inert={!isExpanded}
-                initial={
-                  index < COLLAPSED_VISIBLE_COUNT ? false : collapsedStackPose
+                aria-expanded={isExpanded}
+                aria-label={
+                  stack.cover.kind === "folder-cover"
+                    ? `Toggle ${stack.cover.content.label} folder`
+                    : `Toggle ${stack.cover.content.company}`
                 }
-                style={{
-                  pointerEvents: isExpanded || !stack.cover ? "auto" : "none",
-                  transformOrigin: "top left",
-                  zIndex: projectsWithSizes.length - index,
+                className="absolute top-0 left-0 drop-shadow-[0_8px_16px_rgba(0,0,0,0.16)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_20px_rgba(0,0,0,0.32)]"
+                data-lamp-shadow={
+                  isDragging ? LAMP_LIFT.dragged : LAMP_LIFT.card
+                }
+                initial={{
+                  opacity: 0,
+                  rotate: -5,
+                  scale: 0,
+                  x: 0,
+                  y: 0,
                 }}
-                transition={SPRING_PRESETS.snappy}
+                key={coverWithSize.id}
+                onHoverEnd={handleCoverHoverEnd}
+                onHoverStart={triggerPeek}
+                onKeyDown={handleCoverKeyDown}
+                onPointerCancel={handleCoverPointerCancel}
+                onPointerDown={handleCoverPointerDown}
+                onPointerUp={handleCoverPointerUp}
+                role="button"
+                style={{
+                  pointerEvents: "auto",
+                  zIndex: (stack.cover ? 1 : 0) + projectsWithSizes.length,
+                }}
+                tabIndex={0}
+                transition={{
+                  ...SPRING_PRESETS.snappy,
+                  delay: coverEntranceDelay,
+                }}
               >
-                {card.kind === "article" ? (
-                  <StackArticleLink
-                    card={card}
-                    isExpanded={isExpanded}
-                    onActivate={onActivateCard}
+                {/* Pressed while open, only the cover and back panel give; the
+                  papers already lie on the desk. Inner layers, because the
+                  cover's own scale carries the entrance delay, and Motion's
+                  whileTap would take over Enter, which toggles the folder. */}
+                <motion.div
+                  animate={{ scale: isPanelPressed ? COVER_PRESS_SCALE : 1 }}
+                  initial={false}
+                  transition={COVER_PRESS}
+                >
+                  <div
+                    className="relative"
+                    style={{
+                      maskImage: FOLDER_MASK_IMAGE,
+                      maskPosition: "center",
+                      maskRepeat: "no-repeat",
+                      maskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
+                      WebkitMaskImage: FOLDER_MASK_IMAGE,
+                      WebkitMaskPosition: "center",
+                      WebkitMaskRepeat: "no-repeat",
+                      WebkitMaskSize: `${coverWithSize.size.width}px ${coverWithSize.size.height ?? 0}px`,
+                    }}
                   >
-                    <PaperCardProjection
-                      inset={ARTICLE_CARD_PREVIEW_INSET}
-                      // Motion registers a shared layout id when a node mounts
-                      // and re-measures every node in the canvas whenever any
-                      // of them updates. A tucked card still holding its id gets
-                      // re-measured against the expanded pose while the folder
-                      // closes, which makes its paper jump. Tucked cards cannot
-                      // be opened, so they carry no id: it mounts with the card
-                      // when the folder opens, and the key remounts it per state.
-                      key={isExpanded ? "open" : "tucked"}
-                      layoutId={
-                        isExpanded
-                          ? getDocumentLayoutId(stack.id, card.id)
+                    <RenderCard
+                      card={coverWithSize}
+                      className="shadow-none hover:shadow-none"
+                      onMeasure={
+                        coverWithSize.kind === "folder-cover"
+                          ? undefined
+                          : (h) => handleCardMeasure(coverWithSize.id, h)
+                      }
+                    />
+                    <FolderLighting
+                      logo={
+                        coverWithSize.kind === "cover"
+                          ? {
+                              finish: coverWithSize.content.board.logoFinish,
+                              rect: coverLogoRect,
+                              src: coverWithSize.content.logo,
+                            }
                           : undefined
                       }
-                      shadow={isExpanded ? "lifted" : "soft"}
-                      size={ARTICLE_CARD_SIZE}
-                    >
-                      {content}
-                    </PaperCardProjection>
-                  </StackArticleLink>
-                ) : (
-                  content
-                )}
+                      material={
+                        coverWithSize.kind === "folder-cover"
+                          ? "cardstock"
+                          : coverWithSize.content.board.material
+                      }
+                      papers={isExpanded ? 0 : stack.stack.length}
+                    />
+                  </div>
+                </motion.div>
               </motion.div>
             </CardRepulsionFrame>
-          );
-        })}
+          )}
+          {renderedCards.map((card, index) => {
+            const placement = expandedLayout.placements[index];
+
+            // Calculate scale factor to fit project card within cover width when collapsed
+            const coverWidth =
+              coverWithSize?.size.width ?? card.size.width ?? 240;
+            const collapsedScale = Math.min(
+              1,
+              coverWidth / (card.size.width ?? 350)
+            );
+
+            // When collapsed: only first 2 cards visible, others stack behind 2nd card
+            const isHiddenWhenCollapsed =
+              !isExpanded && index >= COLLAPSED_VISIBLE_COUNT;
+
+            const collapsedSlot = Math.min(index, COLLAPSED_VISIBLE_COUNT - 1);
+            const collapsedPos = COLLAPSED_POSITIONS[collapsedSlot];
+            const writingPose = isWritingFolder
+              ? getWritingCollapsedPose(
+                  collapsedSlot,
+                  {
+                    height: coverWithSize?.size.height ?? 340,
+                    width: coverWidth,
+                  },
+                  {
+                    height: card.size.height ?? 360,
+                    width: card.size.width ?? 240,
+                  },
+                  isPeeking && index < COLLAPSED_VISIBLE_COUNT
+                    ? WRITING_COLLAPSED_HOVER_GAP_PX
+                    : WRITING_COLLAPSED_GAP_PX
+                )
+              : null;
+
+            // Company covers still nudge their previews on hover.
+            let jigX = 0;
+            let jigY = 0;
+            let jigRotate = 0;
+
+            if (!writingPose && isPeeking && index < 2) {
+              if (index === 0) {
+                jigX = 12;
+                jigY = -8;
+                jigRotate = 0;
+              } else {
+                jigX = 4;
+                jigY = 8;
+                jigRotate = 0;
+              }
+            }
+
+            // Calculate collapsed opacity - hidden cards get 0, visible cards get gradual reduction
+            const collapsedOpacity = isHiddenWhenCollapsed ? 0 : 1;
+
+            // Calculate collapsed scale based on index (for visible cards)
+            const collapsedScaleIndex = isHiddenWhenCollapsed ? 1 : index;
+
+            // Compute animation values to avoid nested ternaries
+            const opacity = (() => {
+              if (!showProjects) {
+                return 0;
+              }
+              return isExpanded ? 1 : collapsedOpacity;
+            })();
+
+            const cardScale = (() => {
+              if (!showProjects) {
+                return (writingPose?.scale ?? collapsedScale) * 0.5;
+              }
+              if (isExpanded) {
+                return 1;
+              }
+              if (writingPose) {
+                return writingPose.scale;
+              }
+              return (
+                collapsedScale *
+                Math.max(0.94, 1 - (collapsedScaleIndex + 1) * 0.02)
+              );
+            })();
+
+            const rotate = isExpanded
+              ? placement.rotate
+              : (writingPose?.rotate ?? collapsedPos.rotate + jigRotate);
+
+            const x = (() => {
+              if (!showProjects) {
+                return (writingPose?.x ?? collapsedPos.x) - 12;
+              }
+              if (isExpanded) {
+                return placement.x;
+              }
+              return writingPose?.x ?? collapsedPos.x + jigX;
+            })();
+
+            const y = isExpanded
+              ? placement.y
+              : (writingPose?.y ?? collapsedPos.y + jigY);
+            // Cards past the visible pair are unmounted while collapsed.
+            // Without a collapsed start, the first expand paints them at the fan position.
+            const collapsedStackPose = writingPose
+              ? {
+                  opacity: 1,
+                  rotate: writingPose.rotate,
+                  scale: writingPose.scale,
+                  x: writingPose.x,
+                  y: writingPose.y,
+                }
+              : {
+                  opacity: 1,
+                  rotate: collapsedPos.rotate,
+                  scale: collapsedScale * Math.max(0.94, 1 - 2 * 0.02),
+                  x: collapsedPos.x,
+                  y: collapsedPos.y,
+                };
+
+            const content = (
+              <RenderCard
+                card={card}
+                isExpanded={isExpanded}
+                onMeasure={
+                  card.kind === "article"
+                    ? undefined
+                    : (h) => handleCardMeasure(card.id, h)
+                }
+                priority={false}
+              />
+            );
+
+            return (
+              <CardRepulsionFrame
+                cardId={card.id}
+                key={card.id}
+                offset={cardRepulsionOffsets?.get(card.id)}
+                zIndex={projectsWithSizes.length - index}
+              >
+                <motion.div
+                  animate={{
+                    opacity,
+                    rotate,
+                    // Picked up mid-flight: a touch closer to the camera.
+                    scale: flight
+                      ? [null, cardScale * FLIGHT_SCALE, cardScale]
+                      : cardScale,
+                    x,
+                    y,
+                  }}
+                  aria-hidden={!isExpanded}
+                  className={tw("absolute top-0 left-0 will-change-transform")}
+                  inert={!isExpanded}
+                  initial={
+                    index < COLLAPSED_VISIBLE_COUNT ? false : collapsedStackPose
+                  }
+                  style={{
+                    pointerEvents: isExpanded || !stack.cover ? "auto" : "none",
+                    transformOrigin: "top left",
+                    zIndex: projectsWithSizes.length - index,
+                  }}
+                  transition={
+                    flight
+                      ? getStackFlightTransition(
+                          index,
+                          projectsWithSizes.length,
+                          flight
+                        )
+                      : SPRING_PRESETS.snappy
+                  }
+                >
+                  {card.kind === "article" ? (
+                    <StackArticleLink
+                      card={card}
+                      isExpanded={isExpanded}
+                      onActivate={onActivateCard}
+                    >
+                      <PaperCardProjection
+                        inset={ARTICLE_CARD_PREVIEW_INSET}
+                        // Motion registers a shared layout id when a node mounts
+                        // and re-measures every node in the canvas whenever any
+                        // of them updates. A tucked card still holding its id gets
+                        // re-measured against the expanded pose while the folder
+                        // closes, which makes its paper jump. Tucked cards cannot
+                        // be opened, so they carry no id: it mounts with the card
+                        // when the folder opens, and the key remounts it per state.
+                        key={isExpanded ? "open" : "tucked"}
+                        layoutId={
+                          isExpanded
+                            ? getDocumentLayoutId(stack.id, card.id)
+                            : undefined
+                        }
+                        shadow={isExpanded ? "lifted" : "soft"}
+                        size={ARTICLE_CARD_SIZE}
+                      >
+                        {content}
+                      </PaperCardProjection>
+                    </StackArticleLink>
+                  ) : (
+                    content
+                  )}
+                </motion.div>
+              </CardRepulsionFrame>
+            );
+          })}
+        </motion.div>
         {isExpanded && stackPage.pageCount > 1 && (
           <motion.nav
             animate={{ x: coverRepulsionOffset.x, y: coverRepulsionOffset.y }}

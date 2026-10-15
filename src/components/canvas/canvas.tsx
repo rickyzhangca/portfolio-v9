@@ -6,8 +6,13 @@ import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { getInteractionPolicy } from "@/cards/registry";
 import { AboutModal } from "@/components/about/about-modal";
 import { ArticleModal } from "@/components/articles/article-modal";
+import { DeskLampRoom } from "@/components/lighting/desk-lamp-room";
 import { ResumeModal } from "@/components/resume/resume-modal";
-import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
+import {
+  deskLampAtom,
+  fanConfigAtom,
+  repulsionConfigAtom,
+} from "@/context/atoms";
 import {
   CanvasEnvironmentContext,
   useCanvasEnvironment,
@@ -19,6 +24,7 @@ import {
 } from "@/hooks/use-canvas-interactions";
 import { useCanvasState } from "@/hooks/use-canvas-state";
 import { useCanvasViewport } from "@/hooks/use-canvas-viewport";
+import { useDefaultDeskLamp } from "@/hooks/use-default-desk-lamp";
 import {
   useCoarsePointer,
   useIgnoreSyntheticMouseEvents,
@@ -78,6 +84,9 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
   useIgnoreSyntheticMouseEvents();
   const fanConfig = useAtomValue(fanConfigAtom);
   const repulsionConfig = useAtomValue(repulsionConfigAtom);
+  const isLampOn = useAtomValue(deskLampAtom);
+  // Phones have no controls to switch the lamp off, so it starts off there.
+  useDefaultDeskLamp(!layout.compact);
   // Phones show one column and reveal content at its own width, so sideways
   // drags only reach empty canvas. The focused laptop is wider than the screen.
   const lockAxisX = layout.compact && state.focusedItemId === null;
@@ -326,6 +335,7 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
                   })}
                 </AnimatePresence>
               </TransformComponent>
+              {isLampOn ? <DeskLampRoom /> : null}
               {/* Phones keep one bounded column: nothing to tune or reset. */}
               {layout.compact ? null : (
                 <CanvasControls
