@@ -67,14 +67,15 @@ const MATERIALS: Record<FolderMaterial, MaterialLook> = {
     sharp: [60, 0.04],
     surface: 1,
   },
-  // Bead-blasted metal: a bright, diffused reflection in the metal's own
-  // colour, glinting grain and a crisp chamfer.
+  // Bead-blasted anodised metal: a grain too fine to see as more than a
+  // faint shimmer, a wide, soft sheen without a hot spot, and a bright,
+  // crisp diamond-cut chamfer, which is what reads as metal.
   "frosted-metal": {
-    broad: [16, 0.2],
-    rim: { height: 0.9, strength: 0.32 },
-    shade: [1, 0.95],
-    sharp: [70, 0.07],
-    sparkle: 0.4,
+    broad: [10, 0.16],
+    rim: { height: 0.7, strength: 0.5 },
+    shade: [0.8, 0.96],
+    sharp: [30, 0.04],
+    sparkle: 0.1,
     surface: 2,
     tint: 0.35,
   },
@@ -99,14 +100,14 @@ const MATERIALS: Record<FolderMaterial, MaterialLook> = {
     sharp: [30, 0.03],
     surface: 4,
   },
-  // Moulded plastic: smooth and satin-glossy, with a clean highlight that
-  // wobbles a little on the moulding, and a crisp edge.
-  plastic: {
-    broad: [8, 0.05],
-    mirror: 0.3,
-    rim: { height: 0.8, strength: 0.24 },
-    shade: [0.9, 0.97],
-    sharp: [120, 0.12],
+  // Kraft paperboard, as packaging is made of: coarse pulp with loose
+  // fibres and flecks, over the faint ribs of the corrugation beneath. Matte,
+  // so the lamp shows its texture rather than a reflection.
+  kraft: {
+    broad: [4, 0.06],
+    rim: { height: 1, strength: 0.12 },
+    shade: [1.4, 0.97],
+    sharp: [1, 0],
     surface: 5,
   },
 };
