@@ -72,7 +72,7 @@ const BOARDS = {
       "linear-gradient(180deg, #0a0a0a 0%, #1c1c1c 50%, #2b2b2b 100%)",
     base: "#1c1c1c",
     logoFinish: "print",
-    material: "plastic",
+    material: "kraft",
     pattern: "grid",
   },
   rbc: {

@@ -47,8 +47,8 @@ export type FolderMaterial =
   | "cardstock"
   | "frosted-metal"
   | "glass"
+  | "kraft"
   | "leather"
-  | "plastic"
   | "silicone";
 
 /** A company folder's board, drawn as layers instead of a baked image. */
