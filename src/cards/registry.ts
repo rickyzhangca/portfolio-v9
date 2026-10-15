@@ -39,6 +39,18 @@ export interface InteractionPolicy {
 /** How a logo is applied to a folder's board; the desk lamp lights it. */
 export type CoverLogoFinish = "foil" | "glass" | "print";
 
+/**
+ * What a folder is made of, as the desk lamp shows it: its fine relief, how
+ * its sheen spreads and what catches the light at its edge.
+ */
+export type FolderMaterial =
+  | "cardstock"
+  | "frosted-metal"
+  | "glass"
+  | "leather"
+  | "plastic"
+  | "silicone";
+
 /** A company folder's board, drawn as layers instead of a baked image. */
 export interface CoverBoard {
   /** Title colour. */
@@ -53,8 +65,8 @@ export interface CoverBoard {
    * COVER_LOGO's box, and an offset of it in CSS px.
    */
   logoFit?: { scale?: number; x?: number; y?: number };
-  /** Folder material under the lamp: coated board or paper-like stock. */
-  material: "board" | "cardstock";
+  /** Folder material under the lamp. */
+  material: FolderMaterial;
   /** A printed grid that fades down the board. */
   pattern?: "grid";
 }

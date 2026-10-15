@@ -1,5 +1,6 @@
-// Lights a folder's front panel under the desk lamp. The folder outline comes
-// in as coverage blurred two ways (folder-renderer.ts): slightly, for the
+// Lights a folder's front panel under the desk lamp, as the material it is
+// made of; folder-renderer.ts sets each material's look. The folder outline
+// comes in as coverage blurred two ways (folder-renderer.ts): slightly, for the
 // rounded cut edge (the board's thickness), and widely, for the pillow the
 // papers inside push into the panel. Two passes share this shader: pass 0 is
 // multiplied over the cover (shading), pass 1 is screened over it (sheen and
@@ -10,8 +11,9 @@ struct Folder {
   size: vec2f,
   // 0 leaves the DOM cover untouched, 1 is the full lamp.
   intensity: f32,
-  // 0: matte cardstock, 1: soft-touch board.
-  material: f32,
+  // The material's fine relief: 0 cardstock, 1 silicone, 2 frosted metal,
+  // 3 glass, 4 leather, 5 plastic.
+  surface: f32,
   // xyz: lamp position in local px; w: transparent margin around the outline
   // in the coverage texture, in local px.
   light: vec4f,
@@ -25,12 +27,24 @@ struct Folder {
   // x: relief height in local px (raised), y: gloss, z: shininess,
   // w: how much the reflection takes the logo's own colour (foil).
   logoFinish: vec4f,
+  // rgb: the board's colour; w: how much the material's reflection takes it.
+  tint: vec4f,
+  // Shininess and strength of the wide sheen (xy) and the tight highlight (zw).
+  lobes: vec4f,
+  // x: relief shading strength, y: flat panel tone, z: rim height scale,
+  // w: rim catch-light.
+  shading: vec4f,
+  // x: glint on the rim facing away (glass), y: metal grain sparkle,
+  // z: glass depth glow, w: mirror image of the lamp (smooth materials).
+  effects: vec4f,
 }
 
 @group(0) @binding(0) var<uniform> folder: Folder;
 @group(0) @binding(1) var shape: texture_2d<f32>;
 @group(0) @binding(2) var shapeSampler: sampler;
 @group(0) @binding(3) var logo: texture_2d<f32>;
+// Leather stitching (folder-renderer.ts): r thread, g the groove it lies in.
+@group(0) @binding(4) var seam: texture_2d<f32>;
 
 struct VertexOut {
   @builtin(position) position: vec4f,
@@ -47,6 +61,8 @@ fn vs(@builtin(vertex_index) index: u32) -> VertexOut {
 }
 
 const LAMP_COLOR = vec3f(1.0, 0.94, 0.84);
+// Half the angle the lamp's bulb spans, seen from the desk, in radians.
+const LAMP_RADIUS = 0.035;
 // Board thickness, in local px.
 const THICKNESS = 2.0;
 
@@ -90,6 +106,14 @@ fn resolved(wavelength: f32, footprint: f32) -> f32 {
   return smoothstep(1.0, 2.5, wavelength / footprint);
 }
 
+fn hash2(p: vec2f) -> vec2f {
+  return vec2f(hash(p), hash(p + vec2f(19.19, 7.73)));
+}
+
+fn surfaceIs(id: f32) -> bool {
+  return abs(folder.surface - id) < 0.5;
+}
+
 // Cardstock: pressed pulp with a faint fibre direction.
 fn cardstock(p: vec2f, footprint: f32) -> f32 {
   var value = 0.0;
@@ -107,25 +131,113 @@ fn cardstock(p: vec2f, footprint: f32) -> f32 {
   return value * 0.12 + ridge * 0.05;
 }
 
-// Soft-touch coating: an even, very fine tooth.
-fn board(p: vec2f, footprint: f32) -> f32 {
-  return (valueNoise(p * 1.3 + folder.seed) - 0.5) * 0.05 * resolved(0.8, footprint);
+// Silicone: a skin so fine it only softens the light, over a faint, slow
+// unevenness of the cast.
+fn silicone(p: vec2f, footprint: f32) -> f32 {
+  let skin = (valueNoise(p * 1.1 + folder.seed) - 0.5) * 0.04 * resolved(0.9, footprint);
+  let unevenness = (valueNoise(p / 30.0 + folder.seed.yx) - 0.5) * 0.25;
+  return skin + unevenness;
+}
+
+// Bead-blasted metal: a dense, even grain of tiny dents.
+fn frostedMetal(p: vec2f, footprint: f32) -> f32 {
+  let fine = (valueNoise(p * 1.9 + folder.seed) - 0.5) * 0.06 * resolved(0.53, footprint);
+  let coarse = (valueNoise(p * 0.7 + folder.seed.yx) - 0.5) * 0.05 * resolved(1.4, footprint);
+  return fine + coarse;
+}
+
+// Pebbled leather: rounded grains of irregular size, with creases between.
+const PEBBLE = 2.6;
+fn pebble(p: vec2f) -> f32 {
+  let q = p / PEBBLE + folder.seed;
+  let cell = floor(q);
+  let f = fract(q);
+  var nearest = 8.0;
+  var second = 8.0;
+  for (var y = -1; y <= 1; y++) {
+    for (var x = -1; x <= 1; x++) {
+      let offset = vec2f(f32(x), f32(y));
+      let d = length(offset + 0.1 + 0.8 * hash2(cell + offset) - f);
+      second = min(second, max(nearest, d));
+      nearest = min(nearest, d);
+    }
+  }
+  // Distance to the crease between this grain and its neighbour.
+  return smoothstep(0.0, 0.45, second - nearest);
+}
+
+fn leather(p: vec2f, footprint: f32) -> f32 {
+  let grain = pebble(p) * 0.28 * resolved(PEBBLE, footprint);
+  // Hides are not uniform: the grain is deeper in places.
+  let depth = 0.6 + 0.8 * valueNoise(p / 46.0 + folder.seed.yx);
+  return grain * depth;
+}
+
+// Moulded plastic: smooth, but the moulding leaves long, gentle waves that
+// bend the highlight.
+fn plastic(p: vec2f) -> f32 {
+  return (valueNoise(p / 42.0 + folder.seed) - 0.5) * 0.35
+    + (valueNoise(p / 17.0 + folder.seed.yx) - 0.5) * 0.12;
+}
+
+fn seamAt(p: vec2f) -> vec4f {
+  return textureSampleLevel(seam, shapeSampler, shapeUv(p), 0.0);
 }
 
 fn rimHeight(p: vec2f) -> f32 {
-  return smoothstep(0.0, 1.0, outline(p).g) * THICKNESS;
+  return smoothstep(0.0, 1.0, outline(p).g) * THICKNESS * folder.shading.z;
+}
+
+fn surfaceHeight(p: vec2f, footprint: f32) -> f32 {
+  if (surfaceIs(0.0)) {
+    return cardstock(p, footprint);
+  }
+  if (surfaceIs(1.0)) {
+    return silicone(p, footprint);
+  }
+  if (surfaceIs(2.0)) {
+    return frostedMetal(p, footprint);
+  }
+  if (surfaceIs(4.0)) {
+    // The thread stands proud of a groove pressed into the leather.
+    let stitch = seamAt(p);
+    return leather(p, footprint) * (1.0 - stitch.g) - stitch.g * 0.5 + stitch.r * 0.75;
+  }
+  if (surfaceIs(5.0)) {
+    return plastic(p);
+  }
+  // Glass is polished flat.
+  return 0.0;
 }
 
 fn height(p: vec2f, footprint: f32) -> f32 {
   let body = smoothstep(0.5, 1.0, outline(p).b) * folder.bulge;
-  var surface = 0.0;
-  if (folder.material < 0.5) {
-    surface = cardstock(p, footprint);
-  } else {
-    surface = board(p, footprint);
-  }
   let mark = folder.logoFinish.x * logoAt(p, 1.0).a;
-  return rimHeight(p) + body + surface + mark;
+  return rimHeight(p) + body + surfaceHeight(p, footprint) + mark;
+}
+
+// Glass cut like a gem: facets inside it, each tipped its own way, seen
+// through the surface and so shifting against it as the lamp moves. Returns
+// how brightly the facet under p reflects the lamp.
+const FACET = 30.0;
+fn facetFlash(p: vec2f, halfway: vec3f) -> f32 {
+  let q = p / FACET + folder.seed;
+  let cell = floor(q);
+  let f = fract(q);
+  var nearest = 8.0;
+  var id = cell;
+  for (var y = -1; y <= 1; y++) {
+    for (var x = -1; x <= 1; x++) {
+      let offset = vec2f(f32(x), f32(y));
+      let d = length(offset + hash2(cell + offset) - f);
+      if (d < nearest) {
+        nearest = d;
+        id = cell + offset;
+      }
+    }
+  }
+  let facet = normalize(vec3f((hash2(id + 5.3) - 0.5) * 0.8, 1.0));
+  return pow(max(dot(facet, halfway), 0.0), 40.0);
 }
 
 @fragment
@@ -152,34 +264,61 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
     // The change in light against a flat panel, not their ratio, which
     // explodes under grazing light.
     let delta = max(dot(n, l), 0.0) - flatLight.z;
-    let gain = select(1.3, 0.9, folder.material > 0.5);
-    let tone = clamp(0.97 + delta * gain * falloff, 0.0, 1.0);
+    let tone = clamp(folder.shading.y + delta * folder.shading.x * falloff, 0.0, 1.0);
     return vec4f(vec3f(mix(1.0, tone, folder.intensity)), 1.0);
   }
 
   let halfway = normalize(l + vec3f(0.0, 0.0, 1.0));
   let nh = max(dot(n, halfway), 0.0);
-  // Soft-touch board scatters the lamp into a wide, dim sheen; cardstock
-  // barely shines at all. Neither has a sharp reflection.
-  let sheen = select(pow(nh, 5.0) * 0.03, pow(nh, 14.0) * 0.08, folder.material > 0.5);
+  let lobes = folder.lobes;
+  // A smooth surface mirrors the bulb itself: a crisp disc that the
+  // panel's waves and bulge bend.
+  let mirror = 1.0 - smoothstep(LAMP_RADIUS * 0.6, LAMP_RADIUS, acos(min(nh, 1.0)));
+  let sheen = pow(nh, max(lobes.x, 1.0)) * lobes.y + pow(nh, max(lobes.z, 1.0)) * lobes.w
+    + mirror * folder.effects.w;
+  let color = mix(vec3f(1.0), folder.tint.rgb, folder.tint.w);
 
-  // The rounded cut edge catches the lamp on the side that faces it.
+  // The rounded cut edge catches the lamp on the side that faces it; glass
+  // also flashes where light leaves through the far side.
   let rimSlope = vec2f(
     rimHeight(p + vec2f(e, 0.0)) - rimHeight(p - vec2f(e, 0.0)),
     rimHeight(p + vec2f(0.0, e)) - rimHeight(p - vec2f(0.0, e)),
   ) / (2.0 * e);
-  let rimFacing = max(dot(normalize(-rimSlope + vec2f(1e-5)), normalize(l.xy + vec2f(1e-5))), 0.0);
-  let rim = smoothstep(0.05, 0.45, length(rimSlope)) * rimFacing;
-  let rimStrength = select(0.1, 0.2, folder.material > 0.5);
+  let rimFacing = dot(normalize(-rimSlope + vec2f(1e-5)), normalize(l.xy + vec2f(1e-5)));
+  let rimEdge = smoothstep(0.05, 0.45, length(rimSlope) / max(folder.shading.z, 0.1));
+  let rim = rimEdge * (max(rimFacing, 0.0) * folder.shading.w
+    + max(-rimFacing, 0.0) * folder.effects.x);
+
+  var extra = vec3f(0.0);
+  if (folder.effects.y > 0.0) {
+    // Metal grain: each tiny dent is a facet tipped its own way, and the few
+    // that face the lamp glint.
+    let cell = floor(p / 0.9 + folder.seed);
+    let tilt = (hash2(cell) - 0.5) * 0.35;
+    let facet = normalize(n + vec3f(tilt, 0.0));
+    let glint = pow(max(dot(facet, halfway), 0.0), 140.0) * hash(cell + 3.7);
+    extra += color * glint * folder.effects.y * resolved(1.8, footprint);
+  }
+  if (folder.effects.z > 0.0) {
+    // Light carried into the glass and coloured by it: a soft glow under the
+    // lamp, and facets a few px below the surface flashing as it moves.
+    let depth = -l.xy / max(l.z, 0.25) * 8.0;
+    let carried = pow(nh, 10.0) * 0.5
+      + facetFlash(p + depth, halfway) * (0.3 + 0.7 * pow(nh, 6.0));
+    extra += folder.tint.rgb * carried * folder.effects.z;
+  }
 
   // The logo's own finish: foil mirrors the lamp in its own colour, glass
   // catches a tight highlight, print barely shines.
   let mark = logoAt(p, 0.0);
   let markColor = mark.rgb / max(mark.a, 0.0001);
-  let tint = mix(vec3f(1.0), markColor, folder.logoFinish.w);
+  let markTint = mix(vec3f(1.0), markColor, folder.logoFinish.w);
   let markShine = pow(nh, max(folder.logoFinish.z, 1.0)) * folder.logoFinish.y * mark.a;
 
-  let added = (LAMP_COLOR * (sheen + rim * rimStrength) + LAMP_COLOR * tint * markShine)
-    * falloff * folder.intensity;
-  return vec4f(added, 1.0);
+  var added = LAMP_COLOR * (color * (sheen + rim) + extra + markTint * markShine);
+  if (surfaceIs(4.0)) {
+    // The thread is a shade lighter than the hide it is sewn into.
+    added += LAMP_COLOR * seamAt(p).r * 0.05;
+  }
+  return vec4f(added * falloff * folder.intensity, 1.0);
 }

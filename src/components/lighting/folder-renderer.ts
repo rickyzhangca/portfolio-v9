@@ -1,3 +1,4 @@
+import type { FolderMaterial } from "@/cards/registry";
 import { FOLDER_SHAPE_PATH, FOLDER_SHAPE_SIZE } from "@/lib/folder-shape";
 import shaderSource from "./folder-shader.wgsl?raw";
 import {
@@ -11,7 +12,7 @@ import {
   UNIFORM_USAGE,
 } from "./gpu";
 
-const FOLDER_FLOATS = 20;
+const FOLDER_FLOATS = 36;
 /** Logo texels per local px: crisp at the camera's closest zoom. */
 const LOGO_DENSITY = 3;
 /** Transparent margin around the outline, so its blur fades to nothing. */
@@ -21,8 +22,107 @@ const SHAPE_DENSITY = 2;
 /** Blur radii (standard deviations) of the outline, in local px. */
 const BEVEL_BLUR = 1.5;
 const BULGE_BLUR = 18;
+/** Seam texels per local px: the thread is about a pixel wide. */
+const SEAM_DENSITY = 3;
+/** A leather folder's stitching: inset from the edge, in local px. */
+const SEAM = { dash: 3.4, gap: 2.2, groove: 2.6, inset: 9, thread: 1.2 };
 
-export type FolderMaterial = "board" | "cardstock";
+/**
+ * How each material meets the lamp. `surface` picks its fine relief in the
+ * shader. Lobes are [shininess, strength] of a wide sheen and a tighter
+ * highlight; `tint` is how much of the board's colour they take. The rim is
+ * the rounded cut edge: its height, catch-light, and for glass the glint of
+ * light leaving the far edge (`rimBack`). `mirror` is how clearly a smooth
+ * surface reflects the bulb itself, `sparkle` metal's grain glinting and
+ * `glow` the light glass carries into its depth.
+ */
+interface MaterialLook {
+  broad: readonly [number, number];
+  /** Relief shading strength, and the panel's tone with no relief. */
+  shade: readonly [number, number];
+  sharp: readonly [number, number];
+  glow?: number;
+  mirror?: number;
+  rim: { back?: number; height: number; strength: number };
+  sparkle?: number;
+  surface: number;
+  tint?: number;
+}
+
+const MATERIALS: Record<FolderMaterial, MaterialLook> = {
+  // Pressed pulp: matte, its fibres show under raking light.
+  cardstock: {
+    broad: [5, 0.03],
+    rim: { height: 1, strength: 0.1 },
+    shade: [1.3, 0.97],
+    sharp: [1, 0],
+    surface: 0,
+  },
+  // Soft-touch silicone: a thick, rounded edge and a wide, velvety sheen that
+  // never resolves into a highlight; light spreads into it a little.
+  silicone: {
+    broad: [18, 0.2],
+    rim: { height: 1.8, strength: 0.09 },
+    shade: [0.65, 0.985],
+    sharp: [60, 0.04],
+    surface: 1,
+  },
+  // Bead-blasted metal: a bright, diffused reflection in the metal's own
+  // colour, glinting grain and a crisp chamfer.
+  "frosted-metal": {
+    broad: [16, 0.2],
+    rim: { height: 0.9, strength: 0.32 },
+    shade: [1, 0.95],
+    sharp: [70, 0.07],
+    sparkle: 0.4,
+    surface: 2,
+    tint: 0.35,
+  },
+  // Glass, cut like a gem: a pin-sharp highlight, light glowing through its
+  // depth in its own colour, and edges that flash on both sides.
+  glass: {
+    broad: [7, 0.03],
+    glow: 0.28,
+    mirror: 0.6,
+    rim: { back: 0.3, height: 1.1, strength: 0.55 },
+    shade: [1.1, 0.94],
+    sharp: [220, 0.25],
+    surface: 3,
+    tint: 0.3,
+  },
+  // Fine pebbled leather: a soft waxy sheen broken by its grain, and a
+  // stitched seam around the edge.
+  leather: {
+    broad: [9, 0.07],
+    rim: { height: 1.4, strength: 0.12 },
+    shade: [1.2, 0.97],
+    sharp: [30, 0.03],
+    surface: 4,
+  },
+  // Moulded plastic: smooth and satin-glossy, with a clean highlight that
+  // wobbles a little on the moulding, and a crisp edge.
+  plastic: {
+    broad: [8, 0.05],
+    mirror: 0.3,
+    rim: { height: 0.8, strength: 0.24 },
+    shade: [0.9, 0.97],
+    sharp: [120, 0.12],
+    surface: 5,
+  },
+};
+
+const HEX_COLOR = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i;
+
+const hexToRgb = (hex: string | undefined) => {
+  const match = hex?.match(HEX_COLOR);
+  if (!match) {
+    return [1, 1, 1];
+  }
+  const rgb = match.slice(1).map((channel) => Number.parseInt(channel, 16));
+  // Only its hue and saturation: the reflection keeps the lamp's brightness.
+  const peak = Math.max(...rgb, 1);
+  return rgb.map((channel) => channel / peak);
+};
 
 /** The logo on a folder's board and how it is applied. */
 export interface FolderLogo {
@@ -37,10 +137,11 @@ export interface FolderFrame {
   height: number;
   intensity: number;
   light: { x: number; y: number; z: number };
-  material: FolderMaterial;
   pixelHeight: number;
   pixelWidth: number;
   seed: { x: number; y: number };
+  /** The board's colour as hex, taken by tinted materials. */
+  tint?: string;
   width: number;
 }
 
@@ -126,6 +227,58 @@ const rasterizeOutline = (size: { height: number; width: number }) => {
   });
 };
 
+// A stitched seam following the outline at SEAM.inset: dashes of thread (red)
+// lying in a pressed groove (green). Each is the band between two strokes of
+// the outline, clipped inside it; the dashed strokes share their pattern, so
+// the band keeps only the dashes.
+const rasterizeSeam = (size: { height: number; width: number }) => {
+  const canvas = new OffscreenCanvas(
+    Math.ceil((size.width + SHAPE_MARGIN * 2) * SEAM_DENSITY),
+    Math.ceil((size.height + SHAPE_MARGIN * 2) * SEAM_DENSITY)
+  );
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("No 2D context for the folder seam");
+  }
+  context.scale(SEAM_DENSITY, SEAM_DENSITY);
+  context.translate(SHAPE_MARGIN, SHAPE_MARGIN);
+  context.scale(
+    size.width / FOLDER_SHAPE_SIZE.width,
+    size.height / FOLDER_SHAPE_SIZE.height
+  );
+  // Line widths and dashes are set in the folder's own units.
+  const unit = FOLDER_SHAPE_SIZE.width / size.width;
+  const outline = new Path2D(FOLDER_SHAPE_PATH);
+  context.clip(outline);
+  const band = (color: string, width: number, dash: number[], blur: number) => {
+    const layer = new OffscreenCanvas(canvas.width, canvas.height);
+    const layerContext = layer.getContext("2d");
+    if (!layerContext) {
+      throw new Error("No 2D context for the folder seam");
+    }
+    layerContext.setTransform(context.getTransform());
+    layerContext.setLineDash(dash.map((length) => length * unit));
+    layerContext.strokeStyle = color;
+    layerContext.lineWidth = (SEAM.inset * 2 + width) * unit;
+    layerContext.stroke(outline);
+    layerContext.globalCompositeOperation = "destination-out";
+    layerContext.lineWidth = (SEAM.inset * 2 - width) * unit;
+    layerContext.stroke(outline);
+    context.save();
+    context.resetTransform();
+    context.globalCompositeOperation = "lighter";
+    context.filter = `blur(${blur * SEAM_DENSITY}px)`;
+    context.drawImage(layer, 0, 0);
+    context.restore();
+  };
+  band("#0f0", SEAM.groove, [], 0.8);
+  band("#f00", SEAM.thread, [SEAM.dash, SEAM.gap], 0.35);
+  return createImageBitmap(canvas, {
+    colorSpaceConversion: "none",
+    premultiplyAlpha: "premultiply",
+  });
+};
+
 /**
  * Prepares the two canvases over one folder cover: `shadeCanvas` is
  * multiplied over it and `lightCanvas` screened over it. Contexts are
@@ -136,8 +289,10 @@ export const attachFolder = async (
   lightCanvas: HTMLCanvasElement,
   size: { height: number; width: number },
   logo: FolderLogo | null,
+  material: FolderMaterial,
   signal: AbortSignal
 ): Promise<FolderSurface> => {
+  const look = MATERIALS[material];
   const {
     gpu,
     value: { pipeline, sampler },
@@ -149,9 +304,14 @@ export const attachFolder = async (
   const logoTexture = logo
     ? await createMipmappedTexture(gpu.device, await rasterizeLogo(logo))
     : createBlankTexture(gpu.device);
+  const seam =
+    material === "leather"
+      ? await createMipmappedTexture(gpu.device, await rasterizeSeam(size))
+      : createBlankTexture(gpu.device);
   if (signal.aborted) {
     outline.destroy();
     logoTexture.destroy();
+    seam.destroy();
     signal.throwIfAborted();
   }
 
@@ -167,6 +327,7 @@ export const attachFolder = async (
           { binding: 1, resource: outline.createView() },
           { binding: 2, resource: sampler },
           { binding: 3, resource: logoTexture.createView() },
+          { binding: 4, resource: seam.createView() },
         ],
         layout: pipeline.getBindGroupLayout(0),
       }),
@@ -186,14 +347,16 @@ export const attachFolder = async (
       }
       outline.destroy();
       logoTexture.destroy();
+      seam.destroy();
     },
     render: (frame) => {
+      const tint = hexToRgb(frame.tint);
       for (const { bindGroup, buffer, canvas, context, pass } of passes) {
         data.set([
           frame.width,
           frame.height,
           frame.intensity,
-          frame.material === "cardstock" ? 0 : 1,
+          look.surface,
           frame.light.x,
           frame.light.y,
           frame.light.z,
@@ -210,6 +373,17 @@ export const attachFolder = async (
           logo?.finish.gloss ?? 0,
           logo?.finish.shininess ?? 1,
           logo?.finish.tint ?? 0,
+          ...tint,
+          look.tint ?? 0,
+          ...look.broad,
+          ...look.sharp,
+          ...look.shade,
+          look.rim.height,
+          look.rim.strength,
+          look.rim.back ?? 0,
+          look.sparkle ?? 0,
+          look.glow ?? 0,
+          look.mirror ?? 0,
         ]);
         gpu.device.queue.writeBuffer(buffer, 0, data);
         drawQuad(gpu, canvas, context, pipeline, bindGroup, {

@@ -35,7 +35,7 @@ export const TEST_COVER_BOARD: CoverBoard = {
   background: "#171717",
   base: "#171717",
   logoFinish: "print",
-  material: "board",
+  material: "silicone",
 };
 
 export const createMockCover = (

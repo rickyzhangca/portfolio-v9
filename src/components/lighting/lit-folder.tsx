@@ -2,8 +2,8 @@ import { useAtomValue } from "jotai";
 import { useEffect, useRef, useState } from "react";
 import { deskLampAtom } from "@/context/atoms";
 import { FOLDER_SHAPE_SIZE } from "@/lib/folder-shape";
-import type { CoverLogoFinish } from "@/cards/registry";
-import type { FolderLogo, FolderMaterial } from "./folder-renderer";
+import type { CoverLogoFinish, FolderMaterial } from "@/cards/registry";
+import type { FolderLogo } from "./folder-renderer";
 import { runLitSurface } from "./lit-surface";
 
 interface FolderLightingProps {
@@ -16,6 +16,11 @@ interface FolderLightingProps {
   material: FolderMaterial;
   /** Papers inside the folder right now; zero while they are laid out. */
   papers: number;
+  /**
+   * The board's own colour, as a hex string, for materials whose reflection
+   * takes it (metal, glass). White when absent.
+   */
+  tint?: string;
 }
 
 /**
@@ -47,7 +52,7 @@ const bulgeFor = (papers: number) =>
  * the cover's masked container, which clips it to the outline and isolates
  * its blend modes to the cover.
  */
-const LitFolder = ({ logo, material, papers }: FolderLightingProps) => {
+const LitFolder = ({ logo, material, papers, tint }: FolderLightingProps) => {
   const shadeRef = useRef<HTMLCanvasElement | null>(null);
   const lightRef = useRef<HTMLCanvasElement | null>(null);
   const [isReady, setReady] = useState(false);
@@ -90,6 +95,7 @@ const LitFolder = ({ logo, material, papers }: FolderLightingProps) => {
                 src: logoSrc,
               }
             : null,
+          material,
           signal
         );
       },
@@ -99,10 +105,10 @@ const LitFolder = ({ logo, material, papers }: FolderLightingProps) => {
           height,
           intensity,
           light: lamp,
-          material,
           pixelHeight: Math.round(height * pixelScale),
           pixelWidth: Math.round(width * pixelScale),
           seed,
+          tint,
           width,
         }),
       element,
@@ -117,7 +123,7 @@ const LitFolder = ({ logo, material, papers }: FolderLightingProps) => {
         return [Math.round(bulge * 4) / 4];
       },
     });
-  }, [logoFinish, logoRect, logoSrc, material]);
+  }, [logoFinish, logoRect, logoSrc, material, tint]);
 
   const style = { opacity: isReady ? 1 : 0 };
   return (
