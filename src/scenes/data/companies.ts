@@ -39,11 +39,11 @@ import type { CoverBoard } from "@/cards/registry";
 import type { CanvasStackItem } from "@/types/canvas";
 
 // Boards sampled from the covers' original artwork: vertical gradients, the
-// title colour, and how each logo was applied.
+// title colour, and how each logo was applied. Each folder is made of its own
+// material, which the desk lamp brings out.
 const DARK_BOARD = {
   accent: "#bbbbbb",
   logoFinish: "foil",
-  material: "board",
 } as const;
 
 const BOARDS = {
@@ -54,6 +54,7 @@ const BOARDS = {
     background:
       "linear-gradient(180deg, #0f0f0f 0%, #171717 50%, #212121 100%)",
     base: "#171717",
+    material: "silicone",
   },
   mintlify: {
     accent: "#3be6a9",
@@ -61,7 +62,7 @@ const BOARDS = {
       "radial-gradient(130% 22% at 50% 0%, #016642 0%, transparent 100%), radial-gradient(140% 26% at 50% 100%, #047343 0%, transparent 100%), #020f12",
     base: "#031a15",
     logoFinish: "glass",
-    material: "board",
+    material: "glass",
   },
   mosaic: {
     ...DARK_BOARD,
@@ -71,6 +72,7 @@ const BOARDS = {
       "linear-gradient(180deg, #0a0a0a 0%, #1c1c1c 50%, #2b2b2b 100%)",
     base: "#1c1c1c",
     logoFinish: "print",
+    material: "plastic",
     pattern: "grid",
   },
   rbc: {
@@ -79,7 +81,7 @@ const BOARDS = {
       "linear-gradient(180deg, #347eca 0%, #2a6cb6 50%, #205ca5 100%)",
     base: "#2a6cb6",
     logoFinish: "foil",
-    material: "cardstock",
+    material: "leather",
   },
   wealthsimple: {
     ...DARK_BOARD,
@@ -89,6 +91,7 @@ const BOARDS = {
     background:
       "linear-gradient(180deg, #0a0a0a 0%, #212121 55%, #1b1b1b 100%)",
     base: "#1b1b1b",
+    material: "frosted-metal",
   },
 } satisfies Record<string, CoverBoard>;
 

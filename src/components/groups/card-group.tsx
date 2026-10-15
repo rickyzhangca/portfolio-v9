@@ -626,6 +626,11 @@ export const CardStack = ({
                           : coverWithSize.content.board.material
                       }
                       papers={isExpanded ? 0 : stack.stack.length}
+                      tint={
+                        coverWithSize.kind === "cover"
+                          ? coverWithSize.content.board.accent
+                          : undefined
+                      }
                     />
                   </div>
                 </motion.div>
