@@ -51,6 +51,17 @@ export type FolderMaterial =
   | "leather"
   | "silicone";
 
+/**
+ * A pool of coloured light in a board, as an elliptical radial gradient
+ * fading from `color` to transparent. Positions and radii are fractions of
+ * the board's size; `color` is a six-digit hex.
+ */
+export interface BoardGlow {
+  at: { x: number; y: number };
+  color: string;
+  size: { x: number; y: number };
+}
+
 /** A company folder's board, drawn as layers instead of a baked image. */
 export interface CoverBoard {
   /** Title colour. */
@@ -59,6 +70,11 @@ export interface CoverBoard {
   background: string;
   /** Solid colour standing in for the board, e.g. its back panel. */
   base: string;
+  /**
+   * Coloured light pooled in the board, also drawn into `background` (see
+   * getBoardGlowGradients); the desk lamp brightens them as it nears.
+   */
+  glows?: BoardGlow[];
   logoFinish: CoverLogoFinish;
   /**
    * Optical balancing for marks of different weight and padding: a scale of

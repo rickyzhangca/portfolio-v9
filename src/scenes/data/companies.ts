@@ -35,7 +35,8 @@ import ticker from "@/assets/wealthsimple/ticker.webp";
 import webChart from "@/assets/wealthsimple/web-chart.webp";
 import widget from "@/assets/wealthsimple/widget.webp";
 import wsSans from "@/assets/wealthsimple/ws-sans.webp";
-import type { CoverBoard } from "@/cards/registry";
+import { getBoardGlowGradients } from "@/cards/cover/cover-layout";
+import type { BoardGlow, CoverBoard } from "@/cards/registry";
 import type { CanvasStackItem } from "@/types/canvas";
 
 // Boards sampled from the covers' original artwork: vertical gradients, the
@@ -45,6 +46,12 @@ const DARK_BOARD = {
   accent: "#bbbbbb",
   logoFinish: "foil",
 } as const;
+
+// Mintlify's green light, pooled along the top and bottom of the board.
+const MINTLIFY_GLOWS: BoardGlow[] = [
+  { at: { x: 0.5, y: 0 }, color: "#016642", size: { x: 1.3, y: 0.22 } },
+  { at: { x: 0.5, y: 1 }, color: "#047343", size: { x: 1.4, y: 0.26 } },
+];
 
 const BOARDS = {
   github: {
@@ -58,9 +65,9 @@ const BOARDS = {
   },
   mintlify: {
     accent: "#3be6a9",
-    background:
-      "radial-gradient(130% 22% at 50% 0%, #016642 0%, transparent 100%), radial-gradient(140% 26% at 50% 100%, #047343 0%, transparent 100%), #020f12",
+    background: `${getBoardGlowGradients(MINTLIFY_GLOWS)}, #020f12`,
     base: "#031a15",
+    glows: MINTLIFY_GLOWS,
     logoFinish: "glass",
     material: "glass",
   },

@@ -611,6 +611,11 @@ export const CardStack = ({
                       }
                     />
                     <FolderLighting
+                      glows={
+                        coverWithSize.kind === "cover"
+                          ? coverWithSize.content.board.glows
+                          : undefined
+                      }
                       logo={
                         coverWithSize.kind === "cover"
                           ? {
