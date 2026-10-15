@@ -6,7 +6,7 @@ import {
 } from "@phosphor-icons/react";
 import { useAtom } from "jotai";
 import { lazy, Suspense, useCallback, useState } from "react";
-import { isWebGpuAvailable } from "@/components/lighting/desk-lamp";
+import { isDeskLampSupported } from "@/components/lighting/desk-lamp";
 import { deskLampAtom } from "@/context/atoms";
 import { AnalyticsEvents, track } from "@/lib/analytics";
 import { CanvasControlButton } from "./canvas-control-button";
@@ -31,7 +31,7 @@ export const CanvasControls = ({
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const togglePanel = useCallback(() => setIsPanelOpen((open) => !open), []);
   const [isLampOn, setLampOn] = useAtom(deskLampAtom);
-  const [canLight] = useState(isWebGpuAvailable);
+  const [canLight] = useState(isDeskLampSupported);
   const toggleLamp = useCallback(() => setLampOn((on) => !on), [setLampOn]);
 
   const handleReset = () => {

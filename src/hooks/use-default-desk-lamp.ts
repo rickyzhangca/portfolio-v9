@@ -1,6 +1,6 @@
 import { useSetAtom } from "jotai";
 import { useEffect } from "react";
-import { isWebGpuAvailable } from "@/components/lighting/desk-lamp";
+import { isDeskLampSupported } from "@/components/lighting/desk-lamp";
 import { deskLampAtom } from "@/context/atoms";
 
 // Once per page load: after that the lamp stays as the visitor left it, even
@@ -8,7 +8,7 @@ import { deskLampAtom } from "@/context/atoms";
 let hasSwitchedOn = false;
 
 /**
- * Switches the desk lamp on when WebGPU can actually draw. `navigator.gpu`
+ * Switches the desk lamp on in desktop Chrome when WebGPU can actually draw. `navigator.gpu`
  * alone is not enough: browsers without a usable GPU expose it and then
  * return no adapter, and the lamp would flick on and off again.
  */
@@ -16,7 +16,7 @@ export const useDefaultDeskLamp = (enabled: boolean) => {
   const setLampOn = useSetAtom(deskLampAtom);
 
   useEffect(() => {
-    if (hasSwitchedOn || !enabled || !isWebGpuAvailable()) {
+    if (hasSwitchedOn || !enabled || !isDeskLampSupported()) {
       return;
     }
     let cancelled = false;
