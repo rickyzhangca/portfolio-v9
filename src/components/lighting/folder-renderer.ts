@@ -32,17 +32,14 @@ const SEAM = { dash: 3.4, gap: 2.2, groove: 2.6, inset: 9, thread: 1.2 };
  * shader. Lobes are [shininess, strength] of a wide sheen and a tighter
  * highlight; `tint` is how much of the board's colour they take. The rim is
  * the rounded cut edge: its height, catch-light, and for glass the glint of
- * light leaving the far edge (`rimBack`). `mirror` is how clearly a smooth
- * surface reflects the bulb itself, `sparkle` metal's grain glinting and
- * `glow` the light glass carries into its depth.
+ * light leaving the far edge (`rimBack`). `sparkle` is metal's grain
+ * glinting.
  */
 interface MaterialLook {
   broad: readonly [number, number];
   /** Relief shading strength, and the panel's tone with no relief. */
   shade: readonly [number, number];
   sharp: readonly [number, number];
-  glow?: number;
-  mirror?: number;
   rim: { back?: number; height: number; strength: number };
   sparkle?: number;
   surface: number;
@@ -79,15 +76,13 @@ const MATERIALS: Record<FolderMaterial, MaterialLook> = {
     surface: 2,
     tint: 0.35,
   },
-  // Glass, cut like a gem: a pin-sharp highlight, light glowing through its
-  // depth in its own colour, and edges that flash on both sides.
+  // Glass: a clear, polished face that keeps only a faint sheen, and
+  // edges that flash on both sides, where light enters and leaves.
   glass: {
     broad: [7, 0.03],
-    glow: 0.28,
-    mirror: 0.6,
     rim: { back: 0.3, height: 1.1, strength: 0.55 },
     shade: [1.1, 0.94],
-    sharp: [220, 0.25],
+    sharp: [1, 0],
     surface: 3,
     tint: 0.3,
   },
@@ -101,8 +96,8 @@ const MATERIALS: Record<FolderMaterial, MaterialLook> = {
     surface: 4,
   },
   // Kraft paperboard, as packaging is made of: coarse pulp with loose
-  // fibres and flecks, over the faint ribs of the corrugation beneath. Matte,
-  // so the lamp shows its texture rather than a reflection.
+  // fibres and flecks. Matte, so the lamp shows its texture rather than a
+  // reflection.
   kraft: {
     broad: [4, 0.06],
     rim: { height: 1, strength: 0.12 },
@@ -383,8 +378,8 @@ export const attachFolder = async (
           look.rim.strength,
           look.rim.back ?? 0,
           look.sparkle ?? 0,
-          look.glow ?? 0,
-          look.mirror ?? 0,
+          0,
+          0,
         ]);
         gpu.device.queue.writeBuffer(buffer, 0, data);
         drawQuad(gpu, canvas, context, pipeline, bindGroup, {
