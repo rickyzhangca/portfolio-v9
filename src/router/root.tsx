@@ -20,7 +20,6 @@ import {
   useNavigate,
   useRouteError,
 } from "react-router";
-import { PortfolioLoader } from "@/components/portfolio-loader";
 import {
   CanvasSessionContext,
   getArticleSource,
@@ -37,6 +36,10 @@ import type { ArticleLocale, ArticleSource } from "@/types/article";
 import "../index.css";
 
 const ARTICLE_PATH = /^\/writing\/(en|cn)\/[^/]+\/?$/;
+// Phosphor's SpinnerIcon (regular weight), inlined: the icon component would
+// bring all six weights into every route's first load.
+const SPINNER_PATH =
+  "M136,32V64a8,8,0,0,1-16,0V32a8,8,0,0,1,16,0Zm37.25,58.75a8,8,0,0,0,5.66-2.35l22.63-22.62a8,8,0,0,0-11.32-11.32L167.6,77.09a8,8,0,0,0,5.65,13.66ZM224,120H192a8,8,0,0,0,0,16h32a8,8,0,0,0,0-16Zm-45.09,47.6a8,8,0,0,0-11.31,11.31l22.62,22.63a8,8,0,0,0,11.32-11.32ZM128,184a8,8,0,0,0-8,8v32a8,8,0,0,0,16,0V192A8,8,0,0,0,128,184ZM77.09,167.6,54.46,190.22a8,8,0,0,0,11.32,11.32L88.4,178.91A8,8,0,0,0,77.09,167.6ZM72,128a8,8,0,0,0-8-8H32a8,8,0,0,0,0,16H64A8,8,0,0,0,72,128ZM65.78,54.46A8,8,0,0,0,54.46,65.78L77.09,88.4A8,8,0,0,0,88.4,77.09Z";
 /** Matches the placeholder's fade-out transition. */
 const LOADER_EXIT_MS = 300;
 
@@ -219,9 +222,9 @@ export default function Root() {
   return (
     <CanvasSessionContext.Provider value={session}>
       {/* One element from the first paint until the canvas takes over, so
-          its loop never restarts while the app loads. It sits behind the
-          canvas, which stays transparent until its cards rise over it; an
-          error screen in the canvas covers it. */}
+          the spinner's delay counts from the first paint and never restarts.
+          It sits behind the canvas, which stays transparent until its cards
+          rise over it; an error screen in the canvas covers it. */}
       {location.pathname === "/" && loader !== "gone" ? (
         <PortfolioLoading leaving={loader === "leaving"} />
       ) : null}
@@ -253,7 +256,19 @@ function PortfolioLoading({ leaving }: { leaving: boolean }) {
         leaving ? "scale-95 opacity-0" : ""
       }`}
     >
-      <PortfolioLoader />
+      {/* Nothing shows on a normal load; a slow one gets a spinner after
+          three seconds (`.portfolio-spinner` in index.css). */}
+      <svg
+        aria-hidden="true"
+        className="portfolio-spinner"
+        fill="currentColor"
+        height={24}
+        viewBox="0 0 256 256"
+        width={24}
+      >
+        <path d={SPINNER_PATH} />
+      </svg>
+      <p className="sr-only">Opening Ricky’s portfolio…</p>
       <nav
         aria-label="Site index"
         className="sr-only focus-within:not-sr-only focus-within:text-sm"

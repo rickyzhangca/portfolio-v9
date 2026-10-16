@@ -149,89 +149,24 @@ body,
 }
 
 /*
- * The loading mark (src/components/portfolio-loader.tsx) deals three cards in
- * a loop. It waits a moment before showing, so fast loads never flash it.
+ * The home placeholder shows nothing on a normal load. A load still running
+ * after three seconds gets a plain spinner, so a slow network never looks
+ * like a blank page.
  */
-@keyframes portfolio-loader-in {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 4px, 0);
+@keyframes portfolio-spinner-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
-@keyframes portfolio-loader-deal {
-  0% {
-    opacity: 0;
-    transform: translate3d(var(--card-x), -10px, 0)
-      rotate(calc(var(--card-tilt) * 0.3)) scale(0.92);
-  }
-  16%,
-  70% {
-    opacity: 1;
-    transform: translate3d(var(--card-x), 0, 0) rotate(var(--card-tilt))
-      scale(1);
-  }
-  84%,
-  100% {
-    opacity: 0;
-    transform: translate3d(var(--card-x), 2px, 0) rotate(var(--card-tilt))
-      scale(0.98);
-  }
-}
-.portfolio-loader {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.25rem;
-  font-size: 13px;
-  letter-spacing: 0.01em;
-  animation: portfolio-loader-in 420ms cubic-bezier(0.33, 1, 0.68, 1) 280ms
-    backwards;
-}
-.portfolio-loader-deck {
-  position: relative;
-  width: 3.5rem;
-  height: 1.75rem;
-}
-/* Three folder colours from the desk, dealt left to right. */
-.portfolio-loader-deck > span {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 1.25rem;
-  height: 1.75rem;
-  margin-left: -0.625rem;
-  border-radius: 5px;
-  background: var(--card-color);
-  box-shadow: 0 2px 4px rgb(0 0 0 / 0.14);
-  transform: translate3d(var(--card-x), 0, 0) rotate(var(--card-tilt));
-  animation: portfolio-loader-deal 1800ms cubic-bezier(0.33, 1, 0.68, 1)
-    var(--card-delay) infinite backwards;
-}
-.portfolio-loader-deck > span:nth-child(1) {
-  --card-color: #1c1c1c;
-  --card-delay: 0ms;
-  --card-tilt: -10deg;
-  --card-x: -14px;
-}
-.portfolio-loader-deck > span:nth-child(2) {
-  --card-color: #2a6cb6;
-  --card-delay: 120ms;
-  --card-tilt: 0deg;
-  --card-x: 0px;
-}
-.portfolio-loader-deck > span:nth-child(3) {
-  --card-color: #1f9d74;
-  --card-delay: 240ms;
-  --card-tilt: 10deg;
-  --card-x: 14px;
+.portfolio-spinner {
+  animation:
+    canvas-item-fade 300ms ease-out 3s backwards,
+    portfolio-spinner-spin 1s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   [data-entrance="playing"] .canvas-entrance-item {
     animation: canvas-item-fade 320ms ease-out backwards;
-  }
-  .portfolio-loader-deck > span {
-    animation: none;
   }
 }
 
