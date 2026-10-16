@@ -16,7 +16,7 @@ export type DeskLampProbe = "pending" | "found" | "none";
 let hasSwitchedOn = false;
 
 /**
- * Asks desktop Chrome for a WebGPU adapter that can actually draw.
+ * Asks desktop Chromium for a WebGPU adapter that can actually draw.
  * `navigator.gpu` alone is not enough: browsers without a usable GPU expose
  * it and then return no adapter, and the lamp would flick on and off again.
  */
