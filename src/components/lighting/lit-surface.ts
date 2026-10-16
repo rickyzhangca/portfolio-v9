@@ -48,6 +48,10 @@ const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
  * each frame stalled the GPU process on canvas presents and dropped half the
  * frames. Over budget, surfaces wait their turn, the longest-waiting first,
  * so lighting trails motion by a few frames and catches up once it settles.
+ * Surfaces animating their own parts (a key going down, a keycap lifting)
+ * go first: the pointer that drives them also moves the lamp, which queues
+ * every other surface on screen, and a part that skips frames stutters
+ * where relighting a few frames late does not show.
  */
 const DRAWS_PER_FRAME = 4;
 
@@ -69,10 +73,12 @@ const flushDraws = () => {
   }
 };
 
-const requestDraw = (owner: object, draw: () => void) => {
+const requestDraw = (owner: object, draw: () => void, animating: boolean) => {
   pending.set(owner, {
     draw,
-    since: pending.get(owner)?.since ?? performance.now(),
+    // Animating surfaces queue as if they had waited longest, and keep
+    // their place while waiting.
+    since: animating ? 0 : (pending.get(owner)?.since ?? performance.now()),
   });
   if (!flushQueued) {
     flushQueued = true;
@@ -162,6 +168,7 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
     surface = attached;
     const fadeStart = performance.now();
     let drawnKey = "";
+    let drawnOwn = "";
     let announced = false;
     let lastFrame = fadeStart;
 
@@ -175,6 +182,7 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
       }
       // Skip frames where nothing visible changed: a lamp step under a
       // pixel, or a fraction of a pixel of travel, does not show.
+      const ownKey = own.map((value) => value.toFixed(2)).join();
       const key = [
         Math.round(view.light.x),
         Math.round(view.light.y),
@@ -183,30 +191,35 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
         view.pixelScale,
         view.width,
         view.height,
-        ...own.map((value) => value.toFixed(2)),
+        ownKey,
       ].join();
       if (key === drawnKey) {
         pending.delete(owner);
         return;
       }
       // Queued with this frame's view; a later frame replaces it.
-      requestDraw(owner, () => {
-        if (abort.signal.aborted) {
-          return;
-        }
-        try {
-          draw(attached, view);
-        } catch (error) {
-          unsubscribe?.();
-          fail(error);
-          return;
-        }
-        drawnKey = key;
-        if (!announced) {
-          announced = true;
-          onReady();
-        }
-      });
+      requestDraw(
+        owner,
+        () => {
+          if (abort.signal.aborted) {
+            return;
+          }
+          try {
+            draw(attached, view);
+          } catch (error) {
+            unsubscribe?.();
+            fail(error);
+            return;
+          }
+          drawnKey = key;
+          drawnOwn = ownKey;
+          if (!announced) {
+            announced = true;
+            onReady();
+          }
+        },
+        ownKey !== drawnOwn
+      );
     });
   };
 

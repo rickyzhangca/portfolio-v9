@@ -16,7 +16,7 @@ import type {
   CanvasSingleItem,
   CanvasSwagStackItem,
 } from "@/types/canvas";
-import { funProjects } from "./fun-projects";
+import { funProjects, loadFunProjectKeycaps } from "./fun-projects";
 
 export const resumeItem: CanvasSingleItem = {
   id: "resume-item",
@@ -178,6 +178,7 @@ export const funProjectsItem: CanvasFunStackItem = {
     size: { width: 360 },
     content: {
       items: funProjects,
+      loadKeycaps: loadFunProjectKeycaps,
     },
   },
 };

@@ -1,5 +1,8 @@
-import { act, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { createStore, Provider } from "jotai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
+import { deskLampAtom } from "@/context/atoms";
 import {
   createMockFunStack,
   renderWithProviders,
@@ -206,6 +209,27 @@ describe("FunProjectGroup", () => {
 
     await screen.findByText("A test fun project");
     expect(screen.getByText("Test Project")).not.toBeNull();
+  });
+
+  it("lays detail cards on the desk under the lamp", async () => {
+    const store = createStore();
+    store.set(deskLampAtom, true);
+    const { container } = render(
+      <Provider store={store}>
+        <FunProjectGroup
+          {...baseProps}
+          isExpanded
+          item={createMockFunStack("fun-1")}
+        />
+      </Provider>
+    );
+
+    await screen.findByText("A test fun project");
+    expect(
+      container
+        .querySelector("[data-fun-content-card-index]")
+        ?.getAttribute("data-lamp-shadow")
+    ).toBe(String(LAMP_LIFT.card));
   });
 
   it("keeps content cards hidden until measurement pass completes", async () => {

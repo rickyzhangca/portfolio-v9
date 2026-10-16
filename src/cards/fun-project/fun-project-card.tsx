@@ -1,17 +1,33 @@
 import { motion } from "framer-motion";
+import { useAtomValue } from "jotai";
 import type { PointerEvent, Ref } from "react";
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import type { FunProjectCardContent } from "@/cards/types";
+import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
+import {
+  LAMP_SHEEN_GRADIENT,
+  startLampSheen,
+} from "@/components/lighting/lamp-sheen";
+import { deskLampAtom } from "@/context/atoms";
 import { useItemEntrance } from "@/context/canvas-entrance";
 import { SPRING_PRESETS } from "@/lib/animation";
 import { ENTRANCE_LANDED_MS } from "@/lib/canvas-entrance";
 import { computeMagneticLift, type IconLiftEffect } from "@/lib/magnetic-lift";
+import { tw } from "@/lib/utils";
+
+// Loaded only when the desk lamp is switched on, outside the first view's JS.
+const LitKeycaps = lazy(() =>
+  import("@/components/lighting/lit-keycaps").then((module) => ({
+    default: module.LitKeycaps,
+  }))
+);
 
 interface FunProjectCardProps {
   content: FunProjectCardContent;
@@ -41,18 +57,33 @@ export const FunProjectCard = ({
   ref,
 }: FunProjectCardProps & { ref?: Ref<HTMLDivElement> }) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const iconRefs = useRef<Map<number, HTMLImageElement>>(new Map());
+  const iconRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const iconRefCallbacksRef = useRef(
-    new Map<number, (el: HTMLImageElement | null) => void>()
+    new Map<number, (el: HTMLDivElement | null) => void>()
   );
   const [liftEffects, setLiftEffects] = useState<Map<number, IconLiftEffect>>(
     new Map()
   );
 
-  // Cache icon rects to avoid layout reads on every pointermove
-  const iconRectsRef = useRef<Map<number, DOMRect>>(new Map());
   const rafRef = useRef<number | null>(null);
-  const pendingEffectsRef = useRef<Map<number, IconLiftEffect> | null>(null);
+  const pendingPointerRef = useRef<{ x: number; y: number } | null>(null);
+
+  // Under the lamp the icons become keycaps drawn with WebGPU, once they
+  // have popped onto the card. Until the caps are drawn, or without WebGPU,
+  // each icon casts its own shadow, as high as it is lifted, and catches the
+  // lamp's glint.
+  const isLampOn = useAtomValue(deskLampAtom);
+  const [isLitReady, setLitReady] = useState(false);
+  const [haveIconsLanded, setIconsLanded] = useState(false);
+  const isLit = isLampOn && isLitReady;
+  const handleLitReady = useCallback(() => setLitReady(true), []);
+  const handleIconsLanded = useCallback(() => setIconsLanded(true), []);
+
+  useEffect(() => {
+    if (!isLampOn) {
+      setLitReady(false);
+    }
+  }, [isLampOn]);
 
   const entrance = useItemEntrance();
   const iconsDelay = (entrance.delayMs + ENTRANCE_LANDED_MS) / 1000;
@@ -68,60 +99,37 @@ export const FunProjectCard = ({
     handleMeasure();
   }, [handleMeasure]);
 
-  // Update icon rect cache on mount and when icons change
-  useLayoutEffect(() => {
-    const rects = new Map<number, DOMRect>();
-    for (const [index, element] of iconRefs.current.entries()) {
-      const rect = element.getBoundingClientRect();
-      rects.set(index, rect);
-    }
-    iconRectsRef.current = rects;
-  }, []);
-
-  // Set up ResizeObserver to update icon rects when layout changes
   useEffect(() => {
-    const observers = new Map<number, ResizeObserver>();
-
-    for (const [index, element] of iconRefs.current.entries()) {
-      const observer = new ResizeObserver(() => {
-        const rect = element.getBoundingClientRect();
-        iconRectsRef.current.set(index, rect);
-      });
-      observer.observe(element);
-      observers.set(index, observer);
+    const card = cardRef.current;
+    if (!(isLampOn && card) || isLit) {
+      return;
     }
-
-    return () => {
-      for (const observer of observers.values()) {
-        observer.disconnect();
-      }
-    };
-  }, []);
+    return startLampSheen(card);
+  }, [isLampOn, isLit]);
 
   const handlePointerMove = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
-      // Use cached rects instead of querying DOM on every move
-      const iconRects = iconRectsRef.current;
-
-      // Compute lift effects based on pointer position
-      const effects = computeMagneticLift(
-        event.clientX,
-        event.clientY,
-        iconRects
-      );
-
-      // RAF-throttle state updates to avoid React updates on every event
-      pendingEffectsRef.current = effects;
-      if (rafRef.current === null) {
-        rafRef.current = requestAnimationFrame(() => {
-          const pending = pendingEffectsRef.current;
-          if (pending) {
-            setLiftEffects(pending);
-            pendingEffectsRef.current = null;
-          }
-          rafRef.current = null;
-        });
+      pendingPointerRef.current = { x: event.clientX, y: event.clientY };
+      // RAF-throttle layout reads and state updates to once per frame.
+      if (rafRef.current !== null) {
+        return;
       }
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        const pointer = pendingPointerRef.current;
+        if (!pointer) {
+          return;
+        }
+        pendingPointerRef.current = null;
+        // Measured each frame, never cached: the camera pans and zooms the
+        // card, and the icons mount scaled to nothing for the entrance.
+        // Tiles are not moved by their own lift, so lifting cannot feed back.
+        const iconRects = new Map<number, DOMRect>();
+        for (const [index, element] of iconRefs.current.entries()) {
+          iconRects.set(index, element.getBoundingClientRect());
+        }
+        setLiftEffects(computeMagneticLift(pointer.x, pointer.y, iconRects));
+      });
     },
     []
   );
@@ -132,7 +140,7 @@ export const FunProjectCard = ({
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
-    pendingEffectsRef.current = null;
+    pendingPointerRef.current = null;
     setLiftEffects(new Map());
   }, []);
 
@@ -151,7 +159,7 @@ export const FunProjectCard = ({
   const getIconRef = useCallback((index: number) => {
     let callback = iconRefCallbacksRef.current.get(index);
     if (!callback) {
-      callback = (el: HTMLImageElement | null) => {
+      callback = (el: HTMLDivElement | null) => {
         if (el) {
           iconRefs.current.set(index, el);
         } else {
@@ -165,7 +173,7 @@ export const FunProjectCard = ({
 
   return (
     <div
-      className="grid grid-cols-5 gap-2"
+      className="relative grid grid-cols-5 gap-2"
       onPointerLeave={handlePointerLeave}
       onPointerMove={handlePointerMove}
       ref={setCardRef}
@@ -180,27 +188,67 @@ export const FunProjectCard = ({
           <motion.div
             // Icons pop onto the card once it has landed.
             animate={entrance.started ? { scale: 1, opacity: 1 } : undefined}
+            data-lamp-shadow={
+              isLampOn && !isLit ? LAMP_LIFT.keycap - y : undefined
+            }
             initial={{ scale: 0, opacity: 0 }}
             key={item.title}
+            onAnimationComplete={
+              index === content.items.length - 1 ? handleIconsLanded : undefined
+            }
+            ref={getIconRef(index)}
             transition={{
               ...SPRING_PRESETS.quick,
               delay: iconsDelay + index * 0.03,
             }}
           >
-            {/* biome-ignore lint/correctness/useImageSize: auto sizes */}
-            <motion.img
-              alt={item.title}
+            <motion.div
               animate={{ y }}
-              className="h-full w-full object-cover"
+              className="relative isolate"
               initial={false}
-              ref={getIconRef(index)}
-              src={item.icon}
-              style={{ filter: shadow }}
+              style={isLampOn ? undefined : { filter: shadow }}
               transition={SPRING_PRESETS.quick}
-            />
+            >
+              {/* biome-ignore lint/correctness/useImageSize: auto sizes */}
+              <img
+                alt={item.title}
+                className={tw(
+                  "h-full w-full object-cover transition-opacity duration-300",
+                  isLit && "opacity-0"
+                )}
+                data-keycap=""
+                src={item.icon}
+              />
+              {isLampOn && !isLit ? (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 mix-blend-screen"
+                  data-lamp-sheen=""
+                  style={{
+                    backgroundImage: LAMP_SHEEN_GRADIENT,
+                    // The icon's own shape, at its width: the box below it
+                    // holds the line's descender gap.
+                    maskImage: `url(${item.icon})`,
+                    maskPosition: "top",
+                    maskRepeat: "no-repeat",
+                    maskSize: "100% auto",
+                  }}
+                />
+              ) : null}
+            </motion.div>
           </motion.div>
         );
       })}
+      {isLampOn && haveIconsLanded && content.loadKeycaps ? (
+        <Suspense fallback={null}>
+          <LitKeycaps
+            lifts={liftEffects}
+            loadCaps={content.loadKeycaps}
+            onReady={handleLitReady}
+            items={content.items}
+          />
+        </Suspense>
+      ) : null}
     </div>
   );
 };

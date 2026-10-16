@@ -162,6 +162,19 @@ export interface MacbookCardContent {
   stickers: MacbookSticker[];
 }
 
+/** A fun-project icon as the plastic keycap the desk lamp draws. */
+export interface FunProjectKeycap {
+  /**
+   * The plastic's colour (hex) at the top face's far edge and at the front
+   * wall's foot; a cap of one colour gives the same twice.
+   */
+  body: readonly [far: string, near: string];
+  /** The print on the cap's top: a square image the size of the top face. */
+  glyph: string;
+  /** Speckle moulded into the plastic, from 0 (none) to 1. */
+  grain?: number;
+}
+
 export interface FunProjectItem {
   description: string;
   icon: string;
@@ -177,6 +190,12 @@ export interface FunProjectItem {
 
 export interface FunProjectCardContent {
   items: FunProjectItem[];
+  /**
+   * Loads the icons' keycaps for the desk lamp, by item title, outside the
+   * first view's JS. Without a cap for every icon, the icons keep their
+   * pictures under the lamp.
+   */
+  loadKeycaps?: () => Promise<Readonly<Record<string, FunProjectKeycap>>>;
 }
 
 // Resume types (moved from canvas.ts)
