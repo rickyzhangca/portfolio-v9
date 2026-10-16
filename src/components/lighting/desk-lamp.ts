@@ -133,20 +133,37 @@ interface UserAgentData {
   platform: string;
 }
 
+const MAC_PATTERN = /Macintosh/;
+const WEBKIT_PATTERN = /AppleWebKit\//;
+const OTHER_ENGINE_PATTERN = /Chrome|Chromium|Firefox/;
+
 /**
- * Whether this browser gets the desk lamp: desktop Chromium with WebGPU
- * (Chrome, Edge, Brave, Opera, Arc, Vivaldi), which all draw through the same
- * Blink and Dawn the lamp was tuned on. Everywhere else keeps the DOM
- * rendering and hides the lamp's switch. Every Chromium browser lists a
- * "Chromium" brand in its client hints, beside its own and a randomised
- * GREASE brand, so the brand is matched exactly. Browsers without client
- * hints (Safari, Firefox, every iOS browser) are not Chromium here, even
- * where they ship WebGPU. `mobile` is false on Android tablets, so the
- * platform rules those out. Client hints exist only in secure contexts: a
- * plain-HTTP LAN address shows no lamp, localhost and HTTPS do.
+ * Safari, or another WebKit browser, on a Mac. WebKit sends no client hints,
+ * so this reads the user agent. iPadOS asks for desktop sites with this same
+ * Mac user agent, but a Mac reports no touch points.
+ */
+const isDesktopWebKit = () => {
+  const { maxTouchPoints, userAgent } = navigator;
+  return (
+    MAC_PATTERN.test(userAgent) &&
+    WEBKIT_PATTERN.test(userAgent) &&
+    !OTHER_ENGINE_PATTERN.test(userAgent) &&
+    !maxTouchPoints
+  );
+};
+
+/**
+ * Whether this browser gets the desk lamp: desktop Chromium (Chrome, Edge,
+ * Brave, Opera, Arc, Vivaldi) or desktop Safari, with WebGPU. Everywhere else
+ * (Firefox, phones, tablets) keeps the DOM rendering and hides the lamp's
+ * switch. Every Chromium browser lists a "Chromium" brand in its client
+ * hints, beside its own and a randomised GREASE brand, so the brand is
+ * matched exactly. `mobile` is false on Android tablets, so the platform
+ * rules those out. Client hints exist only in secure contexts, so Chromium on
+ * a plain-HTTP LAN address shows no lamp; localhost and HTTPS do.
  *
- * `?lamp=force` skips the browser check, for comparing the lamp in Safari or
- * Firefox; it still needs WebGPU, and the adapter probe still decides.
+ * `?lamp=force` skips the browser check, for comparing the lamp in Firefox;
+ * it still needs WebGPU, and the adapter probe still decides.
  */
 export const isDeskLampSupported = () => {
   if (typeof navigator === "undefined" || !("gpu" in navigator)) {
@@ -157,10 +174,12 @@ export const isDeskLampSupported = () => {
   }
   const hints = (navigator as Navigator & { userAgentData?: UserAgentData })
     .userAgentData;
-  return Boolean(
-    hints &&
-      !hints.mobile &&
-      hints.platform !== "Android" &&
-      hints.brands.some(({ brand }) => brand === "Chromium")
+  if (!hints) {
+    return isDesktopWebKit();
+  }
+  return (
+    !hints.mobile &&
+    hints.platform !== "Android" &&
+    hints.brands.some(({ brand }) => brand === "Chromium")
   );
 };

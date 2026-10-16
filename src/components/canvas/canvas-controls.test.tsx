@@ -17,6 +17,13 @@ vi.mock("./canvas-control-panel", () => ({
 
 import { CanvasControls } from "./canvas-controls";
 
+const SAFARI_MAC =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15";
+const FIREFOX_MAC =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:145.0) Gecko/20100101 Firefox/145.0";
+const CHROME_MAC =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
+
 describe("CanvasControls", () => {
   it("renders the main controls", () => {
     const onReset = vi.fn();
@@ -188,14 +195,41 @@ describe("CanvasControls", () => {
     }
   });
 
-  it("hides the desk lamp in browsers without client hints", () => {
-    vi.stubGlobal("navigator", { ...navigator, gpu: {} });
+  it.each([
+    ["Firefox on a Mac", FIREFOX_MAC, 0],
+    ["Chrome without client hints", CHROME_MAC, 0],
+    ["an iPad asking for the desktop site", SAFARI_MAC, 5],
+  ])("hides the desk lamp in %s", (_, userAgent, maxTouchPoints) => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      gpu: {},
+      maxTouchPoints,
+      userAgent,
+    });
     try {
       render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
 
       expect(
         screen.queryByRole("button", { name: "Realistic lighting" })
       ).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("shows the desk lamp in Safari on a Mac", () => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      gpu: {},
+      maxTouchPoints: 0,
+      userAgent: SAFARI_MAC,
+    });
+    try {
+      render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
+
+      expect(
+        screen.getByRole("button", { name: "Realistic lighting" })
+      ).toBeDefined();
     } finally {
       vi.unstubAllGlobals();
     }
