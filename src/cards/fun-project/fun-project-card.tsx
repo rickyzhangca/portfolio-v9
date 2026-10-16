@@ -49,6 +49,18 @@ const getShadowStyle = (intensity: number): string => {
   return `drop-shadow(0 ${blur / 2}px ${blur}px rgba(0,0,0,${opacity}))`;
 };
 
+const SCALE_PATTERN = /scale\(([^)]+)\)/;
+
+// How far an icon has popped onto the card: Motion writes its scale inline,
+// and leaves no scale once it rests at 1.
+const readPop = (element: HTMLElement | undefined) => {
+  if (!element) {
+    return 0;
+  }
+  const match = SCALE_PATTERN.exec(element.style.transform);
+  return match ? Math.max(0, Number.parseFloat(match[1] ?? "1") || 0) : 1;
+};
+
 export const FunProjectCard = ({
   content,
   isExpanded: _isExpanded = false,
@@ -68,16 +80,18 @@ export const FunProjectCard = ({
   const rafRef = useRef<number | null>(null);
   const pendingPointerRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Under the lamp the icons become keycaps drawn with WebGPU, once they
-  // have popped onto the card. Until the caps are drawn, or without WebGPU,
+  // Under the lamp the icons become keycaps drawn with WebGPU, which pop
+  // onto the card with them. Until the caps are drawn, or without WebGPU,
   // each icon casts its own shadow, as high as it is lifted, and catches the
   // lamp's glint.
   const isLampOn = useAtomValue(deskLampAtom);
   const [isLitReady, setLitReady] = useState(false);
-  const [haveIconsLanded, setIconsLanded] = useState(false);
   const isLit = isLampOn && isLitReady;
   const handleLitReady = useCallback(() => setLitReady(true), []);
-  const handleIconsLanded = useCallback(() => setIconsLanded(true), []);
+  const popAt = useCallback(
+    (index: number) => readPop(iconRefs.current.get(index)),
+    []
+  );
 
   useEffect(() => {
     if (!isLampOn) {
@@ -193,9 +207,6 @@ export const FunProjectCard = ({
             }
             initial={{ scale: 0, opacity: 0 }}
             key={item.title}
-            onAnimationComplete={
-              index === content.items.length - 1 ? handleIconsLanded : undefined
-            }
             ref={getIconRef(index)}
             transition={{
               ...SPRING_PRESETS.quick,
@@ -239,13 +250,14 @@ export const FunProjectCard = ({
           </motion.div>
         );
       })}
-      {isLampOn && haveIconsLanded && content.loadKeycaps ? (
+      {isLampOn && content.loadKeycaps ? (
         <Suspense fallback={null}>
           <LitKeycaps
+            items={content.items}
             lifts={liftEffects}
             loadCaps={content.loadKeycaps}
             onReady={handleLitReady}
-            items={content.items}
+            popAt={popAt}
           />
         </Suspense>
       ) : null}

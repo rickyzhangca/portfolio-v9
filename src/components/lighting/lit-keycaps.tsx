@@ -15,6 +15,12 @@ interface LitKeycapsProps {
   /** Loads the caps by title; the lit caps draw once every icon has one. */
   loadCaps: () => Promise<Readonly<Record<string, FunProjectKeycap>>>;
   onReady: () => void;
+  /**
+   * How far icon `index` has popped onto the card, read every frame: the
+   * caps grow in with the icons, so a card that rises lit never shows the
+   * pictures first. Absent, every cap is in place.
+   */
+  popAt?: (index: number) => number;
 }
 
 /**
@@ -44,6 +50,28 @@ interface CapLayout {
 
 const ease = (value: number, target: number, rate: number, elapsed: number) =>
   value + (target - value) * (1 - Math.exp(-elapsed * rate));
+
+/** Below this a popping cap is not drawn at all. */
+const MIN_POP = 0.01;
+
+const fullyPopped = () => 1;
+
+// A cap grown in by `scale` around the middle of its footprint.
+const scaleCap = ({ thickness, top }: CapLayout, scale: number) => {
+  const [x, y, width] = top;
+  const centerX = x + width / 2;
+  const centerY = y + thickness + width / 2;
+  const size = width * scale;
+  return {
+    thickness: thickness * scale,
+    top: [
+      centerX - size / 2,
+      centerY - size / 2 - thickness * scale,
+      size,
+      size,
+    ] as const,
+  };
+};
 
 // "#rrggbb" to sRGB channels from 0 to 1.
 const hexToRgb = (hex: string) => {
@@ -98,6 +126,7 @@ export const LitKeycaps = ({
   lifts,
   loadCaps,
   onReady,
+  popAt = fullyPopped,
 }: LitKeycapsProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const onReadyRef = useRef(onReady);
@@ -105,10 +134,15 @@ export const LitKeycaps = ({
   const [isReady, setReady] = useState(false);
   // Read every frame by the drawing loop.
   const liftsRef = useRef(lifts);
+  const popAtRef = useRef(popAt);
 
   useEffect(() => {
     liftsRef.current = lifts;
   }, [lifts]);
+
+  useEffect(() => {
+    popAtRef.current = popAt;
+  }, [popAt]);
 
   useEffect(() => {
     onReadyRef.current = onReady;
@@ -148,6 +182,11 @@ export const LitKeycaps = ({
     }));
     const liftAt = (index: number) => -(liftsRef.current.get(index)?.y ?? 0);
     const travel = caps.map((_, index) => liftAt(index));
+    const popAtIndex = (index: number) => {
+      const pop = popAtRef.current(index);
+      return pop < MIN_POP ? 0 : pop;
+    };
+    const pops = caps.map((_, index) => popAtIndex(index));
     let layout = measureCaps(element);
     let layoutVersion = 0;
     let stop: (() => void) | null = null;
@@ -171,13 +210,14 @@ export const LitKeycaps = ({
           surface.render({
             caps: current.flatMap((cap, index) => {
               const material = materials[index];
+              const scale = pops[index] ?? 1;
               return material
                 ? [
                     {
                       ...material,
-                      lift: travel[index] ?? 0,
-                      thickness: cap.thickness,
-                      top: cap.top,
+                      ...scaleCap(cap, scale),
+                      lift: (travel[index] ?? 0) * scale,
+                      scale,
                     },
                   ]
                 : [];
@@ -204,8 +244,9 @@ export const LitKeycaps = ({
         step: (elapsed) => {
           for (const [index, value] of travel.entries()) {
             travel[index] = ease(value, liftAt(index), LIFT_RATE, elapsed);
+            pops[index] = popAtIndex(index);
           }
-          return [...travel, layoutVersion];
+          return [...travel, ...pops, layoutVersion];
         },
       });
     };

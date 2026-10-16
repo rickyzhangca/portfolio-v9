@@ -28,6 +28,12 @@ export interface KeycapFrame {
   near: Rgb;
   /** Speckle in the plastic, 0 to 1. */
   grain: number;
+  /**
+   * How far the cap has grown in as it pops onto the card, 0 to 1 (a spring
+   * overshoots a little): its rounded edges scale with it. `top`,
+   * `thickness` and `lift` are given already scaled.
+   */
+  scale: number;
   /** The cap's thickness, foot to crest. */
   thickness: number;
   /**
@@ -157,7 +163,7 @@ export const attachKeycaps = async (
             cap.lift,
             cap.thickness,
             cap.grain,
-            0,
+            cap.scale,
             ...cap.far,
             1,
             ...cap.near,
