@@ -17,8 +17,12 @@ interface LitBadgeProps {
 const SHADOW_MARGIN = 72;
 /** Matches the DOM flip's CSS perspective. */
 const PERSPECTIVE = 1000;
-/** Picked up under the pointer, as other cards are (lamp-shadows.ts). */
-const HOVER_LIFT = 8;
+/**
+ * Raised a little under the pointer. Less than other cards (lamp-shadows.ts):
+ * the lamp then hangs right overhead, and a small round badge's shadow would
+ * spread into an even halo around it.
+ */
+const HOVER_LIFT = 3;
 /** Tossed up as it flips: extra height when side on. */
 const FLIP_LIFT = 22;
 /** How quickly it rises or settles, per second. */
