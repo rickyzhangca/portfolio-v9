@@ -57,25 +57,45 @@ const whenFirstViewReady = async (root: HTMLElement) => {
  * Holds the scene until its first view is ready, then plays the entrance for
  * `durationMs`. The wave itself runs as CSS animations of opacity and
  * transform, on the compositor, so main-thread work cannot make it stutter.
+ * `isHeld` keeps the scene waiting for something else its first view needs
+ * (the desk lamp's shadows); the deadline still applies.
  */
 export const useCanvasEntrance = (
   rootRef: RefObject<HTMLElement | null>,
-  durationMs: number
+  durationMs: number,
+  isHeld = false
 ) => {
   const [phase, setPhase] = useState<CanvasEntrancePhase>("waiting");
+  const [isViewReady, setViewReady] = useState(false);
+  const [isOverdue, setOverdue] = useState(false);
 
   useEffect(() => {
     const root = rootRef.current;
     let cancelled = false;
-    let deadline: ReturnType<typeof setTimeout> | undefined;
-    Promise.race([
-      root ? whenFirstViewReady(root) : Promise.resolve(),
-      new Promise<void>((resolve) => {
-        deadline = setTimeout(resolve, MAX_WAIT_MS);
-      }),
-    ])
+    const deadline = setTimeout(() => setOverdue(true), MAX_WAIT_MS);
+    (root ? whenFirstViewReady(root) : Promise.resolve())
       // Whatever happens while waiting, the scene must not stay hidden.
-      .then(whenIdle, whenIdle)
+      .catch(() => undefined)
+      .then(() => {
+        if (!cancelled) {
+          setViewReady(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+      clearTimeout(deadline);
+    };
+  }, [rootRef]);
+
+  const canStart =
+    phase === "waiting" && ((isViewReady && !isHeld) || isOverdue);
+
+  useEffect(() => {
+    if (!canStart) {
+      return;
+    }
+    let cancelled = false;
+    whenIdle()
       .then(nextFrame)
       .then(() => {
         if (!cancelled) {
@@ -84,9 +104,8 @@ export const useCanvasEntrance = (
       });
     return () => {
       cancelled = true;
-      clearTimeout(deadline);
     };
-  }, [rootRef]);
+  }, [canStart]);
 
   useEffect(() => {
     if (phase !== "playing") {

@@ -54,6 +54,19 @@ export const holdLampShadows = (held: boolean) => {
 
 export const areLampShadowsHeld = () => shadowsHeld;
 
+let sceneHidden = false;
+
+/**
+ * While the canvas waits, hidden, for its first view, shadows land at once
+ * instead of easing round: nobody sees them arrive, and an easing filter
+ * would still be running on the cards once they start to rise.
+ */
+export const hideLampScene = (hidden: boolean) => {
+  sceneHidden = hidden;
+};
+
+export const isLampSceneHidden = () => sceneHidden;
+
 /** Transforms measured during the current lamp frame. */
 export const getFrameTransformCache = () => transformCache;
 

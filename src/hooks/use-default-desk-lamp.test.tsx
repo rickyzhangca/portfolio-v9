@@ -19,12 +19,15 @@ const renderLamp = async (adapter: Promise<unknown>) => {
     ...navigator,
     gpu: { requestAdapter: () => adapter },
   });
-  const { useDefaultDeskLamp } = await import("./use-default-desk-lamp");
+  const { useDefaultDeskLamp, useDeskLampProbe } = await import(
+    "./use-default-desk-lamp"
+  );
   const { deskLampAtom } = await import("@/context/atoms");
   return renderHook(
     ({ entrance }: { entrance: CanvasEntrancePhase }) => {
-      useDefaultDeskLamp(true, entrance);
-      return useAtomValue(deskLampAtom);
+      const probe = useDeskLampProbe(true);
+      useDefaultDeskLamp(probe, entrance);
+      return { isOn: useAtomValue(deskLampAtom), probe };
     },
     { initialProps: { entrance: "waiting" as CanvasEntrancePhase }, wrapper }
   );
@@ -40,7 +43,7 @@ describe("useDefaultDeskLamp", () => {
     await act(async () => {
       await Promise.resolve();
     });
-    expect(result.current).toBe(true);
+    expect(result.current.isOn).toBe(true);
   });
 
   it("waits for the cards to settle when the adapter answers mid-wave", async () => {
@@ -55,9 +58,9 @@ describe("useDefaultDeskLamp", () => {
       answer({});
       await Promise.resolve();
     });
-    expect(result.current).toBe(false);
+    expect(result.current.isOn).toBe(false);
     rerender({ entrance: "done" });
-    expect(result.current).toBe(true);
+    expect(result.current.isOn).toBe(true);
   });
 
   it("stays off without an adapter", async () => {
@@ -66,6 +69,22 @@ describe("useDefaultDeskLamp", () => {
       await Promise.resolve();
     });
     rerender({ entrance: "done" });
-    expect(result.current).toBe(false);
+    expect(result.current.isOn).toBe(false);
+    expect(result.current.probe).toBe("none");
+  });
+
+  it("reports the lamp as pending until the adapter answers", async () => {
+    let answer: (adapter: unknown) => void = () => undefined;
+    const { result } = await renderLamp(
+      new Promise((resolve) => {
+        answer = resolve;
+      })
+    );
+    expect(result.current.probe).toBe("pending");
+    await act(async () => {
+      answer({});
+      await Promise.resolve();
+    });
+    expect(result.current.probe).toBe("found");
   });
 });

@@ -7,6 +7,7 @@ import {
   areLampShadowsHeld,
   getFrameTransformCache,
   getLampConfig,
+  isLampSceneHidden,
   setLampConfig,
   subscribeLamp,
 } from "./desk-lamp";
@@ -14,7 +15,11 @@ import { LAMP_SHADOW_ATTRIBUTE, screenLinear } from "./lamp-shadows";
 
 /** How long the room takes to dim when the lamp switches on. */
 const ROOM_FADE_MS = 700;
-const SWITCH_ON_TRANSITION = `filter ${ROOM_FADE_MS}ms ease-out`;
+/**
+ * Once the entrance lets go of the shadows, they ease round to wherever the
+ * lamp has moved meanwhile instead of jumping there.
+ */
+const RELEASE_EASE_MS = 400;
 /** Extra height while the pointer hovers a caster, as when it is picked up. */
 const HOVER_LIFT = 8;
 /** How quickly a caster rises or settles, per second. */
@@ -47,14 +52,20 @@ const isHovered = (element: HTMLElement) =>
 /**
  * Points every caster's drop shadow away from the desk lamp. Each frame reads
  * all layout first and hands the lamp its filter writes, so the pass never
- * forces layout between writes. Returns a function that restores the stylesheet shadows.
+ * forces layout between writes. `onCast` runs once the first shadows are
+ * written. Returns a function that restores the stylesheet shadows.
  */
-const startLampShadows = () => {
+const startLampShadows = (onCast: () => void) => {
   const states = new Map<HTMLElement, CasterState>();
   let lastTime = performance.now();
-  const switchedOnAt = lastTime;
-  let switchingOn = true;
   let held = false;
+  let hasCast = false;
+  // The lamp already eases; a CSS filter transition would lag behind it.
+  // Only while the lamp switches on, or the entrance lets go of the shadows,
+  // do they ease round instead of snapping in one frame.
+  let easeUntil = lastTime + ROOM_FADE_MS;
+  let easeTransition = `filter ${ROOM_FADE_MS}ms ease-out`;
+  let appliedTransition = "";
 
   const restore = (element: HTMLElement, state: CasterState) => {
     element.style.filter = state.filter;
@@ -71,17 +82,21 @@ const startLampShadows = () => {
       // The cards moved while shadows held; that travel is not flight.
       held = false;
       lastTime = now;
+      easeUntil = now + RELEASE_EASE_MS;
+      easeTransition = `filter ${RELEASE_EASE_MS}ms ease-out`;
       for (const state of states.values()) {
         state.position = null;
       }
     }
+    if (isLampSceneHidden()) {
+      easeUntil = 0;
+    }
     const elapsed = Math.max((now - lastTime) / 1000, 1 / 240);
     const follow = 1 - Math.exp(-elapsed * LIFT_RATE);
     lastTime = now;
-    const settled = switchingOn && now - switchedOnAt > ROOM_FADE_MS;
-    if (settled) {
-      switchingOn = false;
-    }
+    const transition = now < easeUntil ? easeTransition : "none";
+    const retransition = transition !== appliedTransition;
+    appliedTransition = transition;
 
     const casters = [
       ...document.querySelectorAll<HTMLElement>(`[${LAMP_SHADOW_ATTRIBUTE}]`),
@@ -166,19 +181,16 @@ const startLampShadows = () => {
       for (const [element, state] of removed) {
         restore(element, state);
       }
-      if (settled) {
-        for (const element of states.keys()) {
-          element.style.transition = "none";
-        }
-      }
-      for (const element of added) {
-        // The lamp already eases; a CSS filter transition would lag behind
-        // it. Only while the lamp switches on do shadows ease round from the
-        // stylesheet's, as the room dims, instead of snapping in one frame.
-        element.style.transition = switchingOn ? SWITCH_ON_TRANSITION : "none";
+      // Set before the filters, so this frame's change already eases.
+      for (const element of retransition ? states.keys() : added) {
+        element.style.transition = transition;
       }
       for (const [element, filter] of filters) {
         element.style.filter = filter;
+      }
+      if (!hasCast) {
+        hasCast = true;
+        onCast();
       }
     };
   });
@@ -192,15 +204,25 @@ const startLampShadows = () => {
   };
 };
 
+interface DeskLampRoomProps {
+  /** Called once the lamp's first shadows are written. */
+  onShadowsCast?: () => void;
+}
+
 /**
  * The room under the desk lamp: every caster's shadow points away from the
  * lamp, and the room dims around it so the DOM cards share the lit laptop's
  * light. A multiply blend leaves the pool under the lamp untouched and
  * darkens the rest, without repainting anything underneath.
  */
-export const DeskLampRoom = () => {
+export const DeskLampRoom = ({ onShadowsCast }: DeskLampRoomProps) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const config = useAtomValue(lampConfigAtom);
+  const onShadowsCastRef = useRef(onShadowsCast);
+
+  useEffect(() => {
+    onShadowsCastRef.current = onShadowsCast;
+  }, [onShadowsCast]);
 
   // The lamp's loops run outside React; they read the playground's settings
   // every frame.
@@ -208,7 +230,7 @@ export const DeskLampRoom = () => {
     setLampConfig(config);
   }, [config]);
 
-  useEffect(() => startLampShadows(), []);
+  useEffect(() => startLampShadows(() => onShadowsCastRef.current?.()), []);
 
   useEffect(() => {
     const element = ref.current;

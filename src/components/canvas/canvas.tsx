@@ -15,7 +15,10 @@ import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { getInteractionPolicy } from "@/cards/registry";
 import { AboutModal } from "@/components/about/about-modal";
 import { ArticleModal } from "@/components/articles/article-modal";
-import { holdLampShadows } from "@/components/lighting/desk-lamp";
+import {
+  hideLampScene,
+  holdLampShadows,
+} from "@/components/lighting/desk-lamp";
 import { ResumeModal } from "@/components/resume/resume-modal";
 import {
   deskLampAtom,
@@ -34,7 +37,10 @@ import {
 import { useCanvasEntrance } from "@/hooks/use-canvas-entrance";
 import { useCanvasState } from "@/hooks/use-canvas-state";
 import { useCanvasViewport } from "@/hooks/use-canvas-viewport";
-import { useDefaultDeskLamp } from "@/hooks/use-default-desk-lamp";
+import {
+  useDefaultDeskLamp,
+  useDeskLampProbe,
+} from "@/hooks/use-default-desk-lamp";
 import {
   useCoarsePointer,
   useIgnoreSyntheticMouseEvents,
@@ -117,15 +123,30 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
     getPanBounds
   );
   const [entranceDelays] = useState(() => getEntranceDelays(baselineItems));
+  // Phones have no controls to switch the lamp off, so it starts off there.
+  const lampProbe = useDeskLampProbe(!layout.compact);
+  // Only read while the scene waits; a lamp switched on later casts its
+  // shadows as the room dims.
+  const [haveLampShadowsCast, setLampShadowsCast] = useState(false);
+  const handleLampShadowsCast = useCallback(() => setLampShadowsCast(true), []);
+  // A lamp coming on holds the first view until it has cast its shadows, so
+  // they rise with the cards instead of appearing once they have settled.
+  const isLampComing =
+    lampProbe === "pending" ||
+    ((lampProbe === "found" || isLampOn) && !haveLampShadowsCast);
   const entrance = useCanvasEntrance(
     viewport.containerRef,
-    ENTRANCE_DURATION_MS
+    ENTRANCE_DURATION_MS,
+    isLampComing
   );
-  // Phones have no controls to switch the lamp off, so it starts off there.
-  useDefaultDeskLamp(!layout.compact, entrance);
+  useDefaultDeskLamp(lampProbe, entrance);
   useLayoutEffect(() => {
+    hideLampScene(entrance === "waiting");
     holdLampShadows(entrance === "playing");
-    return () => holdLampShadows(false);
+    return () => {
+      hideLampScene(false);
+      holdLampShadows(false);
+    };
   }, [entrance]);
   const { onCanvasEntrance } = session;
   useEffect(() => {
@@ -373,7 +394,7 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
               </TransformComponent>
               {isLampOn ? (
                 <Suspense fallback={null}>
-                  <DeskLampRoom />
+                  <DeskLampRoom onShadowsCast={handleLampShadowsCast} />
                 </Suspense>
               ) : null}
               {/* Phones keep one bounded column: nothing to tune or reset. */}
