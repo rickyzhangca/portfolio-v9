@@ -20,6 +20,7 @@ import {
   useNavigate,
   useRouteError,
 } from "react-router";
+import { PortfolioLoader } from "@/components/portfolio-loader";
 import {
   CanvasSessionContext,
   getArticleSource,
@@ -36,6 +37,8 @@ import type { ArticleLocale, ArticleSource } from "@/types/article";
 import "../index.css";
 
 const ARTICLE_PATH = /^\/writing\/(en|cn)\/[^/]+\/?$/;
+/** Matches the placeholder's fade-out transition. */
+const LOADER_EXIT_MS = 300;
 
 const CanvasApp = lazy(() =>
   import("../app").then((module) => ({ default: module.App }))
@@ -97,6 +100,8 @@ export default function Root() {
   const location = useLocation();
   const navigate = useNavigate();
   const [hasCanvas, setHasCanvas] = useState<boolean>(false);
+  // The placeholder stays until the canvas starts its entrance, then fades.
+  const [loader, setLoader] = useState<"shown" | "leaving" | "gone">("shown");
   const [articleLocales, setArticleLocales] = useState<
     ReadonlyMap<string, ArticleLocale>
   >(() => new Map());
@@ -138,6 +143,18 @@ export default function Root() {
       setHasCanvas(true);
     }
   }, [location.pathname]);
+
+  const handleCanvasEntrance = useCallback(() => {
+    setLoader((current) => (current === "shown" ? "leaving" : current));
+  }, []);
+
+  useEffect(() => {
+    if (loader !== "leaving") {
+      return;
+    }
+    const timer = setTimeout(() => setLoader("gone"), LOADER_EXIT_MS);
+    return () => clearTimeout(timer);
+  }, [loader]);
 
   const suppressArticleFocusRing = useCallback(() => {
     const trigger = triggerRef.current;
@@ -181,6 +198,7 @@ export default function Root() {
       articleSource: source,
       canvasVisible: showCanvas,
       hasCanvas,
+      onCanvasEntrance: handleCanvasEntrance,
       openArticle,
       restoreArticleFocus,
       suppressArticleFocusRing,
@@ -188,6 +206,7 @@ export default function Root() {
     [
       articleLocales,
       hasCanvas,
+      handleCanvasEntrance,
       articleOpen,
       source,
       openArticle,
@@ -199,18 +218,24 @@ export default function Root() {
 
   return (
     <CanvasSessionContext.Provider value={session}>
+      {/* One element from the first paint until the canvas takes over, so
+          its loop never restarts while the app loads. It sits behind the
+          canvas, which stays transparent until its cards rise over it; an
+          error screen in the canvas covers it. */}
+      {location.pathname === "/" && loader !== "gone" ? (
+        <PortfolioLoading leaving={loader === "leaving"} />
+      ) : null}
       {hasCanvas ? (
         <div
           aria-hidden={!showCanvas || articleOpen}
           className={showCanvas ? "fixed inset-0" : "hidden"}
           inert={!showCanvas || articleOpen}
         >
-          <Suspense fallback={<PortfolioLoading />}>
+          <Suspense fallback={null}>
             <CanvasApp />
           </Suspense>
         </div>
       ) : null}
-      {location.pathname === "/" && !hasCanvas && <PortfolioLoading />}
       <Outlet />
     </CanvasSessionContext.Provider>
   );
@@ -219,13 +244,16 @@ export default function Root() {
 // The canvas is client-only, so this placeholder is all that prerendered HTML
 // holds for the home page. Its links let crawlers and readers without
 // JavaScript reach the writing and profiles; they surface on keyboard focus.
-function PortfolioLoading() {
+function PortfolioLoading({ leaving }: { leaving: boolean }) {
   return (
     <main
-      aria-busy="true"
-      className="flex min-h-screen flex-col items-center justify-center gap-6 text-foreground2"
+      aria-busy={!leaving}
+      aria-hidden={leaving || undefined}
+      className={`fixed inset-0 flex flex-col items-center justify-center gap-6 text-foreground2 transition-[opacity,transform] duration-300 ease-out ${
+        leaving ? "scale-95 opacity-0" : ""
+      }`}
     >
-      <p>Opening Ricky’s portfolio…</p>
+      <PortfolioLoader />
       <nav
         aria-label="Site index"
         className="sr-only focus-within:not-sr-only focus-within:text-sm"

@@ -23,7 +23,6 @@ const item = {
 const props = () => ({
   item,
   scale: 1,
-  stackIndex: 0,
   dragDisabled: false,
   repulsionOffset: { x: 0, y: 0 },
   onBringToFront: vi.fn(),

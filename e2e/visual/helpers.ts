@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test";
+import { waitForCanvasEntrance } from "../fixtures";
 
 const MAX_STABILITY_FRAMES = 600;
 const REQUIRED_STABLE_FRAMES = 10;
@@ -216,6 +217,7 @@ export const waitForVisualStability = async (page: Page) => {
   await page.evaluate(async () => {
     await document.fonts.ready;
   });
+  await waitForCanvasEntrance(page);
   await waitForMotionToSettle(page);
   await waitForVisibleImages(page);
   await waitForMotionToSettle(page);

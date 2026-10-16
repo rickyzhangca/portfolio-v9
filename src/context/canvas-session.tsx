@@ -7,6 +7,11 @@ export interface CanvasSession {
   articleSource: ArticleSource | null;
   canvasVisible: boolean;
   hasCanvas: boolean;
+  /**
+   * Called when the canvas starts its entrance, so the shell can fade out the
+   * loading placeholder it has shown since the first paint.
+   */
+  onCanvasEntrance?: () => void;
   openArticle?: (
     slug: string,
     source: ArticleSource,
