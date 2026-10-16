@@ -47,9 +47,16 @@ const LAMP_COLOR = vec3f(1.0, 0.97, 0.92);
 const EDGE_ROUND = 3.0;
 const MARCH_STEPS = 64;
 const SHADOW_STEPS = 40;
-// Penumbra: lower is softer; 1 / the lamp's apparent radius. About 15px at
-// rest, like the DOM shadows' blur; lower values trail a long, faint tail.
-const SHADOW_SOFTNESS = 5.0;
+// Penumbra: lower is softer; 1 / the lamp's apparent radius. The penumbra
+// widens with the distance from the desk to the badge along the shadow ray,
+// so with the lamp overhead (it follows the pointer, so on hover) the shadow
+// stays a narrow contact shadow tucked under the badge rather than a halo.
+const SHADOW_SOFTNESS = 2.5;
+// Penumbra limits, in local px. The minimum keeps the umbra's edge from
+// reading as an outline; the maximum keeps a far lamp's long, low shadow
+// inside the canvas margin.
+const MIN_PENUMBRA = 3.0;
+const MAX_PENUMBRA = 16.0;
 const RIM_WHITE = vec3f(1.0);
 
 // CSS rotateY: the right side turns away from the viewer for positive angles.
@@ -86,10 +93,10 @@ fn normalAt(p: vec3f) -> vec3f {
   );
 }
 
-// Where a ray from `origin` enters and leaves the badge's bounding sphere,
-// or x > y when it misses.
-fn bounds(origin: vec3f, direction: vec3f) -> vec2f {
-  let reach = badge.shape.x + 1.0;
+// Where a ray from `origin` enters and leaves a sphere `slack` px wider than
+// the badge, or x > y when it misses.
+fn bounds(origin: vec3f, direction: vec3f, slack: f32) -> vec2f {
+  let reach = badge.shape.x + slack;
   let b = dot(origin, direction);
   let c = dot(origin, origin) - reach * reach;
   let disc = b * b - c;
@@ -139,12 +146,13 @@ fn shade(world: vec3f, eye: vec3f, footprint: f32) -> vec3f {
   let flatLight = normalize(lamp - vec3f(world.xy, 0.0));
   let delta = max(dot(n, l), 0.0) - flatLight.z;
   // The rolled edge turned from the lamp still catches the room's light, so
-  // it shades softly rather than outlining the badge.
-  let tone = max(0.97 + delta * falloff * 0.8, 0.62);
+  // it shades softly rather than outlining the badge, even with the lamp
+  // overhead, when the whole edge turns from it.
+  let tone = max(0.97 + delta * falloff * 0.5, 0.82);
   // The glossy film: a tight highlight over a wide, faint sheen.
   let halfway = normalize(l + normalize(eye - world));
   let nh = max(dot(n, halfway), 0.0);
-  let film = (pow(nh, 90.0) * 0.4 + pow(nh, 12.0) * 0.05) * falloff;
+  let film = (pow(nh, 90.0) * 0.16 + pow(nh, 12.0) * 0.02) * falloff;
   let lit = albedo(local, footprint) * tone + LAMP_COLOR * film;
   return mix(albedo(local, footprint), lit, badge.intensity);
 }
@@ -153,7 +161,9 @@ fn shade(world: vec3f, eye: vec3f, footprint: f32) -> vec3f {
 // how near the shadow ray passes to its surface for how far it has come.
 fn shadowAt(desk: vec3f) -> f32 {
   let toLamp = normalize(lampAt() - desk);
-  let span = bounds(desk, toLamp);
+  // Rays that pass within a penumbra of the badge still darken the desk; a
+  // tighter bound would cut the falloff off in a hard edge.
+  let span = bounds(desk, toLamp, MAX_PENUMBRA);
   if (span.x > span.y) {
     return 0.0;
   }
@@ -161,7 +171,8 @@ fn shadowAt(desk: vec3f) -> f32 {
   var t = span.x;
   for (var i = 0; i < SHADOW_STEPS; i++) {
     let d = badgeDistance(rotateY(desk + toLamp * t, -badge.angle));
-    visible = min(visible, SHADOW_SOFTNESS * d / max(t, 0.001));
+    let penumbra = clamp(t / SHADOW_SOFTNESS, MIN_PENUMBRA, MAX_PENUMBRA);
+    visible = min(visible, d / penumbra);
     if (visible < 0.001 || t > span.y) {
       break;
     }
@@ -170,7 +181,10 @@ fn shadowAt(desk: vec3f) -> f32 {
   // Fainter further from the lamp, as the DOM shadows are (lamp-shadow.ts),
   // and a little lighter, since theirs spread their darkness by blurring.
   let strength = (0.08 + 0.16 * falloffAt(desk)) * 0.75;
-  return (1.0 - clamp(visible, 0.0, 1.0)) * strength;
+  // Eased at the umbra's edge, so it leaves no crease, and quickly faded
+  // after it, so the darkness gathers at the badge's edge, not in a halo.
+  let hidden = 1.0 - smoothstep(0.0, 1.0, visible);
+  return hidden * hidden * strength;
 }
 
 @fragment
@@ -185,7 +199,7 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
 
   var coverage = 0.0;
   var color = vec3f(0.0);
-  let span = bounds(eye, direction);
+  let span = bounds(eye, direction, 1.0);
   if (span.x <= span.y) {
     var t = span.x;
     var nearest = 1e4;
