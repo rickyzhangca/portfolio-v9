@@ -1,52 +1,92 @@
-import { memo, type ReactNode, useCallback, useState } from "react";
+import { useAtomValue } from "jotai";
+import {
+  lazy,
+  memo,
+  type ReactNode,
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import type { SocialsCardContent } from "@/cards/registry";
+import type { KeyboardLook } from "@/components/lighting/lit-keyboard";
+import { deskLampAtom } from "@/context/atoms";
 import { tw } from "@/lib/utils";
 
-const Key = ({
-  mode,
-  children,
-}: {
-  mode: "logi" | "apple";
-  children: ReactNode;
-}) => (
-  <div
-    className={tw("relative", mode === "logi" ? "rounded-2xl" : "rounded-md")}
-  >
-    <div
-      className={tw(
-        "absolute flex size-18 -translate-y-2 items-center justify-center border-2 border-foreground1/80 transition duration-75 hover:-translate-y-1.5 active:translate-y-0",
-        mode === "logi" ? "rounded-2xl" : "rounded-md"
-      )}
-      style={{
-        background:
-          mode === "logi"
-            ? "linear-gradient(195deg, rgba(65.58, 66.47, 68.23, 0.50) 0%, rgba(26.62, 27.04, 27.88, 0.50) 100%), linear-gradient(225deg, #5A5B5D 0%, #393A3C 100%)"
-            : "linear-gradient(180deg, #4D4E50 0%, #222325 40%)",
-        boxShadow: "-3px 4px 6px rgba(0, 0, 0, 0.16)",
-      }}
-    >
+// Loaded only when the desk lamp is switched on, outside the first view's JS.
+const LitKeyboard = lazy(() =>
+  import("@/components/lighting/lit-keyboard").then((module) => ({
+    default: module.LitKeyboard,
+  }))
+);
+
+/**
+ * The looks the DOM keyboard draws. The mechanical look exists only under
+ * the desk lamp, where the lit keyboard sculpts its caps.
+ */
+type DomLook = Exclude<KeyboardLook, "mech">;
+
+/** The low-profile looks' corners and the top's moulding. */
+const KEY_LOOKS = {
+  apple: {
+    corner: "rounded-md",
+    skirt: "linear-gradient(180deg, #4D4E50 0%, #222325 40%)",
+    top: "opacity-0",
+  },
+  logi: {
+    corner: "rounded-2xl",
+    skirt:
+      "linear-gradient(195deg, rgba(65.58, 66.47, 68.23, 0.50) 0%, rgba(26.62, 27.04, 27.88, 0.50) 100%), linear-gradient(225deg, #5A5B5D 0%, #393A3C 100%)",
+    top: "opacity-100",
+  },
+} as const;
+
+const Key = ({ mode, children }: { mode: DomLook; children: ReactNode }) => {
+  const look = KEY_LOOKS[mode];
+  return (
+    <div className={tw("relative", look.corner)}>
       <div
         className={tw(
-          "flex size-16 items-center justify-center rounded-full transition",
-          mode === "apple" ? "opacity-0" : "opacity-100"
+          "absolute flex size-18 -translate-y-2 items-center justify-center border-2 border-foreground1/80 transition duration-75 hover:-translate-y-1.5 active:translate-y-0",
+          look.corner
         )}
         style={{
-          background:
-            "radial-gradient(ellipse 104.51% 104.51% at 13.64% 87.50%, rgba(102, 103, 105, 0.50) 0%, rgba(0, 0, 0, 0.50) 100%), linear-gradient(225deg, #3A3B3D 0%, #666769 100%)",
+          background: look.skirt,
+          boxShadow: "-3px 4px 6px rgba(0, 0, 0, 0.16)",
         }}
-      />
-      <div className="absolute inset-0 flex items-center justify-center">
-        {children}
+      >
+        <div
+          className={tw(
+            "flex size-16 items-center justify-center rounded-full transition",
+            look.top
+          )}
+          style={{
+            background:
+              "radial-gradient(ellipse 104.51% 104.51% at 13.64% 87.50%, rgba(102, 103, 105, 0.50) 0%, rgba(0, 0, 0, 0.50) 100%), linear-gradient(225deg, #3A3B3D 0%, #666769 100%)",
+          }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          {children}
+        </div>
       </div>
+      <div className={tw("z-20 size-18 bg-foreground1", look.corner)} />
     </div>
-    <div
-      className={tw(
-        "z-20 size-18 bg-foreground1",
-        mode === "logi" ? "rounded-2xl" : "rounded-md"
-      )}
-    />
-  </div>
-);
+  );
+};
+
+/**
+ * The toggle's stops, top to bottom; a click moves to the next. The lit
+ * keyboard adds a third, mechanical stop and draws its own tick marks.
+ */
+const DOM_MODES: readonly DomLook[] = ["logi", "apple"];
+const LIT_MODES: readonly KeyboardLook[] = ["logi", "apple", "mech"];
+/** Where the DOM knob rests at each stop, as a translate down its track. */
+const KNOB_STOPS: Record<DomLook, string> = {
+  apple: "translate-y-7",
+  logi: "translate-y-0",
+};
+/** Tick marks beside the track, centred on each stop, in px from its top. */
+const TICK_TOPS = [10, 38] as const;
 
 /** Lets the key press animation play before the tab opens. */
 const openLinkAfterKeyPress = (url: string) => {
@@ -60,10 +100,28 @@ interface SocialsCardProps {
 }
 
 const SocialsCardComponent = ({ content }: SocialsCardProps) => {
-  const [mode, setMode] = useState<"logi" | "apple">("logi");
+  const [mode, setMode] = useState<KeyboardLook>("logi");
+  const isLampOn = useAtomValue(deskLampAtom);
+  const [isLitReady, setLitReady] = useState(false);
+  // The DOM keyboard gives way once WebGPU has drawn its first frame; its
+  // keys stay for clicks, focus and labels.
+  const isDomHidden = isLampOn && isLitReady;
+  const handleLitReady = useCallback(() => setLitReady(true), []);
+
+  useEffect(() => {
+    if (!isLampOn) {
+      setLitReady(false);
+    }
+  }, [isLampOn]);
+
+  // Without the lamp, the mechanical look shows as the stop it shares the
+  // bottom of the track with.
+  const domMode: DomLook = mode === "mech" ? "apple" : mode;
 
   const toggleMode = () => {
-    setMode((prev) => (prev === "logi" ? "apple" : "logi"));
+    const modes: readonly KeyboardLook[] = isDomHidden ? LIT_MODES : DOM_MODES;
+    const current = isDomHidden ? mode : domMode;
+    setMode(modes[(modes.indexOf(current) + 1) % modes.length] ?? "logi");
   };
 
   const openLinkedin = useCallback(
@@ -83,9 +141,11 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
     <div className="relative flex h-full">
       <div
         className={tw(
-          "absolute flex items-center justify-center gap-5 pt-1.5 pr-5 pb-2 pl-2 outline outline-foreground1/60",
-          mode === "logi" ? "rounded-2xl" : "rounded-lg"
+          "absolute flex items-center justify-center gap-4 pt-1.5 pr-6 pb-2 pl-2 outline outline-foreground1/60",
+          mode === "logi" ? "rounded-2xl" : "rounded-lg",
+          isDomHidden && "opacity-0"
         )}
+        data-keyboard-part="chassis"
         style={{
           background:
             mode === "logi"
@@ -98,10 +158,11 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
           <button
             aria-label="LinkedIn"
             className="cursor-pointer focus:outline-none"
+            data-keyboard-part="key"
             onClick={openLinkedin}
             type="button"
           >
-            <Key mode={mode}>
+            <Key mode={domMode}>
               <svg
                 fill="none"
                 height="24"
@@ -121,10 +182,11 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
           <button
             aria-label="Twitter"
             className="cursor-pointer focus:outline-none"
+            data-keyboard-part="key"
             onClick={openTwitter}
             type="button"
           >
-            <Key mode={mode}>
+            <Key mode={domMode}>
               <svg
                 fill="none"
                 height="20"
@@ -144,10 +206,11 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
           <button
             aria-label="GitHub"
             className="cursor-pointer focus:outline-none"
+            data-keyboard-part="key"
             onClick={openGithub}
             type="button"
           >
-            <Key mode={mode}>
+            <Key mode={domMode}>
               <svg
                 fill="none"
                 height="24"
@@ -165,10 +228,11 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
           </button>
         </div>
 
-        <div>
+        <div className="relative">
           <button
             aria-label="Toggle keyboard mode"
             className="flex h-12 cursor-pointer flex-col items-center justify-start rounded-full transition"
+            data-keyboard-part="track"
             onClick={toggleMode}
             style={{
               background: "linear-gradient(225deg, black 0%, #393A3C 100%)",
@@ -178,9 +242,12 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
           >
             <div
               className={tw(
-                "size-5 rounded-full transition",
-                mode === "apple" ? "translate-y-7" : "translate-y-0"
+                // A detent: held, then snapped over into the stop with a
+                // small rebound.
+                "size-5 rounded-full transition-transform duration-150 ease-[cubic-bezier(0.6,0,0.3,1.45)]",
+                KNOB_STOPS[domMode]
               )}
+              data-keyboard-part="knob"
               style={{
                 background:
                   "linear-gradient(195deg, #C6CAD3 0%, rgba(26.62, 27.04, 27.88, 0.50) 100%), linear-gradient(225deg, #5A5B5D 0%, #393A3C 100%)",
@@ -188,14 +255,31 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
               }}
             />
           </button>
+          {TICK_TOPS.map((top) => (
+            <span
+              aria-hidden="true"
+              className="absolute left-full ml-1 h-[1.5px] w-1.5 -translate-y-1/2 rounded-full bg-white/35"
+              key={top}
+              style={{ top }}
+            />
+          ))}
         </div>
       </div>
       <div
         className={tw(
           "h-[96px] w-[300px] bg-foreground1",
-          mode === "logi" ? "rounded-2xl" : "rounded-xl"
+          mode === "logi" ? "rounded-2xl" : "rounded-xl",
+          // Not opacity: that would stack it over the keys and take their
+          // clicks.
+          isDomHidden && "invisible"
         )}
+        data-keyboard-part="body"
       />
+      {isLampOn ? (
+        <Suspense fallback={null}>
+          <LitKeyboard mode={mode} onReady={handleLitReady} />
+        </Suspense>
+      ) : null}
     </div>
   );
 };
