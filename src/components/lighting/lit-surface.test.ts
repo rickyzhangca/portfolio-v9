@@ -8,7 +8,7 @@ const lamp = vi.hoisted(() => ({
 // The lamp's frames are stepped by hand.
 vi.mock("./desk-lamp", () => ({
   getFrameTransformCache: () => new Map(),
-  LAMP_HEIGHT: 240,
+  getLampConfig: () => ({ heightPx: 240 }),
   subscribeLamp: (listener: (position: LampPosition, time: number) => void) => {
     lamp.listeners.add(listener);
     return () => lamp.listeners.delete(listener);

@@ -22,8 +22,10 @@ const profiles = [
       "src/app.tsx",
     ],
     // Raised from 300 KB for the socials keyboard's lamp-only third stop and
-    // the lamp hooks of the lit cards (their renderers load lazily).
-    gzipBudget: 302_000,
+    // the lamp hooks of the lit cards (their renderers load lazily), then to
+    // 303 KB for the lit surfaces' adaptive redraw queue and the lamp's
+    // playground settings.
+    gzipBudget: 303_000,
     name: "Home",
   },
   {

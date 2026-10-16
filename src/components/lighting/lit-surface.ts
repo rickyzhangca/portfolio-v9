@@ -1,6 +1,6 @@
 import {
   getFrameTransformCache,
-  LAMP_HEIGHT,
+  getLampConfig,
   type LampPosition,
   subscribeLamp,
 } from "./desk-lamp";
@@ -200,6 +200,7 @@ const measure = (
   // transform, so the lamp maps into the element's own (rotated) space.
   const awayX = lamp.x - (rect.left + rect.width / 2);
   const awayY = lamp.y - (rect.top + rect.height / 2);
+  const { heightPx } = getLampConfig();
   return {
     height,
     intensity: easeOutCubic(
@@ -208,7 +209,7 @@ const measure = (
     light: {
       x: width / 2 + (linear.d * awayX - linear.c * awayY) / det,
       y: height / 2 + (-linear.b * awayX + linear.a * awayY) / det,
-      z: LAMP_HEIGHT / screenScale,
+      z: heightPx / screenScale,
     },
     pixelScale: Math.min(
       Math.ceil((screenScale * window.devicePixelRatio) / PIXEL_SCALE_STEP) *

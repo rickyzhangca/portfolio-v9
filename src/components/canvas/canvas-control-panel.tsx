@@ -1,13 +1,18 @@
 import { motion } from "framer-motion";
-import { useAtom } from "jotai";
-import { useCallback } from "react";
-import { fanConfigAtom, repulsionConfigAtom } from "@/context/atoms";
+import { useAtom, useAtomValue } from "jotai";
+import { useCallback, useState } from "react";
+import {
+  deskLampAtom,
+  fanConfigAtom,
+  repulsionConfigAtom,
+} from "@/context/atoms";
 import { SPRING_PRESETS } from "@/lib/animation";
 import { EXPAND_MAX_PER_ROW, getFanTransform } from "@/lib/card-layout";
 import { DEFAULT_FAN_CONFIG } from "@/lib/fan";
 import { DEFAULT_REPULSION_CONFIG } from "@/lib/repulsion";
 import { Slider } from "../ui/slider";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "../ui/tabs";
+import { CanvasControlLightPanel } from "./canvas-control-light-panel";
 import { CanvasControlResetButton } from "./canvas-control-reset-button";
 
 const toSingleNumber = (value: number | readonly number[]) =>
@@ -16,6 +21,17 @@ const toSingleNumber = (value: number | readonly number[]) =>
 export const CanvasControlPanel = () => {
   const [config, setConfig] = useAtom(repulsionConfigAtom);
   const [fanConfig, setFanConfig] = useAtom(fanConfigAtom);
+  const isLampOn = useAtomValue(deskLampAtom);
+  const [selectedTab, setSelectedTab] = useState(
+    isLampOn ? "light" : "repulsion"
+  );
+  // The Light tab exists only under the lamp.
+  const activeTab =
+    !isLampOn && selectedTab === "light" ? "repulsion" : selectedTab;
+  const handleTabChange = useCallback(
+    (value: unknown) => setSelectedTab(String(value)),
+    []
+  );
 
   // Calculate transform for each card in the fan preview
   const calculateCardTransform = (index: number, isCover: boolean) => {
@@ -111,11 +127,17 @@ export const CanvasControlPanel = () => {
       className="flex flex-col overflow-hidden rounded-3xl bg-background2 outline outline-border"
       data-no-collapse
     >
-      <Tabs>
+      <Tabs onValueChange={handleTabChange} value={activeTab}>
         <TabsList className="px-3 pt-3">
+          {isLampOn ? <TabsTrigger value="light">Light</TabsTrigger> : null}
           <TabsTrigger value="repulsion">Repulsion</TabsTrigger>
           <TabsTrigger value="visual">Fan</TabsTrigger>
         </TabsList>
+        {isLampOn ? (
+          <TabsPanel value="light">
+            <CanvasControlLightPanel />
+          </TabsPanel>
+        ) : null}
         <TabsPanel value="repulsion">
           <div className="relative h-48 w-60 bg-background3 p-4">
             <div

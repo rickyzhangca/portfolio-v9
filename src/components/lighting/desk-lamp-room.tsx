@@ -1,9 +1,13 @@
+import { useAtomValue } from "jotai";
 import { useEffect, useRef } from "react";
+import { lampConfigAtom } from "@/context/atoms";
+import { getRoomGradient } from "@/lib/room-gradient";
 import { projectLampShadow } from "@/lib/lamp-shadow";
 import {
   areLampShadowsHeld,
   getFrameTransformCache,
-  LAMP_HEIGHT,
+  getLampConfig,
+  setLampConfig,
   subscribeLamp,
 } from "./desk-lamp";
 import { LAMP_SHADOW_ATTRIBUTE, screenLinear } from "./lamp-shadows";
@@ -97,6 +101,7 @@ const startLampShadows = () => {
       )
     );
     const cameraOrigin = camera?.getBoundingClientRect() ?? { left: 0, top: 0 };
+    const { heightPx } = getLampConfig();
 
     // Reads, and the shadows they give; the DOM is written afterwards.
     const added: HTMLElement[] = [];
@@ -143,7 +148,7 @@ const startLampShadows = () => {
           y: rect.top + rect.height / 2,
         },
         lamp,
-        lampHeight: LAMP_HEIGHT,
+        lampHeight: heightPx,
         lift: state.lift * cameraScale,
         linear: screenLinear(element, cache),
       });
@@ -195,6 +200,13 @@ const startLampShadows = () => {
  */
 export const DeskLampRoom = () => {
   const ref = useRef<HTMLDivElement | null>(null);
+  const config = useAtomValue(lampConfigAtom);
+
+  // The lamp's loops run outside React; they read the playground's settings
+  // every frame.
+  useEffect(() => {
+    setLampConfig(config);
+  }, [config]);
 
   useEffect(() => startLampShadows(), []);
 
@@ -234,8 +246,10 @@ export const DeskLampRoom = () => {
       className="pointer-events-none fixed inset-0 z-40 opacity-0 mix-blend-multiply transition-opacity"
       ref={ref}
       style={{
-        background:
-          "radial-gradient(circle 900px at var(--lamp-x, 30vw) var(--lamp-y, 18vh), rgb(255 255 252) 0%, rgb(252 251 247) 35%, rgb(230 229 225) 75%, rgb(215 214 210) 100%)",
+        background: getRoomGradient(
+          config,
+          "var(--lamp-x, 30vw) var(--lamp-y, 18vh)"
+        ),
         transitionDuration: `${ROOM_FADE_MS}ms`,
       }}
     />
