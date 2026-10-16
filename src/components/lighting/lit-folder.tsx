@@ -41,13 +41,58 @@ const BULGE_RATE = 7;
 
 /**
  * Foil is stamped slightly proud and mirrors the lamp in its own colour;
- * glass catches a tight highlight and lights up in its own colour as the
- * lamp nears; print is ink, nearly flat and matte.
+ * hot foil is metal leaf pressed into the board, deep gold until it catches
+ * the lamp; a deboss presses the mark's light parts into the board while its
+ * dark parts stay level with it; glass catches a tight highlight and lights
+ * up in its own colour as the lamp nears; print is ink, nearly flat and
+ * matte.
  */
 const LOGO_FINISHES: Record<CoverLogoFinish, FolderLogo["finish"]> = {
-  foil: { glow: 0, gloss: 0.55, relief: 0.45, shininess: 60, tint: 1 },
-  glass: { glow: 0.9, gloss: 0.45, relief: 0.6, shininess: 140, tint: 0.4 },
-  print: { glow: 0, gloss: 0.06, relief: 0.08, shininess: 10, tint: 0 },
+  deboss: {
+    glow: 0,
+    gloss: 0.04,
+    lightness: 1,
+    metal: 0,
+    relief: -1.5,
+    shininess: 10,
+    tint: 0,
+  },
+  foil: {
+    glow: 0,
+    gloss: 0.55,
+    lightness: 0,
+    metal: 0,
+    relief: 0.45,
+    shininess: 60,
+    tint: 1,
+  },
+  glass: {
+    glow: 0.9,
+    gloss: 0.45,
+    lightness: 0,
+    metal: 0,
+    relief: 0.6,
+    shininess: 140,
+    tint: 0.4,
+  },
+  "hot-foil": {
+    glow: 0,
+    gloss: 0,
+    lightness: 0,
+    metal: 1,
+    relief: -0.4,
+    shininess: 1,
+    tint: 1,
+  },
+  print: {
+    glow: 0,
+    gloss: 0.06,
+    lightness: 0,
+    metal: 0,
+    relief: 0.08,
+    shininess: 10,
+    tint: 0,
+  },
 };
 
 const bulgeFor = (papers: number) =>
