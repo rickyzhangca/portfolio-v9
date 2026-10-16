@@ -56,7 +56,7 @@ fn vs(@builtin(vertex_index) index: u32) -> VertexOut {
 }
 
 const TAU = 6.2831853;
-const LAMP_COLOR = vec3f(1.0, 0.94, 0.84);
+const LAMP_COLOR = vec3f(1.0, 0.97, 0.92);
 // The curl's shadow is capped like every other lamp shadow (lamp-shadow.ts).
 const MAX_SHADOW_REACH = 1.6;
 

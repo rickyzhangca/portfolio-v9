@@ -49,7 +49,7 @@ fn vs(@builtin(vertex_index) index: u32) -> VertexOut {
   return out;
 }
 
-const LAMP_COLOR = vec3f(1.0, 0.94, 0.84);
+const LAMP_COLOR = vec3f(1.0, 0.97, 0.92);
 const LUMA = vec3f(0.299, 0.587, 0.114);
 // Poisson disk for soft shadows.
 const DISK = array<vec2f, 12>(
