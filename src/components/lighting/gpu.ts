@@ -48,13 +48,18 @@ export const compileShader = async (device: GPUDevice, code: string) => {
   return module;
 };
 
-/** A pipeline for one fullscreen quad drawn with premultiplied alpha. */
+/**
+ * A pipeline for one fullscreen quad drawn with premultiplied alpha. Built
+ * asynchronously: Chrome compiles a synchronous pipeline on the GPU process's
+ * main thread, which also composites the page, so every surface switching on
+ * with the lamp froze the screen while it compiled.
+ */
 export const createQuadPipeline = (gpu: Gpu, module: GPUShaderModule) => {
   const blend: GPUBlendComponent = {
     dstFactor: "one-minus-src-alpha",
     srcFactor: "one",
   };
-  return gpu.device.createRenderPipeline({
+  return gpu.device.createRenderPipelineAsync({
     fragment: {
       entryPoint: "fs",
       module,

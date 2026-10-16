@@ -254,12 +254,8 @@ export const SingleCardItem = ({
             !(projectsPaper || isLampLit) &&
               "drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)] transition-[filter] hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
           )}
-          initial={{
-            opacity: 0,
-            scale: 0,
-            x: focusOffsetX,
-            y: focusOffsetY,
-          }}
+          // The scene's entrance moves the whole item; see canvas-item.
+          initial={false}
           key={cardWithSize.id}
           onClick={handleActivate}
           onClickCapture={handleClickCapture}
@@ -270,7 +266,7 @@ export const SingleCardItem = ({
             zIndex: 1,
           }}
           tabIndex={isActivatable ? 0 : undefined}
-          transition={{ ...SPRING_PRESETS.smooth, delay: 0.12 }}
+          transition={SPRING_PRESETS.smooth}
         >
           {projectsPaper ? (
             <PaperCardProjection

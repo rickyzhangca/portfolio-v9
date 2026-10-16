@@ -5,7 +5,6 @@ import {
   Suspense,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useState,
 } from "react";
@@ -54,7 +53,6 @@ interface SwagGroupProps {
   onDragEnd?: () => void;
   onCardHeightMeasured?: (cardId: string, height: number) => void;
   setRootRef?: (el: HTMLDivElement | null) => void;
-  stackIndex: number;
 }
 
 export const SwagGroup = ({
@@ -70,22 +68,15 @@ export const SwagGroup = ({
   onDragEnd,
   onCardHeightMeasured,
   setRootRef,
-  stackIndex,
 }: SwagGroupProps) => {
   const [measuredHeight, setMeasuredHeight] = useState<number | undefined>(
     item.cover.size.height
   );
-  const [hasMounted, setHasMounted] = useState(false);
   // Labels stay once shown: swapping the trigger back would remount images.
   const [showLabels, setShowLabels] = useState(isExpanded);
   if (isExpanded && !showLabels) {
     setShowLabels(true);
   }
-
-  // Track initial mount for animation delays
-  useLayoutEffect(() => {
-    setHasMounted(true);
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -212,11 +203,8 @@ export const SwagGroup = ({
           aria-expanded={isExpanded}
           aria-label="Toggle swag collection"
           className="absolute top-0 left-0"
-          initial={{
-            opacity: 0,
-            scale: 0,
-            rotate: -5,
-          }}
+          // The scene's entrance moves the whole item; see canvas-item.
+          initial={false}
           {...togglePress}
           role="button"
           style={{
@@ -224,10 +212,6 @@ export const SwagGroup = ({
             zIndex: item.swags.length,
           }}
           tabIndex={0}
-          transition={{
-            ...SPRING_PRESETS.snappy,
-            delay: 0.3 + stackIndex * 0.05,
-          }}
         >
           <RenderCard
             card={cardWithSize}
@@ -245,12 +229,6 @@ export const SwagGroup = ({
           }
 
           const offset = getSwagOffset(index);
-          const collapsedTransition = hasMounted
-            ? SPRING_PRESETS.quick
-            : {
-                ...SPRING_PRESETS.snappy,
-                delay: 0.4 + stackIndex * 0.05 + index * 0.02,
-              };
 
           return (
             <motion.div
@@ -263,13 +241,19 @@ export const SwagGroup = ({
               }}
               className="absolute top-0 left-0 origin-top-left will-change-transform"
               data-lamp-shadow={LAMP_LIFT.swag}
-              initial={{
-                opacity: 0,
-                scale: 0.6,
-                x: offset.collapsedX,
-                y: offset.collapsedY,
-                rotate: offset.collapsedRotate,
-              }}
+              // The collapsed pile enters with the scene. Swags past it mount
+              // when the collection opens, and fan out from under the cover.
+              initial={
+                isExpanded
+                  ? {
+                      opacity: 0,
+                      scale: 0.6,
+                      x: offset.collapsedX,
+                      y: offset.collapsedY,
+                      rotate: offset.collapsedRotate,
+                    }
+                  : false
+              }
               key={swag.src}
               style={{
                 width: swagLayout.itemSize,
@@ -300,7 +284,7 @@ export const SwagGroup = ({
                         delay: index * STAGGER_DELAY,
                       },
                     }
-                  : collapsedTransition
+                  : SPRING_PRESETS.quick
               }
             >
               {showLabels ? (

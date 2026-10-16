@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test";
-import { test } from "./fixtures";
+import { test, waitForCanvasEntrance } from "./fixtures";
 
 test.skip(
   ({ isMobile }) => !isMobile,
@@ -11,6 +11,7 @@ test.beforeEach(async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "Toggle GitHub", exact: true })
   ).toBeVisible();
+  await waitForCanvasEntrance(page);
 });
 
 const readCamera = (page: Page) =>

@@ -140,7 +140,7 @@ describe("CanvasItemRenderer", () => {
     );
   });
 
-  it("renders a swag stack with the stack index", () => {
+  it("renders a swag stack", () => {
     const item = createMockSwagStack("swag-1");
 
     render(<CanvasItemRenderer {...baseProps} item={item} />);
@@ -150,7 +150,6 @@ describe("CanvasItemRenderer", () => {
       expect.objectContaining({
         item,
         onToggleExpanded: expect.any(Function),
-        stackIndex: baseProps.itemIndex,
       })
     );
   });
@@ -173,7 +172,6 @@ describe("CanvasItemRenderer", () => {
         cardRepulsionOffsets,
         onCardHeightMeasured: expect.any(Function),
         stack: item,
-        stackIndex: baseProps.itemIndex,
       })
     );
   });

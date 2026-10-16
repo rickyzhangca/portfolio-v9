@@ -22,6 +22,20 @@ let lastTime = 0;
 // and lit surfaces climb the same ancestors.
 let transformCache = new Map<Element, Linear2D>();
 
+let shadowsHeld = false;
+
+/**
+ * While the canvas's entrance plays, the lamp's DOM shadows keep the frame
+ * they had at rest and ride up with their cards. Rewriting every caster's
+ * filter each frame would re-raster the rising cards on the main thread and
+ * take the wave off the compositor.
+ */
+export const holdLampShadows = (held: boolean) => {
+  shadowsHeld = held;
+};
+
+export const areLampShadowsHeld = () => shadowsHeld;
+
 /** Transforms measured during the current lamp frame. */
 export const getFrameTransformCache = () => transformCache;
 

@@ -1,3 +1,5 @@
+import { ItemEntranceContext } from "@/context/canvas-entrance";
+import { ENTRANCE_LANDED_MS } from "@/lib/canvas-entrance";
 import { COLLAPSED_POSITIONS } from "@/lib/card-layout";
 import {
   createMockCard,
@@ -44,7 +46,6 @@ const base = {
   repulsionOffset: { x: 0, y: 0 },
   scale: 1,
   stack,
-  stackIndex: 0,
 };
 
 afterEach(() => {
@@ -54,12 +55,38 @@ afterEach(() => {
 
 describe("CardStack", () => {
   beforeEach(() => vi.useFakeTimers());
-  it("lets expansion preempt a delayed scene entrance", async () => {
+  it("slides its papers out once the folder has landed", async () => {
+    const actions = callbacks();
+    const { container } = render(
+      <Provider>
+        <ItemEntranceContext.Provider value={{ delayMs: 200, started: true }}>
+          <CardStack {...base} {...actions} isExpanded={false} />
+        </ItemEntranceContext.Provider>
+      </Provider>
+    );
+    const card = container.querySelector<HTMLElement>(
+      '[data-repulsion-card-id="one"] > div'
+    );
+    act(() => {
+      vi.advanceTimersByTime(200 + ENTRANCE_LANDED_MS - 1);
+    });
+    expect(card?.style.opacity).toBe("0");
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    vi.useRealTimers();
+    await waitFor(() => expect(card?.style.opacity).toBe("1"));
+  });
+
+  it("lets expansion preempt a held scene entrance", async () => {
     vi.useRealTimers();
     const actions = callbacks();
+    const held = { delayMs: 0, started: false };
     const { container, rerender } = render(
       <Provider>
-        <CardStack {...base} {...actions} isExpanded={false} stackIndex={100} />
+        <ItemEntranceContext.Provider value={held}>
+          <CardStack {...base} {...actions} isExpanded={false} />
+        </ItemEntranceContext.Provider>
       </Provider>
     );
     const card = container.querySelector<HTMLElement>(
@@ -68,7 +95,9 @@ describe("CardStack", () => {
     expect(card?.style.opacity).toBe("0");
     rerender(
       <Provider>
-        <CardStack {...base} {...actions} isExpanded stackIndex={100} />
+        <ItemEntranceContext.Provider value={held}>
+          <CardStack {...base} {...actions} isExpanded />
+        </ItemEntranceContext.Provider>
       </Provider>
     );
     await waitFor(() => expect(card?.style.opacity).toBe("1"));
@@ -222,7 +251,6 @@ const props = {
   repulsionOffset: { x: 0, y: 0 },
   scale: 1,
   stack: writingStack,
-  stackIndex: 0,
 };
 
 describe("Writing folder rendering", () => {

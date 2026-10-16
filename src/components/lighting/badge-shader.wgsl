@@ -53,10 +53,14 @@ const SHADOW_STEPS = 40;
 // stays a narrow contact shadow tucked under the badge rather than a halo.
 const SHADOW_SOFTNESS = 2.5;
 // Penumbra limits, in local px. The minimum keeps the umbra's edge from
-// reading as an outline; the maximum keeps a far lamp's long, low shadow
-// inside the canvas margin.
+// reading as an outline; the maximum bounds how far the blur spreads.
 const MIN_PENUMBRA = 3.0;
 const MAX_PENUMBRA = 16.0;
+// Shadow length cap, as a multiple of the badge's height above the desk: the
+// DOM shadows' (lamp-shadow.ts), so the badge's shadow matches the cards'.
+const MAX_REACH_PER_LIFT = 1.6;
+// Room kept between the blurred shadow's end and the canvas edge, in local px.
+const EDGE_CLEARANCE = 4.0;
 const RIM_WHITE = vec3f(1.0);
 
 // CSS rotateY: the right side turns away from the viewer for positive angles.
@@ -129,6 +133,32 @@ fn lampAt() -> vec3f {
   return badge.light.xyz - vec3f(badge.size * 0.5, 0.0);
 }
 
+// The lamp as the shadow sees it. A far, low lamp throws a long shadow, which
+// would run past the canvas margin and end in a square cut. Like the DOM
+// shadows, its length is capped: the lamp keeps its direction and height but
+// comes in close enough that the badge's highest point, which rises to the
+// rim side on, throws no further than the cap or the margin allows.
+fn shadowLampAt() -> vec3f {
+  let lamp = lampAt();
+  let lift = badge.params.x;
+  let top =
+    lift + badge.shape.x * abs(sin(badge.angle)) + badge.shape.y + badge.shape.z;
+  let reach = min(
+    lift * MAX_REACH_PER_LIFT,
+    badge.light.w - MAX_PENUMBRA - EDGE_CLEARANCE
+  );
+  // Similar triangles: a point `top` above the desk, under a lamp `lampZ`
+  // above it at horizontal distance d, throws a shadow d * top / (lampZ - top).
+  // The edge furthest from the lamp is a radius further away than the middle.
+  let lampZ = lamp.z + lift;
+  let maxDistance = reach * max(lampZ - top, 1.0) / top - badge.shape.x;
+  let distance = length(lamp.xy);
+  if (distance <= maxDistance) {
+    return lamp;
+  }
+  return vec3f(lamp.xy * (max(maxDistance, 0.0) / distance), lamp.z);
+}
+
 fn falloffAt(p: vec3f) -> f32 {
   let lamp = lampAt();
   return 1.0 / (1.0 + pow(length(lamp - p) / (lamp.z * 1.9), 2.0));
@@ -160,7 +190,7 @@ fn shade(world: vec3f, eye: vec3f, footprint: f32) -> vec3f {
 // How much of the lamp the badge hides from a point on the desk, softened by
 // how near the shadow ray passes to its surface for how far it has come.
 fn shadowAt(desk: vec3f) -> f32 {
-  let toLamp = normalize(lampAt() - desk);
+  let toLamp = normalize(shadowLampAt() - desk);
   // Rays that pass within a penumbra of the badge still darken the desk; a
   // tighter bound would cut the falloff off in a hard edge.
   let span = bounds(desk, toLamp, MAX_PENUMBRA);

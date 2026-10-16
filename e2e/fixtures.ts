@@ -1,4 +1,4 @@
-import { test as base } from "@playwright/test";
+import { test as base, expect, type Page } from "@playwright/test";
 import { PINNED_FONT_STYLESHEET } from "./visual/font-stylesheet";
 
 interface E2EOptions {
@@ -71,3 +71,13 @@ export const test = base.extend<E2EOptions>({
     await use(page);
   },
 });
+
+/**
+ * The canvas holds its first view hidden, then plays a short entrance in
+ * which every item rises and tilts into place. Geometry read before it ends
+ * is mid-flight; the container drops `data-entrance` once it has settled.
+ */
+export const waitForCanvasEntrance = async (page: Page) => {
+  await expect(page.locator(".react-transform-component")).toBeAttached();
+  await expect(page.locator("[data-entrance]")).toHaveCount(0);
+};

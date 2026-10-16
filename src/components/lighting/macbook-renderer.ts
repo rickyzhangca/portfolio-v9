@@ -167,7 +167,8 @@ export const createMacbookRenderer = async (
       dstFactor: "one-minus-src-alpha",
       srcFactor: "one",
     };
-    const pipeline = device.createRenderPipeline({
+    // Async, like createQuadPipeline: a sync compile stalls compositing.
+    const pipeline = await device.createRenderPipelineAsync({
       fragment: {
         entryPoint: "fs",
         module,

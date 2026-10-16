@@ -1,14 +1,20 @@
-import { memo, useCallback } from "react";
+import { type CSSProperties, memo, useCallback } from "react";
 import { SingleCardItem } from "@/components/canvas/single-card-item";
 import { CardStack } from "@/components/groups/card-group";
 import { FunProjectGroup } from "@/components/groups/fun-project-group";
 import { SwagGroup } from "@/components/groups/swag-group";
+import { ItemEntranceContext } from "@/context/canvas-entrance";
+import { getEntranceOrigin } from "@/lib/canvas-entrance";
 import type { CanvasItem, Position } from "@/types/canvas";
 
 interface CanvasItemRendererProps {
   cardRepulsionOffsets?: ReadonlyMap<string, Position>;
   documentOpen?: boolean;
   dragDisabled: boolean;
+  /** Milliseconds after the scene's entrance starts that this item rises. */
+  entranceDelay?: number;
+  /** False while the scene holds its entrance for the first view. */
+  entranceStarted?: boolean;
   isExpanded: boolean;
   isFocused: boolean;
   item: CanvasItem;
@@ -28,11 +34,10 @@ interface CanvasItemRendererProps {
   setRootRef?: (id: string, el: HTMLDivElement | null) => void;
 }
 
-const CanvasItemRendererComponent = ({
+const CanvasItemContent = ({
   cardRepulsionOffsets,
   documentOpen = false,
   item,
-  itemIndex,
   scale,
   isExpanded,
   isFocused,
@@ -142,7 +147,6 @@ const CanvasItemRendererComponent = ({
         repulsionOffset={repulsionOffset}
         scale={scale}
         setRootRef={setRootRef}
-        stackIndex={itemIndex}
       />
     );
   }
@@ -166,8 +170,34 @@ const CanvasItemRendererComponent = ({
       scale={scale}
       setRootRef={setRootRef}
       stack={item}
-      stackIndex={itemIndex}
     />
+  );
+};
+
+const CanvasItemRendererComponent = (props: CanvasItemRendererProps) => {
+  const { entranceDelay = 0, entranceStarted = true, item, itemIndex } = props;
+  const origin = getEntranceOrigin(item);
+  return (
+    // The entrance moves this wrapper, never the item, so it composes with
+    // the item's own drag, repulsion and focus transforms.
+    <div
+      className="canvas-entrance-item"
+      style={
+        {
+          "--entrance-delay": `${entranceDelay}ms`,
+          // Neighbours lean opposite ways, like cards dealt by hand.
+          "--entrance-tilt": itemIndex % 2 === 0 ? "-1.5deg" : "1.5deg",
+          transformOrigin: `${origin.x}px ${origin.y}px`,
+          zIndex: item.zIndex,
+        } as CSSProperties
+      }
+    >
+      <ItemEntranceContext.Provider
+        value={{ delayMs: entranceDelay, started: entranceStarted }}
+      >
+        <CanvasItemContent {...props} />
+      </ItemEntranceContext.Provider>
+    </div>
   );
 };
 
