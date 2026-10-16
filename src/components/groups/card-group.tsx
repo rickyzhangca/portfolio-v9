@@ -606,7 +606,9 @@ export const CardStack = ({
                           ? {
                               finish: coverWithSize.content.board.logoFinish,
                               rect: coverLogoRect,
-                              src: coverWithSize.content.logo,
+                              src:
+                                coverWithSize.content.litLogo ??
+                                coverWithSize.content.logo,
                             }
                           : undefined
                       }
