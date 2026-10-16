@@ -44,23 +44,21 @@ import { getCoverLogoRect } from "@/cards/cover/cover-layout";
 import { FolderBack } from "@/components/lighting/folder-back";
 import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
 import { FolderLighting } from "@/components/lighting/lit-folder";
+import { useItemEntrance } from "@/context/canvas-entrance";
+import { ENTRANCE_LANDED_MS } from "@/lib/canvas-entrance";
 import { FOLDER_MASK_IMAGE } from "@/lib/folder-shape";
 import { getDocumentLayoutId } from "@/lib/document-motion";
 import { tw } from "@/lib/utils";
 import { StackArticleLink } from "./stack-article-link";
 
-// Local definitions removed as they are now imported
-
-// Entrance animation timing constants
-const COVER_BASE_DELAY = 0.05; // seconds before first cover appears
-const COVER_STAGGER = 0.05; // seconds between each group's cover
-const PROJECT_DELAY_AFTER_COVER = 0.2; // seconds after cover before projects appear
 const ZERO_REPULSION_OFFSET = { x: 0, y: 0 } as const;
 /** How far a folder gives under a press, and how quickly. */
 const COVER_PRESS_SCALE = 0.975;
 const COVER_PRESS = { damping: 30, stiffness: 900, type: "spring" } as const;
 /** FolderCoverCard's board colour, for its back panel. */
 const FOLDER_COVER_COLOR = "#d7e4d4";
+/** The back panel appears as the lamp's lighting warms up. */
+const LAMP_PANEL_FADE = { duration: 0.5, ease: "easeOut" } as const;
 /** The camera move after a toggle, plus time for the cards to settle. */
 const PEEK_LOCK_AFTER_TOGGLE_MS = 700;
 
@@ -108,13 +106,11 @@ interface CardStackProps {
   scale: number;
   setRootRef?: (el: HTMLDivElement | null) => void;
   stack: CanvasStackItem;
-  stackIndex: number;
 }
 
 export const CardStack = ({
   cardRepulsionOffsets,
   stack,
-  stackIndex,
   scale,
   isExpanded,
   dragDisabled,
@@ -168,15 +164,13 @@ export const CardStack = ({
   const movedItemsRef = useRef<Set<string>>(new Set());
   const dragTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef<boolean>(false);
-  // Control when projects become visible (after cover animation completes)
+  // The papers slide out from under the cover once the folder has landed.
   const [hasShownProjects, setHasShownProjects] = useState(isExpanded);
   const showProjects = isExpanded || hasShownProjects;
+  const { delayMs: entranceDelay, started: entranceStarted } =
+    useItemEntrance();
 
-  // Calculate entrance delays based on group index
-  const coverEntranceDelay = COVER_BASE_DELAY + stackIndex * COVER_STAGGER;
-  const projectsEntranceDelay = coverEntranceDelay + PROJECT_DELAY_AFTER_COVER;
-
-  // Expansion takes precedence over the one-time staggered entrance.
+  // Expansion takes precedence over the one-time entrance.
   useEffect(() => {
     if (hasShownProjects) {
       return;
@@ -185,11 +179,14 @@ export const CardStack = ({
       setHasShownProjects(true);
       return;
     }
+    if (!entranceStarted) {
+      return;
+    }
     const timer = setTimeout(() => {
       setHasShownProjects(true);
-    }, projectsEntranceDelay * 1000); // Convert to ms
+    }, entranceDelay + ENTRANCE_LANDED_MS);
     return () => clearTimeout(timer);
-  }, [hasShownProjects, isExpanded, projectsEntranceDelay]);
+  }, [entranceDelay, entranceStarted, hasShownProjects, isExpanded]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -489,20 +486,17 @@ export const CardStack = ({
         >
           {coverWithSize && isLampOn ? (
             // Under the lamp the papers sit inside the folder, on its back
-            // panel, which enters with the cover and moves with it.
+            // panel, which fades in as the lamp warms up and moves with it.
             <CardRepulsionFrame
               cardId={`${coverWithSize.id}-back`}
               offset={cardRepulsionOffsets?.get(coverWithSize.id)}
               zIndex={0}
             >
               <motion.div
-                animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                animate={{ opacity: 1 }}
                 className="absolute top-0 left-0"
-                initial={{ opacity: 0, rotate: -5, scale: 0 }}
-                transition={{
-                  ...SPRING_PRESETS.snappy,
-                  delay: coverEntranceDelay,
-                }}
+                initial={{ opacity: 0 }}
+                transition={LAMP_PANEL_FADE}
               >
                 <motion.div
                   animate={{ scale: isPanelPressed ? COVER_PRESS_SCALE : 1 }}
@@ -554,13 +548,8 @@ export const CardStack = ({
                 data-lamp-shadow={
                   isDragging ? LAMP_LIFT.dragged : LAMP_LIFT.card
                 }
-                initial={{
-                  opacity: 0,
-                  rotate: -5,
-                  scale: 0,
-                  x: 0,
-                  y: 0,
-                }}
+                // The scene's entrance moves the whole item; see canvas-item.
+                initial={false}
                 key={coverWithSize.id}
                 onHoverEnd={handleCoverHoverEnd}
                 onHoverStart={triggerPeek}
@@ -574,15 +563,11 @@ export const CardStack = ({
                   zIndex: (stack.cover ? 1 : 0) + projectsWithSizes.length,
                 }}
                 tabIndex={0}
-                transition={{
-                  ...SPRING_PRESETS.snappy,
-                  delay: coverEntranceDelay,
-                }}
               >
                 {/* Pressed while open, only the cover and back panel give; the
-                  papers already lie on the desk. Inner layers, because the
-                  cover's own scale carries the entrance delay, and Motion's
-                  whileTap would take over Enter, which toggles the folder. */}
+                  papers already lie on the desk. An inner layer, because
+                  Motion's whileTap would take over Enter, which toggles the
+                  folder. */}
                 <motion.div
                   animate={{ scale: isPanelPressed ? COVER_PRESS_SCALE : 1 }}
                   initial={false}

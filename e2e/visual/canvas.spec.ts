@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { test } from "../fixtures";
+import { test, waitForCanvasEntrance } from "../fixtures";
 import {
   expectVisualSnapshot,
   freezeVisibleVideosAtStart,
@@ -14,6 +14,7 @@ test.use({ pinVisualFonts: true });
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
   await waitForPinnedFonts(page);
+  await waitForCanvasEntrance(page);
 });
 
 test("captures the initial canvas", async ({ page }) => {

@@ -1,12 +1,21 @@
 import { XIcon } from "@phosphor-icons/react";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useAtomValue } from "jotai";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { getInteractionPolicy } from "@/cards/registry";
 import { AboutModal } from "@/components/about/about-modal";
 import { ArticleModal } from "@/components/articles/article-modal";
-import { DeskLampRoom } from "@/components/lighting/desk-lamp-room";
+import { holdLampShadows } from "@/components/lighting/desk-lamp";
 import { ResumeModal } from "@/components/resume/resume-modal";
 import {
   deskLampAtom,
@@ -22,6 +31,7 @@ import {
   type ActiveDocument,
   useCanvasInteractions,
 } from "@/hooks/use-canvas-interactions";
+import { useCanvasEntrance } from "@/hooks/use-canvas-entrance";
 import { useCanvasState } from "@/hooks/use-canvas-state";
 import { useCanvasViewport } from "@/hooks/use-canvas-viewport";
 import { useDefaultDeskLamp } from "@/hooks/use-default-desk-lamp";
@@ -33,6 +43,7 @@ import {
   useArePositionsModified,
   useViewportConfig,
 } from "@/hooks/use-viewport-config";
+import { ENTRANCE_DURATION_MS, getEntranceDelays } from "@/lib/canvas-entrance";
 import { type CanvasLayout, DESKTOP_CANVAS_LAYOUT } from "@/lib/canvas-layout";
 import { getCompactPanBounds, type PanBounds } from "@/lib/pan-bounds";
 import { getDocumentLayoutId } from "@/lib/document-motion";
@@ -50,6 +61,13 @@ interface CanvasProps {
 }
 
 const ZERO_OFFSET = { x: 0, y: 0 } as const;
+
+// The dimmed room and its shadow loop exist only under the lamp.
+const DeskLampRoom = lazy(() =>
+  import("@/components/lighting/desk-lamp-room").then((module) => ({
+    default: module.DeskLampRoom,
+  }))
+);
 
 /** A long press would open the browser's image and text menu over the canvas. */
 const suppressTouchContextMenu = (event: Event) => {
@@ -85,8 +103,6 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
   const fanConfig = useAtomValue(fanConfigAtom);
   const repulsionConfig = useAtomValue(repulsionConfigAtom);
   const isLampOn = useAtomValue(deskLampAtom);
-  // Phones have no controls to switch the lamp off, so it starts off there.
-  useDefaultDeskLamp(!layout.compact);
   // Phones show one column and reveal content at its own width, so sideways
   // drags only reach empty canvas. The focused laptop is wider than the screen.
   const lockAxisX = layout.compact && state.focusedItemId === null;
@@ -100,6 +116,23 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
     lockAxisX,
     getPanBounds
   );
+  const [entranceDelays] = useState(() => getEntranceDelays(baselineItems));
+  const entrance = useCanvasEntrance(
+    viewport.containerRef,
+    ENTRANCE_DURATION_MS
+  );
+  // Phones have no controls to switch the lamp off, so it starts off there.
+  useDefaultDeskLamp(!layout.compact, entrance);
+  useLayoutEffect(() => {
+    holdLampShadows(entrance === "playing");
+    return () => holdLampShadows(false);
+  }, [entrance]);
+  const { onCanvasEntrance } = session;
+  useEffect(() => {
+    if (entrance !== "waiting") {
+      onCanvasEntrance?.();
+    }
+  }, [entrance, onCanvasEntrance]);
   const getViewport = useCallback(
     () => viewport.viewportRef.current,
     [viewport.viewportRef]
@@ -241,6 +274,7 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
     <LayoutGroup>
       <div
         className="h-full w-full overflow-clip"
+        data-entrance={entrance === "done" ? undefined : entrance}
         onPointerDownCapture={interaction.cancelLayoutCorrection}
         onWheelCapture={interaction.cancelLayoutCorrection}
         ref={viewport.containerRef}
@@ -291,6 +325,8 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
                       interaction.isLocked ||
                       state.focusedItemId !== null
                     }
+                    entranceDelay={entranceDelays.get(item.id)}
+                    entranceStarted={entrance !== "waiting"}
                     isExpanded={state.expandedStackId === item.id}
                     isFocused={state.focusedItemId === item.id}
                     item={item}
@@ -335,14 +371,20 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
                   })}
                 </AnimatePresence>
               </TransformComponent>
-              {isLampOn ? <DeskLampRoom /> : null}
+              {isLampOn ? (
+                <Suspense fallback={null}>
+                  <DeskLampRoom />
+                </Suspense>
+              ) : null}
               {/* Phones keep one bounded column: nothing to tune or reset. */}
               {layout.compact ? null : (
-                <CanvasControls
-                  isResetDisabled={isViewportReset && !arePositionsModified}
-                  onReset={resetViewport}
-                  onResetPositions={resetItems}
-                />
+                <div className="canvas-entrance-chrome">
+                  <CanvasControls
+                    isResetDisabled={isViewportReset && !arePositionsModified}
+                    onReset={resetViewport}
+                    onResetPositions={resetItems}
+                  />
+                </div>
               )}
               <AnimatePresence>
                 {showCloseButton ? (

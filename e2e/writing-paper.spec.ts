@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test";
-import { test } from "./fixtures";
+import { test, waitForCanvasEntrance } from "./fixtures";
 
 const EPHEMERAL_PATH = "/writing/en/ephemeral-design";
 const ARTICLE_BODY_MODULE_PATTERN = /^\/assets\/(?:en|cn)-.+\.js$/;
@@ -11,6 +11,7 @@ const PROJECTION_ARTICLES = [
 
 async function expandWriting(page: Page) {
   await page.goto("/");
+  await waitForCanvasEntrance(page);
   const folder = page.getByRole("button", { name: "Toggle Thoughts folder" });
   await folder.press("Enter");
   await expect(folder).toHaveAttribute("aria-expanded", "true");

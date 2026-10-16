@@ -8,7 +8,9 @@ import {
   useState,
 } from "react";
 import type { FunProjectCardContent } from "@/cards/types";
+import { useItemEntrance } from "@/context/canvas-entrance";
 import { SPRING_PRESETS } from "@/lib/animation";
+import { ENTRANCE_LANDED_MS } from "@/lib/canvas-entrance";
 import { computeMagneticLift, type IconLiftEffect } from "@/lib/magnetic-lift";
 
 interface FunProjectCardProps {
@@ -46,16 +48,14 @@ export const FunProjectCard = ({
   const [liftEffects, setLiftEffects] = useState<Map<number, IconLiftEffect>>(
     new Map()
   );
-  const [hasMounted, setHasMounted] = useState(false);
 
   // Cache icon rects to avoid layout reads on every pointermove
   const iconRectsRef = useRef<Map<number, DOMRect>>(new Map());
   const rafRef = useRef<number | null>(null);
   const pendingEffectsRef = useRef<Map<number, IconLiftEffect> | null>(null);
 
-  useLayoutEffect(() => {
-    setHasMounted(true);
-  }, []);
+  const entrance = useItemEntrance();
+  const iconsDelay = (entrance.delayMs + ENTRANCE_LANDED_MS) / 1000;
 
   const handleMeasure = useCallback(() => {
     if (cardRef.current && onMeasure) {
@@ -178,12 +178,13 @@ export const FunProjectCard = ({
 
         return (
           <motion.div
-            animate={hasMounted ? { scale: 1, opacity: 1 } : undefined}
+            // Icons pop onto the card once it has landed.
+            animate={entrance.started ? { scale: 1, opacity: 1 } : undefined}
             initial={{ scale: 0, opacity: 0 }}
             key={item.title}
             transition={{
               ...SPRING_PRESETS.quick,
-              delay: 0.48 + index * 0.02,
+              delay: iconsDelay + index * 0.03,
             }}
           >
             {/* biome-ignore lint/correctness/useImageSize: auto sizes */}

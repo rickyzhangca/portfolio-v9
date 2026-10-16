@@ -50,7 +50,7 @@ export interface BadgeSurface {
 }
 
 const getPipeline = cachePerDevice(async (gpu) => ({
-  pipeline: createQuadPipeline(
+  pipeline: await createQuadPipeline(
     gpu,
     await compileShader(gpu.device, shaderSource)
   ),
