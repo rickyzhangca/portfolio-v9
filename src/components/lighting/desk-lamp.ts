@@ -144,10 +144,16 @@ interface UserAgentData {
  * where they ship WebGPU. `mobile` is false on Android tablets, so the
  * platform rules those out. Client hints exist only in secure contexts: a
  * plain-HTTP LAN address shows no lamp, localhost and HTTPS do.
+ *
+ * `?lamp=force` skips the browser check, for comparing the lamp in Safari or
+ * Firefox; it still needs WebGPU, and the adapter probe still decides.
  */
 export const isDeskLampSupported = () => {
   if (typeof navigator === "undefined" || !("gpu" in navigator)) {
     return false;
+  }
+  if (new URLSearchParams(window.location.search).get("lamp") === "force") {
+    return true;
   }
   const hints = (navigator as Navigator & { userAgentData?: UserAgentData })
     .userAgentData;

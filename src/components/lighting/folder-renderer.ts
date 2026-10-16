@@ -203,6 +203,53 @@ const getPipeline = cachePerDevice(async (gpu) => ({
   }),
 }));
 
+// Safari keeps a 2D context's `filter` and reads it back, but draws through
+// it unblurred, so a probe checks that a blur actually spreads.
+let filterBlurs: boolean | undefined;
+const canFilterBlur = () => {
+  if (filterBlurs === undefined) {
+    const context = new OffscreenCanvas(16, 16).getContext("2d");
+    if (context) {
+      context.filter = "blur(2px)";
+      context.fillRect(8, 0, 8, 16);
+      filterBlurs = (context.getImageData(5, 8, 1, 1).data[3] ?? 0) > 0;
+    } else {
+      filterBlurs = false;
+    }
+  }
+  return filterBlurs;
+};
+
+/**
+ * Draws `draw` blurred by a Gaussian of `sigma` bitmap px. Where the 2D
+ * filter does not blur, the drawing is thrown outside the bitmap and only its
+ * shadow, in `color`, lands where it would have: a shadow blur of 2σ is a
+ * Gaussian of σ, and shadow offsets ignore the transform.
+ */
+const drawBlurred = (
+  context: OffscreenCanvasRenderingContext2D,
+  sigma: number,
+  color: string,
+  draw: () => void
+) => {
+  context.save();
+  if (sigma > 0 && canFilterBlur()) {
+    context.filter = `blur(${sigma}px)`;
+  } else if (sigma > 0) {
+    const away = context.canvas.width + sigma * 8;
+    context.setTransform(
+      new DOMMatrix()
+        .translateSelf(-away, 0)
+        .multiplySelf(context.getTransform())
+    );
+    context.shadowColor = color;
+    context.shadowBlur = sigma * 2;
+    context.shadowOffsetX = away;
+  }
+  draw();
+  context.restore();
+};
+
 // The same outline the cover's CSS mask uses, rasterized as coverage three
 // times into separate channels: sharp (red), slightly blurred for the rounded
 // edge (green) and widely blurred for the bulge (blue). Canvas blurs are true
@@ -229,11 +276,12 @@ const rasterizeOutline = (size: { height: number; width: number }) => {
     ["#0f0", BEVEL_BLUR],
     ["#00f", BULGE_BLUR],
   ] as const) {
-    // Filter lengths are bitmap pixels; the current transform does not
-    // scale them.
-    context.filter = blur ? `blur(${blur * SHAPE_DENSITY}px)` : "none";
+    // Blur lengths are bitmap pixels; the current transform does not scale
+    // them.
     context.fillStyle = color;
-    context.fill(outline);
+    drawBlurred(context, blur * SHAPE_DENSITY, color, () =>
+      context.fill(outline)
+    );
   }
   return createImageBitmap(canvas, {
     colorSpaceConversion: "none",
@@ -317,8 +365,9 @@ const rasterizeSeam = (size: { height: number; width: number }) => {
     context.save();
     context.resetTransform();
     context.globalCompositeOperation = "lighter";
-    context.filter = `blur(${blur * SEAM_DENSITY}px)`;
-    context.drawImage(layer, 0, 0);
+    drawBlurred(context, blur * SEAM_DENSITY, color, () =>
+      context.drawImage(layer, 0, 0)
+    );
     context.restore();
   };
   band("#0f0", SEAM.groove, [], 0.8);

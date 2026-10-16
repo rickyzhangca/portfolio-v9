@@ -1,5 +1,6 @@
 // Served as files, not inlined: data URIs would land in the home page's JS.
 import githubLogo from "@/assets/logos/github.svg?no-inline";
+import mintlifyLitLogo from "@/assets/logos/mintlify-lit.webp?no-inline";
 import mintlifyLogo from "@/assets/logos/mintlify.svg?no-inline";
 import mosaicLogo from "@/assets/logos/mosaic.svg?no-inline";
 import rbcLogo from "@/assets/logos/rbc.svg?no-inline";
@@ -300,6 +301,7 @@ export const mintlifyStack: CanvasStackItem = {
       company: "Mintlify",
       title: "Design Engineer",
       logo: mintlifyLogo,
+      litLogo: mintlifyLitLogo,
     },
   },
   stack: [

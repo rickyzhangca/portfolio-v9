@@ -201,6 +201,21 @@ describe("CanvasControls", () => {
     }
   });
 
+  it("shows the desk lamp without client hints when forced", () => {
+    vi.stubGlobal("navigator", { ...navigator, gpu: {} });
+    window.history.replaceState(null, "", "/?lamp=force");
+    try {
+      render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
+
+      expect(
+        screen.getByRole("button", { name: "Realistic lighting" })
+      ).toBeDefined();
+    } finally {
+      window.history.replaceState(null, "", "/");
+      vi.unstubAllGlobals();
+    }
+  });
+
   it.each([
     ["Google Chrome", "macOS"],
     ["Microsoft Edge", "Windows"],

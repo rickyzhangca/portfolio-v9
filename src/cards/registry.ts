@@ -95,6 +95,11 @@ export interface CoverBoard {
 export interface CoverCardContent {
   board: CoverBoard;
   company: string;
+  /**
+   * `logo` pre-rendered as a bitmap for the desk lamp's relief, for artwork
+   * Safari's canvas draws wrongly: it drops SVG masks when it rasterizes one.
+   */
+  litLogo?: string;
   /** Square logo artwork, drawn at COVER_LOGO's size. */
   logo: string;
   title?: string;
