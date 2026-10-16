@@ -1,5 +1,6 @@
 import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
+import { useAtomValue } from "jotai";
 import {
   lazy,
   Suspense,
@@ -10,6 +11,8 @@ import {
   useState,
 } from "react";
 import { RenderCard } from "@/cards/render-card";
+import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
+import { deskLampAtom } from "@/context/atoms";
 import { useCanvasEnvironment } from "@/context/canvas-layout";
 import { useDraggable } from "@/hooks/use-draggable";
 import { useTogglePress } from "@/hooks/use-toggle-press";
@@ -77,6 +80,7 @@ export const FunProjectGroup = ({
   setRootRef,
 }: FunProjectGroupProps) => {
   const { layout } = useCanvasEnvironment();
+  const isLampOn = useAtomValue(deskLampAtom);
   const contentWidth = layout.funContentWidth;
   const [measuredHeight, setMeasuredHeight] = useState<number | undefined>(
     item.card.size.height
@@ -419,6 +423,8 @@ export const FunProjectGroup = ({
                   }}
                   className="absolute top-0 left-0 origin-top-left will-change-transform"
                   data-fun-content-card-index={index}
+                  // Under the lamp the details lie on the desk like cards.
+                  data-lamp-shadow={isLampOn ? LAMP_LIFT.card : undefined}
                   initial={false}
                   key={funItem.title}
                   style={{

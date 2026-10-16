@@ -149,3 +149,7 @@ export const funProjects: FunProjectItem[] = [
     },
   },
 ];
+
+/** The icons as keycaps, for the desk lamp; loaded only once it is on. */
+export const loadFunProjectKeycaps = () =>
+  import("./fun-project-keycaps").then((module) => module.funProjectKeycaps);

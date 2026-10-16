@@ -16,6 +16,8 @@ export const LAMP_LIFT = {
   flatPaper: 4,
   /** A folder's back panel lies on the desk under its papers. */
   folderBack: 2,
+  /** Fun-project icons are thick keycaps standing on the desk. */
+  keycap: 6,
   /** A label stuck on a folder barely stands off it. */
   label: 1.5,
   screenshot: 4,
