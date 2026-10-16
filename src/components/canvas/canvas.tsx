@@ -1,12 +1,19 @@
 import { XIcon } from "@phosphor-icons/react";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useAtomValue } from "jotai";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { getInteractionPolicy } from "@/cards/registry";
 import { AboutModal } from "@/components/about/about-modal";
 import { ArticleModal } from "@/components/articles/article-modal";
-import { DeskLampRoom } from "@/components/lighting/desk-lamp-room";
 import { ResumeModal } from "@/components/resume/resume-modal";
 import {
   deskLampAtom,
@@ -52,6 +59,13 @@ interface CanvasProps {
 }
 
 const ZERO_OFFSET = { x: 0, y: 0 } as const;
+
+// The dimmed room and its shadow loop exist only under the lamp.
+const DeskLampRoom = lazy(() =>
+  import("@/components/lighting/desk-lamp-room").then((module) => ({
+    default: module.DeskLampRoom,
+  }))
+);
 
 /** A long press would open the browser's image and text menu over the canvas. */
 const suppressTouchContextMenu = (event: Event) => {
@@ -353,7 +367,11 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
                   })}
                 </AnimatePresence>
               </TransformComponent>
-              {isLampOn ? <DeskLampRoom /> : null}
+              {isLampOn ? (
+                <Suspense fallback={null}>
+                  <DeskLampRoom />
+                </Suspense>
+              ) : null}
               {/* Phones keep one bounded column: nothing to tune or reset. */}
               {layout.compact ? null : (
                 <div className="canvas-entrance-chrome">

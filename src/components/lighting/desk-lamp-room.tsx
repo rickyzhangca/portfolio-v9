@@ -1,6 +1,169 @@
 import { useEffect, useRef } from "react";
-import { subscribeLamp } from "./desk-lamp";
-import { startLampShadows } from "./lamp-shadows";
+import { projectLampShadow } from "@/lib/lamp-shadow";
+import {
+  getFrameTransformCache,
+  LAMP_HEIGHT,
+  subscribeLamp,
+} from "./desk-lamp";
+import { LAMP_SHADOW_ATTRIBUTE, screenLinear } from "./lamp-shadows";
+
+/** How long the room takes to dim when the lamp switches on. */
+const ROOM_FADE_MS = 700;
+const SWITCH_ON_TRANSITION = `filter ${ROOM_FADE_MS}ms ease-out`;
+/** Extra height while the pointer hovers a caster, as when it is picked up. */
+const HOVER_LIFT = 8;
+/** How quickly a caster rises or settles, per second. */
+const LIFT_RATE = 14;
+/**
+ * Moving casters ride higher, as a card does when it is picked up and
+ * carried: extra height per canvas px/s of travel, up to a ceiling. Speed is
+ * measured in canvas space, so camera pans lift nothing.
+ */
+const FLIGHT_LIFT_PER_SPEED = 0.008;
+const MAX_FLIGHT_LIFT = 18;
+/** The camera's content element from react-zoom-pan-pinch. */
+const CAMERA_SELECTOR = ".react-transform-component";
+
+interface CasterState {
+  /** Last filter written; style.filter reads back normalized. */
+  applied: string;
+  filter: string;
+  lift: number;
+  /** Center in canvas px last frame, for its speed. */
+  position: { x: number; y: number } | null;
+  /** Smoothed speed in canvas px per second. */
+  speed: number;
+  transition: string;
+}
+
+const isHovered = (element: HTMLElement) =>
+  element.matches(":hover") || element.closest(".group:hover") !== null;
+
+/**
+ * Points every caster's drop shadow away from the desk lamp. Each frame reads
+ * all layout first, then writes the filters, so the pass never forces layout
+ * between writes. Returns a function that restores the stylesheet shadows.
+ */
+const startLampShadows = () => {
+  const states = new Map<HTMLElement, CasterState>();
+  let lastTime = performance.now();
+  const switchedOnAt = lastTime;
+  let switchingOn = true;
+
+  const restore = (element: HTMLElement, state: CasterState) => {
+    element.style.filter = state.filter;
+    element.style.transition = state.transition;
+  };
+
+  const unsubscribe = subscribeLamp((lamp) => {
+    const now = performance.now();
+    const elapsed = Math.max((now - lastTime) / 1000, 1 / 240);
+    const follow = 1 - Math.exp(-elapsed * LIFT_RATE);
+    lastTime = now;
+    if (switchingOn && now - switchedOnAt > ROOM_FADE_MS) {
+      switchingOn = false;
+      for (const element of states.keys()) {
+        element.style.transition = "none";
+      }
+    }
+
+    const casters = [
+      ...document.querySelectorAll<HTMLElement>(`[${LAMP_SHADOW_ATTRIBUTE}]`),
+    ];
+    const present = new Set(casters);
+    for (const [element, state] of states) {
+      if (!present.has(element)) {
+        restore(element, state);
+        states.delete(element);
+      }
+    }
+
+    const cache = getFrameTransformCache();
+    const camera = document.querySelector(CAMERA_SELECTOR);
+    const cameraLinear = screenLinear(camera, cache);
+    const cameraScale = Math.sqrt(
+      Math.abs(
+        cameraLinear.a * cameraLinear.d - cameraLinear.b * cameraLinear.c
+      )
+    );
+    const cameraOrigin = camera?.getBoundingClientRect() ?? { left: 0, top: 0 };
+
+    // Read phase.
+    const reads = casters.map((element) => ({
+      element,
+      height: Number(element.getAttribute(LAMP_SHADOW_ATTRIBUTE)) || 0,
+      hovered: isHovered(element),
+      linear: screenLinear(element, cache),
+      rect: element.getBoundingClientRect(),
+    }));
+
+    // Write phase.
+    for (const { element, height, hovered, linear, rect } of reads) {
+      let state = states.get(element);
+      if (!state) {
+        state = {
+          applied: "",
+          filter: element.style.filter,
+          lift: height,
+          position: null,
+          speed: 0,
+          transition: element.style.transition,
+        };
+        states.set(element, state);
+        // The lamp already eases; a CSS filter transition would lag behind
+        // it. Only while the lamp switches on do shadows ease round from the
+        // stylesheet's, as the room dims, instead of snapping in one frame.
+        element.style.transition = switchingOn ? SWITCH_ON_TRANSITION : "none";
+      }
+      if (rect.width === 0 || cameraScale === 0) {
+        continue;
+      }
+      const position = {
+        x: (rect.left + rect.width / 2 - cameraOrigin.left) / cameraScale,
+        y: (rect.top + rect.height / 2 - cameraOrigin.top) / cameraScale,
+      };
+      const speed = state.position
+        ? Math.hypot(
+            position.x - state.position.x,
+            position.y - state.position.y
+          ) / elapsed
+        : 0;
+      state.position = position;
+      state.speed += (speed - state.speed) * follow;
+      const targetLift =
+        height +
+        (hovered ? HOVER_LIFT : 0) +
+        Math.min(state.speed * FLIGHT_LIFT_PER_SPEED, MAX_FLIGHT_LIFT);
+      state.lift += (targetLift - state.lift) * follow;
+      const shadow = projectLampShadow({
+        center: {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+        },
+        lamp,
+        lampHeight: LAMP_HEIGHT,
+        lift: state.lift * cameraScale,
+        linear,
+      });
+      if (!shadow) {
+        continue;
+      }
+      const filter = `drop-shadow(${shadow.x.toFixed(1)}px ${shadow.y.toFixed(1)}px ${shadow.blur.toFixed(1)}px rgb(0 0 0 / ${shadow.opacity.toFixed(3)}))`;
+      if (state.applied !== filter) {
+        state.applied = filter;
+        element.style.filter = filter;
+      }
+    }
+  });
+
+  return () => {
+    unsubscribe();
+    for (const [element, state] of states) {
+      restore(element, state);
+    }
+    states.clear();
+  };
+};
 
 /**
  * The room under the desk lamp: every caster's shadow points away from the
@@ -44,11 +207,12 @@ export const DeskLampRoom = () => {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-40 opacity-0 mix-blend-multiply transition-opacity duration-700"
+      className="pointer-events-none fixed inset-0 z-40 opacity-0 mix-blend-multiply transition-opacity"
       ref={ref}
       style={{
         background:
           "radial-gradient(circle 900px at var(--lamp-x, 30vw) var(--lamp-y, 18vh), rgb(255 255 252) 0%, rgb(252 251 247) 35%, rgb(230 229 225) 75%, rgb(215 214 210) 100%)",
+        transitionDuration: `${ROOM_FADE_MS}ms`,
       }}
     />
   );
