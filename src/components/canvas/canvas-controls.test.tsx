@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { AnalyticsEvents, track } from "@/lib/analytics";
 
@@ -29,7 +29,7 @@ describe("CanvasControls", () => {
       screen.getByRole("button", { name: "Open playground" })
     ).toBeDefined();
     expect(screen.getByRole("button", { name: "Reset canvas" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Time machine" })).toBeDefined();
+    expect(screen.getByRole("link", { name: "Time machine" })).toBeDefined();
   });
 
   it("toggles panel open when playground button is clicked", async () => {
@@ -62,10 +62,30 @@ describe("CanvasControls", () => {
     fireEvent.click(playgroundButton);
 
     expect(await screen.findByText("Repulsion")).toBeDefined();
+    expect(playgroundButton.getAttribute("aria-expanded")).toBe("true");
 
     fireEvent.click(playgroundButton);
 
-    expect(screen.queryByText("Repulsion")).toBeNull();
+    // The panel stays mounted while the blob morphs back into the button.
+    expect(playgroundButton.getAttribute("aria-expanded")).toBe("false");
+    await waitFor(() => expect(screen.queryByText("Repulsion")).toBeNull(), {
+      timeout: 3000,
+    });
+  });
+
+  it("closes the panel with Escape and returns focus to its button", async () => {
+    render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
+
+    const playgroundButton = screen.getByRole("button", {
+      name: "Open playground",
+    });
+    fireEvent.click(playgroundButton);
+    const panel = await screen.findByRole("region", { name: "Playground" });
+
+    fireEvent.keyDown(panel, { key: "Escape" });
+
+    expect(playgroundButton.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(playgroundButton);
   });
 
   it("tracks reset analytics and calls both reset handlers", () => {
@@ -118,15 +138,10 @@ describe("CanvasControls", () => {
       <CanvasControls onReset={onReset} onResetPositions={onResetPositions} />
     );
 
-    const timeMachineButton = screen.getByRole("button", {
+    const timeMachineLink = screen.getByRole("link", {
       name: "Time machine",
     });
-    const timeMachineLink = timeMachineButton.closest("a");
 
-    expect(timeMachineLink).not.toBeNull();
-    if (!timeMachineLink) {
-      throw new Error("Expected time machine link wrapper");
-    }
     expect(timeMachineLink.getAttribute("href")).toBe(
       "https://v8.rickyzhang.me"
     );
@@ -137,7 +152,9 @@ describe("CanvasControls", () => {
   it("hides the desk lamp without WebGPU", () => {
     render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
 
-    expect(screen.queryByRole("button", { name: "Desk lamp" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Realistic lighting" })
+    ).toBeNull();
   });
 
   it.each([
@@ -152,7 +169,9 @@ describe("CanvasControls", () => {
     try {
       render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
 
-      expect(screen.queryByRole("button", { name: "Desk lamp" })).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: "Realistic lighting" })
+      ).toBeNull();
     } finally {
       vi.unstubAllGlobals();
     }
@@ -163,7 +182,9 @@ describe("CanvasControls", () => {
     try {
       render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
 
-      expect(screen.queryByRole("button", { name: "Desk lamp" })).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: "Realistic lighting" })
+      ).toBeNull();
     } finally {
       vi.unstubAllGlobals();
     }
@@ -181,7 +202,7 @@ describe("CanvasControls", () => {
     try {
       render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
 
-      const lamp = screen.getByRole("button", { name: "Desk lamp" });
+      const lamp = screen.getByRole("button", { name: "Realistic lighting" });
       expect(lamp.getAttribute("aria-pressed")).toBe("false");
       fireEvent.click(lamp);
       expect(lamp.getAttribute("aria-pressed")).toBe("true");

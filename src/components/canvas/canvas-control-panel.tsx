@@ -123,12 +123,10 @@ export const CanvasControlPanel = () => {
   };
 
   return (
-    <div
-      className="flex flex-col overflow-hidden rounded-3xl bg-background2 outline outline-border"
-      data-no-collapse
-    >
+    // The toolbar's liquid blob draws the panel's surface and shadow.
+    <div className="flex flex-col">
       <Tabs onValueChange={handleTabChange} value={activeTab}>
-        <TabsList className="px-3 pt-3">
+        <TabsList className="bg-transparent px-3 pt-3">
           {isLampOn ? <TabsTrigger value="light">Light</TabsTrigger> : null}
           <TabsTrigger value="repulsion">Repulsion</TabsTrigger>
           <TabsTrigger value="visual">Fan</TabsTrigger>
