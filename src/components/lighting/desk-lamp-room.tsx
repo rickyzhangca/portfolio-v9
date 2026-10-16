@@ -48,7 +48,7 @@ export const DeskLampRoom = () => {
       ref={ref}
       style={{
         background:
-          "radial-gradient(circle 900px at var(--lamp-x, 30vw) var(--lamp-y, 18vh), rgb(255 253 247) 0%, rgb(253 248 238) 35%, rgb(232 225 216) 75%, rgb(216 210 202) 100%)",
+          "radial-gradient(circle 900px at var(--lamp-x, 30vw) var(--lamp-y, 18vh), rgb(255 255 252) 0%, rgb(252 251 247) 35%, rgb(230 229 225) 75%, rgb(215 214 210) 100%)",
       }}
     />
   );

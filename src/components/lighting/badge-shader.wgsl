@@ -42,7 +42,7 @@ fn vs(@builtin(vertex_index) index: u32) -> VertexOut {
   return out;
 }
 
-const LAMP_COLOR = vec3f(1.0, 0.94, 0.84);
+const LAMP_COLOR = vec3f(1.0, 0.97, 0.92);
 // The rolled edge, in local px.
 const EDGE_ROUND = 3.0;
 const MARCH_STEPS = 64;
