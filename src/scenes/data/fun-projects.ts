@@ -4,7 +4,7 @@ import communityLoveContent from "@/assets/fun-projects/content/community-love.w
 import slidesDemoContent from "@/assets/fun-projects/content/demo.webm";
 import figKiwiContent from "@/assets/fun-projects/content/fig-kiwi.webp";
 import fprintsContent from "@/assets/fun-projects/content/fprints.webp";
-import kiboUiContent from "@/assets/fun-projects/content/kibo-ui.mp4";
+import fpsrContent from "@/assets/fun-projects/content/fpsr.webp";
 import octiconsFigmaContent from "@/assets/fun-projects/content/octicons-figma.webp";
 import octiconsWebContent from "@/assets/fun-projects/content/octicons-web.webp";
 import paopaoContent from "@/assets/fun-projects/content/paopao.webp";
@@ -14,7 +14,7 @@ import svgouiContent from "@/assets/fun-projects/content/svgoui.webp";
 import twitterQuoteContent from "@/assets/fun-projects/content/twitter-quote.webp";
 import appleIcon from "@/assets/fun-projects/icons/apple.webp";
 import fprintsIcon from "@/assets/fun-projects/icons/fprints.webp";
-import kiboIcon from "@/assets/fun-projects/icons/kibo.webp";
+import fpsrIcon from "@/assets/fun-projects/icons/fpsr.webp";
 import kiwiIcon from "@/assets/fun-projects/icons/kiwi.webp";
 import mirrorIcon from "@/assets/fun-projects/icons/mirror.webp";
 import octiconsIcon from "@/assets/fun-projects/icons/octicons.webp";
@@ -26,20 +26,11 @@ import type { FunProjectItem } from "@/cards/registry";
 
 export const funProjects: FunProjectItem[] = [
   {
-    icon: kiboIcon,
-    title: "Kibo UI",
+    icon: fpsrIcon,
+    title: "FPSR",
     description:
-      "I love design engineering, design systems and building components. So I'm enjoying creating components for the open source component library [Kibo UI](https://www.kibo-ui.com/) created by Vercel's engineer [Hayden Bleasel](https://twitter.com/haydenbleasel). More to come!\n\n![Kibo UI Content](" +
-      kiboUiContent +
-      ")",
-    status: "Active",
-  },
-  {
-    icon: svgoIcon,
-    title: "SVGOUI",
-    description:
-      "When building the credit card component for Kibo UI, I had to deal with a number of credit card network icon SVGs. So I build a UI for SVGO to optimize them so I can publish them to react-card-network-icons.\n\nSVGOUI is a UI for SVG optimizer tool [SVGO](https://github.com/svg/svgo). Comparing to the predecessor [SVGOMG](https://github.com/interlace-app/svgui), it runs on newer SVGO core and modern front-end stacks, has a more friendly UI, and packs a number of quality of life features.\n\nYou can try it out [here](https://svgoui.pages.dev/).\n\n![SVGOUI Content](" +
-      svgouiContent +
+      "A browser tool that renders [Factorio](https://store.steampowered.com/app/427520/Factorio/) blueprint strings into images. Paste a blueprint, or pick one from the demos, and it shows the blueprint's version, size and byte size, counts every component, and draws the whole layout.\n\nYou can try it out [here](https://fpsr.fprints.xyz/).\n\n![FPSR Content](" +
+      fpsrContent +
       ")",
     status: "Maintaining",
   },
@@ -53,13 +44,29 @@ export const funProjects: FunProjectItem[] = [
     status: "Maintaining",
   },
   {
-    icon: spellbookIcon,
-    title: "Spellbook",
+    icon: appleIcon,
+    title: "Apple summary slides",
     description:
-      "ChatGPT 4o's image generation capability had a huge leap forward in early 2025. It is better than ever on understanding prompts and adhering to instructions (that is written in natural language).\n\nSo I created [Spellbook](https://spellbook-space.pages.dev/). A platform for people to share and grab prompts that really work - guaranteed to reliably generate images in a well defined style for any given subject.\n\n![Spellbook Content](" +
-      spellbookContent +
+      "In September 2019, Apple introduced a new visual language called Bento for use in their events, which is characterized by a series of well-organized summary slides. The design community has embraced this style, and many people have asked for a collection of these summary slides.\n\nIn response to this demand, I created a collection of Bento summary slides that is accessible on [web](https://apple-summary-slides.vercel.app/) and [Figma](https://www.figma.com/community/file/1150817983915754582/all-apple-event-summary-slides-2019-2025).\n\n![Apple Summary Slides](" +
+      summarySlidesContent +
+      ")\n\nThis collection has allowed over 14K designers and 30K visitors to easily access and get inspirations from the slides.\n\nAnd the community has loved it!\n\n![Apple Summary Slides](" +
+      communityLoveContent +
       ")",
     status: "Active",
+    link: {
+      url: "https://www.figma.com/community/file/1150817983915754582",
+      type: "Figma",
+      count: 18_600,
+    },
+  },
+  {
+    icon: svgoIcon,
+    title: "SVGOUI",
+    description:
+      "When building the credit card component for Kibo UI, I had to deal with a number of credit card network icon SVGs. So I build a UI for SVGO to optimize them so I can publish them to react-card-network-icons.\n\nSVGOUI is a UI for SVG optimizer tool [SVGO](https://github.com/svg/svgo). Comparing to the predecessor [SVGOMG](https://github.com/interlace-app/svgui), it runs on newer SVGO core and modern front-end stacks, has a more friendly UI, and packs a number of quality of life features.\n\nYou can try it out [here](https://svgoui.pages.dev/).\n\n![SVGOUI Content](" +
+      svgouiContent +
+      ")",
+    status: "Maintaining",
   },
   {
     icon: kiwiIcon,
@@ -69,6 +76,36 @@ export const funProjects: FunProjectItem[] = [
       figKiwiContent +
       ")",
     status: "Archived",
+  },
+  {
+    icon: octiconsIcon,
+    title: "Octicons Extended",
+    description:
+      "As a side project, I created octicons-extended, a growing collection of icons that allows designers and developers to bring more variety to their use of octicons by GitHub.\n\nGitHub's original octicons inspired our icon system refresh at Mosaic, but we found that it has limited coverage because it is tailored to GitHub's specific needs. With octicons-extended, I aim to expand the icon selection and empower more users.\n\nAs a designer and developer, I believe that both groups should have easy access to octicons-extended and be able to use it in their work. To make it accessible to a wide audience, I have made it available in the Figma community, where it is organized and easy to use.\n\n![Octicons Extended Figma](" +
+      octiconsFigmaContent +
+      ")\n\nI have also created a Node and React build, as well as a website that allows users to quickly access the full iconset and copy SVG files. By providing these tools, I hope to make octicons-extended a valuable resource for designers and developers alike.\n\n![Octicons Extended web](" +
+      octiconsWebContent +
+      ")\n\nTo reduce the friction of switching from octicons to octicons-extended, octicons-extended fully includes the original octicons and two packages share the same usage.\n\n```typescript\n// using original octicons\nimport { ZapIcon } from '@primer/octicons-react';\n// switching to octicons-extended\nimport { ZapIcon } from 'octicons-extended-react';\n```",
+    status: "Archived",
+    link: {
+      url: "https://www.figma.com/community/file/1150065417044869754/octicons-extended",
+      type: "Figma",
+      count: 568,
+    },
+  },
+  {
+    icon: paopaoIcon,
+    title: "Paopao Stickers",
+    description:
+      "The Paopao stickers are a popular and well-known set of stickers in mainland China, and they have been used to create countless memes. However, they were only available at a low resolution of 32x32 until... \n\nI vectorized each single Paopao sticker with vector tools in Figma! It enables us to remix for even more funny memes. Users can duplicate the stickers in the Figma Community or add the sticker set to Telegram.\n\n![Paopao Stickers](" +
+      paopaoContent +
+      ")",
+    status: "Maintaining",
+    link: {
+      url: "https://www.figma.com/community/file/1070232689050503920",
+      type: "Figma",
+      count: 679,
+    },
   },
   {
     icon: mirrorIcon,
@@ -103,50 +140,13 @@ export const funProjects: FunProjectItem[] = [
     },
   },
   {
-    icon: appleIcon,
-    title: "Apple summary slides",
+    icon: spellbookIcon,
+    title: "Spellbook",
     description:
-      "In September 2019, Apple introduced a new visual language called Bento for use in their events, which is characterized by a series of well-organized summary slides. The design community has embraced this style, and many people have asked for a collection of these summary slides.\n\nIn response to this demand, I created a collection of Bento summary slides that is accessible on [web](https://apple-summary-slides.vercel.app/) and [Figma](https://www.figma.com/community/file/1150817983915754582/all-apple-event-summary-slides-2019-2025).\n\n![Apple Summary Slides](" +
-      summarySlidesContent +
-      ")\n\nThis collection has allowed over 14K designers and 30K visitors to easily access and get inspirations from the slides.\n\nAnd the community has loved it!\n\n![Apple Summary Slides](" +
-      communityLoveContent +
+      "ChatGPT 4o's image generation capability had a huge leap forward in early 2025. It is better than ever on understanding prompts and adhering to instructions (that is written in natural language).\n\nSo I created [Spellbook](https://spellbook-space.pages.dev/). A platform for people to share and grab prompts that really work - guaranteed to reliably generate images in a well defined style for any given subject.\n\n![Spellbook Content](" +
+      spellbookContent +
       ")",
-    status: "Active",
-    link: {
-      url: "https://www.figma.com/community/file/1150817983915754582",
-      type: "Figma",
-      count: 18_600,
-    },
-  },
-  {
-    icon: octiconsIcon,
-    title: "Octicons Extended",
-    description:
-      "As a side project, I created octicons-extended, a growing collection of icons that allows designers and developers to bring more variety to their use of octicons by GitHub.\n\nGitHub's original octicons inspired our icon system refresh at Mosaic, but we found that it has limited coverage because it is tailored to GitHub's specific needs. With octicons-extended, I aim to expand the icon selection and empower more users.\n\nAs a designer and developer, I believe that both groups should have easy access to octicons-extended and be able to use it in their work. To make it accessible to a wide audience, I have made it available in the Figma community, where it is organized and easy to use.\n\n![Octicons Extended Figma](" +
-      octiconsFigmaContent +
-      ")\n\nI have also created a Node and React build, as well as a website that allows users to quickly access the full iconset and copy SVG files. By providing these tools, I hope to make octicons-extended a valuable resource for designers and developers alike.\n\n![Octicons Extended web](" +
-      octiconsWebContent +
-      ")\n\nTo reduce the friction of switching from octicons to octicons-extended, octicons-extended fully includes the original octicons and two packages share the same usage.\n\n```typescript\n// using original octicons\nimport { ZapIcon } from '@primer/octicons-react';\n// switching to octicons-extended\nimport { ZapIcon } from 'octicons-extended-react';\n```",
     status: "Archived",
-    link: {
-      url: "https://www.figma.com/community/file/1150065417044869754/octicons-extended",
-      type: "Figma",
-      count: 568,
-    },
-  },
-  {
-    icon: paopaoIcon,
-    title: "Paopao Stickers",
-    description:
-      "The Paopao stickers are a popular and well-known set of stickers in mainland China, and they have been used to create countless memes. However, they were only available at a low resolution of 32x32 until... \n\nI vectorized each single Paopao sticker with vector tools in Figma! It enables us to remix for even more funny memes. Users can duplicate the stickers in the Figma Community or add the sticker set to Telegram.\n\n![Paopao Stickers](" +
-      paopaoContent +
-      ")",
-    status: "Maintaining",
-    link: {
-      url: "https://www.figma.com/community/file/1070232689050503920",
-      type: "Figma",
-      count: 679,
-    },
   },
 ];
 
