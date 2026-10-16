@@ -24,9 +24,11 @@ const profiles = [
     // Raised from 300 KB for the socials keyboard's lamp-only third stop and
     // the lamp hooks of the lit cards (their renderers load lazily), then to
     // 303 KB for the lit surfaces' adaptive redraw queue and the lamp's
-    // playground settings.
-    gzipBudget: 303_000,
+    // playground settings, then to 323 KB (and 975 KB raw) for liquid-gooey,
+    // which draws the canvas controls' merged glass and morphing panel.
+    gzipBudget: 323_000,
     name: "Home",
+    rawBudget: 975_000,
   },
   {
     entries: [
@@ -80,7 +82,11 @@ const checkBudget = async (profile) => {
     `${profile.name} JS: ${rawBytes} bytes raw, ${gzipBytes} bytes gzip (${initialFiles.size} files)`
   );
   // Preserve the original canvas budget for each route, including Home's lazy App.
-  assert(rawBytes <= 950_000, `${profile.name} JS exceeds 950 KB: ${rawBytes}`);
+  const rawBudget = profile.rawBudget ?? 950_000;
+  assert(
+    rawBytes <= rawBudget,
+    `${profile.name} JS exceeds ${rawBudget / 1000} KB: ${rawBytes}`
+  );
   const gzipBudget = profile.gzipBudget ?? 300_000;
   assert(
     gzipBytes <= gzipBudget,
