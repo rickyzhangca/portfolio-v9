@@ -21,6 +21,9 @@ const profiles = [
       "src/router/home.tsx?__react-router-build-client-route",
       "src/app.tsx",
     ],
+    // Raised from 300 KB for the socials keyboard's lamp-only third stop and
+    // the lamp hooks of the lit cards (their renderers load lazily).
+    gzipBudget: 302_000,
     name: "Home",
   },
   {
@@ -76,9 +79,10 @@ const checkBudget = async (profile) => {
   );
   // Preserve the original canvas budget for each route, including Home's lazy App.
   assert(rawBytes <= 950_000, `${profile.name} JS exceeds 950 KB: ${rawBytes}`);
+  const gzipBudget = profile.gzipBudget ?? 300_000;
   assert(
-    gzipBytes <= 300_000,
-    `${profile.name} JS exceeds 300 KB gzip: ${gzipBytes}`
+    gzipBytes <= gzipBudget,
+    `${profile.name} JS exceeds ${gzipBudget / 1000} KB gzip: ${gzipBytes}`
   );
 };
 await Promise.all(profiles.map(checkBudget));
