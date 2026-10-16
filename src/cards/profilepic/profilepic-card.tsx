@@ -1,10 +1,24 @@
 import { animate, motion, useMotionValue } from "framer-motion";
 import { useAtomValue } from "jotai";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import type { ProfilePicCardContent } from "@/cards/registry";
-import { LitBadge } from "@/components/lighting/lit-badge";
 import { deskLampAtom } from "@/context/atoms";
 import { tw } from "@/lib/utils";
+
+// Loaded only when the desk lamp is switched on, outside the first view's JS.
+const LitBadge = lazy(() =>
+  import("@/components/lighting/lit-badge").then((module) => ({
+    default: module.LitBadge,
+  }))
+);
 
 interface ProfilePicCardProps {
   content: ProfilePicCardContent;
@@ -95,12 +109,14 @@ const ProfilePicCardComponent = ({ content }: ProfilePicCardProps) => {
           </div>
         </motion.div>
         {isLampOn ? (
-          <LitBadge
-            indexRef={indexRef}
-            onReady={handleLitReady}
-            photos={content.images}
-            rotation={rotation}
-          />
+          <Suspense fallback={null}>
+            <LitBadge
+              indexRef={indexRef}
+              onReady={handleLitReady}
+              photos={content.images}
+              rotation={rotation}
+            />
+          </Suspense>
         ) : null}
       </motion.div>
     </div>
