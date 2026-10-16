@@ -3,7 +3,7 @@
 // prints are served as files, not inlined into this module.
 import appleGlyph from "@/assets/fun-projects/glyphs/apple.webp?no-inline";
 import fprintsGlyph from "@/assets/fun-projects/glyphs/fprints.webp?no-inline";
-import kiboGlyph from "@/assets/fun-projects/glyphs/kibo.webp?no-inline";
+import fpsrGlyph from "@/assets/fun-projects/glyphs/fpsr.webp?no-inline";
 import kiwiGlyph from "@/assets/fun-projects/glyphs/kiwi.webp?no-inline";
 import mirrorGlyph from "@/assets/fun-projects/glyphs/mirror.webp?no-inline";
 import octiconsGlyph from "@/assets/fun-projects/glyphs/octicons.webp?no-inline";
@@ -17,7 +17,7 @@ import type { FunProjectKeycap } from "@/cards/registry";
 const WHITE_PLASTIC = ["#f2f2f2", "#f2f2f2"] as const;
 
 export const funProjectKeycaps: Readonly<Record<string, FunProjectKeycap>> = {
-  "Kibo UI": { body: WHITE_PLASTIC, glyph: kiboGlyph },
+  FPSR: { body: WHITE_PLASTIC, glyph: fpsrGlyph },
   SVGOUI: { body: ["#2b2b2b", "#2b2b2b"], glyph: svgoGlyph },
   Fprints: { body: WHITE_PLASTIC, glyph: fprintsGlyph },
   Spellbook: { body: ["#21144a", "#633b98"], glyph: spellbookGlyph, grain: 1 },
