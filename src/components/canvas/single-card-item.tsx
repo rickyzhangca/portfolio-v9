@@ -159,17 +159,23 @@ export const SingleCardItem = ({
         return;
       }
 
-      // Prevent "click after drag" from triggering click action
-      if (didDragRef.current) {
-        didDragRef.current = false;
-        return;
-      }
-
       if (isActivatable && onActivate) {
         onActivate(e.currentTarget);
       }
     },
-    [didDragRef, isActivatable, onActivate]
+    [isActivatable, onActivate]
+  );
+  // The click that ends a drag reaches neither the item nor the card's own
+  // controls (the profile picture flips on click). Caught on the way down,
+  // since the card's handlers run before the item's.
+  const handleClickCapture = useCallback(
+    (e: MouseEvent<HTMLDivElement>) => {
+      if (didDragRef.current) {
+        didDragRef.current = false;
+        e.stopPropagation();
+      }
+    },
+    [didDragRef]
   );
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
@@ -253,6 +259,7 @@ export const SingleCardItem = ({
           }}
           key={cardWithSize.id}
           onClick={handleActivate}
+          onClickCapture={handleClickCapture}
           onKeyDown={handleKeyDown}
           role={isActivatable ? "button" : undefined}
           style={{

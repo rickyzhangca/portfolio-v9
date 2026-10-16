@@ -64,6 +64,25 @@ describe("SingleCardItem", () => {
     expect(actions.onDragEnd).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps the click that ends a drag from the card's own controls", () => {
+    render(<SingleCardItem {...props()} item={findItem("profilepic")} />);
+    const [photo] = screen.getAllByAltText("Profile pic");
+    if (!photo) {
+      throw new Error("No profile picture");
+    }
+    const onPhotoClick = vi.fn();
+    photo.addEventListener("click", onPhotoClick);
+    fireEvent.mouseDown(photo, { button: 0, clientX: 100, clientY: 100 });
+    fireEvent.mouseMove(window, { clientX: 150, clientY: 160 });
+    fireEvent.mouseUp(window);
+    fireEvent.click(photo);
+    expect(onPhotoClick).not.toHaveBeenCalled();
+    fireEvent.mouseDown(photo, { button: 0, clientX: 100, clientY: 100 });
+    fireEvent.mouseUp(window);
+    fireEvent.click(photo);
+    expect(onPhotoClick).toHaveBeenCalledTimes(1);
+  });
+
   it("does not expose a synthetic activation button on a passive card", () => {
     render(<SingleCardItem {...props()} item={findItem("profilepic")} />);
     expect(
