@@ -128,11 +128,16 @@ const hexToRgb = (hex: string | undefined) => {
 export interface FolderLogo {
   /**
    * How brightly it lights up in its own colour as the lamp nears, raised
-   * height in local px, gloss, shininess and colour tint (0 to 1).
+   * height in local px (negative: pressed in), gloss, shininess and colour
+   * tint (0 to 1). `metal` (0 to 1) makes it metal leaf, dark until it
+   * reflects the lamp; `lightness` (0 to 1) makes its relief follow the
+   * artwork's lightness, so dark parts stay level with the board.
    */
   finish: {
     glow: number;
     gloss: number;
+    lightness: number;
+    metal: number;
     relief: number;
     shininess: number;
     tint: number;
@@ -442,8 +447,8 @@ export const attachFolder = async (
           0,
           glows.length > 0 ? GLOW_RESPONSE : 0,
           logo?.finish.glow ?? 0,
-          0,
-          0,
+          logo?.finish.metal ?? 0,
+          logo?.finish.lightness ?? 0,
         ]);
         gpu.device.queue.writeBuffer(buffer, 0, data);
         drawQuad(gpu, canvas, context, pipeline, bindGroup, {

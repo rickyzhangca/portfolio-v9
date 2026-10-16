@@ -24,8 +24,9 @@ struct Folder {
   stage: f32,
   // Where the logo sits on the board, in local px (zero size: no logo).
   logoRect: vec4f,
-  // x: relief height in local px (raised), y: gloss, z: shininess,
-  // w: how much the reflection takes the logo's own colour (foil).
+  // x: relief height in local px (raised; negative is pressed in), y: gloss,
+  // z: shininess, w: how much the reflection takes the logo's own colour
+  // (foil).
   logoFinish: vec4f,
   // rgb: the board's colour; w: how much the material's reflection takes it.
   tint: vec4f,
@@ -38,7 +39,9 @@ struct Folder {
   // zw: unused.
   effects: vec4f,
   // How brightly coloured light answers the lamp: x the board's glows,
-  // y the logo's own colour. zw: unused.
+  // y the logo's own colour. z: how much the logo is metal leaf (hot foil),
+  // w: how much its relief follows the artwork's lightness (a deboss whose
+  // dark parts stay level with the board).
   response: vec4f,
 }
 
@@ -66,6 +69,13 @@ fn vs(@builtin(vertex_index) index: u32) -> VertexOut {
 }
 
 const LAMP_COLOR = vec3f(1.0, 0.97, 0.92);
+// Metal leaf away from the lamp's reflection: its colour, a shade deeper,
+// so it keeps the printed logo's brightness and only gains on the lamp.
+const LEAF_SHADE = vec3f(0.95, 0.9, 0.84);
+// How far, in local px, a pressed-in mark's walls shade the floor beside
+// them: all round (lit by the room), and further on the side toward the lamp.
+const RECESS_OCCLUSION_LOD = 3.0;
+const RECESS_SHADOW_REACH = 3.0;
 // Board thickness, in local px.
 const THICKNESS = 2.0;
 
@@ -241,10 +251,21 @@ fn surfaceHeight(p: vec2f, footprint: f32) -> f32 {
   return 0.0;
 }
 
+// How much of the logo's relief applies at p: its coverage, or for a deboss
+// its lightness, so the dark parts of the mark stay part of the surface.
+fn markDepth(art: vec4f) -> f32 {
+  let lightness = dot(art.rgb, vec3f(0.2126, 0.7152, 0.0722));
+  return mix(art.a, lightness, folder.response.w);
+}
+
 fn height(p: vec2f, footprint: f32) -> f32 {
   let body = smoothstep(0.5, 1.0, outline(p).b) * folder.bulge;
-  let mark = folder.logoFinish.x * logoAt(p, 1.0).a;
-  return rimHeight(p) + body + surfaceHeight(p, footprint) + mark;
+  let art = logoAt(p, 1.0);
+  let mark = folder.logoFinish.x * markDepth(art);
+  // The die that stamps metal leaf presses the grain under it mostly flat;
+  // what is left breaks its reflection into a fine glitter.
+  let grain = 1.0 - art.a * folder.response.z * 0.5;
+  return rimHeight(p) + body + surfaceHeight(p, footprint) * grain + mark;
 }
 
 @fragment
@@ -277,7 +298,22 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
       let fibre = kraftFibres(p);
       tone *= 1.0 - fibre.x * max(-fibre.y, 0.0) * 0.07 * resolved(1.0, footprint);
     }
-    return vec4f(vec3f(mix(1.0, tone, folder.intensity)), 1.0);
+    if (folder.logoFinish.x < 0.0) {
+      // A pressed-in mark: its walls hide the floor next to them from the
+      // room, and the wall nearest the lamp casts a short shadow across it.
+      let here = markDepth(logoAt(p, 0.0));
+      let around = markDepth(logoAt(p, RECESS_OCCLUSION_LOD));
+      let toward = normalize(l.xy + vec2f(1e-5)) * RECESS_SHADOW_REACH
+        * clamp(length(l.xy) / max(l.z, 0.2), 0.3, 1.0);
+      let wall = markDepth(logoAt(p + toward, 1.0));
+      let occlusion = max(here - around, 0.0) * 0.18 + max(here - wall, 0.0) * 0.22 * falloff;
+      tone *= 1.0 - occlusion;
+    }
+    // Metal leaf away from the light reads a little deeper than ink; it
+    // brightens as it mirrors the lamp (the light pass).
+    let leaf = folder.response.z * logoAt(p, 0.0).a;
+    let shaded = vec3f(tone) * mix(vec3f(1.0), LEAF_SHADE, leaf);
+    return vec4f(mix(vec3f(1.0), shaded, folder.intensity), 1.0);
   }
 
   let halfway = normalize(l + vec3f(0.0, 0.0, 1.0));
@@ -321,8 +357,15 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
   let pooled = textureSampleLevel(glows, shapeSampler, p / folder.size, 0.0).rgb;
   let colored = pooled * folder.response.x + mark.rgb * folder.response.y;
 
-  var added = LAMP_COLOR * (color * (sheen + rim) + extra + markTint * markShine
-    + colored * nearness);
+  // Metal leaf mirrors the lamp in its own colour over a wide lobe, as the
+  // stamped leaf is not quite flat, with a pale, tight highlight inside it
+  // that the grain left under the leaf breaks up.
+  let leaf = folder.response.z * mark.a;
+  let leafShine = mix(markTint, vec3f(1.0), 0.2) * (pow(nh, 14.0) * 0.4 + pow(nh, 3.0) * 0.05)
+    + mix(markTint, vec3f(1.0), 0.7) * pow(nh, 220.0) * 0.7;
+
+  var added = LAMP_COLOR * (color * (sheen + rim) * (1.0 - leaf) + extra
+    + markTint * markShine + leafShine * leaf + colored * nearness);
   if (surfaceIs(4.0)) {
     // The thread is a shade lighter than the hide it is sewn into.
     added += LAMP_COLOR * seamAt(p).r * 0.05;

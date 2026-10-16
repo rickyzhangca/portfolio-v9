@@ -37,7 +37,12 @@ export interface InteractionPolicy {
 // ============================================================================
 
 /** How a logo is applied to a folder's board; the desk lamp lights it. */
-export type CoverLogoFinish = "foil" | "glass" | "print";
+export type CoverLogoFinish =
+  | "deboss"
+  | "foil"
+  | "glass"
+  | "hot-foil"
+  | "print";
 
 /**
  * What a folder is made of, as the desk lamp shows it: its fine relief, how

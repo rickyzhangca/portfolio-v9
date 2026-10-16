@@ -58,6 +58,9 @@ const BOARDS = {
     ...DARK_BOARD,
     // A solid disc outweighs the other marks; drawn a little smaller.
     logoFit: { scale: 0.93 },
+    // The disc is pressed into the silicone around the cat, which stays
+    // part of the surface.
+    logoFinish: "deboss",
     background:
       "linear-gradient(180deg, #0f0f0f 0%, #171717 50%, #212121 100%)",
     base: "#171717",
@@ -87,7 +90,8 @@ const BOARDS = {
     background:
       "linear-gradient(180deg, #347eca 0%, #2a6cb6 50%, #205ca5 100%)",
     base: "#2a6cb6",
-    logoFinish: "foil",
+    // Gold leaf stamped into the leather.
+    logoFinish: "hot-foil",
     material: "leather",
   },
   wealthsimple: {
