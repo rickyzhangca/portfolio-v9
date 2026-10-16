@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { Provider } from "jotai";
 import { describe, expect, it, vi } from "vitest";
 import { AnalyticsEvents, track } from "@/lib/analytics";
 
@@ -158,13 +159,23 @@ describe("CanvasControls", () => {
   });
 
   it.each([
-    ["another Chromium browser", "Microsoft Edge", false],
-    ["Chrome on a phone", "Google Chrome", true],
-  ])("hides the desk lamp in %s", (_, brand, mobile) => {
+    ["Chrome on a phone", ["Chromium", "Google Chrome"], "Android", true],
+    [
+      "Chrome on an Android tablet",
+      ["Chromium", "Google Chrome"],
+      "Android",
+      false,
+    ],
+    ["a browser with no Chromium brand", ["Google Chrome"], "macOS", false],
+  ])("hides the desk lamp in %s", (_, brands, platform, mobile) => {
     vi.stubGlobal("navigator", {
       ...navigator,
       gpu: {},
-      userAgentData: { brands: [{ brand: "Chromium" }, { brand }], mobile },
+      userAgentData: {
+        brands: brands.map((brand) => ({ brand })),
+        mobile,
+        platform,
+      },
     });
     try {
       render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
@@ -190,17 +201,28 @@ describe("CanvasControls", () => {
     }
   });
 
-  it("toggles the desk lamp in desktop Chrome with WebGPU", () => {
+  it.each([
+    ["Google Chrome", "macOS"],
+    ["Microsoft Edge", "Windows"],
+    ["Brave", "Linux"],
+    ["Not?A_Brand", "Chrome OS"],
+  ])("toggles the desk lamp in desktop %s on %s", (brand, platform) => {
     vi.stubGlobal("navigator", {
       ...navigator,
       gpu: {},
       userAgentData: {
-        brands: [{ brand: "Chromium" }, { brand: "Google Chrome" }],
+        brands: [{ brand: "Chromium" }, { brand }],
         mobile: false,
+        platform,
       },
     });
     try {
-      render(<CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />);
+      // A store per case: the lamp switched on in one must not carry over.
+      render(
+        <Provider>
+          <CanvasControls onReset={vi.fn()} onResetPositions={vi.fn()} />
+        </Provider>
+      );
 
       const lamp = screen.getByRole("button", { name: "Realistic lighting" });
       expect(lamp.getAttribute("aria-pressed")).toBe("false");

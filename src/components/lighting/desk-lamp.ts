@@ -130,15 +130,20 @@ export const subscribeLamp = (listener: LampListener) => {
 interface UserAgentData {
   brands: { brand: string }[];
   mobile: boolean;
+  platform: string;
 }
 
 /**
- * Whether this browser gets the desk lamp: desktop Google Chrome with
- * WebGPU. Everywhere else keeps the DOM rendering and hides the lamp's
- * switch. Chrome's own brand in its client hints tells it apart from Edge,
- * Opera, Brave and other Chromium browsers, which share its user agent
- * string; browsers without client hints (Safari, Firefox, Chrome on iOS) are
- * not Chrome here.
+ * Whether this browser gets the desk lamp: desktop Chromium with WebGPU
+ * (Chrome, Edge, Brave, Opera, Arc, Vivaldi), which all draw through the same
+ * Blink and Dawn the lamp was tuned on. Everywhere else keeps the DOM
+ * rendering and hides the lamp's switch. Every Chromium browser lists a
+ * "Chromium" brand in its client hints, beside its own and a randomised
+ * GREASE brand, so the brand is matched exactly. Browsers without client
+ * hints (Safari, Firefox, every iOS browser) are not Chromium here, even
+ * where they ship WebGPU. `mobile` is false on Android tablets, so the
+ * platform rules those out. Client hints exist only in secure contexts: a
+ * plain-HTTP LAN address shows no lamp, localhost and HTTPS do.
  */
 export const isDeskLampSupported = () => {
   if (typeof navigator === "undefined" || !("gpu" in navigator)) {
@@ -149,6 +154,7 @@ export const isDeskLampSupported = () => {
   return Boolean(
     hints &&
       !hints.mobile &&
-      hints.brands.some(({ brand }) => brand === "Google Chrome")
+      hints.platform !== "Android" &&
+      hints.brands.some(({ brand }) => brand === "Chromium")
   );
 };
