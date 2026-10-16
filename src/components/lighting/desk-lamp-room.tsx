@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { projectLampShadow } from "@/lib/lamp-shadow";
 import {
+  areLampShadowsHeld,
   getFrameTransformCache,
   LAMP_HEIGHT,
   subscribeLamp,
@@ -49,6 +50,7 @@ const startLampShadows = () => {
   let lastTime = performance.now();
   const switchedOnAt = lastTime;
   let switchingOn = true;
+  let held = false;
 
   const restore = (element: HTMLElement, state: CasterState) => {
     element.style.filter = state.filter;
@@ -56,7 +58,19 @@ const startLampShadows = () => {
   };
 
   const unsubscribe = subscribeLamp((lamp) => {
+    if (areLampShadowsHeld()) {
+      held = true;
+      return;
+    }
     const now = performance.now();
+    if (held) {
+      // The cards moved while shadows held; that travel is not flight.
+      held = false;
+      lastTime = now;
+      for (const state of states.values()) {
+        state.position = null;
+      }
+    }
     const elapsed = Math.max((now - lastTime) / 1000, 1 / 240);
     const follow = 1 - Math.exp(-elapsed * LIFT_RATE);
     lastTime = now;

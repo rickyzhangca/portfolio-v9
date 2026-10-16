@@ -6,6 +6,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -14,6 +15,7 @@ import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { getInteractionPolicy } from "@/cards/registry";
 import { AboutModal } from "@/components/about/about-modal";
 import { ArticleModal } from "@/components/articles/article-modal";
+import { holdLampShadows } from "@/components/lighting/desk-lamp";
 import { ResumeModal } from "@/components/resume/resume-modal";
 import {
   deskLampAtom,
@@ -120,9 +122,11 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
     ENTRANCE_DURATION_MS
   );
   // Phones have no controls to switch the lamp off, so it starts off there.
-  // Elsewhere it switches on once the cards have settled: starting WebGPU and
-  // its lit surfaces mid-entrance would cost the wave its frames.
-  useDefaultDeskLamp(!layout.compact && entrance === "done");
+  useDefaultDeskLamp(!layout.compact, entrance);
+  useLayoutEffect(() => {
+    holdLampShadows(entrance === "playing");
+    return () => holdLampShadows(false);
+  }, [entrance]);
   const { onCanvasEntrance } = session;
   useEffect(() => {
     if (entrance !== "waiting") {
