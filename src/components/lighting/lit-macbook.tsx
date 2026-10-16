@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { MacbookSticker } from "@/cards/registry";
-import { LAMP_HEIGHT, subscribeLamp } from "./desk-lamp";
+import { getLampConfig, subscribeLamp } from "./desk-lamp";
 import type { LitImage, LitQuad, MacbookRenderer } from "./macbook-renderer";
 
 interface LitMacbookProps {
@@ -164,13 +164,14 @@ export const LitMacbook = ({
           ) * PIXEL_SCALE_STEP;
         const limit = MAX_CANVAS_PIXELS / Math.max(canvasWidth, canvasHeight);
         const backingScale = Math.min(pixelScale, limit);
+        const { heightPx } = getLampConfig();
         const intensity = easeOutCubic(
           Math.min(1, (now - fadeStart) / FADE_IN_MS)
         );
         const light = {
           x: (lamp.x - rect.left) / screenScale + CANVAS_MARGIN,
           y: (lamp.y - rect.top) / screenScale + CANVAS_MARGIN,
-          z: LAMP_HEIGHT / screenScale,
+          z: heightPx / screenScale,
         };
 
         // Skip frames where nothing visible changed.

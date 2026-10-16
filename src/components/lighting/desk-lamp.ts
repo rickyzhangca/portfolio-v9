@@ -1,3 +1,8 @@
+import {
+  DEFAULT_LAMP_CONFIG,
+  LAMP_FOLLOW_RATE,
+  type LampConfig,
+} from "@/lib/lamp-config";
 import type { Linear2D } from "@/lib/lamp-shadow";
 
 /** Lamp position in client px. It trails the pointer like a hand-held lamp. */
@@ -17,10 +22,14 @@ type LampListener = (
   time: number
 ) => (() => void) | undefined;
 
-/** Lamp height above the desk, in screen px. Shared by every shadow. */
-export const LAMP_HEIGHT = 240;
-/** How quickly the lamp catches up with the pointer, per second. */
-const FOLLOW_RATE = 10;
+let config: LampConfig = DEFAULT_LAMP_CONFIG;
+
+/** The lamp's tunable settings; listeners read them every frame. */
+export const getLampConfig = () => config;
+
+export const setLampConfig = (next: LampConfig) => {
+  config = next;
+};
 
 const listeners = new Set<LampListener>();
 const lamp: LampPosition = { x: 0, y: 0 };
@@ -62,7 +71,7 @@ const tick = (time: number) => {
   const goal = target ?? restingPosition();
   const elapsed = lastTime ? Math.min((time - lastTime) / 1000, 0.1) : 1;
   lastTime = time;
-  const follow = 1 - Math.exp(-elapsed * FOLLOW_RATE);
+  const follow = 1 - Math.exp(-elapsed * LAMP_FOLLOW_RATE);
   lamp.x += (goal.x - lamp.x) * follow;
   lamp.y += (goal.y - lamp.y) * follow;
   // Scheduled first, so a throwing listener cannot stop the shared loop.

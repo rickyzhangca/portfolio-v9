@@ -1,7 +1,7 @@
 import {
   areLampShadowsHeld,
   getFrameTransformCache,
-  LAMP_HEIGHT,
+  getLampConfig,
   subscribeLamp,
 } from "./desk-lamp";
 import { screenLinear } from "./lamp-shadows";
@@ -48,6 +48,7 @@ export const startLampSheen = (root: HTMLElement) => {
     ) {
       return;
     }
+    const { heightPx } = getLampConfig();
     const fade = easeOutCubic(
       Math.min(1, (performance.now() - fadeStart) / FADE_IN_MS)
     );
@@ -72,7 +73,7 @@ export const startLampSheen = (root: HTMLElement) => {
       const awayY = lamp.y - (rect.top + rect.height / 2);
       const x = width / 2 + (linear.d * awayX - linear.c * awayY) / det;
       const y = height / 2 + (-linear.b * awayX + linear.a * awayY) / det;
-      const reach = Math.hypot(awayX, awayY) / (LAMP_HEIGHT * SHEEN_REACH);
+      const reach = Math.hypot(awayX, awayY) / (heightPx * SHEEN_REACH);
       const strength = fade / (1 + reach ** 2);
       const value = `${x.toFixed(1)} ${y.toFixed(1)} ${strength.toFixed(2)}`;
       // A resting lamp stops touching the DOM.
