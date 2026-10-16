@@ -19,7 +19,10 @@ const NO_LIFTS = new Map();
 
 const CAP: FunProjectKeycap = { body: ["#f2f2f2", "#f2f2f2"], glyph: "a.webp" };
 
-const renderKeycaps = (table: Record<string, FunProjectKeycap>) => {
+const renderKeycaps = (
+  table: Record<string, FunProjectKeycap>,
+  popAt?: (index: number) => number
+) => {
   const loadCaps = () => Promise.resolve(table);
   return render(
     <div>
@@ -36,6 +39,7 @@ const renderKeycaps = (table: Record<string, FunProjectKeycap>) => {
         loadCaps={loadCaps}
         onReady={vi.fn()}
         items={ITEMS}
+        popAt={popAt}
       />
     </div>
   );
@@ -66,5 +70,36 @@ describe("LitKeycaps", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(surface.run).not.toHaveBeenCalled();
+  });
+
+  it("grows each cap in with its icon's pop", async () => {
+    renderKeycaps({ First: CAP, Second: CAP }, (index) =>
+      index === 0 ? 0.5 : 0
+    );
+    await waitFor(() => {
+      expect(surface.run).toHaveBeenCalledTimes(1);
+    });
+
+    const [options] = surface.run.mock.calls[0] as unknown as [
+      { draw: (surface: { render: () => void }, view: object) => void },
+    ];
+    const renderFrame = vi.fn();
+    options.draw(
+      { render: renderFrame },
+      {
+        height: 72,
+        intensity: 1,
+        light: { x: 0, y: 0, z: 1 },
+        pixelScale: 1,
+        width: 128,
+      }
+    );
+    const [frame] = renderFrame.mock.calls[0] as [
+      { caps: { scale: number; thickness: number; top: number[] }[] },
+    ];
+    // Half grown, around the middle of its 64 px footprint.
+    expect(frame.caps[0]?.scale).toBe(0.5);
+    expect(frame.caps[0]?.top[2]).toBe(32);
+    expect(frame.caps[1]?.scale).toBe(0);
   });
 });

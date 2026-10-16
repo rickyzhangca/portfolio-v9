@@ -17,7 +17,8 @@ struct Cap {
   // Where the cap's top edge is drawn at rest, and its footprint's size.
   top: vec4f,
   // x: the underside's height above the desk (the cap's lift), y: the cap's
-  // thickness, z: speckle in the plastic, w: unused.
+  // thickness, z: speckle in the plastic, w: how far it has popped in, which
+  // scales its rounded edges (its box comes scaled); 0 leaves it undrawn.
   shape: vec4f,
   // The plastic's colour (sRGB) at the cap's far edge and at its foot.
   far: vec4f,
@@ -123,8 +124,25 @@ fn capCount() -> i32 {
   return min(i32(scene.count + 0.5), MAX_CAPS);
 }
 
-fn cornerRadius() -> f32 {
-  return scene.shape.x;
+fn capScale(i: i32) -> f32 {
+  return scene.caps[i].shape.w;
+}
+
+// Caps still waiting to pop onto the card.
+fn isHidden(i: i32) -> bool {
+  return capScale(i) <= 0.0;
+}
+
+fn cornerRadius(i: i32) -> f32 {
+  return scene.shape.x * capScale(i);
+}
+
+fn rollRadius(i: i32) -> f32 {
+  return scene.shape.y * capScale(i);
+}
+
+fn footRadius(i: i32) -> f32 {
+  return scene.shape.z * capScale(i);
 }
 
 fn footprint(i: i32) -> vec4f {
@@ -142,12 +160,12 @@ fn capTop(i: i32) -> f32 {
 // How far in from its footprint cap i's outline is at height z: the top's
 // roll and the foot's tuck are quarter circles.
 fn insetAt(i: i32, z: f32) -> f32 {
-  let roll = scene.shape.y;
+  let roll = rollRadius(i);
   let fromTop = z - (capTop(i) - roll);
   if (fromTop > 0.0) {
     return roll - sqrt(max(roll * roll - fromTop * fromTop, 0.0));
   }
-  let foot = scene.shape.z;
+  let foot = footRadius(i);
   let fromFoot = capBottom(i) + foot - z;
   if (fromFoot > 0.0) {
     return foot - sqrt(max(foot * foot - fromFoot * fromFoot, 0.0));
@@ -159,13 +177,13 @@ fn outline(i: i32, inset: f32) -> vec4f {
   return footprint(i) + vec4f(vec2f(inset), vec2f(-2.0 * inset));
 }
 
-fn outlineRadius(inset: f32) -> f32 {
-  return max(cornerRadius() - inset, 0.5);
+fn outlineRadius(i: i32, inset: f32) -> f32 {
+  return max(cornerRadius(i) - inset, 0.5);
 }
 
 fn insideCap(s: vec2f, i: i32, z: f32) -> bool {
   let inset = insetAt(i, z);
-  return sdRoundRect(vec2f(s.x, s.y + z), outline(i, inset), outlineRadius(inset)) <= 0.0;
+  return sdRoundRect(vec2f(s.x, s.y + z), outline(i, inset), outlineRadius(i, inset)) <= 0.0;
 }
 
 // The height the view ray through s meets cap i at, or -1 for a miss. It
@@ -173,7 +191,7 @@ fn insideCap(s: vec2f, i: i32, z: f32) -> bool {
 fn capHit(s: vec2f, i: i32) -> f32 {
   let bottom = capBottom(i);
   let top = capTop(i);
-  let span = column(s.x, footprint(i), cornerRadius());
+  let span = column(s.x, footprint(i), cornerRadius(i));
   if (span.x > span.y || s.y + bottom > span.y || s.y + top < span.x) {
     return -1.0;
   }
@@ -212,6 +230,9 @@ struct Hit {
 fn hitAt(s: vec2f) -> Hit {
   var hit = Hit(-1.0, -1);
   for (var i = 0; i < capCount(); i++) {
+    if (isHidden(i)) {
+      continue;
+    }
     let z = capHit(s, i);
     if (z >= 0.0 && z > hit.z) {
       hit = Hit(z, i);
@@ -260,19 +281,20 @@ fn shadowLamp(p: vec3f) -> vec3f {
 // further from what it shades, it blocks less of the lamp's glow.
 fn visibility(p: vec3f, own: i32) -> f32 {
   let lamp = shadowLamp(p);
-  let inset = scene.shape.y * 0.3;
   var visible = 1.0;
   for (var i = 0; i < capCount(); i++) {
     let top = capTop(i);
-    if (i == own || top <= p.z + 0.01) {
+    if (i == own || isHidden(i) || top <= p.z + 0.01) {
       continue;
     }
+    let inset = rollRadius(i) * 0.3;
     let rect = outline(i, inset);
+    let radius = outlineRadius(i, inset);
     // No shadow reaches further than its length plus its blur.
-    if (sdRoundRect(p.xy, rect, outlineRadius(inset)) > 1.6 * top + MAX_PENUMBRA) {
+    if (sdRoundRect(p.xy, rect, radius) > 1.6 * top + MAX_PENUMBRA) {
       continue;
     }
-    let past = visiblePast(p, lamp, rect, outlineRadius(inset), capBottom(i), top);
+    let past = visiblePast(p, lamp, rect, radius, capBottom(i), top);
     let lift = max(capBottom(i) - p.z, 0.0);
     visible = min(visible, mix(past, 1.0, lift / (lift + SHADOW_FADE_LIFT) * 0.5));
   }
@@ -352,12 +374,12 @@ fn shadeCap(p: vec3f, i: i32, pixel: f32, drawnY: f32) -> vec3f {
   let center = rect.xy + rect.zw * 0.5;
   let dome = -(p.xy - center) * (DOME * 2.0) / rect.z;
   let top = capTop(i);
-  let roll = scene.shape.y;
-  let foot = scene.shape.z;
+  let roll = rollRadius(i);
+  let foot = footRadius(i);
   var n = normalize(vec3f(dome, 1.0));
   if (p.z < top - 0.01) {
     let inset = insetAt(i, p.z);
-    let outward = edgeNormal(p.xy, outline(i, inset), outlineRadius(inset));
+    let outward = edgeNormal(p.xy, outline(i, inset), outlineRadius(i, inset));
     let fromTop = p.z - (top - roll);
     let fromFoot = capBottom(i) + foot - p.z;
     if (fromTop > 0.0) {
@@ -390,9 +412,14 @@ fn deskShadow(p: vec3f) -> f32 {
   let lamp = hidden * hidden * strength;
   var contact = 0.0;
   for (var i = 0; i < capCount(); i++) {
+    if (isHidden(i)) {
+      continue;
+    }
     let lift = capBottom(i);
-    let d = sdRoundRect(p.xy, footprint(i), cornerRadius());
-    let footShadow = (1.0 - smoothstep(-4.0, 5.0 + lift, d)) * 0.2 / (1.0 + lift * 0.15);
+    let d = sdRoundRect(p.xy, footprint(i), cornerRadius(i));
+    // A cap still popping in presses less of the desk.
+    let footShadow = (1.0 - smoothstep(-4.0, 5.0 + lift, d)) * 0.2 / (1.0 + lift * 0.15)
+      * min(capScale(i), 1.0);
     contact = max(contact, footShadow);
   }
   return (1.0 - (1.0 - lamp) * (1.0 - contact)) * scene.intensity;
