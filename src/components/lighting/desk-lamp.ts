@@ -6,7 +6,16 @@ export interface LampPosition {
   y: number;
 }
 
-type LampListener = (lamp: LampPosition) => void;
+/**
+ * Called every frame with the lamp and the frame's requestAnimationFrame
+ * timestamp. A listener reads layout when called and returns its DOM writes,
+ * which run once every listener has read: a write between two listeners'
+ * reads would force a style recalculation for each of them.
+ */
+type LampListener = (
+  lamp: LampPosition,
+  time: number
+) => (() => void) | undefined;
 
 /** Lamp height above the desk, in screen px. Shared by every shadow. */
 export const LAMP_HEIGHT = 240;
@@ -59,14 +68,22 @@ const tick = (time: number) => {
   // Scheduled first, so a throwing listener cannot stop the shared loop.
   frame = requestAnimationFrame(tick);
   transformCache = new Map();
+  const writes: (() => void)[] = [];
   for (const listener of listeners) {
-    listener(lamp);
+    const write = listener(lamp, time);
+    if (write) {
+      writes.push(write);
+    }
+  }
+  for (const write of writes) {
+    write();
   }
 };
 
 /**
- * Calls `listener` every animation frame with the lamp position. The shared
- * loop runs only while someone is listening.
+ * Calls `listener` every animation frame with the lamp position, reads
+ * first and returned writes after. The shared loop runs only while someone
+ * is listening.
  */
 export const subscribeLamp = (listener: LampListener) => {
   listeners.add(listener);

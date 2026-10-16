@@ -12,6 +12,11 @@ import type { PaperTexture } from "./paper-renderer";
 type PaperKind = "fibre" | "label" | "photo" | "smooth" | "sticky";
 
 interface PaperLightingProps {
+  /**
+   * Mostly hidden, as a print tucked in a closed folder: relit only once the
+   * lamp has moved well away, so it does not take turns from paper in view.
+   */
+  covered?: boolean;
   /** Hides the shading while the paper morphs into or out of a reader. */
   hidden?: boolean;
   kind: PaperKind;
@@ -87,6 +92,9 @@ const PAPER_STOCKS: Record<PaperKind, PaperStock> = {
   },
 };
 
+/** Share of a covered paper that shows past whatever covers it. */
+const COVERED_PROMINENCE = 0.2;
+
 /** Curl heights are tuned for a 240 px sheet; smaller paper curls less. */
 const CURL_REFERENCE_SIZE = 240;
 const MIN_CURL_SCALE = 0.12;
@@ -118,11 +126,21 @@ const between = (min: number, max: number) => min + Math.random() * (max - min);
  * is multiplied over its parent, which must be an isolated group containing
  * the paper and its text, so the shading lands on the ink as well.
  */
-const LitPaper = ({ hidden = false, kind, radius }: PaperLightingProps) => {
+const LitPaper = ({
+  covered = false,
+  hidden = false,
+  kind,
+  radius,
+}: PaperLightingProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const coveredRef = useRef(covered);
   const glossRef = useRef<HTMLCanvasElement | null>(null);
   const [isReady, setReady] = useState(false);
   const stock = PAPER_STOCKS[kind];
+
+  useEffect(() => {
+    coveredRef.current = covered;
+  }, [covered]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -158,8 +176,6 @@ const LitPaper = ({ hidden = false, kind, radius }: PaperLightingProps) => {
             curlShare *
             (stock.curl === "foot" ? height : Math.min(width, height)),
           gloss: stock.gloss,
-          relief: RELIEF,
-          texture: stock.texture,
           height,
           intensity,
           kind: stock.curl === "foot" ? "sticky" : "sheet",
@@ -168,13 +184,16 @@ const LitPaper = ({ hidden = false, kind, radius }: PaperLightingProps) => {
           pixelHeight: Math.round((height + SHADOW_MARGIN * 2) * pixelScale),
           pixelWidth: Math.round((width + SHADOW_MARGIN * 2) * pixelScale),
           radius,
+          relief: RELIEF,
           seed,
+          texture: stock.texture,
           width,
         }),
       element,
       label: "Paper lighting",
       onReady: () => setReady(true),
       overhang: SHADOW_MARGIN,
+      prominence: () => (coveredRef.current ? COVERED_PROMINENCE : 1),
     });
   }, [radius, stock]);
 

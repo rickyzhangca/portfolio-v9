@@ -108,7 +108,15 @@ export const LitMacbook = ({
         const height = container.offsetHeight;
         const rect = container.getBoundingClientRect();
         const screenScale = width ? rect.width / width : 0;
-        if (!lidSize || screenScale < 0.02) {
+        // Off screen, the laptop keeps its last frame.
+        if (
+          !lidSize ||
+          screenScale < 0.02 ||
+          rect.right < 0 ||
+          rect.bottom < 0 ||
+          rect.left > window.innerWidth ||
+          rect.top > window.innerHeight
+        ) {
           return;
         }
 
@@ -184,25 +192,29 @@ export const LitMacbook = ({
         }
         previousKey = key;
 
-        try {
-          created.render({
-            height: canvasHeight,
-            intensity,
-            light,
-            pixelHeight: Math.round(canvasHeight * backingScale),
-            pixelWidth: Math.round(canvasWidth * backingScale),
-            quads,
-            width: canvasWidth,
-          });
-        } catch (error) {
-          unsubscribe?.();
-          fail(error);
-          return;
-        }
-        if (!announced) {
-          announced = true;
-          callbacksRef.current.onReady();
-        }
+        // Drawn after every lamp listener has read layout: resizing the
+        // canvas would otherwise force layout for the listeners after it.
+        return () => {
+          try {
+            created.render({
+              height: canvasHeight,
+              intensity,
+              light,
+              pixelHeight: Math.round(canvasHeight * backingScale),
+              pixelWidth: Math.round(canvasWidth * backingScale),
+              quads,
+              width: canvasWidth,
+            });
+          } catch (error) {
+            unsubscribe?.();
+            fail(error);
+            return;
+          }
+          if (!announced) {
+            announced = true;
+            callbacksRef.current.onReady();
+          }
+        };
       });
     };
 
