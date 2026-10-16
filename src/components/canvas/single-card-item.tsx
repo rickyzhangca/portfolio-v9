@@ -107,9 +107,11 @@ export const SingleCardItem = ({
   const isLampOn = useAtomValue(deskLampAtom);
   const isLampLit =
     isLampOn &&
-    (item.card.kind === "macbook" || item.card.kind === "profilepic");
-  // Papers cast from their own surface; the lit laptop and badge draw their
-  // own shadows.
+    (item.card.kind === "macbook" ||
+      item.card.kind === "profilepic" ||
+      item.card.kind === "socials");
+  // Papers cast from their own surface; the lit laptop, badge and keyboard
+  // draw their own shadows.
   let castShadowLift: number | undefined;
   if (!(projectsPaper || isLampLit)) {
     castShadowLift = isDragging ? LAMP_LIFT.dragged : LAMP_LIFT.card;
