@@ -105,8 +105,11 @@ export const SingleCardItem = ({
   const interactionPolicy = getInteractionPolicy(item.card.kind);
   const projectsPaper = interactionPolicy.activate === "open-modal";
   const isLampOn = useAtomValue(deskLampAtom);
-  const isLampLit = isLampOn && item.card.kind === "macbook";
-  // Papers cast from their own surface; the lit laptop draws its own shadow.
+  const isLampLit =
+    isLampOn &&
+    (item.card.kind === "macbook" || item.card.kind === "profilepic");
+  // Papers cast from their own surface; the lit laptop and badge draw their
+  // own shadows.
   let castShadowLift: number | undefined;
   if (!(projectsPaper || isLampLit)) {
     castShadowLift = isDragging ? LAMP_LIFT.dragged : LAMP_LIFT.card;

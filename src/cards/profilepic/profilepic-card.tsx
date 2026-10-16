@@ -1,80 +1,107 @@
-import { motion, useAnimation } from "framer-motion";
-import { memo, useState } from "react";
+import { animate, motion, useMotionValue } from "framer-motion";
+import { useAtomValue } from "jotai";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { ProfilePicCardContent } from "@/cards/registry";
+import { LitBadge } from "@/components/lighting/lit-badge";
+import { deskLampAtom } from "@/context/atoms";
+import { tw } from "@/lib/utils";
 
 interface ProfilePicCardProps {
   content: ProfilePicCardContent;
 }
 
+const FLIP = {
+  damping: 10,
+  mass: 0.5,
+  stiffness: 150,
+  type: "spring",
+} as const;
+
 const ProfilePicCardComponent = ({ content }: ProfilePicCardProps) => {
   const [index, setIndex] = useState(0);
-  const [isFlipping, setIsFlipping] = useState(false);
-  const controls = useAnimation();
+  // Read by the lit badge each frame, so the photo and the angle change in
+  // the same frame when a flip lands.
+  const indexRef = useRef(0);
+  const isFlippingRef = useRef<boolean>(false);
+  const rotation = useMotionValue(0);
+  const isLampOn = useAtomValue(deskLampAtom);
+  const [isLitReady, setLitReady] = useState(false);
+  // The DOM faces give way once WebGPU has drawn its first frame; they stay
+  // for clicks and alt text.
+  const isDomHidden = isLampOn && isLitReady;
+  const handleLitReady = useCallback(() => setLitReady(true), []);
+
+  useEffect(() => {
+    if (!isLampOn) {
+      setLitReady(false);
+    }
+  }, [isLampOn]);
 
   const handleTap = async () => {
-    if (isFlipping) {
+    if (isFlippingRef.current) {
       return;
     }
-    setIsFlipping(true);
-
-    await controls.start({
-      rotateY: 180,
-      transition: {
-        type: "spring",
-        stiffness: 150,
-        damping: 10,
-        mass: 0.5,
-      },
-    });
-
-    setIndex((prev) => (prev + 1) % content.images.length);
-    controls.set({ rotateY: 0 });
-    setIsFlipping(false);
+    isFlippingRef.current = true;
+    await animate(rotation, 180, FLIP);
+    const next = (indexRef.current + 1) % content.images.length;
+    indexRef.current = next;
+    rotation.set(0);
+    setIndex(next);
+    isFlippingRef.current = false;
   };
 
   const currentImage = content.images[index];
   const nextImage = content.images[(index + 1) % content.images.length];
 
   return (
-    <div
-      className="relative flex h-full w-full items-center justify-center rounded-lg"
-      style={{ perspective: "1000px" }}
-    >
+    <div className="relative flex h-full w-full items-center justify-center rounded-lg">
       <motion.div
-        animate={controls}
         className="relative h-full w-full cursor-pointer"
         onClick={handleTap}
-        style={{ transformStyle: "preserve-3d" }}
+        style={{ perspective: "1000px" }}
         whileHover={{ scale: 1.1 }}
       >
-        {/* Front */}
-        <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ backfaceVisibility: "hidden" }}
+        <motion.div
+          className={tw("relative h-full w-full", isDomHidden && "opacity-0")}
+          style={{ rotateY: rotation, transformStyle: "preserve-3d" }}
         >
-          {/** biome-ignore lint/correctness/useImageSize: follows container size */}
-          <img
-            alt={content.alt || "Profile pic"}
-            className="h-full w-full rounded-full border-6 border-white object-cover"
-            src={currentImage}
-          />
-        </div>
+          {/* Front */}
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ backfaceVisibility: "hidden" }}
+          >
+            {/** biome-ignore lint/correctness/useImageSize: follows container size */}
+            <img
+              alt={content.alt || "Profile pic"}
+              className="h-full w-full rounded-full border-6 border-white object-cover"
+              src={currentImage}
+            />
+          </div>
 
-        {/* Back */}
-        <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{
-            backfaceVisibility: "hidden",
-            transform: "rotateY(180deg)",
-          }}
-        >
-          {/** biome-ignore lint/correctness/useImageSize: follows container size */}
-          <img
-            alt={content.alt || "Profile pic"}
-            className="h-full w-full rounded-full border-6 border-white object-cover"
-            src={nextImage}
+          {/* Back */}
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{
+              backfaceVisibility: "hidden",
+              transform: "rotateY(180deg)",
+            }}
+          >
+            {/** biome-ignore lint/correctness/useImageSize: follows container size */}
+            <img
+              alt={content.alt || "Profile pic"}
+              className="h-full w-full rounded-full border-6 border-white object-cover"
+              src={nextImage}
+            />
+          </div>
+        </motion.div>
+        {isLampOn ? (
+          <LitBadge
+            indexRef={indexRef}
+            onReady={handleLitReady}
+            photos={content.images}
+            rotation={rotation}
           />
-        </div>
+        ) : null}
       </motion.div>
     </div>
   );

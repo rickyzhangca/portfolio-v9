@@ -126,48 +126,70 @@ export const drawQuad = (
 };
 
 /**
- * Uploads a bitmap with a full mip chain. WebGPU has no generateMipmap; the
- * browser's high-quality resize builds each level instead.
+ * Uploads equally sized bitmaps as the layers of one texture, each with a
+ * full mip chain. WebGPU has no generateMipmap; the browser's high-quality
+ * resize builds each level instead. The bitmaps are closed afterwards.
  */
-export const createMipmappedTexture = async (
+export const createMipmappedTextureArray = async (
   device: GPUDevice,
-  bitmap: ImageBitmap
+  bitmaps: ImageBitmap[]
 ) => {
-  const { width, height } = bitmap;
+  const [first] = bitmaps;
+  if (!first) {
+    throw new Error("No bitmaps to upload");
+  }
+  const { width, height } = first;
   const levels = Math.floor(Math.log2(Math.max(width, height))) + 1;
   const texture = device.createTexture({
     format: "rgba8unorm",
     mipLevelCount: levels,
-    size: [width, height],
+    size: [width, height, bitmaps.length],
     usage: TEXTURE_USAGE,
   });
   const levelSizes = Array.from({ length: levels }, (_, level) => ({
     height: Math.max(1, Math.floor(height / 2 ** level)),
     width: Math.max(1, Math.floor(width / 2 ** level)),
   }));
-  const sources = await Promise.all(
-    levelSizes.map((size, level) =>
-      level === 0
-        ? bitmap
-        : createImageBitmap(bitmap, {
-            colorSpaceConversion: "none",
-            premultiplyAlpha: "premultiply",
-            resizeHeight: size.height,
-            resizeQuality: "high",
-            resizeWidth: size.width,
-          })
+  const layers = await Promise.all(
+    bitmaps.map((bitmap) =>
+      Promise.all(
+        levelSizes.map((size, level) =>
+          level === 0
+            ? bitmap
+            : createImageBitmap(bitmap, {
+                colorSpaceConversion: "none",
+                premultiplyAlpha: "premultiply",
+                resizeHeight: size.height,
+                resizeQuality: "high",
+                resizeWidth: size.width,
+              })
+        )
+      )
     )
   );
-  for (const [level, source] of sources.entries()) {
-    const size = levelSizes[level];
-    if (size) {
-      device.queue.copyExternalImageToTexture(
-        { source },
-        { mipLevel: level, premultipliedAlpha: true, texture },
-        [size.width, size.height]
-      );
+  for (const [layer, sources] of layers.entries()) {
+    for (const [level, source] of sources.entries()) {
+      const size = levelSizes[level];
+      if (size) {
+        device.queue.copyExternalImageToTexture(
+          { source },
+          {
+            mipLevel: level,
+            origin: [0, 0, layer],
+            premultipliedAlpha: true,
+            texture,
+          },
+          [size.width, size.height]
+        );
+      }
+      source.close();
     }
-    source.close();
   }
   return texture;
 };
+
+/** Uploads a bitmap with a full mip chain. */
+export const createMipmappedTexture = (
+  device: GPUDevice,
+  bitmap: ImageBitmap
+) => createMipmappedTextureArray(device, [bitmap]);
