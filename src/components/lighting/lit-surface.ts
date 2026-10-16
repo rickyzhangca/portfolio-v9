@@ -29,6 +29,12 @@ interface LitSurfaceOptions<Surface extends { destroy: () => void }> {
   /** How far the canvas overhangs the element on each side, in local px. */
   overhang?: number;
   /**
+   * How much of the surface shows, from 0 to 1, read every frame. A mostly
+   * covered surface waits for proportionally more lamp travel before it
+   * redraws, leaving the turns to surfaces in plain view.
+   */
+  prominence?: () => number;
+  /**
    * Advances the surface's own animated values once per frame (seconds since
    * the last frame); a change in them redraws like a lamp move does.
    */
@@ -43,47 +49,125 @@ const PIXEL_SCALE_STEP = 0.25;
 const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
 
 /**
- * WebGPU surfaces redrawn per frame, at most. Opening a folder of 14 prints
- * moves every one of them against the lamp at once; redrawing all of them
- * each frame stalled the GPU process on canvas presents and dropped half the
- * frames. Over budget, surfaces wait their turn, the longest-waiting first,
- * so lighting trails motion by a few frames and catches up once it settles.
- * Surfaces animating their own parts (a key going down, a keycap lifting)
- * go first: the pointer that drives them also moves the lamp, which queues
- * every other surface on screen, and a part that skips frames stutters
- * where relighting a few frames late does not show.
+ * WebGPU surfaces redrawn per frame. Opening a folder of 14 prints moves
+ * every one of them against the lamp at once; on a slow or power-saving GPU,
+ * redrawing all of them each frame stalled the GPU process on canvas
+ * presents and dropped half the frames. A fixed budget of four made a fast
+ * machine relight each folder only every fifth frame, so the budget follows
+ * frame pacing instead: it creeps up while frames arrive on time and halves
+ * after a late one. Creeping, rather than jumping, keeps a busy GPU from
+ * being probed with a dropped frame every few frames. Over budget, surfaces
+ * wait their turn, so lighting trails motion by a few frames and catches up
+ * once it settles.
+ *
+ * The turn goes to the surface whose lighting is most out of date as seen:
+ * a moving lamp changes the surfaces under it a lot and those across the
+ * desk barely, so the ones under the pointer keep redrawing while the rest
+ * wait. Surfaces animating their own parts (a key going down, a keycap
+ * lifting) go first: the pointer that drives them also moves the lamp, and
+ * a part that skips frames stutters where relighting a few frames late does
+ * not show.
  */
-const DRAWS_PER_FRAME = 4;
+const INITIAL_DRAWS_PER_FRAME = 4;
+const MIN_DRAWS_PER_FRAME = 2;
+const MAX_DRAWS_PER_FRAME = 32;
+/** Extra draws per frame for each frame that arrives on time. */
+const DRAW_BUDGET_GROWTH = 0.25;
+/** A frame this many display intervals after the last one came late. */
+const LATE_FRAME = 1.5;
+/** Longer gaps are pauses (a hidden tab, a restarted lamp), not frames. */
+const MAX_FRAME_GAP_MS = 250;
+/** How quickly the display interval estimate rises, per frame. */
+const INTERVAL_RISE = 0.02;
+/**
+ * The lamp moves this far, in local px, before a surface right under it
+ * redraws; surfaces further from it wait for proportionally more travel.
+ */
+const LIGHT_STEP = 1;
+/** Staleness of a surface whose size, zoom or fade-in has changed. */
+const RESHAPED = Number.MAX_VALUE;
+/** Staleness of a surface animating its own parts: it always goes first. */
+const ANIMATING = Number.POSITIVE_INFINITY;
 
 interface PendingDraw {
   draw: () => void;
   since: number;
+  /** How far the drawn frame is from the current one; larger goes first. */
+  staleness: number;
 }
 
 const pending = new Map<object, PendingDraw>();
 let flushQueued = false;
+let drawBudget = INITIAL_DRAWS_PER_FRAME;
+let frameTime = 0;
+/** The display's frame interval: falls at once, rises slowly. */
+let frameInterval = 0;
+
+/** Adjusts the draw budget once per frame from the lamp's frame timestamp. */
+const paceFrame = (time: number) => {
+  if (time === frameTime) {
+    return;
+  }
+  const interval = time - frameTime;
+  frameTime = time;
+  if (interval <= 0 || interval > MAX_FRAME_GAP_MS) {
+    return;
+  }
+  frameInterval =
+    frameInterval === 0 || interval < frameInterval
+      ? interval
+      : frameInterval + (interval - frameInterval) * INTERVAL_RISE;
+  drawBudget =
+    interval > frameInterval * LATE_FRAME
+      ? Math.max(MIN_DRAWS_PER_FRAME, drawBudget / 2)
+      : Math.min(MAX_DRAWS_PER_FRAME, drawBudget + DRAW_BUDGET_GROWTH);
+};
 
 // Runs after every lamp listener of this frame has queued its redraw.
 const flushDraws = () => {
   flushQueued = false;
-  const queue = [...pending.entries()].sort((a, b) => a[1].since - b[1].since);
-  for (const [owner, entry] of queue.slice(0, DRAWS_PER_FRAME)) {
+  const queue = [...pending.entries()].sort(
+    (a, b) => b[1].staleness - a[1].staleness || a[1].since - b[1].since
+  );
+  for (const [owner, entry] of queue.slice(0, Math.floor(drawBudget))) {
     pending.delete(owner);
     entry.draw();
   }
 };
 
-const requestDraw = (owner: object, draw: () => void, animating: boolean) => {
+const requestDraw = (owner: object, draw: () => void, staleness: number) => {
   pending.set(owner, {
     draw,
-    // Animating surfaces queue as if they had waited longest, and keep
-    // their place while waiting.
-    since: animating ? 0 : (pending.get(owner)?.since ?? performance.now()),
+    since: pending.get(owner)?.since ?? performance.now(),
+    staleness,
   });
   if (!flushQueued) {
     flushQueued = true;
     queueMicrotask(flushDraws);
   }
+};
+
+/**
+ * How far the lamp has moved since the drawn frame, in local px as seen from
+ * right under it. Shading follows how steeply the light falls on the
+ * surface, which a step of the lamp changes less the further away it hangs:
+ * travel is scaled by the square of the lamp's height over its distance to
+ * the nearest point of the surface.
+ */
+export const lightStaleness = (
+  drawn: SurfaceView["light"],
+  view: SurfaceView
+) => {
+  const { light, width, height } = view;
+  const travel = Math.hypot(
+    light.x - drawn.x,
+    light.y - drawn.y,
+    light.z - drawn.z
+  );
+  const outsideX = Math.max(0, -light.x, light.x - width);
+  const outsideY = Math.max(0, -light.y, light.y - height);
+  const reach = Math.hypot(outsideX, outsideY, light.z);
+  return reach > 0 ? travel * (light.z / reach) ** 2 : travel;
 };
 
 const measure = (
@@ -146,6 +230,7 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
   label,
   onReady,
   overhang = 0,
+  prominence,
   step,
 }: LitSurfaceOptions<Surface>) => {
   const abort = new AbortController();
@@ -167,12 +252,13 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
     }
     surface = attached;
     const fadeStart = performance.now();
-    let drawnKey = "";
+    let drawn: SurfaceView | null = null;
     let drawnOwn = "";
     let announced = false;
     let lastFrame = fadeStart;
 
-    unsubscribe = subscribeLamp((lamp) => {
+    unsubscribe = subscribeLamp((lamp, time) => {
+      paceFrame(time);
       const now = performance.now();
       const own = step?.(Math.min((now - lastFrame) / 1000, 0.1)) ?? [];
       lastFrame = now;
@@ -180,20 +266,21 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
       if (!view) {
         return;
       }
+      const ownKey = own.map((value) => value.toFixed(2)).join();
+      const animating = ownKey !== drawnOwn;
+      let staleness = RESHAPED;
+      if (
+        drawn &&
+        drawn.width === view.width &&
+        drawn.height === view.height &&
+        drawn.pixelScale === view.pixelScale &&
+        drawn.intensity.toFixed(2) === view.intensity.toFixed(2)
+      ) {
+        staleness = lightStaleness(drawn.light, view) * (prominence?.() ?? 1);
+      }
       // Skip frames where nothing visible changed: a lamp step under a
       // pixel, or a fraction of a pixel of travel, does not show.
-      const ownKey = own.map((value) => value.toFixed(2)).join();
-      const key = [
-        Math.round(view.light.x),
-        Math.round(view.light.y),
-        Math.round(view.light.z),
-        view.intensity.toFixed(2),
-        view.pixelScale,
-        view.width,
-        view.height,
-        ownKey,
-      ].join();
-      if (key === drawnKey) {
+      if (!animating && staleness < LIGHT_STEP) {
         pending.delete(owner);
         return;
       }
@@ -211,14 +298,14 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
             fail(error);
             return;
           }
-          drawnKey = key;
+          drawn = view;
           drawnOwn = ownKey;
           if (!announced) {
             announced = true;
             onReady();
           }
         },
-        ownKey !== drawnOwn
+        animating ? ANIMATING : staleness
       );
     });
   };

@@ -42,8 +42,8 @@ const isHovered = (element: HTMLElement) =>
 
 /**
  * Points every caster's drop shadow away from the desk lamp. Each frame reads
- * all layout first, then writes the filters, so the pass never forces layout
- * between writes. Returns a function that restores the stylesheet shadows.
+ * all layout first and hands the lamp its filter writes, so the pass never
+ * forces layout between writes. Returns a function that restores the stylesheet shadows.
  */
 const startLampShadows = () => {
   const states = new Map<HTMLElement, CasterState>();
@@ -74,22 +74,18 @@ const startLampShadows = () => {
     const elapsed = Math.max((now - lastTime) / 1000, 1 / 240);
     const follow = 1 - Math.exp(-elapsed * LIFT_RATE);
     lastTime = now;
-    if (switchingOn && now - switchedOnAt > ROOM_FADE_MS) {
+    const settled = switchingOn && now - switchedOnAt > ROOM_FADE_MS;
+    if (settled) {
       switchingOn = false;
-      for (const element of states.keys()) {
-        element.style.transition = "none";
-      }
     }
 
     const casters = [
       ...document.querySelectorAll<HTMLElement>(`[${LAMP_SHADOW_ATTRIBUTE}]`),
     ];
     const present = new Set(casters);
-    for (const [element, state] of states) {
-      if (!present.has(element)) {
-        restore(element, state);
-        states.delete(element);
-      }
+    const removed = [...states].filter(([element]) => !present.has(element));
+    for (const [element] of removed) {
+      states.delete(element);
     }
 
     const cache = getFrameTransformCache();
@@ -102,17 +98,11 @@ const startLampShadows = () => {
     );
     const cameraOrigin = camera?.getBoundingClientRect() ?? { left: 0, top: 0 };
 
-    // Read phase.
-    const reads = casters.map((element) => ({
-      element,
-      height: Number(element.getAttribute(LAMP_SHADOW_ATTRIBUTE)) || 0,
-      hovered: isHovered(element),
-      linear: screenLinear(element, cache),
-      rect: element.getBoundingClientRect(),
-    }));
-
-    // Write phase.
-    for (const { element, height, hovered, linear, rect } of reads) {
+    // Reads, and the shadows they give; the DOM is written afterwards.
+    const added: HTMLElement[] = [];
+    const filters: [HTMLElement, string][] = [];
+    for (const element of casters) {
+      const height = Number(element.getAttribute(LAMP_SHADOW_ATTRIBUTE)) || 0;
       let state = states.get(element);
       if (!state) {
         state = {
@@ -124,11 +114,9 @@ const startLampShadows = () => {
           transition: element.style.transition,
         };
         states.set(element, state);
-        // The lamp already eases; a CSS filter transition would lag behind
-        // it. Only while the lamp switches on do shadows ease round from the
-        // stylesheet's, as the room dims, instead of snapping in one frame.
-        element.style.transition = switchingOn ? SWITCH_ON_TRANSITION : "none";
+        added.push(element);
       }
+      const rect = element.getBoundingClientRect();
       if (rect.width === 0 || cameraScale === 0) {
         continue;
       }
@@ -146,7 +134,7 @@ const startLampShadows = () => {
       state.speed += (speed - state.speed) * follow;
       const targetLift =
         height +
-        (hovered ? HOVER_LIFT : 0) +
+        (isHovered(element) ? HOVER_LIFT : 0) +
         Math.min(state.speed * FLIGHT_LIFT_PER_SPEED, MAX_FLIGHT_LIFT);
       state.lift += (targetLift - state.lift) * follow;
       const shadow = projectLampShadow({
@@ -157,7 +145,7 @@ const startLampShadows = () => {
         lamp,
         lampHeight: LAMP_HEIGHT,
         lift: state.lift * cameraScale,
-        linear,
+        linear: screenLinear(element, cache),
       });
       if (!shadow) {
         continue;
@@ -165,9 +153,29 @@ const startLampShadows = () => {
       const filter = `drop-shadow(${shadow.x.toFixed(1)}px ${shadow.y.toFixed(1)}px ${shadow.blur.toFixed(1)}px rgb(0 0 0 / ${shadow.opacity.toFixed(3)}))`;
       if (state.applied !== filter) {
         state.applied = filter;
-        element.style.filter = filter;
+        filters.push([element, filter]);
       }
     }
+
+    return () => {
+      for (const [element, state] of removed) {
+        restore(element, state);
+      }
+      if (settled) {
+        for (const element of states.keys()) {
+          element.style.transition = "none";
+        }
+      }
+      for (const element of added) {
+        // The lamp already eases; a CSS filter transition would lag behind
+        // it. Only while the lamp switches on do shadows ease round from the
+        // stylesheet's, as the room dims, instead of snapping in one frame.
+        element.style.transition = switchingOn ? SWITCH_ON_TRANSITION : "none";
+      }
+      for (const [element, filter] of filters) {
+        element.style.filter = filter;
+      }
+    };
   });
 
   return () => {
@@ -209,8 +217,10 @@ export const DeskLampRoom = () => {
         return;
       }
       previous = `${x} ${y}`;
-      element.style.setProperty("--lamp-x", x);
-      element.style.setProperty("--lamp-y", y);
+      return () => {
+        element.style.setProperty("--lamp-x", x);
+        element.style.setProperty("--lamp-y", y);
+      };
     });
     return () => {
       cancelAnimationFrame(fade);

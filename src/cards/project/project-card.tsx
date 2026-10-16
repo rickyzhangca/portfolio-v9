@@ -69,7 +69,11 @@ const ProjectCardComponent = ({
             />
           )}
         </div>
-        <PaperLighting kind="photo" radius={PRINT_RADIUS} />
+        <PaperLighting
+          covered={!isExpanded}
+          kind="photo"
+          radius={PRINT_RADIUS}
+        />
       </div>
       <motion.div
         animate={{

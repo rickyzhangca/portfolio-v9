@@ -53,23 +53,19 @@ export const startLampSheen = (root: HTMLElement) => {
     );
     const cache = getFrameTransformCache();
 
-    // Read phase.
-    const reads = [
-      ...root.querySelectorAll<HTMLElement>(`[${LAMP_SHEEN_ATTRIBUTE}]`),
-    ].map((element) => ({
-      element,
-      height: element.offsetHeight,
-      linear: screenLinear(element, cache),
-      rect: element.getBoundingClientRect(),
-      width: element.offsetWidth,
-    }));
-
-    // Write phase.
-    for (const { element, height, linear, rect, width } of reads) {
+    // Reads; the glints are written once every lamp listener has read.
+    const glints: [HTMLElement, number, number, number][] = [];
+    for (const element of root.querySelectorAll<HTMLElement>(
+      `[${LAMP_SHEEN_ATTRIBUTE}]`
+    )) {
+      const linear = screenLinear(element, cache);
       const det = linear.a * linear.d - linear.b * linear.c;
       if (Math.abs(det) < 1e-4) {
         continue;
       }
+      const rect = element.getBoundingClientRect();
+      const width = element.offsetWidth;
+      const height = element.offsetHeight;
       // The bounding box's center is the element's center under any affine
       // transform, so the lamp maps into the element's own space.
       const awayX = lamp.x - (rect.left + rect.width / 2);
@@ -84,9 +80,15 @@ export const startLampSheen = (root: HTMLElement) => {
         continue;
       }
       applied.set(element, value);
-      element.style.setProperty("--sheen-x", `${x.toFixed(1)}px`);
-      element.style.setProperty("--sheen-y", `${y.toFixed(1)}px`);
-      element.style.setProperty("--sheen", strength.toFixed(2));
+      glints.push([element, x, y, strength]);
     }
+
+    return () => {
+      for (const [element, x, y, strength] of glints) {
+        element.style.setProperty("--sheen-x", `${x.toFixed(1)}px`);
+        element.style.setProperty("--sheen-y", `${y.toFixed(1)}px`);
+        element.style.setProperty("--sheen", strength.toFixed(2));
+      }
+    };
   });
 };
