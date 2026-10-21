@@ -14,8 +14,9 @@ import { screenLinear } from "./lamp-shadows";
 export const LAMP_SHEEN_ATTRIBUTE = "data-lamp-sheen";
 
 /**
- * A soft white glint centered under the lamp, for a layer that screens it
- * over the surface below.
+ * A soft white glint centered under the lamp, laid normally over the
+ * surface below: white at some opacity is exactly what screening that grey
+ * would give, without the blend mode's extra compositing pass.
  */
 export const LAMP_SHEEN_GRADIENT =
   "radial-gradient(circle 72px at var(--sheen-x, -100px) var(--sheen-y, -100px), rgb(255 255 255 / calc(var(--sheen, 0) * 0.5)), rgb(255 255 255 / 0))";

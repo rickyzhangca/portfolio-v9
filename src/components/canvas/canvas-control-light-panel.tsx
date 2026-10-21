@@ -187,7 +187,7 @@ const LightPreview = ({ config }: { config: LampConfig }) => {
       data-testid="light-preview"
       ref={rootRef}
     >
-      <div className="absolute inset-0 mix-blend-multiply" ref={roomRef} />
+      <div className="absolute inset-0" ref={roomRef} />
       {PREVIEW_CARDS.map((card) => (
         <div
           className="absolute rounded-md bg-background2 outline outline-border"

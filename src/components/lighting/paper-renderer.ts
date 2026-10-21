@@ -49,8 +49,8 @@ const getPipeline = cachePerDevice(async (gpu) =>
 );
 
 /**
- * Prepares the canvases to draw one lit sheet: `canvas` is multiplied over
- * the sheet, and `glossCanvas`, for coated paper, is screened over it.
+ * Prepares the canvases to draw one lit sheet: `canvas` shades the sheet,
+ * and `glossCanvas`, for coated paper, lights it.
  * Contexts are configured only once nothing can cancel the attachment, so an
  * abandoned attempt (StrictMode remounts, a quick lamp toggle) never
  * unconfigures a successor's context.

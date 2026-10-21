@@ -135,8 +135,9 @@ const between = (min: number, max: number) => min + Math.random() * (max - min);
 
 /**
  * Lights a paper's grain and curl under the desk lamp with WebGPU. The canvas
- * is multiplied over its parent, which must be an isolated group containing
- * the paper and its text, so the shading lands on the ink as well.
+ * covers its parent, the paper and its text, so the shading lands on the ink
+ * as well; the parent is an isolated group so the shadow canvas can sit
+ * behind the paper.
  */
 const LitPaper = ({
   castsShadow = false,
@@ -270,14 +271,14 @@ const LitPaper = ({
       ) : null}
       {stock.shade ? (
         <canvas
-          className="pointer-events-none absolute z-10 mix-blend-multiply"
+          className="pointer-events-none absolute z-10"
           ref={canvasRef}
           style={style}
         />
       ) : null}
       {stock.gloss > 0 ? (
         <canvas
-          className="pointer-events-none absolute z-10 mix-blend-screen"
+          className="pointer-events-none absolute z-10"
           ref={glossRef}
           style={style}
         />

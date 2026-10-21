@@ -31,6 +31,8 @@ import {
 
 /** How long the room takes to dim when the lamp switches on. */
 const ROOM_FADE_MS = 700;
+/** The desk's colour under the lamp, before the room's tone. */
+const LIT_DESK = "#fff";
 /**
  * Once the entrance lets go of the shadows, they ease round to wherever the
  * lamp has moved meanwhile instead of jumping there.
@@ -375,8 +377,9 @@ interface DeskLampRoomProps {
 /**
  * The room under the desk lamp: every caster's shadow points away from the
  * lamp, and the room dims around it so the DOM cards share the lit laptop's
- * light. A multiply blend leaves the pool under the lamp untouched and
- * darkens the rest, without repainting anything underneath.
+ * light. A translucent layer over the desk leaves the pool under the lamp
+ * untouched and darkens the rest as multiplying by the room's tone would
+ * (room-gradient.ts), without repainting anything underneath.
  */
 export const DeskLampRoom = ({ onShadowsCast }: DeskLampRoomProps) => {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -400,9 +403,19 @@ export const DeskLampRoom = ({ onShadowsCast }: DeskLampRoomProps) => {
     if (!element) {
       return;
     }
+    // Under the lamp the bare desk is white paper: the room's tone over it is
+    // the tone itself, as the multiply blend this layer replaced drew it,
+    // since the page background never took part in the blend.
+    const { body } = document;
+    const bodyStyle = {
+      background: body.style.backgroundColor,
+      transition: body.style.transition,
+    };
+    body.style.transition = `background-color ${ROOM_FADE_MS}ms`;
     // Fade in after mount so the room dims instead of snapping dark.
     const fade = requestAnimationFrame(() => {
       element.style.opacity = "1";
+      body.style.backgroundColor = LIT_DESK;
     });
     let previous = "";
     const unsubscribe = subscribeLamp((lamp) => {
@@ -422,13 +435,15 @@ export const DeskLampRoom = ({ onShadowsCast }: DeskLampRoomProps) => {
     return () => {
       cancelAnimationFrame(fade);
       unsubscribe();
+      body.style.backgroundColor = bodyStyle.background;
+      body.style.transition = bodyStyle.transition;
     };
   }, []);
 
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-40 opacity-0 mix-blend-multiply transition-opacity"
+      className="pointer-events-none fixed inset-0 z-40 opacity-0 transition-opacity"
       ref={ref}
       style={{
         background: getRoomGradient(
