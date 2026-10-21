@@ -42,7 +42,7 @@ import {
 } from "@/lib/card-layout";
 import { getCoverLogoRect } from "@/cards/cover/cover-layout";
 import { FolderBack } from "@/components/lighting/folder-back";
-import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
+import { LAMP_DEPTH, LAMP_LIFT } from "@/components/lighting/lamp-shadows";
 import { FolderLighting } from "@/components/lighting/lit-folder";
 import { useItemEntrance } from "@/context/canvas-entrance";
 import { ENTRANCE_LANDED_MS } from "@/lib/canvas-entrance";
@@ -545,6 +545,7 @@ export const CardStack = ({
                     : `Toggle ${stack.cover.content.company}`
                 }
                 className="absolute top-0 left-0 drop-shadow-[0_8px_16px_rgba(0,0,0,0.16)] transition-[filter] will-change-transform hover:drop-shadow-[0_12px_20px_rgba(0,0,0,0.32)]"
+                data-lamp-depth={LAMP_DEPTH.folder}
                 data-lamp-shadow={
                   isDragging ? LAMP_LIFT.dragged : LAMP_LIFT.card
                 }
