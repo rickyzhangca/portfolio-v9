@@ -204,6 +204,7 @@ const LitPaper = ({
           texture: stock.texture,
           width,
         }),
+      canvases: (stock.shade ? 1 : 0) + (stock.gloss > 0 ? 1 : 0),
       element,
       label: "Paper lighting",
       // Grain, curl and gloss are soft: half resolution while the lamp sweeps

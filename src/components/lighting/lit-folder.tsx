@@ -171,6 +171,8 @@ const LitFolder = ({
           width,
         }),
       element,
+      // The shade and light canvases both cover the folder.
+      canvases: 2,
       label: "Folder lighting",
       // Board relief and sheen are soft: half resolution while the lamp sweeps
       // keeps every cover relit each frame; full detail returns as it slows.
