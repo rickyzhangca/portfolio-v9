@@ -18,42 +18,73 @@ const SHADOW_STEP = 0.25;
 const OPACITY_STEP = 0.002;
 
 /**
- * Casters whose lamp shadow a WebGPU canvas behind them draws, with the
- * shadow the lamp worked out for them this frame. The lamp leaves their
- * drop-shadow filter off and hands them the shadow instead: a filter that
- * changes re-blurs its caster on the GPU every frame, and a folder of prints
- * swept under the lamp spent half the frame's GPU time on those blurs. The
- * canvas draws the blur in closed form, at a fraction of the resolution.
- * The shadow is null while the caster moves under its own transform (a
- * layout animation), which the canvas behind it would not follow; the
- * filter then draws it.
+ * Casters whose lamp shadow a canvas draws in place of their drop-shadow
+ * filter, with the shadow the lamp worked out for them this frame. A filter
+ * that changes re-blurs its caster on the GPU every frame: a folder of
+ * prints swept under the lamp spent half the frame's GPU time on those
+ * blurs, an open swag collection a third. Prints and sheets get a WebGPU
+ * canvas behind them that draws the blur in closed form (`runLampShadow`);
+ * stickers, which are not boxes, get a bitmap of their outline blurred once
+ * and moved by the compositor (lit-sprite.ts).
  */
-const drawnShadows = new Map<Element, LampShadow | null>();
+interface LampShadowClaim {
+  /**
+   * The canvas lies inside the caster, under its content, so it follows
+   * the caster's own transforms; it stands in only while the caster rests
+   * at its own height, as its bitmap holds one blur. A canvas behind the
+   * caster stands in only while the caster has no transform of its own (a
+   * layout animation), which it would not follow.
+   */
+  inside: boolean;
+  /** Until ready, the lamp works out the shadow but keeps the filter. */
+  ready: boolean;
+  shadow: LampShadow | null;
+}
+
+const claims = new Map<Element, LampShadowClaim>();
 
 /** Hands the caster's lamp shadow to a canvas. Returns the release. */
-export const claimLampShadow = (caster: Element) => {
-  drawnShadows.set(caster, null);
+export const claimLampShadow = (
+  caster: Element,
+  { inside = false, ready = true }: { inside?: boolean; ready?: boolean } = {}
+) => {
+  const claim = { inside, ready, shadow: null };
+  claims.set(caster, claim);
   return () => {
-    drawnShadows.delete(caster);
+    if (claims.get(caster) === claim) {
+      claims.delete(caster);
+    }
   };
 };
 
-export const isLampShadowClaimed = (caster: Element) =>
-  drawnShadows.has(caster);
+/** The canvas can draw: the lamp leaves the caster's filter off from now. */
+export const markLampShadowReady = (caster: Element) => {
+  const claim = claims.get(caster);
+  if (claim) {
+    claim.ready = true;
+  }
+};
+
+export const getLampShadowClaim = (
+  caster: Element
+): Readonly<LampShadowClaim> | undefined => claims.get(caster);
+
+export const isLampShadowClaimed = (caster: Element) => claims.has(caster);
 
 /** Set by the lamp each frame for a claimed caster. */
 export const setClaimedLampShadow = (
   caster: Element,
   shadow: LampShadow | null
 ) => {
-  if (drawnShadows.has(caster)) {
-    drawnShadows.set(caster, shadow);
+  const claim = claims.get(caster);
+  if (claim) {
+    claim.shadow = shadow;
   }
 };
 
 /** The shadow a claimed caster's canvas should draw, in its own px. */
 export const getClaimedLampShadow = (caster: Element) =>
-  drawnShadows.get(caster) ?? null;
+  claims.get(caster)?.shadow ?? null;
 
 const IDENTITY_MATRIX = "matrix(1, 0, 0, 1, 0, 0)";
 
