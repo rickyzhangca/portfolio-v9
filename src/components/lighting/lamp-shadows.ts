@@ -15,6 +15,22 @@ export const LAMP_SHADOW_ATTRIBUTE = "data-lamp-shadow";
  */
 export const LAMP_CONTACT_ATTRIBUTE = "data-lamp-contact";
 
+/**
+ * Multiplies a caster's lamp shadow opacity: heavy, dark objects (folders)
+ * read as thin as a sheet of paper at the shared strength. 1 when absent.
+ */
+export const LAMP_DEPTH_ATTRIBUTE = "data-lamp-depth";
+
+/** Lamp shadow opacity multipliers for casters heavier than a sheet. */
+export const LAMP_DEPTH = {
+  /**
+   * Folder covers: dark boards with papers inside. Raising their lift
+   * instead spread the same darkness thinner, so the shadow next to the
+   * cover got lighter; deepening it keeps its shape and reads ~40% darker.
+   */
+  folder: 1.6,
+} as const;
+
 /** Heights above the desk, in canvas px, for each kind of caster. */
 export const LAMP_LIFT = {
   /** Caption pills sit on the desk beside their print. */

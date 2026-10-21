@@ -17,6 +17,7 @@ import {
 } from "./desk-lamp";
 import {
   LAMP_CONTACT_ATTRIBUTE,
+  LAMP_DEPTH_ATTRIBUTE,
   LAMP_SHADOW_ATTRIBUTE,
   screenLinear,
 } from "./lamp-shadows";
@@ -189,7 +190,11 @@ const startLampShadows = (onCast: () => void) => {
       if (!shadow) {
         continue;
       }
-      const filter = lampShadowFilter(shadow);
+      const depth = Number(element.getAttribute(LAMP_DEPTH_ATTRIBUTE)) || 1;
+      const filter = lampShadowFilter({
+        ...shadow,
+        opacity: shadow.opacity * depth,
+      });
       if (state.applied !== filter) {
         state.applied = filter;
         filters.push([element, filter]);
