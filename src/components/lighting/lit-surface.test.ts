@@ -31,10 +31,12 @@ const createElement = (left = 0, top = 0) => {
 
 const startSurface = ({
   left = 0,
+  motionScale,
   step,
   top = 0,
 }: {
   left?: number;
+  motionScale?: number;
   step?: () => readonly number[];
   top?: number;
 } = {}) => {
@@ -44,6 +46,7 @@ const startSurface = ({
     draw,
     element: createElement(left, top),
     label: "Test surface",
+    motionScale,
     onReady: vi.fn(),
     step,
   });
@@ -193,6 +196,70 @@ describe("runLitSurface", () => {
       surfaces.reduce((sum, { draw }) => sum + draw.mock.calls.length, 0) -
       before;
     expect(drawn).toBe(4);
+  });
+});
+
+describe("motion resolution", () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    litSurface = await import("./lit-surface");
+    clock = 0;
+    vi.spyOn(performance, "now").mockImplementation(() => clock);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    lamp.listeners.clear();
+    document.body.replaceChildren();
+  });
+
+  const lastScale = (draw: ReturnType<typeof vi.fn>) =>
+    (draw.mock.calls.at(-1)?.[1] as { pixelScale: number } | undefined)
+      ?.pixelScale;
+
+  // The lamp rests, sweeps right 20 px a frame, then rests again.
+  const sweep = async (surfaces: { draw: ReturnType<typeof vi.fn> }[]) => {
+    let time = PAUSE_MS;
+    await frame({ x: 50, y: 50 }, time);
+    const resting = surfaces.map(({ draw }) => lastScale(draw));
+    let x = 50;
+    for (let index = 0; index < 6; index += 1) {
+      time += 16;
+      x += 20;
+      // biome-ignore lint/performance/noAwaitInLoops: frames arrive one after another
+      await frame({ x, y: 50 }, time);
+    }
+    const moving = surfaces.map(({ draw }) => lastScale(draw));
+    for (let index = 0; index < 15; index += 1) {
+      time += 16;
+      // biome-ignore lint/performance/noAwaitInLoops: frames arrive one after another
+      await frame({ x, y: 50 }, time);
+    }
+    const settled = surfaces.map(({ draw }) => lastScale(draw));
+    return { moving, resting, settled };
+  };
+
+  it("draws soft surfaces at half resolution while the lamp sweeps, then restores it", async () => {
+    vi.spyOn(window, "devicePixelRatio", "get").mockReturnValue(2);
+    const soft = startSurface({ motionScale: 0.5 });
+    const sharp = startSurface();
+    await settle();
+
+    const { moving, resting, settled } = await sweep([soft, sharp]);
+
+    expect(resting).toEqual([2, 2]);
+    expect(moving).toEqual([1, 2]);
+    expect(settled).toEqual([2, 2]);
+  });
+
+  it("never draws below one backing pixel per CSS pixel", async () => {
+    vi.spyOn(window, "devicePixelRatio", "get").mockReturnValue(1);
+    const soft = startSurface({ motionScale: 0.5 });
+    await settle();
+
+    const { moving } = await sweep([soft]);
+
+    expect(moving).toEqual([1]);
   });
 });
 
