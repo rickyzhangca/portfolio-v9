@@ -32,11 +32,13 @@ const createElement = (left = 0, top = 0) => {
 const startSurface = ({
   left = 0,
   motionScale,
+  prominence,
   step,
   top = 0,
 }: {
   left?: number;
   motionScale?: number;
+  prominence?: () => number;
   step?: () => readonly number[];
   top?: number;
 } = {}) => {
@@ -48,6 +50,7 @@ const startSurface = ({
     label: "Test surface",
     motionScale,
     onReady: vi.fn(),
+    prominence,
     step,
   });
   return { draw, stop };
@@ -250,6 +253,23 @@ describe("motion resolution", () => {
     expect(resting).toEqual([2, 2]);
     expect(moving).toEqual([1, 2]);
     expect(settled).toEqual([2, 2]);
+  });
+
+  it("keeps a hidden surface's last frame while the lamp sweeps, and relights it once it shows", async () => {
+    vi.spyOn(window, "devicePixelRatio", "get").mockReturnValue(2);
+    let shown = 0;
+    const tucked = startSurface({ motionScale: 0.5, prominence: () => shown });
+    await settle();
+
+    const { moving, resting, settled } = await sweep([tucked]);
+
+    // Drawn once, at full resolution, and left alone through the sweep.
+    expect(tucked.draw).toHaveBeenCalledTimes(1);
+    expect([resting, moving, settled]).toEqual([[2], [2], [2]]);
+
+    shown = 1;
+    await frame({ x: 170, y: 50 }, PAUSE_MS * 10);
+    expect(tucked.draw).toHaveBeenCalledTimes(2);
   });
 
   it("never draws below one backing pixel per CSS pixel", async () => {

@@ -92,8 +92,12 @@ const PAPER_STOCKS: Record<PaperKind, PaperStock> = {
   },
 };
 
-/** Share of a covered paper that shows past whatever covers it. */
-const COVERED_PROMINENCE = 0.2;
+/**
+ * A print tucked in a closed folder barely shows past the cover, so it keeps
+ * the light it had while the lamp moves, and is relit when the folder opens.
+ * Relighting them took a quarter of the pixels redrawn in a fast sweep.
+ */
+const COVERED_PROMINENCE = 0;
 
 /** Curl heights are tuned for a 240 px sheet; smaller paper curls less. */
 const CURL_REFERENCE_SIZE = 240;
