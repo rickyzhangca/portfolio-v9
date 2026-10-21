@@ -112,7 +112,7 @@ export function PaperCardProjection({
   // The shared paper exceeds the fixed hit area while returning.
   return (
     <div
-      // Isolated so the lamp's paper shading multiplies over paper and text only.
+      // Isolated so the lamp's shadow canvas sits behind the paper.
       className="relative isolate"
       data-paper-frame
       ref={frameRef}

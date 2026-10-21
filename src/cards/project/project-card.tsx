@@ -35,7 +35,7 @@ const ProjectCardComponent = ({
 
   return (
     <div className="flex h-full flex-col gap-1.5">
-      {/* Isolated so the lamp's print shading blends with the print only. */}
+      {/* Isolated so the lamp's shadow canvas sits behind the print. */}
       <div className="relative isolate">
         <div
           className={tw(

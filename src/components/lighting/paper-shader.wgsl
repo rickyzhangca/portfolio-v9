@@ -1,8 +1,12 @@
 // Lights one sheet of paper under the desk lamp: its surface texture and a
-// curled corner or edge. The canvas covers the paper and is multiplied over
-// it, so the shading falls on the DOM paper and its printed text alike. It
-// overhangs the paper by a margin; there the isolated group behind it is
-// empty, so the curl's shadow composites normally onto the desk.
+// curled corner or edge. The canvas covers the paper and darkens it with
+// black at 1 - tone, which is multiplying it by the grey tone, so the shading
+// falls on the DOM paper and its printed text alike. It overhangs the paper
+// by a margin, where the curl's shadow falls on the desk.
+//
+// Both passes blend normally rather than with mix-blend-mode: a blend mode
+// makes the compositor render the paper's whole group into its own pass
+// each time the canvas changes, which took a fifth of the lamp's GPU time.
 // Units are the paper's untransformed CSS px ("local px").
 //
 // Every texture layer returns the slope of its relief directly (rather than
@@ -33,8 +37,8 @@ struct Paper {
   // regular stripes at far lower contrast than grain, and near the pixel
   // pitch they alias into moiré.
   texture: vec4f,
-  // x: how glossy the coating is (photo paper); y: 0 for the shading pass
-  // (multiplied), 1 for the gloss pass (screened over the sheet).
+  // x: how glossy the coating is (photo paper); y: 0 for the shading pass,
+  // 1 for the gloss pass (light added over the sheet).
   finish: vec4f,
 }
 
@@ -292,11 +296,15 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
     let halfway = normalize(l + vec3f(0.0, 0.0, 1.0));
     let nh = max(dot(n, halfway), 0.0);
     let reflection = pow(nh, 90.0) * 0.32 + pow(nh, 12.0) * 0.05;
-    let gloss = LAMP_COLOR * reflection * paper.finish.x * falloff * paper.intensity;
-    return vec4f(gloss * coverage, coverage);
+    let gloss = LAMP_COLOR * reflection * paper.finish.x * falloff * paper.intensity
+      * coverage;
+    // Premultiplied light, as opaque as its brightest channel: over black it
+    // is what screening it was, and over white the warm lamp tints it by at
+    // most a few percent where screening stayed white.
+    return vec4f(gloss, max(gloss.r, max(gloss.g, gloss.b)));
   }
 
-  // Premultiplied: grey shading over the paper, a cool shadow off it.
+  // Premultiplied: black at 1 - tone over the paper, a cool shadow off it.
   let tinted = (1.0 - coverage) * min(shadow * SHADOW_DEPTH, 1.0);
-  return vec4f(vec3f(tone) * coverage + SHADOW_TINT * tinted, coverage + tinted);
+  return vec4f(SHADOW_TINT * tinted, coverage * (1.0 - tone) + tinted);
 }

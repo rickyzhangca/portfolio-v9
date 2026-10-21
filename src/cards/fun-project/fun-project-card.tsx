@@ -233,7 +233,7 @@ export const FunProjectCard = ({
               {isLampOn && !isLit ? (
                 <div
                   aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 mix-blend-screen"
+                  className="pointer-events-none absolute inset-0"
                   data-lamp-sheen=""
                   style={{
                     backgroundImage: LAMP_SHEEN_GRADIENT,
