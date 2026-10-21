@@ -46,8 +46,16 @@ export const getSwagPosition = (
   };
 };
 
+/**
+ * Where a closed company folder's two visible cards lie behind its cover,
+ * peeking out past the thumb notch on the right. Cards turn about their top
+ * left corner, so the front card's lower left corner swings left by its
+ * height times the sine of its turn; at 5 degrees from x 18 it poked out
+ * past the cover's left edge, and its lamp shadow further when the lamp
+ * hovered the cover. This keeps that corner about 10px inside the edge.
+ */
 export const COLLAPSED_POSITIONS = [
-  { rotate: 5, x: 18, y: 24 },
+  { rotate: 3, x: 24, y: 24 },
   { rotate: 0, x: 32, y: 72 },
 ];
 
