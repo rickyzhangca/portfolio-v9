@@ -2,7 +2,11 @@ import { useAtomValue } from "jotai";
 import { useEffect, useRef } from "react";
 import { lampConfigAtom } from "@/context/atoms";
 import { getRoomGradient } from "@/lib/room-gradient";
-import { projectLampShadow } from "@/lib/lamp-shadow";
+import {
+  contactBoxShadow,
+  lampShadowFilter,
+  projectLampShadow,
+} from "@/lib/lamp-shadow";
 import {
   areLampShadowsHeld,
   getFrameTransformCache,
@@ -11,7 +15,11 @@ import {
   setLampConfig,
   subscribeLamp,
 } from "./desk-lamp";
-import { LAMP_SHADOW_ATTRIBUTE, screenLinear } from "./lamp-shadows";
+import {
+  LAMP_CONTACT_ATTRIBUTE,
+  LAMP_SHADOW_ATTRIBUTE,
+  screenLinear,
+} from "./lamp-shadows";
 
 /** How long the room takes to dim when the lamp switches on. */
 const ROOM_FADE_MS = 700;
@@ -37,6 +45,10 @@ const CAMERA_SELECTOR = ".react-transform-component";
 interface CasterState {
   /** Last filter written; style.filter reads back normalized. */
   applied: string;
+  /** Last contact box-shadow written, for casters that take one. */
+  appliedContact: string;
+  /** The stylesheet's box-shadow, restored when the lamp goes off. */
+  boxShadow: string;
   filter: string;
   lift: number;
   /** Center in canvas px last frame, for its speed. */
@@ -69,6 +81,9 @@ const startLampShadows = (onCast: () => void) => {
 
   const restore = (element: HTMLElement, state: CasterState) => {
     element.style.filter = state.filter;
+    if (state.appliedContact) {
+      element.style.boxShadow = state.boxShadow;
+    }
     element.style.transition = state.transition;
   };
 
@@ -121,12 +136,15 @@ const startLampShadows = (onCast: () => void) => {
     // Reads, and the shadows they give; the DOM is written afterwards.
     const added: HTMLElement[] = [];
     const filters: [HTMLElement, string][] = [];
+    const contacts: [HTMLElement, string][] = [];
     for (const element of casters) {
       const height = Number(element.getAttribute(LAMP_SHADOW_ATTRIBUTE)) || 0;
       let state = states.get(element);
       if (!state) {
         state = {
           applied: "",
+          appliedContact: "",
+          boxShadow: element.style.boxShadow,
           filter: element.style.filter,
           lift: height,
           position: null,
@@ -166,14 +184,22 @@ const startLampShadows = (onCast: () => void) => {
         lampHeight: heightPx,
         lift: state.lift * cameraScale,
         linear: screenLinear(element, cache),
+        rest: height * cameraScale,
       });
       if (!shadow) {
         continue;
       }
-      const filter = `drop-shadow(${shadow.x.toFixed(1)}px ${shadow.y.toFixed(1)}px ${shadow.blur.toFixed(1)}px rgb(0 0 0 / ${shadow.opacity.toFixed(3)}))`;
+      const filter = lampShadowFilter(shadow);
       if (state.applied !== filter) {
         state.applied = filter;
         filters.push([element, filter]);
+      }
+      if (element.hasAttribute(LAMP_CONTACT_ATTRIBUTE)) {
+        const contact = contactBoxShadow(shadow);
+        if (state.appliedContact !== contact) {
+          state.appliedContact = contact;
+          contacts.push([element, contact]);
+        }
       }
     }
 
@@ -187,6 +213,9 @@ const startLampShadows = (onCast: () => void) => {
       }
       for (const [element, filter] of filters) {
         element.style.filter = filter;
+      }
+      for (const [element, contact] of contacts) {
+        element.style.boxShadow = contact;
       }
       if (!hasCast) {
         hasCast = true;

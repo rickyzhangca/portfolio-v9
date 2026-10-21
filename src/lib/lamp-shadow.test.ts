@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { type Linear2D, projectLampShadow } from "./lamp-shadow";
+import {
+  contactBoxShadow,
+  type Linear2D,
+  lampShadowFilter,
+  projectLampShadow,
+} from "./lamp-shadow";
 
 const IDENTITY: Linear2D = { a: 1, b: 0, c: 0, d: 1 };
 const LAMP_HEIGHT = 240;
+const LAMP_FILTER =
+  /^drop-shadow\([\d.]+px [\d.]+px [\d.]+px rgb\(0 0 0 \/ [\d.]+\)\)$/;
+const CONTACT_BOX = /^0 0 [\d.]+px rgb\(0 0 0 \/ [\d.]+\)$/;
 
 describe("projectLampShadow", () => {
   it("throws the shadow away from the lamp", () => {
@@ -63,6 +71,35 @@ describe("projectLampShadow", () => {
     expect(shadow?.x).toBeCloseTo(0);
     expect(shadow?.y).toBeCloseTo(-(flat?.x ?? 0) / 2);
     expect(shadow?.blur).toBeCloseTo((flat?.blur ?? 0) / 2);
+  });
+
+  it("loosens the contact shadow as the caster lifts off its rest", () => {
+    const at = (lift: number) =>
+      projectLampShadow({
+        center: { x: 300, y: 200 },
+        lamp: { x: 100, y: 100 },
+        lampHeight: LAMP_HEIGHT,
+        lift,
+        linear: IDENTITY,
+        rest: 12,
+      })?.contact;
+    const resting = at(12);
+    const lifted = at(40);
+
+    expect(resting?.opacity).toBeGreaterThan(lifted?.opacity ?? 1);
+    expect(resting?.blur).toBeLessThan(lifted?.blur ?? 0);
+  });
+
+  it("keeps the contact shadow out of the per-frame filter", () => {
+    const shadow = projectLampShadow({
+      center: { x: 300, y: 200 },
+      lamp: { x: 100, y: 100 },
+      lampHeight: LAMP_HEIGHT,
+      lift: 12,
+      linear: IDENTITY,
+    });
+    expect(shadow ? lampShadowFilter(shadow) : "").toMatch(LAMP_FILTER);
+    expect(shadow ? contactBoxShadow(shadow) : "").toMatch(CONTACT_BOX);
   });
 
   it("skips casters collapsed to nothing", () => {

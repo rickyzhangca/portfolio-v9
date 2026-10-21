@@ -44,6 +44,7 @@ const ProjectCardComponent = ({
             isExpanded && !isLampOn && "shadow-3xl",
             !isExpanded && "drop-shadow-[0_2px_6px_rgba(0,0,0,0.12)]"
           )}
+          data-lamp-contact
           data-lamp-shadow={isExpanded ? LAMP_LIFT.card : LAMP_LIFT.screenshot}
         >
           {imageError ? (
@@ -85,6 +86,7 @@ const ProjectCardComponent = ({
           "no-pan flex w-fit items-center gap-4 rounded-full bg-white px-5 py-3",
           !isLampOn && "shadow-2xl"
         )}
+        data-lamp-contact
         data-lamp-shadow={isExpanded ? LAMP_LIFT.caption : undefined}
         initial={false}
         transition={SPRING_PRESETS.snappy}
@@ -121,6 +123,7 @@ const ProjectCardComponent = ({
             "no-pan rounded-3xl bg-white px-5 py-4 text-sm",
             !isLampOn && "shadow-2xl"
           )}
+          data-lamp-contact
           data-lamp-shadow={isExpanded ? LAMP_LIFT.caption : undefined}
           initial={false}
           transition={{
