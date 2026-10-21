@@ -41,7 +41,9 @@ interface LitSurfaceOptions<Surface extends { destroy: () => void }> {
   /**
    * How much of the surface shows, from 0 to 1, read every frame. A mostly
    * covered surface waits for proportionally more lamp travel before it
-   * redraws, leaving the turns to surfaces in plain view.
+   * redraws, leaving the turns to surfaces in plain view. At 0 it keeps its
+   * last frame however the lamp moves, at full resolution, until it shows
+   * again or its size or zoom changes.
    */
   prominence?: () => number;
   /**
@@ -328,7 +330,15 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
       const now = performance.now();
       const own = step?.(Math.min((now - lastFrame) / 1000, 0.1)) ?? [];
       lastFrame = now;
-      const view = measure(element, lamp, fadeStart, overhang, motionScale);
+      const shown = prominence?.() ?? 1;
+      // A hidden surface would only redraw to change resolution and back.
+      const view = measure(
+        element,
+        lamp,
+        fadeStart,
+        overhang,
+        shown > 0 ? motionScale : 1
+      );
       if (!view) {
         return;
       }
@@ -342,7 +352,7 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
         drawn.pixelScale === view.pixelScale &&
         drawn.intensity.toFixed(2) === view.intensity.toFixed(2)
       ) {
-        staleness = lightStaleness(drawn.light, view) * (prominence?.() ?? 1);
+        staleness = lightStaleness(drawn.light, view) * shown;
       }
       // Skip frames where nothing visible changed: a lamp step under a
       // pixel, or a fraction of a pixel of travel, does not show.
