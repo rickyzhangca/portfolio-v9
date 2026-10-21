@@ -24,8 +24,8 @@ import {
   screenLinear,
 } from "./lamp-shadows";
 import {
+  getLampShadowClaim,
   hasOwnTransform,
-  isLampShadowClaimed,
   setClaimedLampShadow,
 } from "./lit-shadow";
 
@@ -38,6 +38,11 @@ const LIT_DESK = "#fff";
  * lamp has moved meanwhile instead of jumping there.
  */
 const RELEASE_EASE_MS = 400;
+/**
+ * A caster within this much of its own height, in canvas px, counts as
+ * resting: a sticker's blurred outline stands in for its filter until then.
+ */
+const RESTING_LIFT = 0.5;
 /** Extra height while the pointer hovers a caster, as when it is picked up. */
 const HOVER_LIFT = 8;
 /** How quickly a caster rises or settles, per second. */
@@ -277,12 +282,21 @@ const startLampShadows = (onCast: () => void) => {
       const depth = Number(element.getAttribute(LAMP_DEPTH_ATTRIBUTE)) || 1;
       const cast = { ...shadow, opacity: shadow.opacity * depth };
       const isRounded = element.hasAttribute(LAMP_CONTACT_ATTRIBUTE);
-      // A canvas behind the caster draws its shadow while it moves only with
-      // its parent; it rides along, so it needs no box-shadow in flight.
-      const isClaimed = isLampShadowClaimed(element);
-      const isCanvasShadow = isClaimed && !hasOwnTransform(element);
-      if (isClaimed) {
-        setClaimedLampShadow(element, isCanvasShadow ? cast : null);
+      // A canvas draws the caster's shadow while it can (see
+      // `claimLampShadow`); it rides along, so it needs no box-shadow in
+      // flight.
+      const claim = getLampShadowClaim(element);
+      const isResting = state.lift <= height + RESTING_LIFT;
+      const isCanvasShadow =
+        claim?.ready === true &&
+        (claim.inside ? isResting : !hasOwnTransform(element));
+      if (claim) {
+        // An unready canvas reads the shadow to prepare its bitmap, once
+        // the caster rests: a sticker still flying in blurs more.
+        setClaimedLampShadow(
+          element,
+          isCanvasShadow || (!claim.ready && isResting) ? cast : null
+        );
       }
       // This frame's speed switches at once, as a card takes off; the
       // smoothed speed holds the box-shadow until it has landed.

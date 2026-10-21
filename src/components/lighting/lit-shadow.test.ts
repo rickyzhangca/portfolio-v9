@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   claimLampShadow,
   getClaimedLampShadow,
+  getLampShadowClaim,
   isLampShadowClaimed,
+  markLampShadowReady,
   setClaimedLampShadow,
 } from "./lit-shadow";
 
@@ -35,5 +37,29 @@ describe("claimed lamp shadows", () => {
 
     expect(isLampShadowClaimed(caster)).toBe(false);
     expect(getClaimedLampShadow(caster)).toBeNull();
+  });
+
+  it("keeps the filter until a canvas inside the caster is ready", () => {
+    const caster = document.createElement("div");
+    const release = claimLampShadow(caster, { inside: true, ready: false });
+
+    expect(getLampShadowClaim(caster)).toMatchObject({
+      inside: true,
+      ready: false,
+    });
+    markLampShadowReady(caster);
+    expect(getLampShadowClaim(caster)?.ready).toBe(true);
+    release();
+  });
+
+  it("leaves a newer claim in place when an older one is released", () => {
+    const caster = document.createElement("div");
+    const releaseOld = claimLampShadow(caster);
+    const releaseNew = claimLampShadow(caster, { inside: true });
+
+    releaseOld();
+    expect(getLampShadowClaim(caster)?.inside).toBe(true);
+    releaseNew();
+    expect(isLampShadowClaimed(caster)).toBe(false);
   });
 });

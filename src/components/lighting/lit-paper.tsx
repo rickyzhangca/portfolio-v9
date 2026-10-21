@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { deskLampAtom } from "@/context/atoms";
 import { LAMP_SHADOW_ATTRIBUTE, LAMP_SHADOW_MARGIN } from "./lamp-shadows";
 import { runLitSurface } from "./lit-surface";
+import { startLazily } from "./start-lazily";
 import type { PaperTexture } from "./paper-renderer";
 
 /**
@@ -227,22 +228,11 @@ const LitPaper = ({
     if (!(isShadowDrawn && canvas && caster)) {
       return;
     }
-    // Loaded with the lamp, outside the first view's scripts.
-    let stop: (() => void) | null = null;
-    let cancelled = false;
-    import("./lit-shadow")
-      .then(({ runLampShadow }) => {
-        if (!cancelled) {
-          stop = runLampShadow({ canvas, caster, radius });
-        }
-      })
-      .catch((error: unknown) =>
-        console.warn("Lamp shadow unavailable", error)
-      );
-    return () => {
-      cancelled = true;
-      stop?.();
-    };
+    return startLazily(
+      () => import("./lit-shadow"),
+      ({ runLampShadow }) => runLampShadow({ canvas, caster, radius }),
+      "Lamp shadow"
+    );
   }, [isShadowDrawn, radius]);
 
   const visible = isReady && !hidden;
