@@ -6,6 +6,15 @@ import type { Linear2D } from "@/lib/lamp-shadow";
  */
 export const LAMP_SHADOW_ATTRIBUTE = "data-lamp-shadow";
 
+/**
+ * Casters whose outline is their own rounded border box (papers, prints,
+ * pills) also take a contact shadow, as a box-shadow: it depends only on
+ * how far they are lifted, so it repaints on a hover or drag and stays put
+ * while the lamp moves. Chained into the per-frame drop-shadow filter it
+ * doubled that filter's cost, and fast sweeps dropped every fifth frame.
+ */
+export const LAMP_CONTACT_ATTRIBUTE = "data-lamp-contact";
+
 /** Heights above the desk, in canvas px, for each kind of caster. */
 export const LAMP_LIFT = {
   /** Caption pills sit on the desk beside their print. */

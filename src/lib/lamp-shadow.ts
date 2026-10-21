@@ -16,15 +16,35 @@ export interface LampShadowInput {
   lift: number;
   /** Maps the caster's own CSS px to screen px. */
   linear: Linear2D;
+  /**
+   * The caster's height while it lies still, in screen px; lifting it above
+   * that (hovered, carried) loosens its contact shadow. Defaults to `lift`.
+   */
+  rest?: number;
 }
 
 /** A drop shadow in the caster's own CSS px, ready for `drop-shadow()`. */
 export interface LampShadow {
   blur: number;
+  /**
+   * The soft dark right under the caster, where it hides the desk from the
+   * room's light: tight and dark while it rests, fading and spreading as it
+   * is lifted, as under the lit keycaps (keycaps-shader.wgsl).
+   */
+  contact: { blur: number; opacity: number };
   opacity: number;
   x: number;
   y: number;
 }
+
+/**
+ * The contact shadow at rest: its darkness and blur (screen px), then how
+ * fast it fades and spreads per screen px the caster is lifted.
+ */
+const CONTACT_OPACITY = 0.2;
+const CONTACT_BLUR = 3;
+const CONTACT_FADE = 0.15;
+const CONTACT_SPREAD = 0.6;
 
 /**
  * Projects a caster's shadow away from a point lamp, matching the lit
@@ -39,6 +59,7 @@ export const projectLampShadow = ({
   lampHeight,
   lift,
   linear,
+  rest = lift,
 }: LampShadowInput): LampShadow | null => {
   const det = linear.a * linear.d - linear.b * linear.c;
   if (Math.abs(det) < 1e-4) {
@@ -56,11 +77,29 @@ export const projectLampShadow = ({
   const blur = 1.5 + lift * 0.45 + length * 0.15;
   // Further from the lamp, less direct light: a fainter shadow.
   const falloff = 1 / (1 + (distance / (lampHeight * 1.9)) ** 2);
+  const scale = Math.sqrt(Math.abs(det));
+  const raised = Math.max(lift - rest, 0);
 
   return {
-    blur: blur / Math.sqrt(Math.abs(det)),
+    blur: blur / scale,
+    contact: {
+      blur: (CONTACT_BLUR + raised * CONTACT_SPREAD) / scale,
+      opacity: CONTACT_OPACITY / (1 + raised * CONTACT_FADE),
+    },
     opacity: 0.08 + 0.16 * falloff,
     x: (linear.d * screenX - linear.c * screenY) / det,
     y: (-linear.b * screenX + linear.a * screenY) / det,
   };
 };
+
+/** The CSS filter for a lamp shadow. */
+export const lampShadowFilter = ({ blur, opacity, x, y }: LampShadow) =>
+  `drop-shadow(${x.toFixed(1)}px ${y.toFixed(1)}px ${blur.toFixed(1)}px rgb(0 0 0 / ${opacity.toFixed(3)}))`;
+
+/**
+ * The CSS box-shadow for a contact shadow, for casters whose outline is
+ * their rounded border box. The lamp's filter then takes in its faint halo,
+ * as it would cast the paper's own edge.
+ */
+export const contactBoxShadow = ({ contact }: LampShadow) =>
+  `0 0 ${contact.blur.toFixed(1)}px rgb(0 0 0 / ${contact.opacity.toFixed(3)})`;

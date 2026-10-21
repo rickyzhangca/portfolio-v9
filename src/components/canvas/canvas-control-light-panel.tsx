@@ -6,7 +6,11 @@ import {
   LAMP_FOLLOW_RATE,
   type LampConfig,
 } from "@/lib/lamp-config";
-import { projectLampShadow } from "@/lib/lamp-shadow";
+import {
+  contactBoxShadow,
+  lampShadowFilter,
+  projectLampShadow,
+} from "@/lib/lamp-shadow";
 import { getRoomGradient } from "@/lib/room-gradient";
 import { Slider } from "../ui/slider";
 import { CanvasControlResetButton } from "./canvas-control-reset-button";
@@ -139,9 +143,8 @@ const LightPreview = ({ config }: { config: LampConfig }) => {
           lift: PREVIEW_CARD_LIFT,
           linear: IDENTITY,
         });
-        element.style.filter = shadow
-          ? `drop-shadow(${shadow.x.toFixed(1)}px ${shadow.y.toFixed(1)}px ${shadow.blur.toFixed(1)}px rgb(0 0 0 / ${shadow.opacity.toFixed(3)}))`
-          : "none";
+        element.style.filter = shadow ? lampShadowFilter(shadow) : "none";
+        element.style.boxShadow = shadow ? contactBoxShadow(shadow) : "";
       }
     };
 

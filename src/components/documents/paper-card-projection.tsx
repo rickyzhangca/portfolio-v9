@@ -134,6 +134,7 @@ export function PaperCardProjection({
             ? "drop-shadow-[0_6px_10px_rgba(0,0,0,0.06)]"
             : "drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)] group-hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
         )}
+        data-lamp-contact
         data-lamp-shadow={
           shadow === "soft" ? LAMP_LIFT.flatPaper : LAMP_LIFT.card
         }
