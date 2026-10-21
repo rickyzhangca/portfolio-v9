@@ -55,89 +55,25 @@ const takeOutlineTurn = (time: number) => {
   return true;
 };
 
-interface ImageRect {
+/** What casts the shadow, in the caster's own px, and how to fill it. */
+interface Shape {
+  fill: (context: CanvasRenderingContext2D) => void;
   height: number;
   left: number;
   top: number;
   width: number;
 }
 
-interface Outline {
-  blur: number;
-  /** Screen px per own px when it was drawn. */
-  screenScale: number;
-  /** Bitmap's left and top within the caster, in its own px. */
-  left: number;
-  top: number;
-}
-
-/** The part of the image box an `object-contain` image covers. */
-const containedRect = (image: HTMLImageElement): ImageRect => {
-  const box = { height: image.offsetHeight, width: image.offsetWidth };
-  const ratio = image.naturalWidth / image.naturalHeight;
-  const width = Math.min(box.width, box.height * ratio);
-  const height = width / ratio;
-  return {
-    height,
-    left: image.offsetLeft + (box.width - width) / 2,
-    top: image.offsetTop + (box.height - height) / 2,
-    width,
-  };
-};
-
 /**
- * Draws the image's outline blurred into the canvas, in the shadow's tint.
- * The blur is a canvas shadow cast from an image drawn off the bitmap:
- * WebKit ignores a 2D context's `filter`, and `shadowBlur` is twice the
- * Gaussian's deviation in both engines.
+ * The outline a sprite casts: the caster's image (a sticker, its alpha as
+ * printed with `object-contain`), the rounded border box of its first other
+ * child (a card), or an SVG path over its whole box (a folder cover's
+ * mask), given with the path's own size.
  */
-const drawOutline = (
-  canvas: HTMLCanvasElement,
-  image: HTMLImageElement,
-  rect: ImageRect,
-  blur: number,
-  pixelScale: number
-): Outline | null => {
-  if (!(rect.width && rect.height)) {
-    return null;
-  }
-  const margin = Math.ceil(blur * BLUR_REACH) + 1;
-  const width = rect.width + margin * 2;
-  const height = rect.height + margin * 2;
-  canvas.width = Math.max(1, Math.round(width * pixelScale));
-  canvas.height = Math.max(1, Math.round(height * pixelScale));
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
-  const context = canvas.getContext("2d");
-  if (!context) {
-    return null;
-  }
-  const away = canvas.width + rect.width * pixelScale;
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.shadowColor = SHADOW_COLOR;
-  context.shadowBlur = blur * 2 * pixelScale;
-  context.shadowOffsetX = away;
-  context.drawImage(
-    image,
-    margin * pixelScale - away,
-    margin * pixelScale,
-    rect.width * pixelScale,
-    rect.height * pixelScale
-  );
-  return {
-    blur,
-    left: rect.left - margin,
-    screenScale: pixelScale / RESOLUTION,
-    top: rect.top - margin,
-  };
-};
-
-interface LampSpriteOptions {
-  /** Lies inside the caster, under its content. */
-  canvas: HTMLCanvasElement;
-  /** Holds the image whose outline casts the shadow. */
-  caster: HTMLElement;
-}
+export type SpriteOutline =
+  | "box"
+  | "image"
+  | { path: string; size: { height: number; width: number } };
 
 /**
  * The caster's image once it has loaded. Read each time: the image loads
@@ -151,18 +87,158 @@ const loadedImage = (caster: HTMLElement) => {
     : null;
 };
 
+const imageShape = (caster: HTMLElement): Shape | null => {
+  const image = loadedImage(caster);
+  if (!image) {
+    return null;
+  }
+  const box = { height: image.offsetHeight, width: image.offsetWidth };
+  const ratio = image.naturalWidth / image.naturalHeight;
+  const width = Math.min(box.width, box.height * ratio);
+  const height = width / ratio;
+  return {
+    fill: (context) => context.drawImage(image, 0, 0, width, height),
+    height,
+    left: image.offsetLeft + (box.width - width) / 2,
+    top: image.offsetTop + (box.height - height) / 2,
+    width,
+  };
+};
+
+const boxShape = (caster: HTMLElement): Shape | null => {
+  const box = [...caster.children].find(
+    (child): child is HTMLElement =>
+      child instanceof HTMLElement && child.tagName !== "CANVAS"
+  );
+  if (!box) {
+    return null;
+  }
+  const { height, width } = {
+    height: box.offsetHeight,
+    width: box.offsetWidth,
+  };
+  const radius = Number.parseFloat(getComputedStyle(box).borderTopLeftRadius);
+  return {
+    fill: (context) => {
+      context.beginPath();
+      context.roundRect(0, 0, width, height, radius || 0);
+      context.fill();
+    },
+    height,
+    left: box.offsetLeft,
+    top: box.offsetTop,
+    width,
+  };
+};
+
+const pathShape = (
+  caster: HTMLElement,
+  { path, size }: { path: string; size: { height: number; width: number } }
+): Shape => {
+  const width = caster.offsetWidth;
+  const height = caster.offsetHeight;
+  return {
+    fill: (context) => {
+      context.scale(width / size.width, height / size.height);
+      context.fill(new Path2D(path));
+    },
+    height,
+    left: 0,
+    top: 0,
+    width,
+  };
+};
+
+/** Reads the outline's place and size; layout, so in a lamp read phase. */
+const readShape = (caster: HTMLElement, outline: SpriteOutline) => {
+  if (outline === "image") {
+    return imageShape(caster);
+  }
+  return outline === "box" ? boxShape(caster) : pathShape(caster, outline);
+};
+
+interface Drawn {
+  blur: number;
+  height: number;
+  /** Bitmap's left and top within the caster, in its own px. */
+  left: number;
+  /** Screen px per own px when it was drawn. */
+  screenScale: number;
+  top: number;
+  width: number;
+}
+
 /**
- * Casts a sticker's lamp shadow from a bitmap of its outline, blurred once,
+ * Draws the outline blurred into the canvas, in the shadow's tint. The blur
+ * is a canvas shadow cast from a shape drawn off the bitmap: WebKit ignores
+ * a 2D context's `filter`, and `shadowBlur` is twice the Gaussian's
+ * deviation in both engines.
+ */
+const drawOutline = (
+  canvas: HTMLCanvasElement,
+  shape: Shape,
+  blur: number,
+  pixelScale: number
+): Drawn | null => {
+  if (!(shape.width && shape.height)) {
+    return null;
+  }
+  const margin = Math.ceil(blur * BLUR_REACH) + 1;
+  const width = shape.width + margin * 2;
+  const height = shape.height + margin * 2;
+  canvas.width = Math.max(1, Math.round(width * pixelScale));
+  canvas.height = Math.max(1, Math.round(height * pixelScale));
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return null;
+  }
+  const away = canvas.width + shape.width * pixelScale;
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.shadowColor = SHADOW_COLOR;
+  context.shadowBlur = blur * 2 * pixelScale;
+  context.shadowOffsetX = away;
+  context.fillStyle = SHADOW_COLOR;
+  context.save();
+  context.translate(margin * pixelScale - away, margin * pixelScale);
+  context.scale(pixelScale, pixelScale);
+  shape.fill(context);
+  context.restore();
+  return {
+    blur,
+    height: shape.height,
+    left: shape.left - margin,
+    screenScale: pixelScale / RESOLUTION,
+    top: shape.top - margin,
+    width: shape.width,
+  };
+};
+
+interface LampSpriteOptions {
+  /** Lies inside the caster, under its content. */
+  canvas: HTMLCanvasElement;
+  caster: HTMLElement;
+  outline: SpriteOutline;
+}
+
+/**
+ * Casts a caster's lamp shadow from a bitmap of its outline, blurred once,
  * in place of its drop-shadow filter (see `claimLampShadow`): each frame
  * only the bitmap's offset and opacity change, which the compositor applies
- * without blurring again. A swag collection of 123 stickers spent a third of
- * the GPU's time re-blurring their filters as the lamp moved. While a
- * sticker is lifted its blur grows past the bitmap's, and the filter draws
- * it. Returns the cleanup for an effect.
+ * without blurring again. Every frame the lamp moves, the compositor redraws
+ * the whole desk, and with it re-blurs every filter on screen, changed or
+ * not: an open swag collection of 123 stickers spent a third of the GPU's
+ * time on them. While the caster is lifted its blur grows past the
+ * bitmap's, and the filter draws it. Returns the cleanup for an effect.
  */
-export const runLampSprite = ({ canvas, caster }: LampSpriteOptions) => {
+export const runLampSprite = ({
+  canvas,
+  caster,
+  outline,
+}: LampSpriteOptions) => {
   let cancelled = false;
-  let outline: Outline | null = null;
+  let drawn: Drawn | null = null;
   let written = "";
 
   const hide = () => {
@@ -173,11 +249,11 @@ export const runLampSprite = ({ canvas, caster }: LampSpriteOptions) => {
   };
 
   const place = (shadow: LampShadow, screenScale: number) => {
-    if (!outline) {
+    if (!drawn) {
       return;
     }
-    const x = Math.round((outline.left + shadow.x) * screenScale * 4) / 4;
-    const y = Math.round((outline.top + shadow.y) * screenScale * 4) / 4;
+    const x = Math.round((drawn.left + shadow.x) * screenScale * 4) / 4;
+    const y = Math.round((drawn.top + shadow.y) * screenScale * 4) / 4;
     const opacity = Math.min(shadow.opacity * SHADOW_DEPTH, 1);
     const key = `${x} ${y} ${opacity}`;
     if (key === written) {
@@ -198,6 +274,10 @@ export const runLampSprite = ({ canvas, caster }: LampSpriteOptions) => {
     canvas.style.opacity = opacity.toFixed(3);
   };
 
+  // A card's box or a cover's size can change; an image's cannot once it
+  // has loaded, so stickers skip the reads.
+  const tracksSize = outline !== "image";
+
   // The lamp hands over the shadow before the bitmap is ready, so its blur
   // can be matched; the filter keeps drawing until then.
   const release = claimLampShadow(caster, { inside: true, ready: false });
@@ -207,13 +287,18 @@ export const runLampSprite = ({ canvas, caster }: LampSpriteOptions) => {
       Math.abs(linear.a * linear.d - linear.b * linear.c)
     );
     const zoomed =
-      outline !== null &&
-      Math.abs(screenScale / outline.screenScale - 1) > ZOOM_DRIFT;
+      drawn !== null &&
+      Math.abs(screenScale / drawn.screenScale - 1) > ZOOM_DRIFT;
     // Layout is read here, with every other listener's reads, and only when
     // a bitmap may be drawn: read after the frame's writes, each bitmap
     // forced a layout of its own.
-    let image = !outline || zoomed ? loadedImage(caster) : null;
-    let rect = image ? containedRect(image) : null;
+    let shape =
+      !drawn || zoomed || tracksSize ? readShape(caster, outline) : null;
+    const reshaped =
+      drawn !== null &&
+      shape !== null &&
+      (Math.abs(shape.width - drawn.width) > 0.5 ||
+        Math.abs(shape.height - drawn.height) > 0.5);
     // The lamp hands out this frame's shadow while its listener reads,
     // which may come after this one.
     queueMicrotask(() => {
@@ -227,33 +312,32 @@ export const runLampSprite = ({ canvas, caster }: LampSpriteOptions) => {
       }
       const drifted =
         zoomed ||
-        (outline !== null &&
-          Math.abs(shadow.blur - outline.blur) > outline.blur * BLUR_DRIFT);
-      if (drifted && !image) {
+        reshaped ||
+        (drawn !== null &&
+          Math.abs(shadow.blur - drawn.blur) > drawn.blur * BLUR_DRIFT);
+      if (drifted && !shape) {
         // The blur drifted with the lamp's settings, which is rare enough
         // to read layout here.
-        image = loadedImage(caster);
-        rect = image ? containedRect(image) : null;
+        shape = readShape(caster, outline);
       }
-      if (!outline || drifted) {
+      if (!drawn || drifted) {
         // Not loaded yet, or out of turns: the filter draws the shadow
         // meanwhile, or the old bitmap does.
-        if (!(image && rect && takeOutlineTurn(time))) {
-          if (outline) {
+        if (!(shape && takeOutlineTurn(time))) {
+          if (drawn) {
             place(shadow, screenScale);
           }
           return;
         }
-        const first = !outline;
-        outline = drawOutline(
+        const first = !drawn;
+        drawn = drawOutline(
           canvas,
-          image,
-          rect,
+          shape,
           shadow.blur,
           screenScale * RESOLUTION
         );
         written = "";
-        if (!outline) {
+        if (!drawn) {
           hide();
           return;
         }

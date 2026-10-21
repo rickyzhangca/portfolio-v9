@@ -12,6 +12,7 @@ import {
 } from "react";
 import { RenderCard } from "@/cards/render-card";
 import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
+import { LampSprite } from "@/components/lighting/lamp-sprite";
 import { deskLampAtom } from "@/context/atoms";
 import { useCanvasEnvironment } from "@/context/canvas-layout";
 import { useDraggable } from "@/hooks/use-draggable";
@@ -445,6 +446,7 @@ export const FunProjectGroup = ({
                       : TRANSITIONS.none
                   }
                 >
+                  <LampSprite outline="box" />
                   <div
                     className="flex flex-col gap-5 rounded-3xl bg-background2 p-6 outline outline-border"
                     ref={getContentCardRefCallback(index)}
