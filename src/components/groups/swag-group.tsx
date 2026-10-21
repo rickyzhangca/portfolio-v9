@@ -16,7 +16,7 @@ import { whenPageIdle } from "@/hooks/page-idle";
 import { useTogglePress } from "@/hooks/use-toggle-press";
 import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
 import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
-import { StickerShadow } from "@/components/lighting/sticker-shadow";
+import { LampSprite } from "@/components/lighting/lamp-sprite";
 import { getSwagPosition } from "@/lib/card-layout";
 import { tw } from "@/lib/utils";
 import type { CanvasSwagStackItem, Position } from "@/types/canvas";
@@ -288,7 +288,7 @@ export const SwagGroup = ({
                   : SPRING_PRESETS.quick
               }
             >
-              <StickerShadow />
+              <LampSprite outline="image" />
               {showLabels ? (
                 <Suspense fallback={<SwagImageButton swag={swag} />}>
                   <SwagLabel swag={swag} />

@@ -25,10 +25,13 @@ const profiles = [
     // the lamp hooks of the lit cards (their renderers load lazily), then to
     // 303 KB for the lit surfaces' adaptive redraw queue and the lamp's
     // playground settings, then to 323 KB (and 975 KB raw) for liquid-gooey,
-    // which draws the canvas controls' merged glass and morphing panel.
-    gzipBudget: 323_000,
+    // which draws the canvas controls' merged glass and morphing panel, then
+    // to 330 KB (990 KB raw) for the lamp shadow hand-offs that cards render
+    // (shadow canvases and outline sprites; their renderers load lazily),
+    // leaving room for further lamp work.
+    gzipBudget: 330_000,
     name: "Home",
-    rawBudget: 975_000,
+    rawBudget: 990_000,
   },
   {
     entries: [

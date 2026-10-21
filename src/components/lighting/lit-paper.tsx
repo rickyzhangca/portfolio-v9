@@ -18,7 +18,7 @@ interface PaperLightingProps {
    * Draws the lamp shadow of the parent's lamp shadow caster, a rounded box
    * of the paper's radius that fills the parent (a print, a sheet), on a
    * canvas behind it instead of its drop-shadow filter. Not while the paper
-   * is hidden or covered.
+   * is hidden.
    */
   castsShadow?: boolean;
   /**
@@ -217,9 +217,9 @@ const LitPaper = ({
     });
   }, [radius, stock]);
 
-  // A covered print relights only once the folder opens; its shadow, which
-  // shows past the cover, keeps following the lamp through the filter.
-  const isShadowDrawn = castsShadow && !hidden && !covered;
+  // A covered print relights only once the folder opens, but its shadow,
+  // which shows past the cover, keeps following the lamp.
+  const isShadowDrawn = castsShadow && !hidden;
   useEffect(() => {
     const canvas = shadowRef.current;
     const caster = canvas?.parentElement?.querySelector<HTMLElement>(

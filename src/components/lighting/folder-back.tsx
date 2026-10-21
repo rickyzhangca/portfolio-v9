@@ -1,6 +1,7 @@
 import { getResponsiveImageSources } from "@/cards/responsive-image";
 import { FOLDER_SHAPE_SIZE } from "@/lib/folder-shape";
 import { LAMP_LIFT } from "./lamp-shadows";
+import { LampSprite } from "./lamp-sprite";
 
 interface FolderBackProps {
   /** Panel colour when the cover has no image. */
@@ -25,6 +26,7 @@ export const FolderBack = ({ color, image, size }: FolderBackProps) => {
       data-lamp-shadow={LAMP_LIFT.folderBack}
       style={{ height: size.height, width: size.width }}
     >
+      <LampSprite outline="box" />
       <div
         className="h-full w-full overflow-hidden"
         style={{

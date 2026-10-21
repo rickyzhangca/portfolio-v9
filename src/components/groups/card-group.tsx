@@ -47,11 +47,18 @@ import { LAMP_DEPTH, LAMP_LIFT } from "@/components/lighting/lamp-shadows";
 import { FolderLighting } from "@/components/lighting/lit-folder";
 import { useItemEntrance } from "@/context/canvas-entrance";
 import { ENTRANCE_LANDED_MS } from "@/lib/canvas-entrance";
-import { FOLDER_MASK_IMAGE } from "@/lib/folder-shape";
+import { LampSprite } from "@/components/lighting/lamp-sprite";
+import {
+  FOLDER_MASK_IMAGE,
+  FOLDER_SHAPE_PATH,
+  FOLDER_SHAPE_SIZE,
+} from "@/lib/folder-shape";
 import { getDocumentLayoutId } from "@/lib/document-motion";
 import { tw } from "@/lib/utils";
 import { StackArticleLink } from "./stack-article-link";
 
+/** A folder cover's lamp shadow follows its folder-shaped mask. */
+const FOLDER_OUTLINE = { path: FOLDER_SHAPE_PATH, size: FOLDER_SHAPE_SIZE };
 const ZERO_REPULSION_OFFSET = { x: 0, y: 0 } as const;
 /** How far a folder gives under a press, and how quickly. */
 const COVER_PRESS_SCALE = 0.975;
@@ -566,6 +573,7 @@ export const CardStack = ({
                 }}
                 tabIndex={0}
               >
+                <LampSprite outline={FOLDER_OUTLINE} />
                 {/* Pressed while open, only the cover and back panel give; the
                   papers already lie on the desk. An inner layer, because
                   Motion's whileTap would take over Enter, which toggles the
