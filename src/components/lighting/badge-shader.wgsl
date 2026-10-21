@@ -43,6 +43,11 @@ fn vs(@builtin(vertex_index) index: u32) -> VertexOut {
 }
 
 const LAMP_COLOR = vec3f(1.0, 0.97, 0.92);
+// Shadows lean cool: where the warm lamp is blocked, only the room's light
+// is left. A tint darkens less than black, so its opacity is raised to keep
+// shadows as deep. Both match the DOM shadows (lamp-shadow.ts).
+const SHADOW_TINT = vec3f(0.11, 0.14, 0.23);
+const SHADOW_DEPTH = 1.16;
 // The rolled edge, in local px.
 const EDGE_ROUND = 3.0;
 const MARCH_STEPS = 64;
@@ -266,5 +271,6 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
     shadow = shadowAt(desk) * badge.intensity;
   }
   // Premultiplied: the badge over its shadow.
-  return vec4f(color * coverage, coverage + shadow * (1.0 - coverage));
+  let tinted = min(shadow * SHADOW_DEPTH, 1.0) * (1.0 - coverage);
+  return vec4f(color * coverage + SHADOW_TINT * tinted, coverage + tinted);
 }

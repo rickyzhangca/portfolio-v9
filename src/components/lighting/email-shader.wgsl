@@ -47,6 +47,11 @@ fn vs(@builtin(vertex_index) index: u32) -> VertexOut {
 }
 
 const LAMP_COLOR = vec3f(1.0, 0.97, 0.92);
+// Shadows lean cool: where the warm lamp is blocked, only the room's light
+// is left. A tint darkens less than black, so its opacity is raised to keep
+// shadows as deep. Both match the DOM shadows (lamp-shadow.ts).
+const SHADOW_TINT = vec3f(0.11, 0.14, 0.23);
+const SHADOW_DEPTH = 1.16;
 // Towards the viewer of the oblique view: up the screen as much as out of it.
 const VIEW = vec3f(0.0, 0.70710678, 0.70710678);
 // A clean, faintly cool white.
@@ -402,7 +407,8 @@ fn colorAt(s: vec2f, footprint: f32) -> vec4f {
     wall = button.y > 0.5;
   }
   if (part == PART_DESK) {
-    return vec4f(0.0, 0.0, 0.0, deskShadow(vec3f(s, 0.0)));
+    let shadow = min(deskShadow(vec3f(s, 0.0)) * SHADOW_DEPTH, 1.0);
+    return vec4f(SHADOW_TINT * shadow, shadow);
   }
   let p = vec3f(s.x, s.y + best, best);
   if (part == PART_PILL) {

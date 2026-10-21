@@ -59,6 +59,11 @@ fn vs(@builtin(vertex_index) index: u32) -> VertexOut {
 }
 
 const LAMP_COLOR = vec3f(1.0, 0.97, 0.92);
+// Shadows lean cool: where the warm lamp is blocked, only the room's light
+// is left. A tint darkens less than black, so its opacity is raised to keep
+// shadows as deep. Both match the DOM shadows (lamp-shadow.ts).
+const SHADOW_TINT = vec3f(0.11, 0.14, 0.23);
+const SHADOW_DEPTH = 1.16;
 // Towards the viewer of the oblique view: up the screen as much as out of it.
 const VIEW = vec3f(0.0, 0.70710678, 0.70710678);
 // Shadows: penumbra growth with distance (1 / the lamp's apparent radius)
@@ -428,7 +433,8 @@ fn deskShadow(p: vec3f) -> f32 {
 // Premultiplied colour at screen point s, for what the ray there meets.
 fn shade(s: vec2f, hit: Hit, pixel: f32) -> vec4f {
   if (hit.index < 0) {
-    return vec4f(0.0, 0.0, 0.0, deskShadow(vec3f(s, 0.0)));
+    let shadow = min(deskShadow(vec3f(s, 0.0)) * SHADOW_DEPTH, 1.0);
+    return vec4f(SHADOW_TINT * shadow, shadow);
   }
   let p = vec3f(s.x, s.y + hit.z, hit.z);
   return vec4f(shadeCap(p, hit.index, pixel, s.y), 1.0);

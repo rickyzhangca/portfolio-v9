@@ -50,6 +50,11 @@ fn vs(@builtin(vertex_index) index: u32) -> VertexOut {
 }
 
 const LAMP_COLOR = vec3f(1.0, 0.97, 0.92);
+// Shadows lean cool: where the warm lamp is blocked, only the room's light
+// is left. A tint darkens less than black, so its opacity is raised to keep
+// shadows as deep. Both match the DOM shadows (lamp-shadow.ts).
+const SHADOW_TINT = vec3f(0.11, 0.14, 0.23);
+const SHADOW_DEPTH = 1.16;
 const LUMA = vec3f(0.299, 0.587, 0.114);
 // Poisson disk for soft shadows.
 const DISK = array<vec2f, 12>(
@@ -211,7 +216,7 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
   let strength = select(0.24, 0.36, q.kind > 0.5);
   let shadow = shadowAt(p, q.lift, strength);
   let rgb = mix(base.rgb, lit, g.intensity);
-  // Premultiplied: the image over its own shadow.
-  let alpha = base.a + (1.0 - base.a) * shadow;
-  return vec4f(rgb * base.a, alpha);
+  // Premultiplied: the image over its own cool shadow.
+  let tinted = (1.0 - base.a) * min(shadow * SHADOW_DEPTH, 1.0);
+  return vec4f(rgb * base.a + SHADOW_TINT * tinted, base.a + tinted);
 }

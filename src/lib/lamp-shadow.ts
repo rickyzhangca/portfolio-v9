@@ -38,6 +38,17 @@ export interface LampShadow {
 }
 
 /**
+ * Shadows lean cool: where the warm lamp is blocked, only the room's light
+ * is left. A tint darkens less than black, so its opacity is raised to keep
+ * shadows as deep. The shaders use the same (`SHADOW_TINT`, `SHADOW_DEPTH`).
+ */
+const SHADOW_RGB = "28 36 59";
+const SHADOW_DEPTH = 1.16;
+
+const shadowColor = (opacity: number) =>
+  `rgb(${SHADOW_RGB} / ${Math.min(opacity * SHADOW_DEPTH, 1).toFixed(3)})`;
+
+/**
  * The contact shadow at rest: its darkness and blur (screen px), then how
  * fast it fades and spreads per screen px the caster is lifted.
  */
@@ -94,7 +105,7 @@ export const projectLampShadow = ({
 
 /** The CSS filter for a lamp shadow. */
 export const lampShadowFilter = ({ blur, opacity, x, y }: LampShadow) =>
-  `drop-shadow(${x.toFixed(1)}px ${y.toFixed(1)}px ${blur.toFixed(1)}px rgb(0 0 0 / ${opacity.toFixed(3)}))`;
+  `drop-shadow(${x.toFixed(1)}px ${y.toFixed(1)}px ${blur.toFixed(1)}px ${shadowColor(opacity)})`;
 
 /**
  * The CSS box-shadow for a contact shadow, for casters whose outline is
@@ -102,4 +113,4 @@ export const lampShadowFilter = ({ blur, opacity, x, y }: LampShadow) =>
  * as it would cast the paper's own edge.
  */
 export const contactBoxShadow = ({ contact }: LampShadow) =>
-  `0 0 ${contact.blur.toFixed(1)}px rgb(0 0 0 / ${contact.opacity.toFixed(3)})`;
+  `0 0 ${contact.blur.toFixed(1)}px ${shadowColor(contact.opacity)}`;
