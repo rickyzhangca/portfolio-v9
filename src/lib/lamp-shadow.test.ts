@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   contactBoxShadow,
   type Linear2D,
+  lampBoxShadow,
   lampShadowFilter,
   projectLampShadow,
 } from "./lamp-shadow";
@@ -10,6 +11,7 @@ const IDENTITY: Linear2D = { a: 1, b: 0, c: 0, d: 1 };
 const LAMP_HEIGHT = 240;
 const LAMP_FILTER =
   /^drop-shadow\([\d.]+px [\d.]+px [\d.]+px rgb\([\d ]+ \/ [\d.]+\)\)$/;
+const LAMP_BOX = /^4\.0px -3\.0px 12\.0px rgb\(/;
 const CONTACT_BOX = /^0 0 [\d.]+px rgb\([\d ]+ \/ [\d.]+\)$/;
 
 describe("projectLampShadow", () => {
@@ -100,6 +102,20 @@ describe("projectLampShadow", () => {
     });
     expect(shadow ? lampShadowFilter(shadow) : "").toMatch(LAMP_FILTER);
     expect(shadow ? contactBoxShadow(shadow) : "").toMatch(CONTACT_BOX);
+  });
+
+  it("doubles the blur for the same shadow as a box-shadow", () => {
+    const shadow = {
+      blur: 6,
+      contact: { blur: 3, opacity: 0.2 },
+      opacity: 0.2,
+      x: 4,
+      y: -3,
+    };
+    expect(lampBoxShadow(shadow)).toMatch(LAMP_BOX);
+    expect(lampShadowFilter({ ...shadow, blur: 12 })).toBe(
+      `drop-shadow(${lampBoxShadow(shadow)})`
+    );
   });
 
   it("skips casters collapsed to nothing", () => {
