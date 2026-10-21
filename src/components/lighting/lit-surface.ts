@@ -28,6 +28,14 @@ interface LitSurfaceOptions<Surface extends { destroy: () => void }> {
   /** Called when the surface cannot attach or a draw throws. */
   onFail?: (error: unknown) => void;
   onReady: () => void;
+  /**
+   * Share of the full backing-store resolution to draw at while the lamp
+   * moves fast; full resolution returns once it slows. For surfaces whose
+   * detail is soft (paper grain, board relief), where fewer pixels let every
+   * stale surface redraw each frame. Absent, the surface keeps full
+   * resolution, as surfaces drawing sharp prints or text must.
+   */
+  motionScale?: number;
   /** How far the canvas overhangs the element on each side, in local px. */
   overhang?: number;
   /**
@@ -49,6 +57,17 @@ const MAX_CANVAS_PIXELS = 2048;
 const PIXEL_SCALE_STEP = 0.25;
 
 const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
+
+/**
+ * Lamp speed, in screen px per second, above which `motionScale` surfaces
+ * drop resolution, and how long it must stay slower before they restore it.
+ * Redrawing costs per pixel, not per surface or shader step: on an Apple GPU
+ * at 2x, about 4.5 million canvas pixels a frame. A fast sweep makes every
+ * paper and folder stale at once, so at full resolution they took turns and
+ * their shadows trailed the lamp in steps; at half they all keep up.
+ */
+const MOTION_SPEED = 240;
+const MOTION_REST_MS = 150;
 
 /**
  * WebGPU surfaces redrawn per frame. Opening a folder of 14 prints moves
@@ -111,16 +130,32 @@ let budgetSpent = false;
 let frameTime = 0;
 /** The display's frame interval: falls at once, rises slowly. */
 let frameInterval = 0;
+/** The lamp at the last frame, to measure its speed. */
+let lastLamp: LampPosition | null = null;
+/** Frame time until which the lamp counts as moving fast. */
+let movingUntil = 0;
 
-/** Adjusts the draw budget once per frame from the lamp's frame timestamp. */
-const paceFrame = (time: number) => {
+/**
+ * Adjusts the draw budget and the lamp's motion once per frame, from the
+ * lamp's frame timestamp and position.
+ */
+const paceFrame = (time: number, lamp: LampPosition) => {
   if (time === frameTime) {
     return;
   }
   const interval = time - frameTime;
   frameTime = time;
+  const previous = lastLamp;
+  lastLamp = { x: lamp.x, y: lamp.y };
   if (interval <= 0 || interval > MAX_FRAME_GAP_MS) {
     return;
+  }
+  if (
+    previous &&
+    (Math.hypot(lamp.x - previous.x, lamp.y - previous.y) / interval) * 1000 >
+      MOTION_SPEED
+  ) {
+    movingUntil = time + MOTION_REST_MS;
   }
   frameInterval =
     frameInterval === 0 || interval < frameInterval
@@ -187,7 +222,8 @@ const measure = (
   element: HTMLElement,
   lamp: LampPosition,
   fadeStart: number,
-  overhang: number
+  overhang: number,
+  motionScale: number
 ): SurfaceView | null => {
   const width = element.offsetWidth;
   const height = element.offsetHeight;
@@ -214,6 +250,20 @@ const measure = (
   const awayX = lamp.x - (rect.left + rect.width / 2);
   const awayY = lamp.y - (rect.top + rect.height / 2);
   const { heightPx } = getLampConfig();
+  const fullScale =
+    Math.ceil((screenScale * window.devicePixelRatio) / PIXEL_SCALE_STEP) *
+    PIXEL_SCALE_STEP;
+  // Never below one backing pixel per CSS pixel, so 1x screens lose nothing.
+  const scale =
+    frameTime < movingUntil
+      ? Math.min(
+          fullScale,
+          Math.max(
+            Math.ceil((fullScale * motionScale) / PIXEL_SCALE_STEP),
+            Math.ceil(screenScale / PIXEL_SCALE_STEP)
+          ) * PIXEL_SCALE_STEP
+        )
+      : fullScale;
   return {
     height,
     intensity: easeOutCubic(
@@ -225,8 +275,7 @@ const measure = (
       z: heightPx / screenScale,
     },
     pixelScale: Math.min(
-      Math.ceil((screenScale * window.devicePixelRatio) / PIXEL_SCALE_STEP) *
-        PIXEL_SCALE_STEP,
+      scale,
       MAX_CANVAS_PIXELS / (Math.max(width, height) + overhang * 2)
     ),
     width,
@@ -242,6 +291,7 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
   draw,
   element,
   label,
+  motionScale = 1,
   onFail,
   onReady,
   overhang = 0,
@@ -274,11 +324,11 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
     let lastFrame = fadeStart;
 
     unsubscribe = subscribeLamp((lamp, time) => {
-      paceFrame(time);
+      paceFrame(time, lamp);
       const now = performance.now();
       const own = step?.(Math.min((now - lastFrame) / 1000, 0.1)) ?? [];
       lastFrame = now;
-      const view = measure(element, lamp, fadeStart, overhang);
+      const view = measure(element, lamp, fadeStart, overhang, motionScale);
       if (!view) {
         return;
       }

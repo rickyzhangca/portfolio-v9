@@ -191,6 +191,9 @@ const LitPaper = ({
         }),
       element,
       label: "Paper lighting",
+      // Grain, curl and gloss are soft: half resolution while the lamp sweeps
+      // keeps every sheet's shadow with it, and the text stays DOM-sharp.
+      motionScale: 0.5,
       onReady: () => setReady(true),
       overhang: SHADOW_MARGIN,
       prominence: () => (coveredRef.current ? COVERED_PROMINENCE : 1),
