@@ -71,6 +71,7 @@ const ProjectCardComponent = ({
           )}
         </div>
         <PaperLighting
+          castsShadow
           covered={!isExpanded}
           kind="photo"
           radius={PRINT_RADIUS}

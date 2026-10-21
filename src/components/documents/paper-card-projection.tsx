@@ -189,7 +189,7 @@ export function PaperCardProjection({
           {children}
         </div>
       </motion.div>
-      <PaperLighting hidden={isOpening} kind={stock} radius={24} />
+      <PaperLighting castsShadow hidden={isOpening} kind={stock} radius={24} />
     </div>
   );
 }
