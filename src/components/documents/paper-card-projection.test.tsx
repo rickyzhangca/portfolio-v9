@@ -113,7 +113,7 @@ describe("paper card projection", () => {
       width: "208px",
     });
     const preview = content?.querySelector<HTMLElement>("[data-paper-preview]");
-    expect(preview?.dataset.fadeOpacity).toBe("1");
+    expect(preview?.style.opacity).toBe("");
     expect(preview?.style).toMatchObject({
       height: "360px",
       transform: `scale(${208 / 240})`,
@@ -144,7 +144,7 @@ describe("paper card projection", () => {
     expect(content?.style).toMatchObject({ left: "16px", top: "24px" });
   });
 
-  it("fades the open card's preview out immediately", () => {
+  it("leaves the open card's preview to Motion's crossfade", () => {
     render(
       <CanvasSessionContext.Provider
         value={{
@@ -159,9 +159,35 @@ describe("paper card projection", () => {
         </PaperCardProjection>
       </CanvasSessionContext.Provider>
     );
+    // The reader's paper covers it until the shared crossfade, and fading it
+    // as well dimmed the text mid-flight.
     const preview = screen.getByText("Preview body").parentElement;
-    expect(preview?.dataset.fadeOpacity).toBe("0");
-    expect(preview?.dataset.fadeDuration).toBe("0.1");
+    expect(preview?.hasAttribute("data-paper-preview")).toBe(true);
+    expect(preview?.style.opacity).toBe("");
+  });
+
+  it("raises the shared content box with a lifted preview", () => {
+    render(
+      <PaperCardProjection {...props} previewLift={12}>
+        <p>Preview body</p>
+      </PaperCardProjection>
+    );
+    const content = screen
+      .getByText("Preview body")
+      .closest<HTMLElement>("[data-paper-content]");
+    const scale = 208 / 240;
+    expect(content?.style).toMatchObject({
+      height: "312px",
+      top: `${24 - 12 * scale}px`,
+      width: "208px",
+    });
+    // The visible preview still ends where the unlifted one did.
+    expect(
+      Number.parseFloat(
+        content?.querySelector<HTMLElement>("[data-paper-preview]")?.style
+          .height ?? ""
+      )
+    ).toBeCloseTo((312 + 12 * scale) / scale);
   });
 
   it("pins a document label to the top left and starts the paper beneath it", () => {
@@ -179,12 +205,20 @@ describe("paper card projection", () => {
     expect(label.closest("[data-paper-surface]")).toBe(surface);
     expect(surface?.getAttribute("data-layout-id")).toBe(props.layoutId);
     const content = frame?.querySelector<HTMLElement>("[data-paper-content]");
+    // The box keeps the paper's proportions, so Motion scales it as it does
+    // the reader's; the visible preview stops above the card's inset.
     expect(content?.style).toMatchObject({
-      height: "288px",
+      height: "312px",
       left: "16px",
       top: "48px",
       width: "208px",
     });
+    expect(
+      Number.parseFloat(
+        content?.querySelector<HTMLElement>("[data-paper-preview]")?.style
+          .height ?? ""
+      )
+    ).toBeCloseTo(288 / (208 / 240));
   });
 
   it("returns the label at once, held at its own size while the paper scales", () => {
@@ -225,7 +259,7 @@ describe("paper card projection", () => {
     expect(label?.style.transform).toBe("");
   });
 
-  it("fades a resume or about preview while that document is open", () => {
+  it("hides the label but not the preview while that document is open", () => {
     render(
       <PaperCardProjection {...props} label="Resume" open>
         <p>Preview body</p>
@@ -233,8 +267,7 @@ describe("paper card projection", () => {
     );
     const preview = screen.getByText("Preview body").parentElement;
     const label = screen.getByText("Resume");
-    expect(preview?.dataset.fadeOpacity).toBe("0");
-    expect(preview?.dataset.fadeDuration).toBe("0.1");
+    expect(preview?.style.opacity).toBe("");
     expect(label.parentElement?.style.opacity).toBe("0");
   });
 });

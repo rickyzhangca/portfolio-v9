@@ -109,6 +109,25 @@ describe("reader shell", () => {
         .querySelector("[data-paper-content]")
         ?.classList.contains("overflow-hidden")
     ).toBe(true);
+    // The card shows the top of the page: scrolled text fades rather than
+    // crossing the card's text on its way down.
+    const documentElement = dialog.querySelector<HTMLElement>(
+      "[data-reader-document]"
+    );
+    await waitFor(() =>
+      expect(Number(documentElement?.style.opacity || 1)).toBeLessThan(1)
+    );
+  });
+
+  it("fades only the backdrop of a projected reader, never its paper", async () => {
+    render(<ClosingProjectedReader />);
+    const dialog = await screen.findByRole("dialog", {
+      name: "Projected essay",
+    });
+    expect(dialog.style.opacity).toBe("");
+    expect(
+      dialog.querySelector<HTMLElement>("[data-reader-backdrop]")?.style.opacity
+    ).toBe("0");
   });
 
   it("releases pointer interception and modal isolation as soon as exit starts", async () => {

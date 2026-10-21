@@ -281,7 +281,7 @@ test("inset previews preserve reader typography, scroll reachability and return 
     return {
       contentHeight: content.offsetHeight,
       contentLeft: content.offsetLeft,
-      contentTop: content.offsetTop,
+      contentTop: Number.parseFloat(content.style.top),
       contentWidth: content.offsetWidth,
       fontSize: getComputedStyle(heading).fontSize,
       headingHeight: heading.clientHeight,
@@ -293,11 +293,13 @@ test("inset previews preserve reader typography, scroll reachability and return 
   expect(preview).toMatchObject({
     contentHeight: 312,
     contentLeft: 16,
-    contentTop: 24,
     contentWidth: 208,
     height: 360,
     width: 240,
   });
+  // The card lifts its preview 12px; the shared box rises with it, scaled by
+  // the inset preview, so the reader text lands on the preview's.
+  expect(preview.contentTop).toBeCloseTo(24 - (12 * 208) / 240);
 
   await first.press("Enter");
   await expect(page).toHaveURL(EPHEMERAL_PATH);

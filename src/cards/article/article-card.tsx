@@ -10,8 +10,15 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 export const ARTICLE_CARD_SIZE = { height: 360, width: 240 } as const;
 export const ARTICLE_CARD_PREVIEW_INSET = 16;
-const CLOSED_PREVIEW_SHIFT = 12;
+/**
+ * Shows more of the essay on the closed card. The projection applies it to
+ * the shared content box, so the reader text rises with the preview.
+ */
+export const ARTICLE_CARD_PREVIEW_LIFT = 12;
 const CLOSED_PREVIEW_FADE = 40;
+/** The lifted preview is that much taller, so its fade still ends at the card's. */
+const CLOSED_PREVIEW_HEIGHT =
+  ARTICLE_CARD_SIZE.height + ARTICLE_CARD_PREVIEW_LIFT;
 
 interface ArticlePreviewSize {
   fadeEnd: number;
@@ -24,7 +31,7 @@ export function ArticleCard({ content }: { content: ArticleCardContent }) {
   const { articleLocales } = useCanvasSession();
   const paperRef = useRef<HTMLDivElement>(null);
   const [previewSize, setPreviewSize] = useState<ArticlePreviewSize>({
-    fadeEnd: ARTICLE_CARD_SIZE.height,
+    fadeEnd: CLOSED_PREVIEW_HEIGHT,
     scale: ARTICLE_CARD_SIZE.width / 840,
   });
   useLayoutEffect(() => {
@@ -35,7 +42,7 @@ export function ArticleCard({ content }: { content: ArticleCardContent }) {
     const updateSize = (width: number, height: number) => {
       if (width > 0) {
         const scale = ARTICLE_CARD_SIZE.width / width;
-        const fadeEnd = Math.min(ARTICLE_CARD_SIZE.height, height * scale);
+        const fadeEnd = Math.min(CLOSED_PREVIEW_HEIGHT, height * scale);
         setPreviewSize((current) =>
           current.scale === scale && current.fadeEnd === fadeEnd
             ? current
@@ -80,7 +87,7 @@ export function ArticleCard({ content }: { content: ArticleCardContent }) {
           className="origin-top-left"
           ref={paperRef}
           style={{
-            transform: `translateY(-${CLOSED_PREVIEW_SHIFT}px) scale(${previewSize.scale})`,
+            transform: `scale(${previewSize.scale})`,
             width: paperWidth,
           }}
         >
