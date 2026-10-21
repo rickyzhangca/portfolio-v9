@@ -171,6 +171,29 @@ describe("runLitSurface", () => {
     x += 20;
     expect(await drawsDuring(x, time)).toBeLessThan(12);
   });
+
+  it("keeps the budget while the lamp rests, so a sweep does not redraw everything at once", async () => {
+    const surfaces = Array.from({ length: 12 }, () => startSurface());
+    await settle();
+    let time = PAUSE_MS;
+    // Every surface gets its first frame, then the lamp rests on time.
+    for (let index = 0; index < 43; index += 1) {
+      // biome-ignore lint/performance/noAwaitInLoops: frames arrive one after another
+      await frame({ x: 50, y: 50 }, time);
+      time += 16;
+    }
+    const before = surfaces.reduce(
+      (sum, { draw }) => sum + draw.mock.calls.length,
+      0
+    );
+
+    await frame({ x: 400, y: 50 }, time);
+
+    const drawn =
+      surfaces.reduce((sum, { draw }) => sum + draw.mock.calls.length, 0) -
+      before;
+    expect(drawn).toBe(4);
+  });
 });
 
 describe("lightStaleness", () => {

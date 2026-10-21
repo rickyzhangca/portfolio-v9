@@ -56,17 +56,22 @@ const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
  * machine relight each folder only every fifth frame, so the budget follows
  * frame pacing instead: it creeps up while frames arrive on time and halves
  * after a late one. Creeping, rather than jumping, keeps a busy GPU from
- * being probed with a dropped frame every few frames. Over budget, surfaces
- * wait their turn, so lighting trails motion by a few frames and catches up
- * once it settles.
+ * being probed with a dropped frame every few frames. It grows only on
+ * frames that spent all of it: a resting lamp used to let it climb to the
+ * maximum, and the first fast sweep then redrew every surface in one frame,
+ * stalled the GPU, and halved it down to the minimum for a third of a
+ * second. Over budget, surfaces wait their turn, so lighting trails motion
+ * by a few frames and catches up once it settles.
  *
  * The turn goes to the surface whose lighting is most out of date as seen:
  * a moving lamp changes the surfaces under it a lot and those across the
  * desk barely, so the ones under the pointer keep redrawing while the rest
- * wait. Surfaces animating their own parts (a key going down, a keycap
- * lifting) go first: the pointer that drives them also moves the lamp, and
- * a part that skips frames stutters where relighting a few frames late does
- * not show.
+ * wait. Raising a waiting surface's claim with every frame it waited gave
+ * those across the desk regular turns, but took them from the ones under
+ * the pointer, whose shadows then stepped as it circled them. Surfaces
+ * animating their own parts (a key going down, a keycap lifting) go first:
+ * the pointer that drives them also moves the lamp, and a part that skips
+ * frames stutters where relighting a few frames late does not show.
  */
 const INITIAL_DRAWS_PER_FRAME = 4;
 const MIN_DRAWS_PER_FRAME = 2;
@@ -99,6 +104,8 @@ interface PendingDraw {
 const pending = new Map<object, PendingDraw>();
 let flushQueued = false;
 let drawBudget = INITIAL_DRAWS_PER_FRAME;
+/** Whether the last frame had at least a full budget of surfaces waiting. */
+let budgetSpent = false;
 let frameTime = 0;
 /** The display's frame interval: falls at once, rises slowly. */
 let frameInterval = 0;
@@ -117,10 +124,12 @@ const paceFrame = (time: number) => {
     frameInterval === 0 || interval < frameInterval
       ? interval
       : frameInterval + (interval - frameInterval) * INTERVAL_RISE;
-  drawBudget =
-    interval > frameInterval * LATE_FRAME
-      ? Math.max(MIN_DRAWS_PER_FRAME, drawBudget / 2)
-      : Math.min(MAX_DRAWS_PER_FRAME, drawBudget + DRAW_BUDGET_GROWTH);
+  if (interval > frameInterval * LATE_FRAME) {
+    drawBudget = Math.max(MIN_DRAWS_PER_FRAME, drawBudget / 2);
+  } else if (budgetSpent) {
+    drawBudget = Math.min(MAX_DRAWS_PER_FRAME, drawBudget + DRAW_BUDGET_GROWTH);
+  }
+  budgetSpent = false;
 };
 
 // Runs after every lamp listener of this frame has queued its redraw.
@@ -129,7 +138,9 @@ const flushDraws = () => {
   const queue = [...pending.entries()].sort(
     (a, b) => b[1].staleness - a[1].staleness || a[1].since - b[1].since
   );
-  for (const [owner, entry] of queue.slice(0, Math.floor(drawBudget))) {
+  const budget = Math.floor(drawBudget);
+  budgetSpent ||= queue.length >= budget;
+  for (const [owner, entry] of queue.slice(0, budget)) {
     pending.delete(owner);
     entry.draw();
   }
