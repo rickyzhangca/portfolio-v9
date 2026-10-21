@@ -108,6 +108,15 @@ export const lampShadowFilter = ({ blur, opacity, x, y }: LampShadow) =>
   `drop-shadow(${x.toFixed(1)}px ${y.toFixed(1)}px ${blur.toFixed(1)}px ${shadowColor(opacity)})`;
 
 /**
+ * The same lamp shadow as a box-shadow, for casters whose outline is their
+ * rounded border box. Chrome and Safari read drop-shadow's blur as the
+ * Gaussian's standard deviation and box-shadow's as twice that, so the blur
+ * doubles; on an opaque box the two then draw alike.
+ */
+export const lampBoxShadow = ({ blur, opacity, x, y }: LampShadow) =>
+  `${x.toFixed(1)}px ${y.toFixed(1)}px ${(blur * 2).toFixed(1)}px ${shadowColor(opacity)}`;
+
+/**
  * The CSS box-shadow for a contact shadow, for casters whose outline is
  * their rounded border box. The lamp's filter then takes in its faint halo,
  * as it would cast the paper's own edge.

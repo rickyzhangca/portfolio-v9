@@ -4,6 +4,8 @@ import { lampConfigAtom } from "@/context/atoms";
 import { getRoomGradient } from "@/lib/room-gradient";
 import {
   contactBoxShadow,
+  type LampShadow,
+  lampBoxShadow,
   lampShadowFilter,
   projectLampShadow,
 } from "@/lib/lamp-shadow";
@@ -40,6 +42,26 @@ const LIFT_RATE = 14;
  */
 const FLIGHT_LIFT_PER_SPEED = 0.008;
 const MAX_FLIGHT_LIFT = 18;
+/**
+ * Rounded casters moving faster than this, in canvas px per second, take the
+ * lamp's shadow as a box-shadow instead of the filter, and go back to it
+ * once slower than the second speed. A drop-shadow filter is blurred by the
+ * compositor every frame its caster scales or rotates: a folder of 15 prints
+ * fanning out, each with its caption, dropped about one frame in eight even
+ * with the filters held still. A box-shadow is painted into the card's own
+ * layer, which only moves. The filter stays for casters at rest, since a
+ * lamp sweep would repaint every box-shadow it changes.
+ */
+const BOXED_SHADOW_SPEED = 120;
+const FILTERED_SHADOW_SPEED = 30;
+/**
+ * A box-shadow change repaints its card, image and all, so while in flight
+ * it is rewritten only once the shadow has moved or softened this far, in the
+ * caster's own px, or darkened by the second amount. Rewritten every frame,
+ * a folder of 15 prints and their captions still dropped frames opening.
+ */
+const BOXED_SHADOW_STEP = 3;
+const BOXED_OPACITY_STEP = 0.03;
 /** The camera's content element from react-zoom-pan-pinch. */
 const CAMERA_SELECTOR = ".react-transform-component";
 
@@ -50,6 +72,10 @@ interface CasterState {
   appliedContact: string;
   /** The stylesheet's box-shadow, restored when the lamp goes off. */
   boxShadow: string;
+  /** Whether the lamp's shadow is written as a box-shadow, while in flight. */
+  boxed: boolean;
+  /** The lamp shadow last written as a box-shadow, while boxed. */
+  boxedShadow: LampShadow | null;
   filter: string;
   lift: number;
   /** Center in canvas px last frame, for its speed. */
@@ -146,6 +172,8 @@ const startLampShadows = (onCast: () => void) => {
           applied: "",
           appliedContact: "",
           boxShadow: element.style.boxShadow,
+          boxed: false,
+          boxedShadow: null,
           filter: element.style.filter,
           lift: height,
           position: null,
@@ -191,16 +219,38 @@ const startLampShadows = (onCast: () => void) => {
         continue;
       }
       const depth = Number(element.getAttribute(LAMP_DEPTH_ATTRIBUTE)) || 1;
-      const filter = lampShadowFilter({
-        ...shadow,
-        opacity: shadow.opacity * depth,
-      });
+      const cast = { ...shadow, opacity: shadow.opacity * depth };
+      const isRounded = element.hasAttribute(LAMP_CONTACT_ATTRIBUTE);
+      // This frame's speed switches at once, as a card takes off; the
+      // smoothed speed holds the box-shadow until it has landed.
+      state.boxed =
+        isRounded &&
+        Math.max(speed, state.speed) >
+          (state.boxed ? FILTERED_SHADOW_SPEED : BOXED_SHADOW_SPEED);
+      const filter = state.boxed ? "none" : lampShadowFilter(cast);
       if (state.applied !== filter) {
         state.applied = filter;
         filters.push([element, filter]);
       }
-      if (element.hasAttribute(LAMP_CONTACT_ATTRIBUTE)) {
-        const contact = contactBoxShadow(shadow);
+      if (!state.boxed) {
+        state.boxedShadow = null;
+      }
+      const boxed = state.boxedShadow;
+      const holdBoxed =
+        boxed !== null &&
+        Math.max(
+          Math.abs(cast.x - boxed.x),
+          Math.abs(cast.y - boxed.y),
+          Math.abs(cast.blur - boxed.blur)
+        ) < BOXED_SHADOW_STEP &&
+        Math.abs(cast.opacity - boxed.opacity) < BOXED_OPACITY_STEP;
+      if (isRounded && !holdBoxed) {
+        if (state.boxed) {
+          state.boxedShadow = cast;
+        }
+        const contact = state.boxed
+          ? `${lampBoxShadow(cast)}, ${contactBoxShadow(shadow)}`
+          : contactBoxShadow(shadow);
         if (state.appliedContact !== contact) {
           state.appliedContact = contact;
           contacts.push([element, contact]);
