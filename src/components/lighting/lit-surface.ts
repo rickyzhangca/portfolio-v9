@@ -20,6 +20,8 @@ export interface SurfaceView {
 
 interface LitSurfaceOptions<Surface extends { destroy: () => void }> {
   attach: (signal: AbortSignal) => Promise<Surface>;
+  /** Canvases each draw fills, overhang included; the budget counts them. */
+  canvases?: number;
   draw: (surface: Surface, view: SurfaceView) => void;
   /** The element the surface covers; its box and transforms are measured. */
   element: HTMLElement;
@@ -95,12 +97,31 @@ const MOTION_REST_MS = 150;
  * animating their own parts (a key going down, a keycap lifting) go first:
  * the pointer that drives them also moves the lamp, and a part that skips
  * frames stutters where relighting a few frames late does not show.
+ *
+ * The budget counts backing pixels, not surfaces: redrawing costs per pixel,
+ * and surfaces differ forty-fold, from a folder label to a folder cover's
+ * two full-size canvases. Counted in surfaces, the 15 prints of a folder
+ * that opened all fell stale at once and fitted the budget a sweep had left,
+ * twice the pixels the GPU could draw in a frame: four frames in a row ran
+ * late. Each late frame also records the budget it happened at; growth
+ * slows close to that ceiling, so a saturated lamp probes past it every few
+ * seconds rather than every third of a second.
  */
-const INITIAL_DRAWS_PER_FRAME = 4;
-const MIN_DRAWS_PER_FRAME = 2;
-const MAX_DRAWS_PER_FRAME = 32;
-/** Extra draws per frame for each frame that arrives on time. */
-const DRAW_BUDGET_GROWTH = 0.25;
+const INITIAL_PIXEL_BUDGET = 1_000_000;
+const MIN_PIXEL_BUDGET = 250_000;
+const MAX_PIXEL_BUDGET = 24_000_000;
+/** Growth per frame that arrives on time, as a share of the budget. */
+const BUDGET_GROWTH = 0.02;
+/** Growth once within `NEAR_CEILING` of the budget a frame ran late at. */
+const BUDGET_GROWTH_NEAR_CEILING = 0.0025;
+const NEAR_CEILING = 0.85;
+/**
+ * A draw into a new or resized backing store costs this many times its
+ * pixels: the texture is allocated as well as filled. A folder that opened
+ * right after a sweep still ran two frames late at a budget it had been
+ * drawing within, until its fresh canvases were counted double.
+ */
+export const ALLOCATION_COST = 2;
 /** A frame this many display intervals after the last one came late. */
 const LATE_FRAME = 1.5;
 /** Longer gaps are pauses (a hidden tab, a restarted lamp), not frames. */
@@ -119,6 +140,8 @@ const ANIMATING = Number.POSITIVE_INFINITY;
 
 interface PendingDraw {
   draw: () => void;
+  /** Backing pixels the draw fills. */
+  pixels: number;
   since: number;
   /** How far the drawn frame is from the current one; larger goes first. */
   staleness: number;
@@ -126,8 +149,12 @@ interface PendingDraw {
 
 const pending = new Map<object, PendingDraw>();
 let flushQueued = false;
-let drawBudget = INITIAL_DRAWS_PER_FRAME;
-/** Whether the last frame had at least a full budget of surfaces waiting. */
+let pixelBudget = INITIAL_PIXEL_BUDGET;
+/** The budget the last late frame ran at. */
+let ceiling = MAX_PIXEL_BUDGET;
+/** Pixels drawn outside the queue since the last flush (`chargeLitPixels`). */
+let charged = 0;
+/** Whether the last frame left surfaces waiting for budget. */
 let budgetSpent = false;
 let frameTime = 0;
 /** The display's frame interval: falls at once, rises slowly. */
@@ -164,30 +191,58 @@ const paceFrame = (time: number, lamp: LampPosition) => {
       ? interval
       : frameInterval + (interval - frameInterval) * INTERVAL_RISE;
   if (interval > frameInterval * LATE_FRAME) {
-    drawBudget = Math.max(MIN_DRAWS_PER_FRAME, drawBudget / 2);
+    ceiling = pixelBudget;
+    pixelBudget = Math.max(MIN_PIXEL_BUDGET, pixelBudget / 2);
   } else if (budgetSpent) {
-    drawBudget = Math.min(MAX_DRAWS_PER_FRAME, drawBudget + DRAW_BUDGET_GROWTH);
+    const growth =
+      pixelBudget < ceiling * NEAR_CEILING
+        ? BUDGET_GROWTH
+        : BUDGET_GROWTH_NEAR_CEILING;
+    pixelBudget = Math.min(MAX_PIXEL_BUDGET, pixelBudget * (1 + growth));
+    ceiling = Math.max(ceiling, pixelBudget);
   }
   budgetSpent = false;
 };
 
-// Runs after every lamp listener of this frame has queued its redraw.
+/**
+ * Counts pixels drawn outside the queue (lamp shadow canvases) against the
+ * next flush's budget.
+ */
+export const chargeLitPixels = (pixels: number) => {
+  charged += pixels;
+};
+
+// Runs after every lamp listener of this frame has queued its redraw. The
+// first surface always draws, so one larger than the budget is not stuck.
 const flushDraws = () => {
   flushQueued = false;
   const queue = [...pending.entries()].sort(
     (a, b) => b[1].staleness - a[1].staleness || a[1].since - b[1].since
   );
-  const budget = Math.floor(drawBudget);
-  budgetSpent ||= queue.length >= budget;
-  for (const [owner, entry] of queue.slice(0, budget)) {
+  let spent = charged;
+  charged = 0;
+  let drawn = 0;
+  for (const [owner, entry] of queue) {
+    if (drawn > 0 && spent + entry.pixels > pixelBudget) {
+      budgetSpent = true;
+      return;
+    }
     pending.delete(owner);
     entry.draw();
+    spent += entry.pixels;
+    drawn += 1;
   }
 };
 
-const requestDraw = (owner: object, draw: () => void, staleness: number) => {
+const requestDraw = (
+  owner: object,
+  draw: () => void,
+  staleness: number,
+  pixels: number
+) => {
   pending.set(owner, {
     draw,
+    pixels,
     since: pending.get(owner)?.since ?? performance.now(),
     staleness,
   });
@@ -290,6 +345,7 @@ const measure = (
  */
 export const runLitSurface = <Surface extends { destroy: () => void }>({
   attach,
+  canvases = 1,
   draw,
   element,
   label,
@@ -381,7 +437,16 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
             onReady();
           }
         },
-        animating ? ANIMATING : staleness
+        animating ? ANIMATING : staleness,
+        Math.round((view.width + overhang * 2) * view.pixelScale) *
+          Math.round((view.height + overhang * 2) * view.pixelScale) *
+          canvases *
+          (staleness === RESHAPED &&
+          (drawn?.width !== view.width ||
+            drawn.height !== view.height ||
+            drawn.pixelScale !== view.pixelScale)
+            ? ALLOCATION_COST
+            : 1)
       );
     });
   };

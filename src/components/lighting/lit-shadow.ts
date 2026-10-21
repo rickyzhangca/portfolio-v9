@@ -1,6 +1,7 @@
 import type { LampShadow } from "@/lib/lamp-shadow";
 import { getFrameTransformCache, subscribeLamp } from "./desk-lamp";
 import { LAMP_SHADOW_MARGIN, screenLinear } from "./lamp-shadows";
+import { ALLOCATION_COST, chargeLitPixels } from "./lit-surface";
 import type { ShadowSurface } from "./shadow-renderer";
 
 /**
@@ -114,7 +115,8 @@ interface LampShadowOptions {
  * the shadow while every listener reads; it is drawn once they have, and
  * only when it moved. Unlike lit surfaces it skips the redraw queue: its
  * filter is already off, so a shadow waiting its turn would trail the lamp,
- * and it costs a few thousand pixels. Returns the cleanup for an effect.
+ * and it costs a few thousand pixels, which still count against the queue's
+ * budget. Returns the cleanup for an effect.
  */
 export const runLampShadow = ({
   canvas,
@@ -185,16 +187,18 @@ export const runLampShadow = ({
         if (isCurrent(drawn, next, screenScale)) {
           return;
         }
+        const pixelHeight = Math.round(
+          (height + LAMP_SHADOW_MARGIN * 2) * pixelScale
+        );
+        const pixelWidth = Math.round(
+          (width + LAMP_SHADOW_MARGIN * 2) * pixelScale
+        );
         try {
           attached.render({
             height,
             margin: LAMP_SHADOW_MARGIN,
-            pixelHeight: Math.round(
-              (height + LAMP_SHADOW_MARGIN * 2) * pixelScale
-            ),
-            pixelWidth: Math.round(
-              (width + LAMP_SHADOW_MARGIN * 2) * pixelScale
-            ),
+            pixelHeight,
+            pixelWidth,
             radius,
             shadow: next.shadow,
             width,
@@ -204,6 +208,15 @@ export const runLampShadow = ({
           stop(error);
           return;
         }
+        chargeLitPixels(
+          pixelWidth *
+            pixelHeight *
+            (drawn?.width === width &&
+            drawn.height === height &&
+            drawn.pixelScale === pixelScale
+              ? 1
+              : ALLOCATION_COST)
+        );
         drawn = next;
       });
     });
