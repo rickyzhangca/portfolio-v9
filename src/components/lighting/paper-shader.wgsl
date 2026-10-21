@@ -57,6 +57,11 @@ fn vs(@builtin(vertex_index) index: u32) -> VertexOut {
 
 const TAU = 6.2831853;
 const LAMP_COLOR = vec3f(1.0, 0.97, 0.92);
+// Shadows lean cool: where the warm lamp is blocked, only the room's light
+// is left. A tint darkens less than black, so its opacity is raised to keep
+// shadows as deep. Both match the DOM shadows (lamp-shadow.ts).
+const SHADOW_TINT = vec3f(0.11, 0.14, 0.23);
+const SHADOW_DEPTH = 1.16;
 // The curl's shadow is capped like every other lamp shadow (lamp-shadow.ts).
 const MAX_SHADOW_REACH = 1.6;
 
@@ -291,7 +296,7 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
     return vec4f(gloss * coverage, coverage);
   }
 
-  // Premultiplied: grey shading over the paper, black shadow off it.
-  let alpha = coverage + (1.0 - coverage) * shadow;
-  return vec4f(vec3f(tone) * coverage, alpha);
+  // Premultiplied: grey shading over the paper, a cool shadow off it.
+  let tinted = (1.0 - coverage) * min(shadow * SHADOW_DEPTH, 1.0);
+  return vec4f(vec3f(tone) * coverage + SHADOW_TINT * tinted, coverage + tinted);
 }
