@@ -1,5 +1,6 @@
 import {
   ARTICLE_CARD_PREVIEW_INSET,
+  ARTICLE_CARD_PREVIEW_LIFT,
   ARTICLE_CARD_SIZE,
 } from "@/cards/article/article-card";
 import { RenderCard } from "@/cards/render-card";
@@ -819,6 +820,7 @@ export const CardStack = ({
                             ? getDocumentLayoutId(stack.id, card.id)
                             : undefined
                         }
+                        previewLift={ARTICLE_CARD_PREVIEW_LIFT}
                         shadow={isExpanded ? "lifted" : "soft"}
                         size={ARTICLE_CARD_SIZE}
                       >

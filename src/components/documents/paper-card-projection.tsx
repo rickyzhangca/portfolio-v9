@@ -12,21 +12,6 @@ import { tw } from "@/lib/utils";
 import { cancelFrame, frame, motion, useReducedMotion } from "framer-motion";
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
 
-interface PreviewFade {
-  delay?: number;
-  duration: number;
-  ease?: "easeOut";
-}
-
-/** Shared layout keeps the card text opaque until halfway through the expand. */
-const PREVIEW_FADE_OUT: PreviewFade = { duration: 0.1, ease: "easeOut" };
-/** Restore the preview once the reader text has started to leave. */
-const PREVIEW_FADE_IN: PreviewFade = {
-  delay: 0.14,
-  duration: 0.16,
-  ease: "easeOut",
-};
-
 /**
  * The label rides inside the shared paper, which scales between the reader and
  * the card. It hides at once on open, and while the paper moves it is scaled
@@ -48,6 +33,11 @@ interface PaperCardProjectionProps {
   layoutDependency?: boolean;
   layoutId?: string;
   open?: boolean;
+  /**
+   * Raises the preview inside the card, in the preview's own pixels. The
+   * shared content box rises with it, so the reader text lands on the preview.
+   */
+  previewLift?: number;
   /** Paper stock under the lamp: smooth for documents, fibrous for articles. */
   stock?: "fibre" | "smooth";
   /** Quieter shadow while a card is tucked in a closed folder. */
@@ -62,6 +52,7 @@ export function PaperCardProjection({
   layoutDependency,
   layoutId,
   open = false,
+  previewLift = 0,
   shadow = "lifted",
   size,
   stock = "fibre",
@@ -100,11 +91,17 @@ export function PaperCardProjection({
   }, [stopCorrectingLabel]);
   useEffect(() => stopCorrectingLabel, [stopCorrectingLabel]);
   const preview = getPaperPreviewLayout(size, inset);
-  const contentTop = label ? DOCUMENT_LABEL_BLOCK : preview.y;
-  const contentHeight = label
-    ? size.height - contentTop - preview.y
-    : preview.height;
-  const previewHeight = contentHeight / preview.scale;
+  // The shared content box keeps the paper's proportions so Motion scales it
+  // uniformly, as it does the reader's, and carries any lift: the reader text
+  // crossfades with the preview, and a box stretched under the label or a
+  // preview shifted inside it doubled every line mid-flight. The label pushes
+  // the box's bottom to the card's edge; the visible preview stops short.
+  const contentTop =
+    (label ? DOCUMENT_LABEL_BLOCK : preview.y) - previewLift * preview.scale;
+  const visibleHeight =
+    (label ? size.height - DOCUMENT_LABEL_BLOCK - preview.y : preview.height) +
+    previewLift * preview.scale;
+  const previewHeight = visibleHeight / preview.scale;
   const isOpening =
     open ||
     (layoutId !== undefined &&
@@ -112,12 +109,6 @@ export function PaperCardProjection({
       articleSource !== null &&
       layoutId ===
         getDocumentLayoutId(articleSource.itemId, articleSource.cardId));
-  let previewFade: PreviewFade = PREVIEW_FADE_IN;
-  if (reducedMotion) {
-    previewFade = { duration: 0 };
-  } else if (isOpening) {
-    previewFade = PREVIEW_FADE_OUT;
-  }
   // The shared paper exceeds the fixed hit area while returning.
   return (
     <div
@@ -173,27 +164,30 @@ export function PaperCardProjection({
             : getDocumentContentLayoutId(layoutId)
         }
         style={{
-          height: contentHeight,
+          height: preview.height,
           left: preview.x,
           top: contentTop,
           width: preview.width,
         }}
         transition={SPRING_PRESETS.smooth}
       >
-        <motion.div
-          animate={{ opacity: isOpening ? 0 : 1 }}
+        {/*
+         * The preview never fades on its own. Motion crossfades this box with
+         * the reader's, and the reader's opaque paper covers it until then, so
+         * the two aligned texts read as one. Fading it as well dimmed the text
+         * mid-flight.
+         */}
+        <div
           data-paper-preview
-          initial={false}
           style={{
             height: previewHeight,
             transform: `scale(${preview.scale})`,
             transformOrigin: "top left",
             width: size.width,
           }}
-          transition={previewFade}
         >
           {children}
-        </motion.div>
+        </div>
       </motion.div>
       <PaperLighting hidden={isOpening} kind={stock} radius={24} />
     </div>

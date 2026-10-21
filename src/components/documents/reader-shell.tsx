@@ -24,6 +24,14 @@ import {
   READER_TOOLBAR_SHADOW,
 } from "./reader-toolbar";
 
+/**
+ * Closing from further down than this, the reader text fades out while the
+ * page slides back, done before the paper crossfades with the card (about a
+ * tenth of a second in). A nudge this small slides home in time.
+ */
+const RETURN_FADE_MIN_SCROLL = 16;
+const RETURN_FADE = { duration: 0.1, ease: "easeOut" } as const;
+
 interface ReaderShellProps {
   actions?: ReactNode;
   backdropExitDelay?: number;
@@ -97,9 +105,22 @@ function ReaderDialog({
           value <= 0.5 ? "" : `translateY(${-value}px)`;
       },
     });
+    // The card shows the top of the page, so text still sliding down would
+    // cross it as a second copy. Clear it before the paper starts to fade.
+    const fade =
+      offset > RETURN_FADE_MIN_SCROLL
+        ? animate(1, 0, {
+            ...RETURN_FADE,
+            onUpdate: (value) => {
+              documentElement.style.opacity = String(value);
+            },
+          })
+        : null;
     return () => {
       controls.stop();
+      fade?.stop();
       documentElement.style.transform = "";
+      documentElement.style.opacity = "";
     };
   }, [isPresent]);
   const beginClose = useCallback(
@@ -165,19 +186,28 @@ function ReaderDialog({
           inert={!isPresent}
           initialFocus={viewportRef}
           render={
-            <motion.div
-              animate={{ opacity: 1 }}
-              exit={{
-                opacity: 0,
-                transition: {
-                  ...(reducedMotion ? { duration: 0 } : backdropTransition),
-                  delay: reducedMotion ? 0 : backdropExitDelay,
-                },
-              }}
-              initial={{ opacity: reducedMotion ? 1 : 0 }}
-              layoutRoot
-              transition={reducedMotion ? { duration: 0 } : backdropTransition}
-            />
+            contentLayoutId ? (
+              // Only the backdrop fades. Fading the whole dialog multiplied
+              // into the paper's own crossfade with the card, so the text
+              // dimmed by half mid-flight in both directions.
+              <motion.div layoutRoot />
+            ) : (
+              <motion.div
+                animate={{ opacity: 1 }}
+                exit={{
+                  opacity: 0,
+                  transition: {
+                    ...(reducedMotion ? { duration: 0 } : backdropTransition),
+                    delay: reducedMotion ? 0 : backdropExitDelay,
+                  },
+                }}
+                initial={{ opacity: reducedMotion ? 1 : 0 }}
+                layoutRoot
+                transition={
+                  reducedMotion ? { duration: 0 } : backdropTransition
+                }
+              />
+            )
           }
           style={{ pointerEvents: isPresent ? "auto" : "none" }}
         >
@@ -194,7 +224,8 @@ function ReaderDialog({
                   ? { duration: 0 }
                   : { ...TRANSITIONS.opacity, ease: "linear" },
               }}
-              initial={false}
+              initial={{ opacity: reducedMotion ? 1 : 0 }}
+              transition={reducedMotion ? { duration: 0 } : backdropTransition}
             />
           ) : null}
           <motion.div
