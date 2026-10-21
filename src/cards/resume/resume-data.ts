@@ -33,7 +33,7 @@ export const resumeData: ResumeData = {
         "Shipped iOS home screen widgets",
       ],
       logo: wealthsimpleResumeLogo,
-      title: "Design Engineer, Design Systems",
+      title: "Design Engineer, Design System",
     },
     {
       caption: "06/2024 – 09/2024",
