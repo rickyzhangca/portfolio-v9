@@ -49,6 +49,14 @@ export const LAMP_LIFT = {
   swag: 3,
 } as const;
 
+/**
+ * How far a lamp shadow canvas (lit-shadow.ts) overhangs its caster on each
+ * side, in local px: room for a hovered card's shadow (lifted 20 px: 32 px
+ * away, blurred 15 px) out to two and a half deviations, where it has faded
+ * below 1%.
+ */
+export const LAMP_SHADOW_MARGIN = 72;
+
 type Linear = Linear2D;
 
 const IDENTITY: Linear = { a: 1, b: 0, c: 0, d: 1 };

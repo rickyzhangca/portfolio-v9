@@ -23,6 +23,11 @@ import {
   LAMP_SHADOW_ATTRIBUTE,
   screenLinear,
 } from "./lamp-shadows";
+import {
+  hasOwnTransform,
+  isLampShadowClaimed,
+  setClaimedLampShadow,
+} from "./lit-shadow";
 
 /** How long the room takes to dim when the lamp switches on. */
 const ROOM_FADE_MS = 700;
@@ -62,6 +67,15 @@ const FILTERED_SHADOW_SPEED = 30;
  */
 const BOXED_SHADOW_STEP = 3;
 const BOXED_OPACITY_STEP = 0.03;
+/**
+ * A filtered shadow is rewritten only once it has moved or softened this
+ * far, in screen px, or darkened by the second amount: each rewrite re-blurs
+ * its caster on the GPU. Casters across the desk from the lamp change by a
+ * fraction of a pixel a frame, so they now redraw every few frames while
+ * those under the lamp still follow it every frame.
+ */
+const FILTER_SHADOW_STEP = 0.5;
+const FILTER_OPACITY_STEP = 0.004;
 /** The camera's content element from react-zoom-pan-pinch. */
 const CAMERA_SELECTOR = ".react-transform-component";
 
@@ -82,8 +96,44 @@ interface CasterState {
   position: { x: number; y: number } | null;
   /** Smoothed speed in canvas px per second. */
   speed: number;
+  /** The lamp shadow last written as a filter, in screen px. */
+  filteredShadow: LampShadow | null;
   transition: string;
+  /** The inline will-change, restored when the lamp goes off. */
+  willChange: string;
 }
+
+/**
+ * Casters get their own compositor layer while the lamp is on, so a changed
+ * drop-shadow re-blurs the layer's cached pixels on the GPU. Painted in
+ * place, every rewrite re-rasterized the card under it, text and images
+ * included: with a folder open, a lamp sweep dropped one frame in five and
+ * left the lit surfaces a third of their redraw budget. A caster that is
+ * already a layer for its transform keeps that hint.
+ */
+const promotedWillChange = (element: HTMLElement) => {
+  const current = getComputedStyle(element).willChange;
+  if (current === "auto") {
+    return "filter";
+  }
+  return current.includes("filter") ? current : `${current}, filter`;
+};
+
+/** Whether a shadow moved too little since it was written to show. */
+const isFilterCurrent = (
+  shadow: LampShadow,
+  written: LampShadow | null,
+  scale: number
+) =>
+  written !== null &&
+  Math.max(
+    Math.abs(shadow.x - written.x),
+    Math.abs(shadow.y - written.y),
+    Math.abs(shadow.blur - written.blur)
+  ) *
+    scale <
+    FILTER_SHADOW_STEP &&
+  Math.abs(shadow.opacity - written.opacity) < FILTER_OPACITY_STEP;
 
 const isHovered = (element: HTMLElement) =>
   element.matches(":hover") || element.closest(".group:hover") !== null;
@@ -112,6 +162,7 @@ const startLampShadows = (onCast: () => void) => {
       element.style.boxShadow = state.boxShadow;
     }
     element.style.transition = state.transition;
+    element.style.willChange = state.willChange;
   };
 
   const unsubscribe = subscribeLamp((lamp) => {
@@ -161,7 +212,7 @@ const startLampShadows = (onCast: () => void) => {
     const { heightPx } = getLampConfig();
 
     // Reads, and the shadows they give; the DOM is written afterwards.
-    const added: HTMLElement[] = [];
+    const added: [HTMLElement, string][] = [];
     const filters: [HTMLElement, string][] = [];
     const contacts: [HTMLElement, string][] = [];
     for (const element of casters) {
@@ -175,13 +226,15 @@ const startLampShadows = (onCast: () => void) => {
           boxed: false,
           boxedShadow: null,
           filter: element.style.filter,
+          filteredShadow: null,
           lift: height,
           position: null,
           speed: 0,
           transition: element.style.transition,
+          willChange: element.style.willChange,
         };
         states.set(element, state);
-        added.push(element);
+        added.push([element, promotedWillChange(element)]);
       }
       const rect = element.getBoundingClientRect();
       if (rect.width === 0 || cameraScale === 0) {
@@ -204,6 +257,7 @@ const startLampShadows = (onCast: () => void) => {
         (isHovered(element) ? HOVER_LIFT : 0) +
         Math.min(state.speed * FLIGHT_LIFT_PER_SPEED, MAX_FLIGHT_LIFT);
       state.lift += (targetLift - state.lift) * follow;
+      const linear = screenLinear(element, cache);
       const shadow = projectLampShadow({
         center: {
           x: rect.left + rect.width / 2,
@@ -212,7 +266,7 @@ const startLampShadows = (onCast: () => void) => {
         lamp,
         lampHeight: heightPx,
         lift: state.lift * cameraScale,
-        linear: screenLinear(element, cache),
+        linear,
         rest: height * cameraScale,
       });
       if (!shadow) {
@@ -221,13 +275,33 @@ const startLampShadows = (onCast: () => void) => {
       const depth = Number(element.getAttribute(LAMP_DEPTH_ATTRIBUTE)) || 1;
       const cast = { ...shadow, opacity: shadow.opacity * depth };
       const isRounded = element.hasAttribute(LAMP_CONTACT_ATTRIBUTE);
+      // A canvas behind the caster draws its shadow while it moves only with
+      // its parent; it rides along, so it needs no box-shadow in flight.
+      const isClaimed = isLampShadowClaimed(element);
+      const isCanvasShadow = isClaimed && !hasOwnTransform(element);
+      if (isClaimed) {
+        setClaimedLampShadow(element, isCanvasShadow ? cast : null);
+      }
       // This frame's speed switches at once, as a card takes off; the
       // smoothed speed holds the box-shadow until it has landed.
       state.boxed =
+        !isCanvasShadow &&
         isRounded &&
         Math.max(speed, state.speed) >
           (state.boxed ? FILTERED_SHADOW_SPEED : BOXED_SHADOW_SPEED);
-      const filter = state.boxed ? "none" : lampShadowFilter(cast);
+      const screenScale = Math.sqrt(
+        Math.abs(linear.a * linear.d - linear.b * linear.c)
+      );
+      if (state.boxed || isCanvasShadow) {
+        state.filteredShadow = null;
+      } else if (
+        isLampSceneHidden() ||
+        !isFilterCurrent(cast, state.filteredShadow, screenScale)
+      ) {
+        state.filteredShadow = cast;
+      }
+      const written = state.filteredShadow;
+      const filter = written ? lampShadowFilter(written) : "none";
       if (state.applied !== filter) {
         state.applied = filter;
         filters.push([element, filter]);
@@ -263,7 +337,12 @@ const startLampShadows = (onCast: () => void) => {
         restore(element, state);
       }
       // Set before the filters, so this frame's change already eases.
-      for (const element of retransition ? states.keys() : added) {
+      for (const [element, willChange] of added) {
+        element.style.willChange = willChange;
+      }
+      for (const element of retransition
+        ? states.keys()
+        : added.map(([caster]) => caster)) {
         element.style.transition = transition;
       }
       for (const [element, filter] of filters) {

@@ -1,6 +1,7 @@
 import { useAtomValue } from "jotai";
 import { useEffect, useRef, useState } from "react";
 import { deskLampAtom } from "@/context/atoms";
+import { LAMP_SHADOW_ATTRIBUTE, LAMP_SHADOW_MARGIN } from "./lamp-shadows";
 import { runLitSurface } from "./lit-surface";
 import type { PaperTexture } from "./paper-renderer";
 
@@ -12,6 +13,13 @@ import type { PaperTexture } from "./paper-renderer";
 type PaperKind = "fibre" | "label" | "photo" | "smooth" | "sticky";
 
 interface PaperLightingProps {
+  /**
+   * Draws the lamp shadow of the parent's lamp shadow caster, a rounded box
+   * of the paper's radius that fills the parent (a print, a sheet), on a
+   * canvas behind it instead of its drop-shadow filter. Not while the paper
+   * is hidden or covered.
+   */
+  castsShadow?: boolean;
   /**
    * Mostly hidden, as a print tucked in a closed folder: relit only once the
    * lamp has moved well away, so it does not take turns from paper in view.
@@ -131,6 +139,7 @@ const between = (min: number, max: number) => min + Math.random() * (max - min);
  * the paper and its text, so the shading lands on the ink as well.
  */
 const LitPaper = ({
+  castsShadow = false,
   covered = false,
   hidden = false,
   kind,
@@ -139,6 +148,7 @@ const LitPaper = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const coveredRef = useRef(covered);
   const glossRef = useRef<HTMLCanvasElement | null>(null);
+  const shadowRef = useRef<HTMLCanvasElement | null>(null);
   const [isReady, setReady] = useState(false);
   const stock = PAPER_STOCKS[kind];
 
@@ -204,6 +214,35 @@ const LitPaper = ({
     });
   }, [radius, stock]);
 
+  // A covered print relights only once the folder opens; its shadow, which
+  // shows past the cover, keeps following the lamp through the filter.
+  const isShadowDrawn = castsShadow && !hidden && !covered;
+  useEffect(() => {
+    const canvas = shadowRef.current;
+    const caster = canvas?.parentElement?.querySelector<HTMLElement>(
+      `:scope > [${LAMP_SHADOW_ATTRIBUTE}]`
+    );
+    if (!(isShadowDrawn && canvas && caster)) {
+      return;
+    }
+    // Loaded with the lamp, outside the first view's scripts.
+    let stop: (() => void) | null = null;
+    let cancelled = false;
+    import("./lit-shadow")
+      .then(({ runLampShadow }) => {
+        if (!cancelled) {
+          stop = runLampShadow({ canvas, caster, radius });
+        }
+      })
+      .catch((error: unknown) =>
+        console.warn("Lamp shadow unavailable", error)
+      );
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, [isShadowDrawn, radius]);
+
   const visible = isReady && !hidden;
   const style = {
     height: `calc(100% + ${SHADOW_MARGIN * 2}px)`,
@@ -216,6 +255,19 @@ const LitPaper = ({
   };
   return (
     <>
+      {castsShadow ? (
+        // Behind the caster in the parent's isolated group.
+        <canvas
+          className="pointer-events-none absolute -z-10"
+          ref={shadowRef}
+          style={{
+            height: `calc(100% + ${LAMP_SHADOW_MARGIN * 2}px)`,
+            left: -LAMP_SHADOW_MARGIN,
+            top: -LAMP_SHADOW_MARGIN,
+            width: `calc(100% + ${LAMP_SHADOW_MARGIN * 2}px)`,
+          }}
+        />
+      ) : null}
       {stock.shade ? (
         <canvas
           className="pointer-events-none absolute z-10 mix-blend-multiply"
