@@ -25,6 +25,8 @@ interface LitSurfaceOptions<Surface extends { destroy: () => void }> {
   element: HTMLElement;
   /** Names the surface in the console when WebGPU fails. */
   label: string;
+  /** Called when the surface cannot attach or a draw throws. */
+  onFail?: (error: unknown) => void;
   onReady: () => void;
   /** How far the canvas overhangs the element on each side, in local px. */
   overhang?: number;
@@ -240,6 +242,7 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
   draw,
   element,
   label,
+  onFail,
   onReady,
   overhang = 0,
   prominence,
@@ -253,6 +256,7 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
   const fail = (error: unknown) => {
     if (!abort.signal.aborted) {
       console.warn(`${label} unavailable`, error);
+      onFail?.(error);
     }
   };
 

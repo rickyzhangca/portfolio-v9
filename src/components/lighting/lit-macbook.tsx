@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { MacbookSticker } from "@/cards/registry";
-import { getLampConfig, subscribeLamp } from "./desk-lamp";
-import type { LitImage, LitQuad, MacbookRenderer } from "./macbook-renderer";
+import { runLitSurface } from "./lit-surface";
+import type { LitImage, LitQuad } from "./macbook-renderer";
 
 interface LitMacbookProps {
   hoveredSticker: string | null;
@@ -19,17 +19,18 @@ const LID_LIFT = 24;
 const LID_HOVER_LIFT = 40;
 const STICKER_LIFT = 2;
 const STICKER_HOVER_LIFT = 9;
-const FADE_IN_MS = 700;
-const MAX_CANVAS_PIXELS = 4096;
-/** Backing-store scale steps, so zooming does not reallocate every frame. */
-const PIXEL_SCALE_STEP = 0.25;
+/** How quickly the lid and stickers follow a hover, per second. */
+const LIFT_RATE = 14;
 
-const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
+const ease = (value: number, target: number, elapsed: number) =>
+  value + (target - value) * (1 - Math.exp(-elapsed * LIFT_RATE));
 
 /**
  * Draws the MacBook and its stickers with WebGPU under a desk lamp. It sits
  * inside the card, so it inherits the canvas camera and the card's own
  * transforms; the DOM images underneath stay for hit-testing and alt text.
+ * It takes its turns in the lit surfaces' shared redraw queue: drawing on
+ * every lamp step outside it took a turn every frame the others then lacked.
  */
 export const LitMacbook = ({
   hoveredSticker,
@@ -57,9 +58,6 @@ export const LitMacbook = ({
       return;
     }
 
-    const abort = new AbortController();
-    let renderer: MacbookRenderer | null = null;
-    let unsubscribe: (() => void) | null = null;
     let cardHovered = false;
     const handleEnter = () => {
       cardHovered = true;
@@ -79,60 +77,32 @@ export const LitMacbook = ({
     ];
     let lidLift = LID_LIFT;
     const stickerLifts = stickers.map(() => STICKER_LIFT);
-
-    const fail = (error: unknown) => {
-      if (!abort.signal.aborted) {
-        console.warn("Desk lamp unavailable, keeping the DOM rendering", error);
+    let failed = false;
+    const fail = () => {
+      // The DOM laptop stays underneath and shows again.
+      if (!failed) {
+        failed = true;
         callbacksRef.current.onFail();
       }
     };
 
-    const start = async () => {
-      const { createMacbookRenderer } = await import("./macbook-renderer");
-      const created = await createMacbookRenderer(canvas, images, abort.signal);
-      if (abort.signal.aborted) {
-        created.destroy();
-        return;
-      }
-      renderer = created;
-      created.lost.then(fail);
-
-      const [lidSize] = created.sizes;
-      let previousKey = "";
-      let lastTime = performance.now();
-      const fadeStart = lastTime;
-      let announced = false;
-
-      unsubscribe = subscribeLamp((lamp) => {
-        const width = container.offsetWidth;
-        const height = container.offsetHeight;
-        const rect = container.getBoundingClientRect();
-        const screenScale = width ? rect.width / width : 0;
-        // Off screen, the laptop keeps its last frame.
-        if (
-          !lidSize ||
-          screenScale < 0.02 ||
-          rect.right < 0 ||
-          rect.bottom < 0 ||
-          rect.left > window.innerWidth ||
-          rect.top > window.innerHeight
-        ) {
+    const stop = runLitSurface({
+      attach: async (signal) => {
+        const { createMacbookRenderer } = await import("./macbook-renderer");
+        const created = await createMacbookRenderer(canvas, images, signal);
+        created.lost.then((info) => {
+          if (!signal.aborted) {
+            console.warn("MacBook lighting lost its GPU device", info);
+            fail();
+          }
+        });
+        return created;
+      },
+      draw: (renderer, { height, intensity, light, pixelScale, width }) => {
+        const [lidSize] = renderer.sizes;
+        if (!lidSize) {
           return;
         }
-
-        const now = performance.now();
-        const follow = 1 - Math.exp(-((now - lastTime) / 1000) * 14);
-        lastTime = now;
-        const lidTarget = cardHovered ? LID_HOVER_LIFT : LID_LIFT;
-        lidLift += (lidTarget - lidLift) * follow;
-        for (const [index, sticker] of stickers.entries()) {
-          const stickerTarget =
-            hoveredRef.current === sticker.src
-              ? STICKER_HOVER_LIFT
-              : STICKER_LIFT;
-          stickerLifts[index] += (stickerTarget - stickerLifts[index]) * follow;
-        }
-
         // The lid image is drawn with object-contain, like the DOM image.
         const fit = Math.min(width / lidSize.width, height / lidSize.height);
         const lidWidth = lidSize.width * fit;
@@ -148,83 +118,55 @@ export const LitMacbook = ({
           },
           ...stickers.map((sticker, index) => ({
             height: sticker.height,
-            lift: stickerLifts[index],
+            lift: stickerLifts[index] ?? STICKER_LIFT,
             pad: STICKER_PAD,
             width: sticker.width,
             x: CANVAS_MARGIN + (sticker.x / 100) * width - sticker.width / 2,
             y: CANVAS_MARGIN + (sticker.y / 100) * height - sticker.height / 2,
           })),
         ];
-
         const canvasWidth = width + CANVAS_MARGIN * 2;
         const canvasHeight = height + CANVAS_MARGIN * 2;
-        const pixelScale =
-          Math.ceil(
-            (screenScale * window.devicePixelRatio) / PIXEL_SCALE_STEP
-          ) * PIXEL_SCALE_STEP;
-        const limit = MAX_CANVAS_PIXELS / Math.max(canvasWidth, canvasHeight);
-        const backingScale = Math.min(pixelScale, limit);
-        const { heightPx } = getLampConfig();
-        const intensity = easeOutCubic(
-          Math.min(1, (now - fadeStart) / FADE_IN_MS)
-        );
-        const light = {
-          x: (lamp.x - rect.left) / screenScale + CANVAS_MARGIN,
-          y: (lamp.y - rect.top) / screenScale + CANVAS_MARGIN,
-          z: heightPx / screenScale,
-        };
-
-        // Skip frames where nothing visible changed.
-        const key = [
-          light.x,
-          light.y,
-          light.z,
+        renderer.render({
+          height: canvasHeight,
           intensity,
-          backingScale,
-          width,
-          height,
+          light: {
+            x: light.x + CANVAS_MARGIN,
+            y: light.y + CANVAS_MARGIN,
+            z: light.z,
+          },
+          pixelHeight: Math.round(canvasHeight * pixelScale),
+          pixelWidth: Math.round(canvasWidth * pixelScale),
+          quads,
+          width: canvasWidth,
+        });
+      },
+      element: container,
+      label: "MacBook lighting",
+      onFail: fail,
+      onReady: () => callbacksRef.current.onReady(),
+      overhang: CANVAS_MARGIN,
+      step: (elapsed) => {
+        lidLift = ease(
           lidLift,
-          ...stickerLifts,
-        ]
-          .map((value) => value.toFixed(1))
-          .join();
-        if (key === previousKey) {
-          return;
+          cardHovered ? LID_HOVER_LIFT : LID_LIFT,
+          elapsed
+        );
+        for (const [index, sticker] of stickers.entries()) {
+          stickerLifts[index] = ease(
+            stickerLifts[index] ?? STICKER_LIFT,
+            hoveredRef.current === sticker.src
+              ? STICKER_HOVER_LIFT
+              : STICKER_LIFT,
+            elapsed
+          );
         }
-        previousKey = key;
-
-        // Drawn after every lamp listener has read layout: resizing the
-        // canvas would otherwise force layout for the listeners after it.
-        return () => {
-          try {
-            created.render({
-              height: canvasHeight,
-              intensity,
-              light,
-              pixelHeight: Math.round(canvasHeight * backingScale),
-              pixelWidth: Math.round(canvasWidth * backingScale),
-              quads,
-              width: canvasWidth,
-            });
-          } catch (error) {
-            unsubscribe?.();
-            fail(error);
-            return;
-          }
-          if (!announced) {
-            announced = true;
-            callbacksRef.current.onReady();
-          }
-        };
-      });
-    };
-
-    start().catch(fail);
+        return [lidLift, ...stickerLifts];
+      },
+    });
 
     return () => {
-      abort.abort();
-      unsubscribe?.();
-      renderer?.destroy();
+      stop();
       container.removeEventListener("pointerenter", handleEnter);
       container.removeEventListener("pointerleave", handleLeave);
     };
