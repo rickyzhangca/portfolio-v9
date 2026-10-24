@@ -124,7 +124,7 @@ export const macbookItem: CanvasSingleItem = {
         },
         {
           src: catSticker,
-          description: "I love a lovely  long-hair grey cat",
+          description: "I have a lovely long-haired grey cat",
           x: 30,
           y: 72,
           width: 327,
@@ -140,7 +140,7 @@ export const macbookItem: CanvasSingleItem = {
         },
         {
           src: hackathonSticker,
-          description: "I love hackthons, sometimes as a judge too",
+          description: "I love hackathons, sometimes as a judge too",
           x: 85,
           y: 60,
           width: 120,
@@ -148,7 +148,7 @@ export const macbookItem: CanvasSingleItem = {
         },
         {
           src: marathonSticker,
-          description: "I have ran 7 marathons since 2023",
+          description: "I've run 7 marathons since 2023",
           x: 60,
           y: 28,
           width: 215,
@@ -156,7 +156,7 @@ export const macbookItem: CanvasSingleItem = {
         },
         {
           src: turtleSticker,
-          description: "Two turtlees are enjoying the sun bath next to me",
+          description: "Two turtles are sunbathing next to me",
           x: 72,
           y: 74,
           width: 109,

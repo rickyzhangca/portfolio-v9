@@ -1,56 +1,56 @@
-经常有人找我聊 design engineer 的 career path，最常问的就是我们到底是做什么的。我很难用一句话回答，因为同样叫 design engineer，有人做 product feature，有人做 design system，有人做 3D 和 motion。三份工作需要的能力、交付的东西、被评价的方式都不一样。
+经常有人找我聊 design engineer 的职业路径，最常问的就是我们到底做什么。我很难用一句话回答，因为同样叫 design engineer，有人做产品功能，有人做 design system，有人做 3D 和动效。这三份工作需要的能力、交付的成果、被评价的方式都不一样。
 
-虽然这几年逐渐流行起来，但 design engineer 相对还是一个比较新、比较小众的职业，大家对它缺少共同的认知。每家公司、每个 team 的 design engineer 都很不一样，一些比较 generic 的 job posting 说不清楚自己要什么，正在观望的人也看不出 design engineering 适不适合自己。
+虽然这几年逐渐流行起来，但 design engineer 还是一个比较新、比较小众的角色，大家对它缺少共同的认知。每家公司、每个团队里的 design engineer 都很不一样，一些写得比较笼统的招聘信息也说不清楚自己要什么，正在观望的人很难判断这条路适不适合自己。
 
-我的看法是，这个 title 下面其实有三种不同的工作：product、systems 和 creative。
+我的看法是，这个头衔下面其实有三种不同的工作：product、systems 和 creative。
 
 ## 共同点
 
-先说它们的共同点。Design engineer 都在 design 和 engineering 之间工作。既有设计师对 quality 的要求，也有工程师对 implementation 的掌控。日常工作内容大致有两种：design with code，和解决 design-specific 的工程问题。
+先说共同点。所有 design engineer 都在设计和工程之间工作：既有设计师对品质的要求，也有工程师对实现的掌控。日常工作大致分两类：用代码做设计，以及解决设计特有的工程问题。
 
 ## Product design engineer
 
-Product design engineer 服务 end users。它们通常在 product team 里，和 PM、designer、engineer 一起，把一个想法做成用户手里的体验：prototype、iterate、polish、ship。只做 prototype、不负责 ship 的角色也属于这一类，因为它们工作的对象仍然是产品体验。这是目前比较 trending 和最 visible 的 design engineer 角色，我在 Mintlify 和 Wealthsimple 的一小部分时间是这个角色。
+Product design engineer 服务终端用户，通常在产品团队里，和 PM、设计师、工程师一起，把一个想法做成用户手里的真实体验：做原型、迭代、打磨、上线。只做原型、不负责上线的角色也属于这一类，因为工作对象仍然是产品体验。这是目前最受关注、也最显眼的一类 design engineer，我在 Mintlify 和 Wealthsimple 有小部分时间做的是这个角色。
 
-做得好的标准是产品体验的质量，以及从想法到用户手里的速度。核心能力是在真实的数据、真实的约束下判断体验：交互细节、状态、边界情况、性能给人的感受。
+做得好的标准，是产品体验的质量，以及从想法到用户手里的速度。核心能力是在真实数据和真实约束下判断体验：交互细节、状态、边界情况，以及性能给人的感受。
 
-常见的失败方式有两种：慢慢变成一个只是 blindly implement UI 的工程师，或者一直在做 demo 但做的东西从来没有进入产品。
+常见的失败方式有两种：要么慢慢变成一个只管照图写 UI、不再提出疑问的工程师；要么一直在做 demo，但做的东西从来没真正进过产品。
 
 ## Systems design engineer
 
-Systems design engineer 服务的是内部的 team：designer、engineer 和 agent。产出是别人用来做产品的东西：design system、组件、token、文档、设计工具，以及相关的 agentic workflows。我在 Wealthsimple 的大多数时间和在 GitHub 都是这种角色，这也是我对自己的定位。
+Systems design engineer 服务内部团队：设计师、工程师和 agent。产出是别人用来做产品的工具和基建：design system、组件、token、文档、设计工具，以及相关的 agent 工作流。我在 Wealthsimple 的大部分时间和在 GitHub 都是这个角色，这也是我对自己的定位。
 
-做得好的标准是 DX、adoption、consistency，以及让其他人更快。一个 systems design engineer 的影响力是被放大的，一次改动会出现在整个产品里。
+做得好的标准是开发体验（DX）、普及率（adoption）、一致性，以及能不能让其他人更快。Systems design engineer 的影响力是成倍放大的，一次改动会反映到整个产品里。
 
-核心能力围绕 abstraction 的 API design、migration、maintenance，以及对整个产品的理解：知道哪些 pattern 值得 consolidate，哪些只是个例。
+核心能力围绕抽象层的 API 设计、迁移、长期维护，以及对整个产品的全局理解：知道哪些模式值得收拢进系统，哪些只是单点特例。
 
-常见的失败方式有两种。一种是做出一个设计上很完美、自己非常满意，但其实没人用的系统。另一种是违背 just-in-time 的原则，介入得太早或太晚：太早是在 pattern 还没浮现时就把它加入 system，太晚是等 UI 已经分裂了才试图整合。
+常见的失败方式也有两种。一种是做出一套设计上很漂亮、自己非常满意，但没人用的系统。另一种是没把握好介入的时机，太早或太晚：太早是在模式还没真正浮现时就急着收进系统；太晚是等产品 UI 已经各自为政了，才回过头去整合。
 
 ## Creative design engineer
 
-Creative design engineer 服务 brand 和 audience。产出是 motion、graphics、3D、WebGL、marketing pages、announcement、interactive storytelling。很多 creative developer 其实就是这一类，只是 title 不一样。它们的技术往往非常强，在图形、渲染和性能上，是三种 design engineer 里钻得最深的。
+Creative design engineer 服务品牌和受众。产出是动效、图形、3D、WebGL、营销页、产品宣发和交互叙事。很多 creative developer 做的就是这件事，只是头衔不同。它们的技术通常非常扎实，在图形、渲染和性能上，是三类 design engineer 里钻得最深的。
 
-做得好的标准是 impression：让人记住，让人想分享，让一个产品第一次被看到时就给人深刻印象。核心能力是视觉和动效的敏感度，以及把它们实现出来、跑得流畅的技术。
+做得好的标准是留下印象：让人记住，让人想分享，让产品第一次亮相就抓住人。核心能力是对视觉和动效的直觉，以及把它们做出来、跑得流畅的技术深度。
 
-常见的失败方式是做得很华丽，但没有服务于要传达的东西，形式大于内容。
+常见的失败方式是做得很炫，但没有服务于本来要传达的内容，形式大于内容。
 
-## 重叠和主类型
+## 重叠与主类型
 
-大多数 design engineer 都做过其中两种，比如我自己 product 和 systems 都尝试过。一些 startup 里一个人三种都做也很常见。但一个人通常有一个主类型，它代表了你最擅长的事、最有成就感的事，以及你被评价的方式。
+大多数 design engineer 都横跨过其中两种，像我自己就做过 product 和 systems。在一些创业公司里，一个人包揽三种也很常见。但几乎每个人都会有一个主类型，它代表你最擅长的事、最有成就感的事，以及团队评价你的主要标准。
 
 ## 类型 × 领域
 
-在类型之外，还有一个 dimension 是领域（domain）：AI、Android、iOS、legal、fintech、dev tools、game 等等。领域和类型是两件不同的事：类型是你为谁做什么，领域是你在什么 industry 和 context 中做。所以 AI design engineer 并不是一种新的类型，只是领域恰好是 AI。
+除了类型，还有第二个维度：领域（domain），比如 AI、Android、iOS、法律、金融科技、开发者工具、游戏等等。类型和领域是两回事：类型是你为谁做什么，领域是你在什么行业和场景下做。所以 AI design engineer 并不是第四种类型，只是所在的领域恰好是 AI。
 
-Domain knowledge 能明显增强竞争力。同一种类型里，能快速上手并深刻理解某个领域的人更少，也更难被替代。找一个类型和领域都适合你的岗位，你的 impact 最大。
+领域知识是实打实的优势。在同一种类型里，能快速上手并吃透某个特定领域的人更少，也更难被替代。找到一个类型和领域都契合的岗位，你能发挥的影响力最大。
 
-## Job posting
+## 怎么看招聘信息
 
-“Bridge design and engineering” 这样的话对三种类型都成立，所以它不能帮任何人定位。看见一个 design engineer 的 job posting 时，最好可以找到这几个问题的答案：
+像“连接设计与工程”这样的话对三种类型都成立，所以帮不了任何人判断岗位定位。看一份 design engineer 的招聘信息时，可以试着找这几个问题的答案：
 
-- 主要服务谁：end users、internal teams，还是 brand？
-- 主要产出是什么：feature、tooling，还是 brand moments？
-- 用什么 measure success？
-- 在哪个团队，和谁一起工作？
+- 主要服务谁：终端用户、内部团队，还是品牌受众？
+- 主要产出什么：产品功能、内部工具与系统，还是品牌时刻？
+- 用什么标准衡量成功？
+- 在哪个团队，日常和谁配合？
 
-如果一个 job posting 不能很好地体现这几点，hiring manager 和这个公司或 team 可能还没想清楚这个 role 的定位。这不是 red flag，但你要确定自己能不能接受一些不确定性。
+如果一份招聘信息没有把这几点交代清楚，招人的主管或团队可能自己也还没想明白这个角色要干什么。这不一定不能去，但你要先确认自己能不能接受这种不确定性。
