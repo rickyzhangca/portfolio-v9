@@ -10,7 +10,8 @@ export const ResumeSkills = ({ data }: ResumeSkillsProps) => {
 
   return (
     <ResumeSection label="Skills">
-      <div className="flex flex-wrap gap-x-12 gap-y-6">
+      {/* One row from 640px: auto columns share the width and wrap long skills instead of the categories. */}
+      <div className="flex flex-col gap-6 sm:grid sm:grid-flow-col sm:gap-x-10">
         {skillCategories.map((category) => (
           <div className="flex flex-col gap-1.5" key={category.category}>
             <h3 className="font-semibold text-foreground1/65 text-sm/[20px]">
