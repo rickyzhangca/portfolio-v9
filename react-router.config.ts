@@ -7,6 +7,7 @@ export default {
   prerender: [
     "/",
     "/404",
+    "/toronto",
     ...discoverArticles().flatMap((article) =>
       Object.keys(article.translations).map(
         (locale) => `/writing/${locale}/${article.slug}`

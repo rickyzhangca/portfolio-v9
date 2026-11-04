@@ -14,6 +14,7 @@ const COMPACT_ORDER = [
   "resume-item",
   "about-item",
   "macbook-item",
+  "streetmap-item",
   "fun-projects-stack",
   "swag-stack",
 ] as const;
@@ -34,9 +35,15 @@ const TOP_MARGIN_PX = 32;
 const ROW_GAP_PX = 40;
 /** Small header cards sit closer together than the large folders below. */
 const SMALL_ROW_GAP_PX = 24;
-/** Collapsed swag fans out above its cover, so it needs room over the row above. */
+/** Extra room above items that something above reaches toward: collapsed swag fans out over the row above. */
 const OVERHANG_ABOVE_PX: Readonly<Record<string, number>> = {
+  // The street map lies tilted, so its corner reaches past its footprint.
+  "fun-projects-stack": 36,
   "swag-stack": 80,
+};
+/** Optical corrections: the street map's tilt makes it read left of centre. */
+const NUDGE_X_PX: Readonly<Record<string, number>> = {
+  "streetmap-item": 14,
 };
 const SMALL_CARD_MAX_HEIGHT_PX = 120;
 /** How far alternating cards drift off the centre line. */
@@ -144,6 +151,7 @@ export const createCompactScene = (
       x = SIDE_MARGIN_PX + slack / 2 + (position % 2 === 0 ? -sway : sway);
     }
     y += OVERHANG_ABOVE_PX[item.id] ?? 0;
+    x += NUDGE_X_PX[item.id] ?? 0;
     const placed = { ...item, position: { x: Math.round(x), y } };
     y +=
       height +

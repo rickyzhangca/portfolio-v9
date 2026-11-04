@@ -25,6 +25,7 @@ export const meta: MetaFunction = () => {
     { content: SITE_DESCRIPTION, property: "og:description" },
     { content: url, property: "og:url" },
     { content: image, property: "og:image" },
+    { content: SITE_IMAGE.type, property: "og:image:type" },
     { content: String(SITE_IMAGE.width), property: "og:image:width" },
     { content: String(SITE_IMAGE.height), property: "og:image:height" },
     { content: SITE_TITLE, property: "og:image:alt" },

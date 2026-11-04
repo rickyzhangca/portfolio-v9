@@ -10,7 +10,7 @@ import type { ComponentType, ReactNode } from "react";
 export type ActivationType =
   | "none" // No activation behavior
   | "open-modal" // Opens a modal (resume, about)
-  | "toggle-focus"; // Toggles focused zoom state (macbook)
+  | "toggle-focus"; // Toggles focused zoom state (macbook, street map)
 
 /**
  * How a card responds to drag interactions
@@ -203,6 +203,19 @@ export interface FunProjectCardContent {
   loadKeycaps?: () => Promise<Readonly<Record<string, FunProjectKeycap>>>;
 }
 
+/** A folded street map whose sheet shows a live tiled map. */
+export interface StreetmapCardContent {
+  /** Where the map first opens on a phone held upright, whose frame is tall. */
+  compactView: { scale: number; x: number; y: number };
+  /** Cover artwork at 3x, and at 2x. */
+  cover: string;
+  cover2x: string;
+  /** Where the map's tiles and tile index are served from, with a trailing slash. */
+  tileBase: string;
+  /** Where the map first opens: world px of its centre, frame px per world px. */
+  view: { scale: number; x: number; y: number };
+}
+
 // Resume types (moved from canvas.ts)
 export interface ResumeHeader {
   email: string;
@@ -325,6 +338,11 @@ export interface SwagCoverCardInstance extends BaseCardInstance {
   kind: "swagcover";
 }
 
+export interface StreetmapCardInstance extends BaseCardInstance {
+  content: StreetmapCardContent;
+  kind: "streetmap";
+}
+
 /**
  * Union of all card instances
  */
@@ -341,7 +359,8 @@ export type CardInstance =
   | ProfilePicCardInstance
   | MacbookCardInstance
   | FunProjectCardInstance
-  | SwagCoverCardInstance;
+  | SwagCoverCardInstance
+  | StreetmapCardInstance;
 
 /**
  * Card kind union type
@@ -465,6 +484,14 @@ export const CARD_REGISTRY: Readonly<Record<CardKind, LazyCardDefinition>> =
         drag: "full",
       },
       kind: "stickynote",
+    },
+    // The sheet sizes itself to the window as it unfolds.
+    streetmap: {
+      interactionPolicy: {
+        activate: "toggle-focus",
+        drag: "full",
+      },
+      kind: "streetmap",
     },
     swagcover: {
       interactionPolicy: {

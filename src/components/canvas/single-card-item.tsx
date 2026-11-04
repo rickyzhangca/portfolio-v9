@@ -111,10 +111,12 @@ export const SingleCardItem = ({
       item.card.kind === "profilepic" ||
       item.card.kind === "socials" ||
       item.card.kind === "email");
+  // The street map's cover and unfolded sheet cast their own shadows.
+  const drawsOwnShadow = item.card.kind === "streetmap";
   // Papers cast from their own surface; the lit laptop, badge, keyboard and
   // email card draw their own shadows.
   let castShadowLift: number | undefined;
-  if (!(projectsPaper || isLampLit)) {
+  if (!(projectsPaper || isLampLit || drawsOwnShadow)) {
     castShadowLift = isDragging ? LAMP_LIFT.dragged : LAMP_LIFT.card;
   }
   const isActivatable = interactionPolicy.activate !== "none";
@@ -251,7 +253,7 @@ export const SingleCardItem = ({
             "absolute top-0 left-0 will-change-transform",
             projectsPaper && "group",
             // Under the desk lamp the lit laptop casts its own shadow.
-            !(projectsPaper || isLampLit) &&
+            !(projectsPaper || isLampLit || drawsOwnShadow) &&
               "drop-shadow-[0_16px_16px_rgba(0,0,0,0.12)] transition-[filter] hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.24)]"
           )}
           // The scene's entrance moves the whole item; see canvas-item.

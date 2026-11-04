@@ -23,6 +23,7 @@ import {
 import {
   CanvasSessionContext,
   getArticleSource,
+  getOpenItem,
 } from "@/context/canvas-session";
 import {
   articles,
@@ -114,6 +115,8 @@ export default function Root() {
     () => getArticleSource(location.state),
     [location.state]
   );
+  const openItemId =
+    location.pathname === "/" ? getOpenItem(location.state) : null;
   const isArticlePath = ARTICLE_PATH.test(location.pathname);
   const articleOpen = hasCanvas && isArticlePath && source !== null;
 
@@ -193,6 +196,10 @@ export default function Root() {
     [navigate, articleLocales]
   );
 
+  const handleItemOpened = useCallback(() => {
+    navigate("/", { replace: true, state: null });
+  }, [navigate]);
+
   const showCanvas = location.pathname === "/" || articleOpen;
   const session = useMemo(
     () => ({
@@ -202,7 +209,9 @@ export default function Root() {
       canvasVisible: showCanvas,
       hasCanvas,
       onCanvasEntrance: handleCanvasEntrance,
+      onItemOpened: handleItemOpened,
       openArticle,
+      openItemId,
       restoreArticleFocus,
       suppressArticleFocusRing,
     }),
@@ -210,6 +219,8 @@ export default function Root() {
       articleLocales,
       hasCanvas,
       handleCanvasEntrance,
+      handleItemOpened,
+      openItemId,
       articleOpen,
       source,
       openArticle,

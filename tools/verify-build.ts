@@ -106,7 +106,7 @@ for (const article of articles) {
     `Home: static HTML must link to ${article.slug}`
   );
 }
-for (const file of ["og.png", "apple-touch-icon.png"]) {
+for (const file of ["og.webp", "toronto-og.webp", "apple-touch-icon.png"]) {
   assert.ok(existsSync(path.join(output, file)), `Missing ${file}`);
 }
 assert.ok(

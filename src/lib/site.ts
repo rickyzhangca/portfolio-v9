@@ -1,11 +1,12 @@
 export const SITE_URL = "https://rickyzhang.me";
 export const SITE_NAME = "Ricky Zhang";
-export const SITE_TITLE = "Ricky Zhang — Design Engineer";
+export const SITE_TITLE = "Ricky Zhang - Design Engineer";
 export const SITE_DESCRIPTION =
   "Ricky Zhang is a design engineer specializing in design systems, passionate about fintech and dev tools. Projects, writing and experience.";
 export const SITE_IMAGE = {
   height: 630,
-  path: "/og.png",
+  path: "/og.webp",
+  type: "image/webp",
   width: 1200,
 } as const;
 

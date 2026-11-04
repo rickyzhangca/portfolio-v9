@@ -37,6 +37,7 @@ import {
 import { useCanvasEntrance } from "@/hooks/use-canvas-entrance";
 import { useCanvasState } from "@/hooks/use-canvas-state";
 import { useCanvasViewport } from "@/hooks/use-canvas-viewport";
+import { useOpenItemLink } from "@/hooks/use-open-item-link";
 import {
   useDefaultDeskLamp,
   useDeskLampProbe,
@@ -57,6 +58,7 @@ import {
   computeRepulsionOffsets,
   computeStackCardRepulsion,
 } from "@/lib/repulsion";
+import { tw } from "@/lib/utils";
 import type { CanvasItem } from "@/types/canvas";
 import { CanvasControls } from "./canvas-controls";
 import { CanvasItemRenderer } from "./canvas-item";
@@ -171,6 +173,14 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
     setFocusedItem: actions.setFocusedItem,
     state,
   });
+  useOpenItemLink({
+    activate: interaction.activate,
+    enabled: entrance === "done",
+    getFocusViewport: interaction.getFocusViewport,
+    itemId: session.openItemId,
+    onOpened: session.onItemOpened,
+    panTo: viewport.panTo,
+  });
   panBoundsRef.current = () =>
     getCompactPanBounds({
       expandedStackId: state.expandedStackId,
@@ -258,6 +268,13 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
   const activeItem = documentItemId
     ? state.items.get(documentItemId)
     : undefined;
+  // The open street map takes the window, toolbar corner included.
+  const focusedItem =
+    state.focusedItemId === null
+      ? undefined
+      : state.items.get(state.focusedItemId);
+  const isMapUnfolded =
+    focusedItem?.kind === "single" && focusedItem.card.kind === "streetmap";
   const overlays = [state.expandedStackId, state.focusedItemId].filter(
     (id): id is string => id !== null
   );
@@ -399,7 +416,16 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
               ) : null}
               {/* Phones keep one bounded column: nothing to tune or reset. */}
               {layout.compact ? null : (
-                <div className="canvas-entrance-chrome">
+                <div
+                  className={tw(
+                    "canvas-entrance-chrome transition-opacity duration-300 ease-out",
+                    // Back only once the map has folded out of its corner.
+                    isMapUnfolded
+                      ? "pointer-events-none opacity-0"
+                      : "delay-[650ms]"
+                  )}
+                  inert={isMapUnfolded}
+                >
                   <CanvasControls
                     isResetDisabled={isViewportReset && !arePositionsModified}
                     onReset={resetViewport}

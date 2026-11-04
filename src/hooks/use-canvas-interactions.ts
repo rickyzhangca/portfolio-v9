@@ -29,6 +29,9 @@ interface InteractionOptions {
   state: CanvasState;
 }
 
+/** How long the street map folds in place before the camera returns. */
+const STREETMAP_RETURN_DELAY_MS = 320;
+
 export type ActiveDocument = {
   cardId: string;
   kind: "resume" | "about";
@@ -81,6 +84,27 @@ export const useCanvasInteractions = ({
     []
   );
 
+  /** The camera centred on a single item at the current zoom. */
+  const getFocusViewport = useCallback(
+    (id: string): ViewportState | null => {
+      const item = state.items.get(id);
+      if (item?.kind !== "single") {
+        return null;
+      }
+      const { scale } = getViewport();
+      return {
+        positionX:
+          window.innerWidth / 2 -
+          (item.position.x + (item.card.size.width ?? 0) / 2) * scale,
+        positionY:
+          window.innerHeight / 2 -
+          (item.position.y + (item.card.size.height ?? 360) / 2) * scale,
+        scale,
+      };
+    },
+    [getViewport, state.items]
+  );
+
   const closeStack = useCallback(() => {
     pendingLayoutRef.current = null;
     if (preStackViewportRef.current) {
@@ -90,13 +114,50 @@ export const useCanvasInteractions = ({
     setExpandedStack(null);
   }, [panTo, setExpandedStack]);
 
+  const isStreetmap = useCallback(
+    (id: string | null) => {
+      const item = id ? state.items.get(id) : undefined;
+      return item?.kind === "single" && item.card.kind === "streetmap";
+    },
+    [state.items]
+  );
+  const returnTimerRef = useRef(0);
+  const cancelFocusReturn = useCallback(() => {
+    window.clearTimeout(returnTimerRef.current);
+    returnTimerRef.current = 0;
+  }, []);
+  useEffect(() => cancelFocusReturn, [cancelFocusReturn]);
+
   const closeFocus = useCallback(() => {
-    if (preFocusViewportRef.current) {
-      panTo(preFocusViewportRef.current);
-      preFocusViewportRef.current = null;
+    const target = preFocusViewportRef.current;
+    preFocusViewportRef.current = null;
+    cancelFocusReturn();
+    if (target && isStreetmap(state.focusedItemId)) {
+      // The street map folds where it is held, then the camera carries the
+      // booklet back as it drops; a camera that moved meanwhile stays put.
+      const { positionX, positionY } = getViewport();
+      returnTimerRef.current = window.setTimeout(() => {
+        returnTimerRef.current = 0;
+        const now = getViewport();
+        if (
+          Math.abs(now.positionX - positionX) < 2 &&
+          Math.abs(now.positionY - positionY) < 2
+        ) {
+          panTo(target);
+        }
+      }, STREETMAP_RETURN_DELAY_MS);
+    } else if (target) {
+      panTo(target);
     }
     setFocusedItem(null);
-  }, [panTo, setFocusedItem]);
+  }, [
+    cancelFocusReturn,
+    getViewport,
+    isStreetmap,
+    panTo,
+    setFocusedItem,
+    state.focusedItemId,
+  ]);
 
   useOutsideClick({
     getElement: useCallback(
@@ -120,6 +181,20 @@ export const useCanvasInteractions = ({
     isActive: !!state.focusedItemId && !isLocked,
     onClickOutside: closeFocus,
   });
+  const trackFocus = useCallback(
+    (id: string, opening: boolean) => {
+      if (isStreetmap(id)) {
+        track(AnalyticsEvents.STREETMAP_TOGGLE, {
+          direction: opening ? "open" : "close",
+        });
+      } else {
+        track(AnalyticsEvents.MACBOOK_ZOOM, {
+          direction: opening ? "in" : "out",
+        });
+      }
+    },
+    [isStreetmap]
+  );
   useEscapeKey({
     isActive: !!state.expandedStackId || !!state.focusedItemId,
     isLocked,
@@ -129,9 +204,17 @@ export const useCanvasInteractions = ({
         track(AnalyticsEvents.KEYBOARD_ESCAPE, { context: "stack" });
       } else {
         closeFocus();
-        track(AnalyticsEvents.KEYBOARD_ESCAPE, { context: "macbook" });
+        track(AnalyticsEvents.KEYBOARD_ESCAPE, {
+          context: isStreetmap(state.focusedItemId) ? "streetmap" : "macbook",
+        });
       }
-    }, [closeFocus, closeStack, state.expandedStackId]),
+    }, [
+      closeFocus,
+      closeStack,
+      isStreetmap,
+      state.expandedStackId,
+      state.focusedItemId,
+    ]),
   });
 
   const activate = useCallback(
@@ -146,6 +229,7 @@ export const useCanvasInteractions = ({
       }
       const policy = getInteractionPolicy(card.kind);
       pendingLayoutRef.current = null;
+      cancelFocusReturn();
       if (policy.activate === "open-modal") {
         const { kind } = card;
         if (kind === "resume" || kind === "about") {
@@ -171,28 +255,24 @@ export const useCanvasInteractions = ({
       }
       if (state.focusedItemId === id) {
         closeFocus();
-        track(AnalyticsEvents.MACBOOK_ZOOM, { direction: "out" });
+        trackFocus(id, false);
         return;
       }
       const viewport = getViewport();
       preFocusViewportRef.current ??= { ...viewport };
       setFocusedItem(id);
       bringItemToFront(id);
-      track(AnalyticsEvents.MACBOOK_ZOOM, { direction: "in" });
-      panTo({
-        positionX:
-          window.innerWidth / 2 -
-          (item.position.x + (item.card.size.width ?? 0) / 2) * viewport.scale,
-        positionY:
-          window.innerHeight / 2 -
-          (item.position.y + (item.card.size.height ?? 360) / 2) *
-            viewport.scale,
-        scale: viewport.scale,
-      });
+      trackFocus(id, true);
+      const target = getFocusViewport(id);
+      if (target) {
+        panTo(target);
+      }
     },
     [
       bringItemToFront,
+      cancelFocusReturn,
       closeFocus,
+      getFocusViewport,
       getViewport,
       isLocked,
       panTo,
@@ -201,6 +281,7 @@ export const useCanvasInteractions = ({
       state.focusedItemId,
       state.items,
       session.openArticle,
+      trackFocus,
     ]
   );
 
@@ -210,6 +291,7 @@ export const useCanvasInteractions = ({
       if (isLocked || !item || item.kind === "single") {
         return;
       }
+      cancelFocusReturn();
       if (state.expandedStackId === id) {
         closeStack();
         return;
@@ -276,6 +358,7 @@ export const useCanvasInteractions = ({
     },
     [
       bringItemToFront,
+      cancelFocusReturn,
       closeStack,
       fanConfig,
       getViewport,
@@ -390,7 +473,8 @@ export const useCanvasInteractions = ({
     pendingLayoutRef.current = null;
     preStackViewportRef.current = null;
     preFocusViewportRef.current = null;
-  }, []);
+    cancelFocusReturn();
+  }, [cancelFocusReturn]);
   const closeDocument = useCallback(
     () => setActiveDocument(null),
     [setActiveDocument]
@@ -405,6 +489,7 @@ export const useCanvasInteractions = ({
     closeActive,
     closeDocument,
     getContentHeights,
+    getFocusViewport,
     isLocked,
     measureContentLayout,
     registerElement,

@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { getArticleSource } from "./canvas-session";
+import { getArticleSource, getOpenItem } from "./canvas-session";
+
+describe("linked item", () => {
+  it("reads only a string item id from history state", () => {
+    expect(getOpenItem({ openItem: "streetmap-item" })).toBe("streetmap-item");
+    for (const value of [null, "state", {}, { openItem: 3 }]) {
+      expect(getOpenItem(value)).toBeNull();
+    }
+  });
+});
 
 describe("article return source", () => {
   it("accepts only a complete document identity from history state", () => {

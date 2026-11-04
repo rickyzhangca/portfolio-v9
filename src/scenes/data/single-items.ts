@@ -7,6 +7,8 @@ import marathonSticker from "@/assets/macbook/marathon.webp";
 import turtleSticker from "@/assets/macbook/turtle.webp";
 import profilePic from "@/assets/profile-pic/ricky.webp";
 import profilePicAlt from "@/assets/profile-pic/ricky-alt.webp";
+import streetmapCover from "@/assets/streetmap/cover.webp";
+import streetmapCover2x from "@/assets/streetmap/cover-2x.webp";
 import { shuffledSwags } from "@/assets/swag/swag";
 import { ABOUT_CARD_SIZE } from "@/cards/about/about-data";
 import { RESUME_CARD_SIZE, resumeData } from "@/cards/resume/resume-data";
@@ -200,6 +202,27 @@ export const swagItem: CanvasSwagStackItem = {
   swags: shuffledSwags,
 };
 
+/** Tiny Toronto, folded: it opens over the harbour, downtown and the Islands. */
+export const streetmapItem: CanvasSingleItem = {
+  id: "streetmap-item",
+  kind: "single",
+  position: { x: 1280, y: 980 },
+  zIndex: 2,
+  card: {
+    id: "streetmap-card",
+    kind: "streetmap",
+    size: { width: 120, height: 272 },
+    content: {
+      compactView: { scale: 0.1, x: 252_200, y: 283_200 },
+      cover: streetmapCover,
+      cover2x: streetmapCover2x,
+      tileBase: "https://tiles.rickyzhang.me/",
+      // Downtown over a strip of harbour: the shore sits low in the frame.
+      view: { scale: 0.085, x: 252_200, y: 281_400 },
+    },
+  },
+};
+
 export const singleItems = [
   resumeItem,
   aboutItem,
@@ -207,6 +230,7 @@ export const singleItems = [
   socialsItem,
   profilePicItem,
   macbookItem,
+  streetmapItem,
   funProjectsItem,
   swagItem,
 ];

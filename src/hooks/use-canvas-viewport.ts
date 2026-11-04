@@ -10,6 +10,12 @@ import { AUTO_PAN_DURATION_MS, AUTO_PAN_EASING } from "@/lib/auto-pan";
 import { clampToRange, type PanBounds } from "@/lib/pan-bounds";
 import type { ViewportState } from "@/types/canvas";
 
+/** A camera move's length (ms) and easing. */
+export interface PanMotion {
+  duration: number;
+  easing: Parameters<ReactZoomPanPinchRef["setTransform"]>[4];
+}
+
 export const useCanvasViewport = (
   initialViewport: ViewportState,
   onCommit: (viewport: ViewportState) => void,
@@ -90,7 +96,13 @@ export const useCanvasViewport = (
   }, []);
 
   const panTo = useCallback(
-    (target: ViewportState) => {
+    (
+      target: ViewportState,
+      motion: PanMotion = {
+        duration: AUTO_PAN_DURATION_MS,
+        easing: AUTO_PAN_EASING,
+      }
+    ) => {
       cancelPendingPan();
       frameRef.current = requestAnimationFrame(() => {
         frameRef.current = null;
@@ -98,8 +110,8 @@ export const useCanvasViewport = (
           target.positionX,
           target.positionY,
           target.scale,
-          AUTO_PAN_DURATION_MS,
-          AUTO_PAN_EASING
+          motion.duration,
+          motion.easing
         );
       });
     },

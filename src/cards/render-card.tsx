@@ -12,6 +12,7 @@ import type { CardInstance } from "@/cards/registry";
 import { ResumeCard } from "@/cards/resume/resume-card";
 import { SocialsCard } from "@/cards/socials/socials-card";
 import { StickyNoteCard } from "@/cards/stickynote/stickynote-card";
+import { StreetmapCard } from "@/cards/streetmap/streetmap-card";
 import { SwagCoverCard } from "@/cards/swag-cover/swag-cover-card";
 import { tw } from "@/lib/utils";
 
@@ -103,6 +104,8 @@ const RenderCardComponent = ({
         );
       case "swagcover":
         return <SwagCoverCard content={card.content} />;
+      case "streetmap":
+        return <StreetmapCard content={card.content} isFocused={isFocused} />;
       default: {
         // Exhaustiveness check - if we get here, we have a bug
         const _exhaustive: never = card;

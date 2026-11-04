@@ -8,6 +8,12 @@ export interface CanvasSession {
   canvasVisible: boolean;
   hasCanvas: boolean;
   /**
+   * An item a link such as /toronto asked the canvas to open once it has
+   * risen; `onItemOpened` clears it so a reload or Back does not reopen it.
+   */
+  openItemId?: string | null;
+  onItemOpened?: () => void;
+  /**
    * Called when the canvas starts its entrance, so the shell can fade out the
    * loading placeholder it has shown since the first paint.
    */
@@ -31,6 +37,19 @@ export const CanvasSessionContext = createContext<CanvasSession>({
 
 export function useCanvasSession() {
   return useContext(CanvasSessionContext);
+}
+
+/** The item a redirect asked the canvas to open, from `{ openItem }` state. */
+export function getOpenItem(value: unknown): string | null {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("openItem" in value) ||
+    typeof value.openItem !== "string"
+  ) {
+    return null;
+  }
+  return value.openItem;
 }
 
 export function getArticleSource(value: unknown): ArticleSource | null {

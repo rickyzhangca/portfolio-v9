@@ -14,6 +14,7 @@ export const AnalyticsEvents = {
   CANVAS_POSITION_RESET: "canvas_position_reset",
   CANVAS_REARRANGEMENT: "canvas_rearrangement",
   MACBOOK_ZOOM: "macbook_zoom",
+  STREETMAP_TOGGLE: "streetmap_toggle",
   KEYBOARD_ESCAPE: "keyboard_escape",
 } as const;
 
@@ -47,7 +48,10 @@ export interface AnalyticsEventProperties {
   canvas_position_reset?: Record<string, never>;
   canvas_rearrangement?: { items_moved: number };
   macbook_zoom?: { direction: "in" | "out" };
-  keyboard_escape?: { context: "modal" | "stack" | "macbook" };
+  streetmap_toggle?: { direction: "open" | "close" };
+  keyboard_escape?: {
+    context: "modal" | "stack" | "macbook" | "streetmap";
+  };
 }
 
 // Safe tracking wrapper

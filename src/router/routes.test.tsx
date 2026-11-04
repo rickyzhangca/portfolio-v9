@@ -23,6 +23,7 @@ import ArticleRoute, {
 import HomeRoute, { meta as homeMeta } from "./home";
 import NotFound, { meta as notFoundMeta } from "./not-found";
 import Root, { ErrorBoundary, meta as rootMeta } from "./root";
+import TorontoRoute from "./toronto";
 
 vi.mock("@/app", () => ({ App: TestCanvas }));
 vi.mock("@/components/articles/article-content", () => ({
@@ -49,6 +50,10 @@ function TestCanvas() {
     <LayoutGroup>
       <div data-testid="canvas">
         <p>Count {count}</p>
+        <p>Opening {session.openItemId ?? "nothing"}</p>
+        <button onClick={session.onItemOpened} type="button">
+          Opened
+        </button>
         <ArticleCard content={{ slug: "ephemeral-design" }} />
         <button onClick={increment} type="button">
           Increment
@@ -90,6 +95,7 @@ function setup(path: string, history = [path]) {
             loader: articleLoader,
             path: "writing/:locale/:slug",
           },
+          { Component: TorontoRoute, path: "toronto" },
           { Component: NotFound, path: "*" },
         ],
         ErrorBoundary,
@@ -102,6 +108,18 @@ function setup(path: string, history = [path]) {
   render(<RouterProvider router={router} />);
   return router;
 }
+
+describe("toronto link", () => {
+  it("lands on the canvas with the street map to open, then forgets it", async () => {
+    const router = setup("/toronto");
+    await screen.findByText("Opening streetmap-item");
+    expect(router.state.location.pathname).toBe("/");
+    fireEvent.click(screen.getByRole("button", { name: "Opened" }));
+    await screen.findByText("Opening nothing");
+    expect(router.state.location.pathname).toBe("/");
+    expect(router.state.location.state).toBeNull();
+  });
+});
 
 describe("writing route and canvas session", () => {
   it("does not pop another history entry when close is pressed again during exit", async () => {
@@ -202,7 +220,7 @@ describe("writing route and canvas session", () => {
       params: { locale: "cn", slug: "ephemeral-design" },
     };
     const metadata = articleMeta(args) ?? [];
-    expect(metadata).toContainEqual({ title: "瞬时设计 — Ricky Zhang" });
+    expect(metadata).toContainEqual({ title: "瞬时设计 - Ricky Zhang" });
     expect(metadata).toContainEqual({
       href: "https://rickyzhang.me/writing/cn/ephemeral-design",
       rel: "canonical",
@@ -244,11 +262,11 @@ describe("writing route and canvas session", () => {
     expect(
       articleMeta({ ...args, params: { locale: "xx", slug: "missing" } })
     ).toEqual([
-      { title: "Article not found — Ricky Zhang" },
+      { title: "Article not found - Ricky Zhang" },
       { content: "noindex", name: "robots" },
     ]);
     expect(rootMeta()).toContainEqual({
-      title: "Ricky Zhang — Design Engineer",
+      title: "Ricky Zhang - Design Engineer",
     });
   });
   it("gives the home page sharing metadata and a document title", async () => {
@@ -259,7 +277,7 @@ describe("writing route and canvas session", () => {
       tagName: "link",
     });
     expect(metadata).toContainEqual({
-      content: "https://rickyzhang.me/og.png",
+      content: "https://rickyzhang.me/og.webp",
       property: "og:image",
     });
     expect(notFoundMeta(metaArgs("/missing"))).toContainEqual({
@@ -270,7 +288,7 @@ describe("writing route and canvas session", () => {
     expect(
       await screen.findByRole("heading", {
         level: 1,
-        name: "Ricky Zhang — Design Engineer",
+        name: "Ricky Zhang - Design Engineer",
       })
     ).toBeTruthy();
   });

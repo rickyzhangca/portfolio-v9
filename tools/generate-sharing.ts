@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import path from "node:path";
 import { Resvg } from "@resvg/resvg-js";
-import { SITE_IMAGE, SITE_NAME, SITE_URL } from "../src/lib/site.ts";
+import { SITE_NAME, SITE_URL } from "../src/lib/site.ts";
 import type { ArticleMetadata } from "../src/types/article.ts";
 import { PROJECT_ROOT } from "./articles.ts";
 import { writeChanged } from "./files.ts";
@@ -88,10 +88,6 @@ function renderPng(svg: string, width?: number) {
     .asPng();
 }
 
-function homeImage() {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${SITE_IMAGE.width}" height="${SITE_IMAGE.height}"><rect width="1200" height="630" fill="#f7f7f4"/><rect x="40" y="40" width="1120" height="550" rx="28" fill="white"/><g font-family="${FONT_FAMILY}"><text x="84" y="290" font-size="96" font-weight="600" fill="#26251f">${xml(SITE_NAME)}</text><text x="84" y="370" font-size="44" fill="#77756c">Design Engineer, Design Systems</text></g></svg>`;
-}
-
 export function generateSharing(articles: ArticleMetadata[]) {
   const directory = path.join(PROJECT_ROOT, "public/writing/og");
   mkdirSync(directory, { recursive: true });
@@ -143,7 +139,6 @@ export function generateSharing(articles: ArticleMetadata[]) {
   }
   const publicDirectory = path.join(PROJECT_ROOT, "public");
   const siteImages = [
-    { file: "og.png", key: "site:home", svg: homeImage(), width: undefined },
     {
       file: "apple-touch-icon.png",
       key: "site:touch-icon",

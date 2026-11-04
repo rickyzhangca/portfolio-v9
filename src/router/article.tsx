@@ -61,7 +61,7 @@ export function clientLoader({ params }: ClientLoaderFunctionArgs) {
 const LANGUAGE_TAGS = { cn: "zh-CN", en: "en" } as const;
 const OPEN_GRAPH_LOCALES = { cn: "zh_CN", en: "en_US" } as const;
 const NOT_FOUND_META = [
-  { title: `Article not found — ${SITE_NAME}` },
+  { title: `Article not found - ${SITE_NAME}` },
   { content: "noindex", name: "robots" },
 ];
 
@@ -75,7 +75,7 @@ export const meta: MetaFunction = ({ params }) => {
     const canonical = absoluteUrl(getArticlePath(article.slug, locale));
     const image = absoluteUrl(`/writing/og/${article.slug}-${locale}.png`);
     const languages = Object.keys(article.translations).filter(isArticleLocale);
-    const title = `${translation.title} — ${SITE_NAME}`;
+    const title = `${translation.title} - ${SITE_NAME}`;
     return [
       { title },
       { content: translation.description, name: "description" },
