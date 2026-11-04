@@ -117,7 +117,7 @@ Use `pnpm` only (`packageManager` is pinned in `package.json`).
 - The home page's prerendered HTML is only the canvas placeholder, so `PortfolioLoading` carries a visually hidden site index (article, resume and profile links that appear on keyboard focus) and `HomeRoute` renders a visually hidden h1. Content generation also renders `public/og.png` and `public/apple-touch-icon.png` (ignored).
 - Development watches article changes. `pnpm test` and `pnpm coverage` generate content before running Vitest.
 - `tools/finalize-build.ts` normalizes Router's HTML filenames for clean URLs. `tools/verify-build.ts` checks actual rendered bodies, section IDs, language, deployed assets, sitemap, share PNG dimensions and 404 output.
-- Deploy `dist/client` (Cloudflare Pages build output directory, not `dist`); assets have immutable caching (`vercel.json` on Vercel, `public/_headers` on Cloudflare Pages), unknown routes return the generated 404 page with status 404.
+- Deploy `dist/client` (Cloudflare Pages build output directory, not `dist`); assets have immutable caching through `public/_headers`, unknown routes return the generated 404 page with status 404.
 
 ## Path aliases and TS config
 - Prefer alias imports from `@/` for `src/*` modules.

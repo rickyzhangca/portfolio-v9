@@ -7,7 +7,7 @@ import {
 } from "node:fs";
 import path from "node:path";
 
-// Both Vercel cleanUrls and Vite preview resolve /writing/... from .html.
+// Both Cloudflare Pages and Vite preview resolve /writing/... from .html.
 // Keep Router's rendered HTML/data intact; only normalize its file layout.
 const directory = path.resolve("dist/client");
 function flattenHtml(folder: string) {
