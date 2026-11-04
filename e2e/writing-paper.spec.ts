@@ -4,7 +4,7 @@ import { test, waitForCanvasEntrance } from "./fixtures";
 const EPHEMERAL_PATH = "/writing/en/ephemeral-design";
 const ARTICLE_BODY_MODULE_PATTERN = /^\/assets\/(?:en|cn)-.+\.js$/;
 const PROJECTION_ARTICLES = [
-  "design-system-team-maturity",
+  "design-engineer-types",
   "ephemeral-design",
   "verification-asymmetry",
 ] as const;
