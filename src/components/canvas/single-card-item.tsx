@@ -110,7 +110,8 @@ export const SingleCardItem = ({
     (item.card.kind === "macbook" ||
       item.card.kind === "profilepic" ||
       item.card.kind === "socials" ||
-      item.card.kind === "email");
+      item.card.kind === "email" ||
+      item.card.kind === "timecar");
   // The street map's cover and unfolded sheet cast their own shadows.
   const drawsOwnShadow = item.card.kind === "streetmap";
   // Papers cast from their own surface; the lit laptop, badge, keyboard and

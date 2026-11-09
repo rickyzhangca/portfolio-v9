@@ -16,6 +16,8 @@ export const AnalyticsEvents = {
   MACBOOK_ZOOM: "macbook_zoom",
   STREETMAP_TOGGLE: "streetmap_toggle",
   KEYBOARD_ESCAPE: "keyboard_escape",
+  TIME_MACHINE_OPEN: "time_machine_open",
+  TIME_MACHINE_VERSION_OPEN: "time_machine_version_open",
 } as const;
 
 // Extract event name value type
@@ -52,6 +54,8 @@ export interface AnalyticsEventProperties {
   keyboard_escape?: {
     context: "modal" | "stack" | "macbook" | "streetmap";
   };
+  time_machine_open?: Record<string, never>;
+  time_machine_version_open?: { version: string };
 }
 
 // Safe tracking wrapper

@@ -1,6 +1,8 @@
 import {
   getFrameTransformCache,
   getLampConfig,
+  getLampPointer,
+  isLampCatchingUp,
   type LampPosition,
   subscribeLamp,
 } from "./desk-lamp";
@@ -181,6 +183,7 @@ const paceFrame = (time: number, lamp: LampPosition) => {
   }
   if (
     previous &&
+    !isLampCatchingUp() &&
     (Math.hypot(lamp.x - previous.x, lamp.y - previous.y) / interval) * 1000 >
       MOTION_SPEED
   ) {
@@ -382,7 +385,9 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
     let lastFrame = fadeStart;
 
     unsubscribe = subscribeLamp((lamp, time) => {
-      paceFrame(time, lamp);
+      // Paced by the hand's lamp: a flare's jumps and flicker are not a
+      // sweep, and dropping resolution for them reallocated every canvas.
+      paceFrame(time, getLampPointer());
       const now = performance.now();
       const own = step?.(Math.min((now - lastFrame) / 1000, 0.1)) ?? [];
       lastFrame = now;

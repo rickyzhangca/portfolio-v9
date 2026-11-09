@@ -203,6 +203,19 @@ export interface FunProjectCardContent {
   loadKeycaps?: () => Promise<Readonly<Record<string, FunProjectKeycap>>>;
 }
 
+/** A toy time machine on the desk; it opens the time machine. */
+export interface TimecarCardContent {
+  /**
+   * Shot from above and tilted towards the screen's bottom, nose left, at 3x
+   * and at 2x.
+   */
+  image: string;
+  image2x: string;
+  /** The lamp's maps at 3x: desk-space normals, and metal, roughness, glass. */
+  normalMap: string;
+  surfaceMap: string;
+}
+
 /** A folded street map whose sheet shows a live tiled map. */
 export interface StreetmapCardContent {
   /** Where the map first opens on a phone held upright, whose frame is tall. */
@@ -343,6 +356,11 @@ export interface StreetmapCardInstance extends BaseCardInstance {
   kind: "streetmap";
 }
 
+export interface TimecarCardInstance extends BaseCardInstance {
+  content: TimecarCardContent;
+  kind: "timecar";
+}
+
 /**
  * Union of all card instances
  */
@@ -360,7 +378,8 @@ export type CardInstance =
   | MacbookCardInstance
   | FunProjectCardInstance
   | SwagCoverCardInstance
-  | StreetmapCardInstance;
+  | StreetmapCardInstance
+  | TimecarCardInstance;
 
 /**
  * Card kind union type
@@ -499,6 +518,14 @@ export const CARD_REGISTRY: Readonly<Record<CardKind, LazyCardDefinition>> =
         drag: "full",
       },
       kind: "swagcover",
+    },
+    // The card opens the time machine itself, as the controls' clock does.
+    timecar: {
+      interactionPolicy: {
+        activate: "none",
+        drag: "full",
+      },
+      kind: "timecar",
     },
   } as const);
 

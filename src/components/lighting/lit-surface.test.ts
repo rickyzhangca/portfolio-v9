@@ -2,13 +2,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { LampPosition } from "./desk-lamp";
 
 const lamp = vi.hoisted(() => ({
+  catchingUp: false,
   listeners: new Set<(position: LampPosition, time: number) => void>(),
+  pointer: { x: 0, y: 0 } as LampPosition,
 }));
 
 // The lamp's frames are stepped by hand.
 vi.mock("./desk-lamp", () => ({
   getFrameTransformCache: () => new Map(),
   getLampConfig: () => ({ heightPx: 240 }),
+  getLampPointer: () => lamp.pointer,
+  isLampCatchingUp: () => lamp.catchingUp,
   subscribeLamp: (listener: (position: LampPosition, time: number) => void) => {
     lamp.listeners.add(listener);
     return () => lamp.listeners.delete(listener);
@@ -64,8 +68,13 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 // Fade-ins and queue order read this clock; frames set it.
 let clock = 0;
 
-const frame = async (position: LampPosition, time: number) => {
+const frame = async (
+  position: LampPosition,
+  time: number,
+  pointer: LampPosition = position
+) => {
   clock = time;
+  lamp.pointer = pointer;
   for (const listener of lamp.listeners) {
     listener(position, time);
   }
@@ -337,8 +346,12 @@ describe("motion resolution", () => {
     (draw.mock.calls.at(-1)?.[1] as { pixelScale: number } | undefined)
       ?.pixelScale;
 
-  // The lamp rests, sweeps right 20 px a frame, then rests again.
-  const sweep = async (surfaces: { draw: ReturnType<typeof vi.fn> }[]) => {
+  // The lamp rests, sweeps right 20 px a frame, then rests again. With
+  // `pointerStill`, only the light moves (a flare), not the hand's lamp.
+  const sweep = async (
+    surfaces: { draw: ReturnType<typeof vi.fn> }[],
+    pointerStill = false
+  ) => {
     let time = PAUSE_MS;
     await frame({ x: 50, y: 50 }, time);
     const resting = surfaces.map(({ draw }) => lastScale(draw));
@@ -347,7 +360,11 @@ describe("motion resolution", () => {
       time += 16;
       x += 20;
       // biome-ignore lint/performance/noAwaitInLoops: frames arrive one after another
-      await frame({ x, y: 50 }, time);
+      await frame(
+        { x, y: 50 },
+        time,
+        pointerStill ? { x: 50, y: 50 } : undefined
+      );
     }
     const moving = surfaces.map(({ draw }) => lastScale(draw));
     for (let index = 0; index < 15; index += 1) {
@@ -370,6 +387,28 @@ describe("motion resolution", () => {
     expect(resting).toEqual([2, 2]);
     expect(moving).toEqual([1, 2]);
     expect(settled).toEqual([2, 2]);
+  });
+
+  it("keeps full resolution while a flare moves the light but not the lamp", async () => {
+    vi.spyOn(window, "devicePixelRatio", "get").mockReturnValue(2);
+    const soft = startSurface({ motionScale: 0.5 });
+    await settle();
+
+    const { moving } = await sweep([soft], true);
+
+    expect(moving).toEqual([2]);
+  });
+
+  it("keeps full resolution while the lamp glides back after a pause", async () => {
+    vi.spyOn(window, "devicePixelRatio", "get").mockReturnValue(2);
+    const soft = startSurface({ motionScale: 0.5 });
+    await settle();
+    lamp.catchingUp = true;
+
+    const { moving } = await sweep([soft]);
+    lamp.catchingUp = false;
+
+    expect(moving).toEqual([2]);
   });
 
   it("keeps a hidden surface's last frame while the lamp sweeps, and relights it once it shows", async () => {

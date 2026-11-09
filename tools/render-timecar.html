@@ -1,0 +1,328 @@
+<!doctype html>
+<!-- Renders the toy time machine and the maps the desk lamp relights it with; see tools/render-timecar.ts. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Time machine render</title>
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <script type="module">
+    import {
+      BackSide,
+      Box3,
+      BoxGeometry,
+      Color,
+      DoubleSide,
+      Group,
+      LinearSRGBColorSpace,
+      Matrix3,
+      Mesh,
+      MeshBasicMaterial,
+      MeshNormalMaterial,
+      NoColorSpace,
+      NoToneMapping,
+      OrthographicCamera,
+      PlaneGeometry,
+      PMREMGenerator,
+      Scene,
+      SRGBColorSpace,
+      Vector3,
+      WebGLRenderer,
+      WebGLRenderTarget,
+      ACESFilmicToneMapping,
+    } from "three";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+    import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+    import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
+    import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+    import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+
+    const BODY = "TimeBTTF_TimeMachine1_1985Paint_Material1";
+    /** Render size, square, before cropping to the car; supersampled. */
+    const SIZE = 2000;
+    /**
+     * Degrees off straight down, towards the screen's bottom, through an
+     * orthographic camera: no perspective, so edges stay parallel like the
+     * rest of the desk. Stretching the frame into the keyboard's oblique
+     * view (1 / cos TILT) made the car look like a van.
+     */
+    const TILT = 26;
+
+    const gltf = await new GLTFLoader().loadAsync("model/scene.gltf");
+    const model = gltf.scene;
+    // Nose to the screen's left: the model's nose is +Z.
+    model.rotation.y = -Math.PI / 2;
+    model.updateMatrixWorld(true);
+    const bounds = new Box3().setFromObject(model);
+    const size = bounds.getSize(new Vector3());
+    model.position.sub(bounds.getCenter(new Vector3()));
+    // Wheels on y = 0.
+    model.position.y += size.y / 2;
+    const scene = new Scene();
+    scene.add(new Group().add(model));
+    // Stainless steel: the export left the body a grey, half-metal paint.
+    model.traverse((object) => {
+      if (!object.isMesh) {
+        return;
+      }
+      for (const material of [object.material].flat()) {
+        if (material.name === BODY) {
+          material.metalness = 1;
+          material.roughness = 0.36;
+        }
+      }
+    });
+
+    const renderer = new WebGLRenderer({
+      alpha: true,
+      antialias: true,
+      preserveDrawingBuffer: true,
+    });
+    renderer.setPixelRatio(1);
+    renderer.setSize(SIZE, SIZE);
+    renderer.setClearColor(0, 0);
+    renderer.toneMapping = ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.5;
+    renderer.outputColorSpace = SRGBColorSpace;
+
+    // A studio: grey walls, a darker floor the sills reflect, one softbox
+    // high and far towards the screen's top, a strip towards its bottom
+    // and two narrow side lights. No direct light: it blew the roof white.
+    const studio = new Scene();
+    studio.add(
+      new Mesh(
+        new BoxGeometry(10, 10, 10),
+        new MeshBasicMaterial({
+          color: new Color().setScalar(0.3),
+          side: BackSide,
+        })
+      )
+    );
+    const floor = new Mesh(
+      new PlaneGeometry(10, 10),
+      new MeshBasicMaterial({
+        color: new Color().setScalar(0.12),
+        side: DoubleSide,
+      })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.5;
+    studio.add(floor);
+    const addLight = (panelWidth, panelHeight, position, brightness) => {
+      const panel = new Mesh(
+        new PlaneGeometry(panelWidth, panelHeight),
+        new MeshBasicMaterial({
+          color: new Color(brightness, brightness * 0.98, brightness * 0.95),
+          side: DoubleSide,
+        })
+      );
+      panel.position.set(...position);
+      panel.lookAt(0, 0, 0);
+      studio.add(panel);
+    };
+    addLight(3, 2.2, [-1, 4.5, -3.5], 1.4);
+    addLight(5, 0.35, [0, 2.2, 3.6], 2.5);
+    addLight(0.4, 4, [-4.5, 2.5, 0], 1);
+    addLight(0.4, 4, [4.5, 2.5, 0], 1);
+    scene.environment = new PMREMGenerator(renderer).fromScene(
+      studio,
+      0.02
+    ).texture;
+
+    const tilt = (TILT * Math.PI) / 180;
+    const radius = (size.length() / 2) * 1.02;
+    const distance = radius * 3;
+    const camera = new OrthographicCamera(
+      -radius,
+      radius,
+      radius,
+      -radius,
+      distance / 50,
+      distance * 2
+    );
+    camera.position.set(
+      0,
+      distance * Math.cos(tilt) + size.y / 2,
+      distance * Math.sin(tilt)
+    );
+    camera.up.set(0, 0, -1);
+    camera.lookAt(0, size.y / 2, 0);
+    camera.updateMatrixWorld(true);
+
+    const makeTarget = () =>
+      new WebGLRenderTarget(SIZE, SIZE, {
+        colorSpace: SRGBColorSpace,
+        samples: 8,
+      });
+    const readPixels = (target) => {
+      const pixels = new Uint8Array(SIZE * SIZE * 4);
+      renderer.readRenderTargetPixels(target, 0, 0, SIZE, SIZE, pixels);
+      return pixels;
+    };
+    const renderPasses = (passes) => {
+      const composer = new EffectComposer(renderer, makeTarget());
+      composer.setPixelRatio(1);
+      composer.setSize(SIZE, SIZE);
+      for (const pass of passes) {
+        composer.addPass(pass);
+      }
+      composer.renderToScreen = false;
+      composer.render();
+      return readPixels(composer.readBuffer);
+    };
+    const scenePass = () => {
+      const pass = new RenderPass(scene, camera);
+      pass.clearAlpha = 0;
+      return pass;
+    };
+
+    // Coverage from a plain pass; colour from an occluded pass, whose
+    // edges are blended with black and are scaled back up by coverage.
+    const plain = renderPasses([scenePass(), new OutputPass()]);
+    const occlusion = new GTAOPass(scene, camera, SIZE, SIZE);
+    occlusion.updateGtaoMaterial({
+      distanceFallOff: 1,
+      radius: size.x * 0.03,
+      samples: 16,
+      scale: 1,
+      thickness: size.x * 0.03,
+    });
+    const photo = renderPasses([scenePass(), occlusion, new OutputPass()]);
+
+    // The lamp's maps, from the same camera, untoned.
+    const originals = new Map();
+    model.traverse((object) => {
+      if (object.isMesh) {
+        originals.set(object, object.material);
+      }
+    });
+    const override = (build) =>
+      model.traverse((object) => {
+        if (object.isMesh) {
+          object.material = build(originals.get(object));
+        }
+      });
+    const renderData = () => {
+      const target = makeTarget();
+      target.texture.colorSpace = NoColorSpace;
+      renderer.setRenderTarget(target);
+      renderer.clear();
+      renderer.render(scene, camera);
+      renderer.setRenderTarget(null);
+      return readPixels(target);
+    };
+    renderer.toneMapping = NoToneMapping;
+    renderer.outputColorSpace = LinearSRGBColorSpace;
+    scene.environment = null;
+    override(
+      (material) =>
+        new MeshNormalMaterial({
+          normalMap: material.normalMap ?? null,
+          side: material.side,
+        })
+    );
+    const normals = renderData();
+    override((material) => {
+      const glass =
+        material.transparent && !material.map && material.opacity < 0.6;
+      return new MeshBasicMaterial({
+        color: new Color(
+          glass ? 0 : material.metalness,
+          glass ? 0.06 : material.roughness,
+          glass ? 1 : 0
+        ),
+        side: material.side,
+      });
+    });
+    const surface = renderData();
+
+    // Crop to the car plus a margin. Pixels read back bottom-up.
+    const at = (x, y) => ((SIZE - 1 - y) * SIZE + x) * 4;
+    let left = SIZE;
+    let top = SIZE;
+    let right = 0;
+    let bottom = 0;
+    for (let y = 0; y < SIZE; y += 1) {
+      for (let x = 0; x < SIZE; x += 1) {
+        if (plain[at(x, y) + 3] > 2) {
+          left = Math.min(left, x);
+          right = Math.max(right, x);
+          top = Math.min(top, y);
+          bottom = Math.max(bottom, y);
+        }
+      }
+    }
+    const margin = Math.round(SIZE * 0.01);
+    left = Math.max(0, left - margin);
+    top = Math.max(0, top - margin);
+    right = Math.min(SIZE - 1, right + margin);
+    bottom = Math.min(SIZE - 1, bottom + margin);
+    const width = right - left + 1;
+    const height = bottom - top + 1;
+    const toPng = (fill) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      const image = context.createImageData(width, height);
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          fill(image.data, (y * width + x) * 4, at(x + left, y + top));
+        }
+      }
+      context.putImageData(image, 0, 0);
+      return canvas.toDataURL("image/png");
+    };
+    const coverageOf = (pixels, index) => 255 / Math.max(pixels[index + 3], 1);
+
+    const out = {};
+    out.beauty = toPng((data, index, source) => {
+      const alpha = plain[source + 3];
+      const scale = photo[source + 3] < 255 && alpha > 0 ? 255 / alpha : 1;
+      for (let channel = 0; channel < 3; channel += 1) {
+        data[index + channel] = Math.min(255, photo[source + channel] * scale);
+      }
+      data[index + 3] = alpha;
+    });
+    // View-space normals to world, then to the desk: x right, y towards
+    // the screen's bottom (world +Z), z up (world +Y).
+    const deskFromView = new Matrix3().setFromMatrix4(camera.matrixWorld);
+    const normal = new Vector3();
+    out.normal = toPng((data, index, source) => {
+      const unblend = coverageOf(normals, source);
+      normal
+        .set(
+          (normals[source] * unblend) / 127.5 - 1,
+          (normals[source + 1] * unblend) / 127.5 - 1,
+          (normals[source + 2] * unblend) / 127.5 - 1
+        )
+        .applyMatrix3(deskFromView)
+        .normalize();
+      data[index] = Math.round((normal.x * 0.5 + 0.5) * 255);
+      data[index + 1] = Math.round((normal.z * 0.5 + 0.5) * 255);
+      data[index + 2] = Math.round((normal.y * 0.5 + 0.5) * 255);
+      data[index + 3] = plain[source + 3];
+    });
+    out.material = toPng((data, index, source) => {
+      const unblend = coverageOf(surface, source);
+      for (let channel = 0; channel < 3; channel += 1) {
+        data[index + channel] = Math.min(
+          255,
+          surface[source + channel] * unblend
+        );
+      }
+      data[index + 3] = plain[source + 3];
+    });
+    window.__out = out;
+    window.__done = true;
+    </script>
+  </body>
+</html>

@@ -1,6 +1,5 @@
 import {
   ArrowUUpLeftIcon,
-  ClockCounterClockwiseIcon,
   LightbulbIcon,
   SlidersHorizontalIcon,
 } from "@phosphor-icons/react";
@@ -10,7 +9,6 @@ import { isDeskLampSupported } from "@/components/lighting/desk-lamp";
 import {
   ToolbarButton,
   ToolbarGroup,
-  ToolbarLink,
   ToolbarList,
   ToolbarPanel,
   ToolbarRoot,
@@ -105,15 +103,6 @@ export const CanvasControls = ({
             >
               <ArrowUUpLeftIcon size={ICON_SIZE} />
             </ToolbarButton>
-            <ToolbarSeparator />
-            <ToolbarLink
-              href="https://v8.rickyzhang.me"
-              label="Time machine"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <ClockCounterClockwiseIcon size={ICON_SIZE} />
-            </ToolbarLink>
           </ToolbarGroup>
         </ToolbarList>
         <ToolbarPanel label="Playground" value={PLAYGROUND}>

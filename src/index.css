@@ -132,6 +132,10 @@ body,
   top: 0;
   left: 0;
 }
+/* The toy time machine rises over the room it dims while it travels. */
+.canvas-entrance-item[data-time-travel] {
+  z-index: 100000 !important;
+}
 [data-entrance="waiting"] .canvas-entrance-item,
 [data-entrance="waiting"] .canvas-entrance-chrome {
   opacity: 0;

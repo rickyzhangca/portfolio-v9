@@ -14,6 +14,7 @@ import { SocialsCard } from "@/cards/socials/socials-card";
 import { StickyNoteCard } from "@/cards/stickynote/stickynote-card";
 import { StreetmapCard } from "@/cards/streetmap/streetmap-card";
 import { SwagCoverCard } from "@/cards/swag-cover/swag-cover-card";
+import { TimecarCard } from "@/cards/timecar/timecar-card";
 import { tw } from "@/lib/utils";
 
 interface RenderCardProps {
@@ -106,6 +107,8 @@ const RenderCardComponent = ({
         return <SwagCoverCard content={card.content} />;
       case "streetmap":
         return <StreetmapCard content={card.content} isFocused={isFocused} />;
+      case "timecar":
+        return <TimecarCard content={card.content} />;
       default: {
         // Exhaustiveness check - if we get here, we have a bug
         const _exhaustive: never = card;

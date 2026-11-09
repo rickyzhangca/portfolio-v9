@@ -33,6 +33,52 @@ export const setLampConfig = (next: LampConfig) => {
 
 const listeners = new Set<LampListener>();
 const lamp: LampPosition = { x: 0, y: 0 };
+// Where the light comes from this frame: the lamp, or pulled towards a
+// brighter light on the desk while one burns.
+const lit: LampPosition = { x: 0, y: 0 };
+
+/** A brighter light on the desk, client px, and how it outshines the lamp. */
+interface LampFlare extends LampPosition {
+  /**
+   * How much brighter it makes the room's light than the lamp alone: 0 adds
+   * nothing, 1 deepens shadows by `FLARE_SHADOW_GAIN` more.
+   */
+  brightness: number;
+  /** 0 leaves the light at the lamp; 1 moves it wholly onto the flare. */
+  weight: number;
+}
+
+let flare: LampFlare | null = null;
+/** How much darker shadows grow at a flare's full brightness. */
+const FLARE_SHADOW_GAIN = 2;
+let intensity = 1;
+
+/**
+ * A light brighter than the lamp burning on the desk (the time machine's
+ * plasma), or null once it is out. While it burns the room is lit from
+ * between the lamp and it, by `weight`, unsmoothed, so shadows swing away
+ * from it as it grows and a flash throws them at once; its flicker belongs in
+ * `brightness`, which deepens shadows without moving the light: a light that
+ * jittered in place counted as a moving lamp and sent every lit surface to
+ * half resolution and back, reallocating their canvases.
+ */
+export const setLampFlare = (next: LampFlare | null) => {
+  flare =
+    next && (next.weight > 0.001 || next.brightness > 0.001) ? next : null;
+};
+
+/**
+ * How bright the room's light is against the lamp alone: above 1 while a
+ * flare burns, so shadows deepen with it and flicker as it does.
+ */
+export const getLampIntensity = () => intensity;
+
+/**
+ * The lamp itself, eased after the pointer, whatever a flare does to the
+ * light: how fast it moves is how fast the hand moves.
+ */
+export const getLampPointer = (): LampPosition => lamp;
+
 let target: LampPosition | null = null;
 let frame = 0;
 let lastTime = 0;
@@ -67,6 +113,35 @@ export const hideLampScene = (hidden: boolean) => {
 
 export const isLampSceneHidden = () => sceneHidden;
 
+let paused = false;
+
+/**
+ * While the time machine shows the canvas as a scaled window, the lamp stops
+ * where it is and its listeners stop drawing: they measure in client px,
+ * which the window's transform would skew, and a frozen scene costs nothing.
+ * The pointer is still tracked, so the lamp glides to it on resuming.
+ */
+export const pauseLamp = (isPaused: boolean) => {
+  if (paused && !isPaused) {
+    catchingUp = true;
+    catchUpSince = 0;
+  }
+  paused = isPaused;
+};
+
+let catchingUp = false;
+let catchUpSince = 0;
+/** The longest a glide back counts as one: a hand moving all along sweeps. */
+const MAX_CATCH_UP_MS = 600;
+
+/**
+ * Whether the lamp is gliding back to the pointer after a pause. That glide
+ * is not the hand sweeping the lamp: lit surfaces keep full resolution
+ * through it, since dropping and restoring it reallocated every canvas on
+ * the desk as the time machine closed.
+ */
+export const isLampCatchingUp = () => catchingUp;
+
 /** Transforms measured during the current lamp frame. */
 export const getFrameTransformCache = () => transformCache;
 
@@ -81,18 +156,37 @@ const handlePointerMove = (event: PointerEvent) => {
 };
 
 const tick = (time: number) => {
+  if (paused) {
+    // Resumes with one frame's step, so the lamp glides instead of jumping.
+    lastTime = time;
+    frame = requestAnimationFrame(tick);
+    return;
+  }
   const goal = target ?? restingPosition();
   const elapsed = lastTime ? Math.min((time - lastTime) / 1000, 0.1) : 1;
   lastTime = time;
   const follow = 1 - Math.exp(-elapsed * LAMP_FOLLOW_RATE);
   lamp.x += (goal.x - lamp.x) * follow;
   lamp.y += (goal.y - lamp.y) * follow;
+  if (catchingUp) {
+    catchUpSince ||= time;
+    if (
+      Math.hypot(goal.x - lamp.x, goal.y - lamp.y) < 2 ||
+      time - catchUpSince > MAX_CATCH_UP_MS
+    ) {
+      catchingUp = false;
+    }
+  }
+  const weight = flare ? Math.min(1, flare.weight) : 0;
+  intensity = 1 + FLARE_SHADOW_GAIN * (flare?.brightness ?? 0);
+  lit.x = lamp.x + ((flare?.x ?? 0) - lamp.x) * weight;
+  lit.y = lamp.y + ((flare?.y ?? 0) - lamp.y) * weight;
   // Scheduled first, so a throwing listener cannot stop the shared loop.
   frame = requestAnimationFrame(tick);
   transformCache = new Map();
   const writes: (() => void)[] = [];
   for (const listener of listeners) {
-    const write = listener(lamp, time);
+    const write = listener(lit, time);
     if (write) {
       writes.push(write);
     }

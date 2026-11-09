@@ -25,6 +25,7 @@ import {
   getArticleSource,
   getOpenItem,
 } from "@/context/canvas-session";
+import { loadTimeMachine } from "@/components/time-machine/load-time-machine";
 import {
   articles,
   getArticle,
@@ -47,6 +48,10 @@ const LOADER_EXIT_MS = 300;
 const CanvasApp = lazy(() =>
   import("../app").then((module) => ({ default: module.App }))
 );
+
+type TimeMachineComponent = Awaited<
+  ReturnType<typeof loadTimeMachine>
+>["TimeMachine"];
 
 export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
@@ -110,6 +115,16 @@ export default function Root() {
     ReadonlyMap<string, ArticleLocale>
   >(() => new Map());
   const triggerRef = useRef<HTMLElement | null>(null);
+  const [isTimeMachineOpen, setTimeMachineOpen] = useState(false);
+  // Closing, the camera is nearly home: the toolbar can fade back in.
+  const [isTimeMachineLanding, setTimeMachineLanding] = useState(false);
+  // Held in state rather than React.lazy, which suspends once even for a
+  // loaded chunk and held the first frame back by Suspense's ~300ms throttle.
+  const [TimeMachine, setTimeMachine] = useState<TimeMachineComponent | null>(
+    null
+  );
+  const canvasWindowRef = useRef<HTMLDivElement>(null);
+  const timeMachineTriggerRef = useRef<HTMLElement | null>(null);
   const escapeFocusTriggerRef = useRef<HTMLElement | null>(null);
   const source = useMemo(
     () => getArticleSource(location.state),
@@ -200,20 +215,60 @@ export default function Root() {
     navigate("/", { replace: true, state: null });
   }, [navigate]);
 
+  const openTimeMachine = useCallback((trigger: HTMLElement) => {
+    loadTimeMachine()
+      .then((module) => {
+        timeMachineTriggerRef.current = trigger;
+        setTimeMachine(() => module.TimeMachine);
+        setTimeMachineLanding(false);
+        setTimeMachineOpen(true);
+      })
+      .catch(() => {
+        // The chunk could not load: the canvas stays as it is.
+      });
+  }, []);
+
+  const handleTimeMachineClosed = useCallback(
+    () => setTimeMachineOpen(false),
+    []
+  );
+  const handleTimeMachineLanding = useCallback(
+    () => setTimeMachineLanding(true),
+    []
+  );
+
+  // Back on the canvas, focus returns to the button that opened it, which
+  // could not take focus while the canvas was inert.
+  useEffect(() => {
+    if (isTimeMachineOpen) {
+      return;
+    }
+    const trigger = timeMachineTriggerRef.current;
+    timeMachineTriggerRef.current = null;
+    if (trigger?.isConnected) {
+      trigger.focus({ preventScroll: true });
+    }
+  }, [isTimeMachineOpen]);
+
   const showCanvas = location.pathname === "/" || articleOpen;
+  const showTimeMachine =
+    isTimeMachineOpen && TimeMachine !== null && location.pathname === "/";
   const session = useMemo(
     () => ({
       articleLocales,
       articleOpen,
       articleSource: source,
-      canvasVisible: showCanvas,
+      // The time machine shows the canvas as a window it cannot be used in.
+      canvasVisible: showCanvas && !showTimeMachine,
       hasCanvas,
       onCanvasEntrance: handleCanvasEntrance,
       onItemOpened: handleItemOpened,
       openArticle,
       openItemId,
+      openTimeMachine,
       restoreArticleFocus,
       suppressArticleFocusRing,
+      timeMachineOpen: showTimeMachine && !isTimeMachineLanding,
     }),
     [
       articleLocales,
@@ -224,7 +279,10 @@ export default function Root() {
       articleOpen,
       source,
       openArticle,
+      openTimeMachine,
       showCanvas,
+      showTimeMachine,
+      isTimeMachineLanding,
       restoreArticleFocus,
       suppressArticleFocusRing,
     ]
@@ -241,14 +299,22 @@ export default function Root() {
       ) : null}
       {hasCanvas ? (
         <div
-          aria-hidden={!showCanvas || articleOpen}
+          aria-hidden={!showCanvas || articleOpen || showTimeMachine}
           className={showCanvas ? "fixed inset-0" : "hidden"}
-          inert={!showCanvas || articleOpen}
+          inert={!showCanvas || articleOpen || showTimeMachine}
+          ref={canvasWindowRef}
         >
           <Suspense fallback={null}>
             <CanvasApp />
           </Suspense>
         </div>
+      ) : null}
+      {showTimeMachine && TimeMachine ? (
+        <TimeMachine
+          canvasWindow={canvasWindowRef}
+          onClosed={handleTimeMachineClosed}
+          onLanding={handleTimeMachineLanding}
+        />
       ) : null}
       <Outlet />
     </CanvasSessionContext.Provider>

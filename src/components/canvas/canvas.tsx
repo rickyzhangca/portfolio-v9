@@ -275,6 +275,20 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
       : state.items.get(state.focusedItemId);
   const isMapUnfolded =
     focusedItem?.kind === "single" && focusedItem.card.kind === "streetmap";
+  // What last hid the toolbar: it waits for the map to fold out of its
+  // corner, but comes straight back after the time machine.
+  const [toolbarHiddenBy, setToolbarHiddenBy] = useState<
+    "map" | "time-machine" | null
+  >(null);
+  let toolbarHideReason: typeof toolbarHiddenBy = null;
+  if (isMapUnfolded) {
+    toolbarHideReason = "map";
+  } else if (session.timeMachineOpen) {
+    toolbarHideReason = "time-machine";
+  }
+  if (toolbarHideReason !== null && toolbarHideReason !== toolbarHiddenBy) {
+    setToolbarHiddenBy(toolbarHideReason);
+  }
   const overlays = [state.expandedStackId, state.focusedItemId].filter(
     (id): id is string => id !== null
   );
@@ -420,11 +434,17 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
                   className={tw(
                     "canvas-entrance-chrome transition-opacity duration-300 ease-out",
                     // Back only once the map has folded out of its corner.
-                    isMapUnfolded
-                      ? "pointer-events-none opacity-0"
-                      : "delay-[650ms]"
+                    isMapUnfolded && "pointer-events-none opacity-0",
+                    !isMapUnfolded &&
+                      toolbarHiddenBy === "map" &&
+                      "delay-[650ms]",
+                    // Gone at once while the time machine scales the canvas:
+                    // the liquid toolbar's SVG goo filter does not follow
+                    // the transform and smears. It fades back afterwards.
+                    session.timeMachineOpen &&
+                      "invisible opacity-0 transition-none"
                   )}
-                  inert={isMapUnfolded}
+                  inert={isMapUnfolded || session.timeMachineOpen}
                 >
                   <CanvasControls
                     isResetDisabled={isViewportReset && !arePositionsModified}

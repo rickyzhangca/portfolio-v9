@@ -37,7 +37,8 @@ describe("CanvasControls", () => {
       screen.getByRole("button", { name: "Open playground" })
     ).toBeDefined();
     expect(screen.getByRole("button", { name: "Reset canvas" })).toBeDefined();
-    expect(screen.getByRole("link", { name: "Time machine" })).toBeDefined();
+    // The time machine opens from the toy car on the desk, not from here.
+    expect(screen.queryByRole("button", { name: "Time machine" })).toBeNull();
   });
 
   it("toggles panel open when playground button is clicked", async () => {
@@ -136,25 +137,6 @@ describe("CanvasControls", () => {
 
     const resetButton = screen.getByRole("button", { name: "Reset canvas" });
     expect(resetButton.getAttribute("disabled")).toBe("");
-  });
-
-  it("renders the time machine link with safe external link attributes", () => {
-    const onReset = vi.fn();
-    const onResetPositions = vi.fn();
-
-    render(
-      <CanvasControls onReset={onReset} onResetPositions={onResetPositions} />
-    );
-
-    const timeMachineLink = screen.getByRole("link", {
-      name: "Time machine",
-    });
-
-    expect(timeMachineLink.getAttribute("href")).toBe(
-      "https://v8.rickyzhang.me"
-    );
-    expect(timeMachineLink.getAttribute("target")).toBe("_blank");
-    expect(timeMachineLink.getAttribute("rel")).toBe("noopener noreferrer");
   });
 
   it("hides the desk lamp without WebGPU", () => {

@@ -23,7 +23,14 @@ export interface CanvasSession {
     source: ArticleSource,
     trigger: HTMLElement
   ) => void;
+  /**
+   * Shows the canvas as a window beside earlier portfolio versions; focus
+   * returns to `trigger` once the canvas fills the screen again.
+   */
+  openTimeMachine?: (trigger: HTMLElement) => void;
   restoreArticleFocus?: () => void;
+  /** True while the time machine shows the canvas as a scaled window. */
+  timeMachineOpen?: boolean;
   /** Marks the open trigger so Escape can return focus without the card ring. */
   suppressArticleFocusRing?: () => void;
 }

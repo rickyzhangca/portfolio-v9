@@ -13,6 +13,7 @@ import {
   areLampShadowsHeld,
   getFrameTransformCache,
   getLampConfig,
+  getLampIntensity,
   isLampSceneHidden,
   setLampConfig,
   subscribeLamp,
@@ -217,6 +218,7 @@ const startLampShadows = (onCast: () => void) => {
     );
     const cameraOrigin = camera?.getBoundingClientRect() ?? { left: 0, top: 0 };
     const { heightPx } = getLampConfig();
+    const intensity = getLampIntensity();
 
     // Reads, and the shadows they give; the DOM is written afterwards.
     const added: [HTMLElement, string][] = [];
@@ -280,7 +282,7 @@ const startLampShadows = (onCast: () => void) => {
         continue;
       }
       const depth = Number(element.getAttribute(LAMP_DEPTH_ATTRIBUTE)) || 1;
-      const cast = { ...shadow, opacity: shadow.opacity * depth };
+      const cast = { ...shadow, opacity: shadow.opacity * depth * intensity };
       const isRounded = element.hasAttribute(LAMP_CONTACT_ATTRIBUTE);
       // A canvas draws the caster's shadow while it can (see
       // `claimLampShadow`); it rides along, so it needs no box-shadow in

@@ -46,6 +46,7 @@ const NUDGE_X_PX: Readonly<Record<string, number>> = {
   "streetmap-item": 14,
 };
 const SMALL_CARD_MAX_HEIGHT_PX = 120;
+const DESKTOP_ONLY_ITEMS: ReadonlySet<string> = new Set(["timecar-item"]);
 /** How far alternating cards drift off the centre line. */
 const MAX_SWAY_PX = 20;
 const PROFILE_INSET_PX = 24;
@@ -133,6 +134,8 @@ export const createCompactScene = (
   viewportWidth: number
 ): CanvasItem[] => {
   const ordered = items
+    // The time machine is desktop only, and so is the car that opens it.
+    .filter((item) => !DESKTOP_ONLY_ITEMS.has(item.id))
     .map((item, index) => ({ index, item: adaptItem(item, viewportWidth) }))
     .sort(
       (a, b) => getOrderRank(a.item) - getOrderRank(b.item) || a.index - b.index

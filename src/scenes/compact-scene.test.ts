@@ -15,10 +15,13 @@ const footprint = (item: CanvasItem) => {
 };
 
 describe("createCompactScene", () => {
-  it("keeps every card of the desktop scene", () => {
+  it("keeps every card of the desktop scene but the time machine's car", () => {
     const scene = createCompactScene(initialItems, 390);
     expect(scene.map((item) => item.id).sort()).toEqual(
-      initialItems.map((item) => item.id).sort()
+      initialItems
+        .map((item) => item.id)
+        .filter((id) => id !== "timecar-item")
+        .sort()
     );
   });
 

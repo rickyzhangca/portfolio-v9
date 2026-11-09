@@ -10,6 +10,10 @@ import profilePicAlt from "@/assets/profile-pic/ricky-alt.webp";
 import streetmapCover from "@/assets/streetmap/cover.webp";
 import streetmapCover2x from "@/assets/streetmap/cover-2x.webp";
 import { shuffledSwags } from "@/assets/swag/swag";
+import timecarImage from "@/assets/timecar/delorean.webp";
+import timecarImage2x from "@/assets/timecar/delorean-2x.webp";
+import timecarSurface from "@/assets/timecar/delorean-material.webp";
+import timecarNormal from "@/assets/timecar/delorean-normal.webp";
 import { ABOUT_CARD_SIZE } from "@/cards/about/about-data";
 import { RESUME_CARD_SIZE, resumeData } from "@/cards/resume/resume-data";
 import { PROFILE_LINKS } from "@/lib/site";
@@ -172,7 +176,7 @@ export const macbookItem: CanvasSingleItem = {
 export const funProjectsItem: CanvasFunStackItem = {
   id: "fun-projects-stack",
   kind: "funstack",
-  position: { x: 694, y: 692 },
+  position: { x: 654, y: 644 },
   zIndex: 6,
   card: {
     id: "fun-projects-card",
@@ -188,7 +192,7 @@ export const funProjectsItem: CanvasFunStackItem = {
 export const swagItem: CanvasSwagStackItem = {
   id: "swag-stack",
   kind: "swagstack",
-  position: { x: 926, y: 976 },
+  position: { x: 886, y: 928 },
   zIndex: 7,
   cover: {
     id: "swag-cover",
@@ -206,7 +210,7 @@ export const swagItem: CanvasSwagStackItem = {
 export const streetmapItem: CanvasSingleItem = {
   id: "streetmap-item",
   kind: "single",
-  position: { x: 1280, y: 980 },
+  position: { x: 1268, y: 980 },
   zIndex: 2,
   card: {
     id: "streetmap-card",
@@ -223,6 +227,29 @@ export const streetmapItem: CanvasSingleItem = {
   },
 };
 
+/**
+ * A toy time machine parked below the swag, left of the map, with the desk
+ * clear to its left: it drives off that way. It opens the earlier
+ * portfolios. Desktop only, as the time machine is.
+ */
+export const timecarItem: CanvasSingleItem = {
+  id: "timecar-item",
+  kind: "single",
+  position: { x: 900, y: 1214 },
+  zIndex: 3,
+  card: {
+    id: "timecar-card",
+    kind: "timecar",
+    size: { width: 248, height: 117 },
+    content: {
+      image: timecarImage,
+      image2x: timecarImage2x,
+      normalMap: timecarNormal,
+      surfaceMap: timecarSurface,
+    },
+  },
+};
+
 export const singleItems = [
   resumeItem,
   aboutItem,
@@ -231,6 +258,7 @@ export const singleItems = [
   profilePicItem,
   macbookItem,
   streetmapItem,
+  timecarItem,
   funProjectsItem,
   swagItem,
 ];
