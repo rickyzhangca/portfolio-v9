@@ -1,6 +1,11 @@
 import type { LampShadow } from "@/lib/lamp-shadow";
-import { getFrameTransformCache, subscribeLamp } from "./desk-lamp";
-import { screenLinear } from "./lamp-shadows";
+import { getFrameTransformCache, subscribeLamp, wakeLamp } from "./desk-lamp";
+import {
+  isLampVisible,
+  LAMP_SHADOW_MARGIN,
+  screenBounds,
+  screenLinear,
+} from "./lamp-shadows";
 import {
   claimLampShadow,
   getClaimedLampShadow,
@@ -73,6 +78,7 @@ interface Shape {
 export type SpriteOutline =
   | "box"
   | "image"
+  | { radius: number }
   | { path: string; size: { height: number; width: number } };
 
 /**
@@ -154,7 +160,25 @@ const readShape = (caster: HTMLElement, outline: SpriteOutline) => {
   if (outline === "image") {
     return imageShape(caster);
   }
-  return outline === "box" ? boxShape(caster) : pathShape(caster, outline);
+  if (outline === "box") {
+    return boxShape(caster);
+  }
+  if ("path" in outline) {
+    return pathShape(caster, outline);
+  }
+  const width = caster.offsetWidth;
+  const height = caster.offsetHeight;
+  return {
+    fill: (context: CanvasRenderingContext2D) => {
+      context.beginPath();
+      context.roundRect(0, 0, width, height, outline.radius);
+      context.fill();
+    },
+    height,
+    left: 0,
+    top: 0,
+    width,
+  };
 };
 
 interface Drawn {
@@ -216,9 +240,10 @@ const drawOutline = (
 };
 
 interface LampSpriteOptions {
-  /** Lies inside the caster, under its content. */
+  /** Inside the caster or behind it in the parent's isolated group. */
   canvas: HTMLCanvasElement;
   caster: HTMLElement;
+  inside?: boolean;
   outline: SpriteOutline;
 }
 
@@ -235,11 +260,13 @@ interface LampSpriteOptions {
 export const runLampSprite = ({
   canvas,
   caster,
+  inside = true,
   outline,
 }: LampSpriteOptions) => {
   let cancelled = false;
   let drawn: Drawn | null = null;
   let written = "";
+  let shape: Shape | null = null;
 
   const hide = () => {
     if (written !== "hidden") {
@@ -280,9 +307,18 @@ export const runLampSprite = ({
 
   // The lamp hands over the shadow before the bitmap is ready, so its blur
   // can be matched; the filter keeps drawing until then.
-  const release = claimLampShadow(caster, { inside: true, ready: false });
+  const release = claimLampShadow(caster, { inside, ready: false });
   const unsubscribe = subscribeLamp((_lamp, time) => {
-    const linear = screenLinear(caster, getFrameTransformCache());
+    const cache = getFrameTransformCache();
+    const rect = screenBounds(caster, cache);
+    const extent = Math.max(
+      rect.width / (caster.offsetWidth || 1),
+      rect.height / (caster.offsetHeight || 1)
+    );
+    if (!isLampVisible(rect, LAMP_SHADOW_MARGIN * 3 * extent)) {
+      return hide;
+    }
+    const linear = screenLinear(caster, cache);
     const screenScale = Math.sqrt(
       Math.abs(linear.a * linear.d - linear.b * linear.c)
     );
@@ -292,8 +328,9 @@ export const runLampSprite = ({
     // Layout is read here, with every other listener's reads, and only when
     // a bitmap may be drawn: read after the frame's writes, each bitmap
     // forced a layout of its own.
-    let shape =
-      !drawn || zoomed || tracksSize ? readShape(caster, outline) : null;
+    if (!drawn || zoomed || tracksSize) {
+      shape = readShape(caster, outline);
+    }
     const reshaped =
       drawn !== null &&
       shape !== null &&
@@ -301,7 +338,7 @@ export const runLampSprite = ({
         Math.abs(shape.height - drawn.height) > 0.5);
     // The lamp hands out this frame's shadow while its listener reads,
     // which may come after this one.
-    queueMicrotask(() => {
+    return () => {
       if (cancelled) {
         return;
       }
@@ -315,15 +352,14 @@ export const runLampSprite = ({
         reshaped ||
         (drawn !== null &&
           Math.abs(shadow.blur - drawn.blur) > drawn.blur * BLUR_DRIFT);
-      if (drifted && !shape) {
-        // The blur drifted with the lamp's settings, which is rare enough
-        // to read layout here.
-        shape = readShape(caster, outline);
-      }
       if (!drawn || drifted) {
         // Not loaded yet, or out of turns: the filter draws the shadow
         // meanwhile, or the old bitmap does.
-        if (!(shape && takeOutlineTurn(time))) {
+        if (!shape) {
+          return;
+        }
+        if (!takeOutlineTurn(time)) {
+          wakeLamp();
           if (drawn) {
             place(shadow, screenScale);
           }
@@ -349,11 +385,12 @@ export const runLampSprite = ({
         }
       }
       place(shadow, screenScale);
-    });
+    };
   });
 
   return () => {
     cancelled = true;
+    hide();
     release();
     unsubscribe();
   };

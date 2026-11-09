@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { FunProjectItem, FunProjectKeycap } from "@/cards/registry";
 import type { IconLiftEffect } from "@/lib/magnetic-lift";
+import { wakeLamp } from "./desk-lamp";
 import type { KeycapFrame } from "./keycaps-renderer";
 import { runLitSurface } from "./lit-surface";
 
@@ -138,10 +139,12 @@ export const LitKeycaps = ({
 
   useEffect(() => {
     liftsRef.current = lifts;
+    wakeLamp();
   }, [lifts]);
 
   useEffect(() => {
     popAtRef.current = popAt;
+    wakeLamp();
   }, [popAt]);
 
   useEffect(() => {
@@ -257,6 +260,7 @@ export const LitKeycaps = ({
       if (measured) {
         layout = measured;
         layoutVersion += 1;
+        wakeLamp();
         start();
       }
     });

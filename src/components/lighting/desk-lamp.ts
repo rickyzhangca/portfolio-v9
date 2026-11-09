@@ -3,7 +3,7 @@ import {
   LAMP_FOLLOW_RATE,
   type LampConfig,
 } from "@/lib/lamp-config";
-import type { Linear2D } from "@/lib/lamp-shadow";
+import { createTransformCache } from "./lamp-shadows";
 
 /** Lamp position in client px. It trails the pointer like a hand-held lamp. */
 export interface LampPosition {
@@ -19,7 +19,8 @@ export interface LampPosition {
  */
 type LampListener = (
   lamp: LampPosition,
-  time: number
+  time: number,
+  elapsed: number
 ) => (() => void) | undefined;
 
 let config: LampConfig = DEFAULT_LAMP_CONFIG;
@@ -29,6 +30,7 @@ export const getLampConfig = () => config;
 
 export const setLampConfig = (next: LampConfig) => {
   config = next;
+  wakeLamp();
 };
 
 const listeners = new Set<LampListener>();
@@ -63,8 +65,18 @@ let intensity = 1;
  * half resolution and back, reallocating their canvases.
  */
 export const setLampFlare = (next: LampFlare | null) => {
-  flare =
+  const active =
     next && (next.weight > 0.001 || next.brightness > 0.001) ? next : null;
+  if (
+    flare?.x === active?.x &&
+    flare?.y === active?.y &&
+    flare?.weight === active?.weight &&
+    flare?.brightness === active?.brightness
+  ) {
+    return;
+  }
+  flare = active;
+  wakeLamp();
 };
 
 /**
@@ -82,9 +94,10 @@ export const getLampPointer = (): LampPosition => lamp;
 let target: LampPosition | null = null;
 let frame = 0;
 let lastTime = 0;
+let ticking = false;
 // Element transforms measured this frame, shared by every listener: shadows
 // and lit surfaces climb the same ancestors.
-let transformCache = new Map<Element, Linear2D>();
+let transformCache = createTransformCache();
 
 let shadowsHeld = false;
 
@@ -95,7 +108,11 @@ let shadowsHeld = false;
  * take the wave off the compositor.
  */
 export const holdLampShadows = (held: boolean) => {
+  if (shadowsHeld === held) {
+    return;
+  }
   shadowsHeld = held;
+  wakeLamp();
 };
 
 export const areLampShadowsHeld = () => shadowsHeld;
@@ -108,12 +125,16 @@ let sceneHidden = false;
  * would still be running on the cards once they start to rise.
  */
 export const hideLampScene = (hidden: boolean) => {
+  if (sceneHidden === hidden) {
+    return;
+  }
   sceneHidden = hidden;
+  wakeLamp();
 };
 
 export const isLampSceneHidden = () => sceneHidden;
 
-let paused = false;
+const pauses = new Set<string>();
 
 /**
  * While the time machine shows the canvas as a scaled window, the lamp stops
@@ -121,12 +142,22 @@ let paused = false;
  * which the window's transform would skew, and a frozen scene costs nothing.
  * The pointer is still tracked, so the lamp glides to it on resuming.
  */
-export const pauseLamp = (isPaused: boolean) => {
-  if (paused && !isPaused) {
+export const pauseLamp = (isPaused: boolean, reason = "time-machine") => {
+  const wasPaused = pauses.size > 0;
+  if (isPaused) {
+    pauses.add(reason);
+  } else {
+    pauses.delete(reason);
+  }
+  if (pauses.size > 0) {
+    cancelAnimationFrame(frame);
+    frame = 0;
+  } else if (wasPaused) {
     catchingUp = true;
     catchUpSince = 0;
+    lastTime = performance.now();
+    wakeLamp();
   }
-  paused = isPaused;
 };
 
 let catchingUp = false;
@@ -153,21 +184,66 @@ const restingPosition = (): LampPosition => ({
 
 const handlePointerMove = (event: PointerEvent) => {
   target = { x: event.clientX, y: event.clientY };
+  wakeLamp();
 };
 
+/** Request one frame; listeners request another while their work is moving. */
+export const wakeLamp = () => {
+  if (frame || !listeners.size || pauses.size || document.hidden) {
+    return;
+  }
+  if (!ticking) {
+    lastTime = performance.now();
+  }
+  frame = requestAnimationFrame(tick);
+};
+
+const handleVisibility = () => {
+  if (document.hidden) {
+    cancelAnimationFrame(frame);
+    frame = 0;
+  } else {
+    lastTime = performance.now();
+    wakeLamp();
+  }
+};
+
+const WAKE_EVENTS = [
+  "pointerdown",
+  "pointerup",
+  "pointerover",
+  "pointerout",
+  "pointercancel",
+  "keydown",
+  "keyup",
+  "click",
+  "wheel",
+  "scroll",
+  "resize",
+  "focusin",
+  "focusout",
+] as const;
+
+const POSITION_EPSILON = 0.05;
+
 const tick = (time: number) => {
-  if (paused) {
-    // Resumes with one frame's step, so the lamp glides instead of jumping.
-    lastTime = time;
-    frame = requestAnimationFrame(tick);
+  frame = 0;
+  if (pauses.size || document.hidden || !listeners.size) {
     return;
   }
   const goal = target ?? restingPosition();
-  const elapsed = lastTime ? Math.min((time - lastTime) / 1000, 0.1) : 1;
+  const elapsed = lastTime
+    ? Math.max(0, Math.min((time - lastTime) / 1000, 0.1))
+    : 1 / 60;
   lastTime = time;
   const follow = 1 - Math.exp(-elapsed * LAMP_FOLLOW_RATE);
   lamp.x += (goal.x - lamp.x) * follow;
   lamp.y += (goal.y - lamp.y) * follow;
+  const moving =
+    Math.hypot(goal.x - lamp.x, goal.y - lamp.y) >= POSITION_EPSILON;
+  if (!moving) {
+    Object.assign(lamp, goal);
+  }
   if (catchingUp) {
     catchUpSince ||= time;
     if (
@@ -181,25 +257,30 @@ const tick = (time: number) => {
   intensity = 1 + FLARE_SHADOW_GAIN * (flare?.brightness ?? 0);
   lit.x = lamp.x + ((flare?.x ?? 0) - lamp.x) * weight;
   lit.y = lamp.y + ((flare?.y ?? 0) - lamp.y) * weight;
-  // Scheduled first, so a throwing listener cannot stop the shared loop.
-  frame = requestAnimationFrame(tick);
-  transformCache = new Map();
-  const writes: (() => void)[] = [];
-  for (const listener of listeners) {
-    const write = listener(lit, time);
-    if (write) {
-      writes.push(write);
+  transformCache = createTransformCache();
+  ticking = true;
+  try {
+    if (moving) {
+      wakeLamp();
     }
-  }
-  for (const write of writes) {
-    write();
+    const writes: (() => void)[] = [];
+    for (const listener of listeners) {
+      const write = listener(lit, time, elapsed);
+      if (write) {
+        writes.push(write);
+      }
+    }
+    for (const write of writes) {
+      write();
+    }
+  } finally {
+    ticking = false;
   }
 };
 
 /**
- * Calls `listener` every animation frame with the lamp position, reads
- * first and returned writes after. The shared loop runs only while someone
- * is listening.
+ * Reads first and runs returned writes after. The loop sleeps once the lamp
+ * converges; listeners call `wakeLamp` while easing or waiting for a draw.
  */
 export const subscribeLamp = (listener: LampListener) => {
   listeners.add(listener);
@@ -209,13 +290,25 @@ export const subscribeLamp = (listener: LampListener) => {
     window.addEventListener("pointermove", handlePointerMove, {
       passive: true,
     });
-    frame = requestAnimationFrame(tick);
+    for (const event of WAKE_EVENTS) {
+      window.addEventListener(event, wakeLamp, {
+        capture: true,
+        passive: true,
+      });
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
   }
+  wakeLamp();
   return () => {
     listeners.delete(listener);
     if (listeners.size === 0) {
       cancelAnimationFrame(frame);
+      frame = 0;
       window.removeEventListener("pointermove", handlePointerMove);
+      for (const event of WAKE_EVENTS) {
+        window.removeEventListener(event, wakeLamp, true);
+      }
+      document.removeEventListener("visibilitychange", handleVisibility);
     }
   };
 };

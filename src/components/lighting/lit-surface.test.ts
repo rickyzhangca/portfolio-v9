@@ -1,22 +1,28 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { LampPosition } from "./desk-lamp";
+import { createTransformCache } from "./lamp-shadows";
 
 const lamp = vi.hoisted(() => ({
   catchingUp: false,
-  listeners: new Set<(position: LampPosition, time: number) => void>(),
+  listeners: new Set<
+    (position: LampPosition, time: number, elapsed: number) => void
+  >(),
   pointer: { x: 0, y: 0 } as LampPosition,
 }));
 
 // The lamp's frames are stepped by hand.
 vi.mock("./desk-lamp", () => ({
-  getFrameTransformCache: () => new Map(),
+  getFrameTransformCache: () => createTransformCache(),
   getLampConfig: () => ({ heightPx: 240 }),
   getLampPointer: () => lamp.pointer,
   isLampCatchingUp: () => lamp.catchingUp,
-  subscribeLamp: (listener: (position: LampPosition, time: number) => void) => {
+  subscribeLamp: (
+    listener: (position: LampPosition, time: number, elapsed: number) => void
+  ) => {
     lamp.listeners.add(listener);
     return () => lamp.listeners.delete(listener);
   },
+  wakeLamp: vi.fn(),
 }));
 
 type LitSurfaceModule = typeof import("./lit-surface");
@@ -76,7 +82,7 @@ const frame = async (
   clock = time;
   lamp.pointer = pointer;
   for (const listener of lamp.listeners) {
-    listener(position, time);
+    listener(position, time, 1 / 60);
   }
   await settle();
 };
@@ -262,28 +268,6 @@ describe("runLitSurface", () => {
     await frame({ x: 50, y: 50 }, PAUSE_MS);
 
     expect(huge.draw).toHaveBeenCalledTimes(1);
-  });
-
-  it("leaves less of the budget after pixels drawn outside the queue", async () => {
-    const surfaces = Array.from({ length: 6 }, () => startSurface());
-    await settle();
-    for (let index = 1; index <= 3; index += 1) {
-      // biome-ignore lint/performance/noAwaitInLoops: each frame drains the queue the previous one left
-      await frame({ x: 50, y: 50 }, index * PAUSE_MS);
-    }
-    const before = surfaces.reduce(
-      (sum, { draw }) => sum + draw.mock.calls.length,
-      0
-    );
-    litSurface.chargeLitPixels(500_000);
-
-    await frame({ x: 70, y: 50 }, 4 * PAUSE_MS);
-
-    const after = surfaces.reduce(
-      (sum, { draw }) => sum + draw.mock.calls.length,
-      0
-    );
-    expect(after - before).toBe(2);
   });
 
   it("grows slowly back toward the budget a frame ran late at", async () => {

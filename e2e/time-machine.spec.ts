@@ -64,6 +64,53 @@ test.beforeEach(async ({ page }) => {
   await waitForCanvasEntrance(page);
 });
 
+test("timeline navigation never mounts archived pages", async ({ page }) => {
+  test.skip(
+    (page.viewportSize()?.width ?? 0) < 640,
+    "phones have no time machine"
+  );
+  await openTimeMachine(page);
+  const dialog = page.getByRole("dialog", { name: "Time machine" });
+  await expect.poll(() => canvasScale(page)).toBeLessThan(0.6);
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await page.mouse.move((page.viewportSize()?.width ?? 0) / 2, 300);
+  await expect(dialog.locator("iframe")).toHaveCount(0);
+  const selected = dialog.locator("[data-time-machine-window]").filter({
+    has: page.locator("button:focus"),
+  });
+  await expect(selected).toHaveCount(1);
+  await expect
+    .poll(async () => {
+      const box = await selected.boundingBox();
+      return box
+        ? Math.abs(
+            box.x + box.width / 2 - (page.viewportSize()?.width ?? 0) / 2
+          )
+        : 1e9;
+    })
+    .toBeLessThan(1.5);
+  await selected.locator("button").dispatchEvent("pointerenter");
+  const box = await selected.boundingBox();
+  if (!box) {
+    throw new Error("the selected window has no box");
+  }
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(dialog.locator("iframe")).toHaveCount(0);
+  const selectedId = await selected.getAttribute("data-time-machine-window");
+  await page.keyboard.press("Enter");
+  await expect(dialog.locator("iframe")).toHaveCount(1);
+  await expect(
+    dialog.locator(`[data-time-machine-window="${selectedId}"] iframe`)
+  ).toBeAttached();
+  await page.getByRole("button", { name: "Newer version" }).hover();
+  await expect(dialog.locator("iframe")).toHaveCount(1);
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("ArrowLeft");
+  await expect(dialog.locator("iframe")).toHaveCount(1);
+});
+
 test("the time machine shrinks the canvas, opens an earlier version and restores the canvas", async ({
   page,
 }) => {

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { wakeLamp } from "./desk-lamp";
 import type { KeyboardLayout } from "./keyboard-renderer";
 import { runLitSurface } from "./lit-surface";
 
@@ -217,6 +218,7 @@ export const LitKeyboard = ({ mode, onReady }: LitKeyboardProps) => {
 
   useEffect(() => {
     modeRef.current = mode;
+    wakeLamp();
   }, [mode]);
 
   useEffect(() => {

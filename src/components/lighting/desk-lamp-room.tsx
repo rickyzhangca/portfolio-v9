@@ -1,7 +1,6 @@
 import { useAtomValue } from "jotai";
 import { useEffect, useRef } from "react";
 import { lampConfigAtom } from "@/context/atoms";
-import { getRoomGradient } from "@/lib/room-gradient";
 import {
   contactBoxShadow,
   type LampShadow,
@@ -9,6 +8,7 @@ import {
   lampShadowFilter,
   projectLampShadow,
 } from "@/lib/lamp-shadow";
+import { getRoomGradient } from "@/lib/room-gradient";
 import {
   areLampShadowsHeld,
   getFrameTransformCache,
@@ -17,18 +17,19 @@ import {
   isLampSceneHidden,
   setLampConfig,
   subscribeLamp,
+  wakeLamp,
 } from "./desk-lamp";
 import {
+  hasOwnTransform,
+  isLampVisible,
   LAMP_CONTACT_ATTRIBUTE,
   LAMP_DEPTH_ATTRIBUTE,
   LAMP_SHADOW_ATTRIBUTE,
+  LAMP_SHADOW_MARGIN,
+  screenBounds,
   screenLinear,
 } from "./lamp-shadows";
-import {
-  getLampShadowClaim,
-  hasOwnTransform,
-  setClaimedLampShadow,
-} from "./lit-shadow";
+import { getLampShadowClaim, setClaimedLampShadow } from "./lit-shadow";
 
 /** How long the room takes to dim when the lamp switches on. */
 const ROOM_FADE_MS = 700;
@@ -92,20 +93,20 @@ interface CasterState {
   applied: string;
   /** Last contact box-shadow written, for casters that take one. */
   appliedContact: string;
-  /** The stylesheet's box-shadow, restored when the lamp goes off. */
-  boxShadow: string;
   /** Whether the lamp's shadow is written as a box-shadow, while in flight. */
   boxed: boolean;
   /** The lamp shadow last written as a box-shadow, while boxed. */
   boxedShadow: LampShadow | null;
+  /** The stylesheet's box-shadow, restored when the lamp goes off. */
+  boxShadow: string;
   filter: string;
+  /** The lamp shadow last written as a filter, in screen px. */
+  filteredShadow: LampShadow | null;
   lift: number;
   /** Center in canvas px last frame, for its speed. */
   position: { x: number; y: number } | null;
   /** Smoothed speed in canvas px per second. */
   speed: number;
-  /** The lamp shadow last written as a filter, in screen px. */
-  filteredShadow: LampShadow | null;
   transition: string;
   /** The inline will-change, restored when the lamp goes off. */
   willChange: string;
@@ -154,13 +155,12 @@ const isHovered = (element: HTMLElement) =>
  */
 const startLampShadows = (onCast: () => void) => {
   const states = new Map<HTMLElement, CasterState>();
-  let lastTime = performance.now();
   let held = false;
   let hasCast = false;
   // The lamp already eases; a CSS filter transition would lag behind it.
   // Only while the lamp switches on, or the entrance lets go of the shadows,
   // do they ease round instead of snapping in one frame.
-  let easeUntil = lastTime + ROOM_FADE_MS;
+  let easeUntil = performance.now() + ROOM_FADE_MS;
   let easeTransition = `filter ${ROOM_FADE_MS}ms ease-out`;
   let appliedTransition = "";
 
@@ -173,7 +173,7 @@ const startLampShadows = (onCast: () => void) => {
     element.style.willChange = state.willChange;
   };
 
-  const unsubscribe = subscribeLamp((lamp) => {
+  const unsubscribe = subscribeLamp((lamp, _time, frameElapsed) => {
     if (areLampShadowsHeld()) {
       held = true;
       return;
@@ -182,7 +182,6 @@ const startLampShadows = (onCast: () => void) => {
     if (held) {
       // The cards moved while shadows held; that travel is not flight.
       held = false;
-      lastTime = now;
       easeUntil = now + RELEASE_EASE_MS;
       easeTransition = `filter ${RELEASE_EASE_MS}ms ease-out`;
       for (const state of states.values()) {
@@ -192,9 +191,8 @@ const startLampShadows = (onCast: () => void) => {
     if (isLampSceneHidden()) {
       easeUntil = 0;
     }
-    const elapsed = Math.max((now - lastTime) / 1000, 1 / 240);
+    const elapsed = Math.max(frameElapsed, 1 / 240);
     const follow = 1 - Math.exp(-elapsed * LIFT_RATE);
-    lastTime = now;
     const transition = now < easeUntil ? easeTransition : "none";
     const retransition = transition !== appliedTransition;
     appliedTransition = transition;
@@ -216,7 +214,9 @@ const startLampShadows = (onCast: () => void) => {
         cameraLinear.a * cameraLinear.d - cameraLinear.b * cameraLinear.c
       )
     );
-    const cameraOrigin = camera?.getBoundingClientRect() ?? { left: 0, top: 0 };
+    const cameraOrigin = camera
+      ? screenBounds(camera, cache)
+      : { left: 0, top: 0 };
     const { heightPx } = getLampConfig();
     const intensity = getLampIntensity();
 
@@ -227,13 +227,26 @@ const startLampShadows = (onCast: () => void) => {
     for (const element of casters) {
       const height = Number(element.getAttribute(LAMP_SHADOW_ATTRIBUTE)) || 0;
       let state = states.get(element);
+      const rect = screenBounds(element, cache);
+      if (
+        !isLampVisible(rect, LAMP_SHADOW_MARGIN * 3 * cameraScale) ||
+        cameraScale === 0
+      ) {
+        if (state) {
+          state.position = null;
+          state.speed = 0;
+          state.lift = height;
+        }
+        setClaimedLampShadow(element, null);
+        continue;
+      }
       if (!state) {
         state = {
           applied: "",
           appliedContact: "",
-          boxShadow: element.style.boxShadow,
           boxed: false,
           boxedShadow: null,
+          boxShadow: element.style.boxShadow,
           filter: element.style.filter,
           filteredShadow: null,
           lift: height,
@@ -244,10 +257,6 @@ const startLampShadows = (onCast: () => void) => {
         };
         states.set(element, state);
         added.push([element, promotedWillChange(element)]);
-      }
-      const rect = element.getBoundingClientRect();
-      if (rect.width === 0 || cameraScale === 0) {
-        continue;
       }
       const position = {
         x: (rect.left + rect.width / 2 - cameraOrigin.left) / cameraScale,
@@ -266,6 +275,12 @@ const startLampShadows = (onCast: () => void) => {
         (isHovered(element) ? HOVER_LIFT : 0) +
         Math.min(state.speed * FLIGHT_LIFT_PER_SPEED, MAX_FLIGHT_LIFT);
       state.lift += (targetLift - state.lift) * follow;
+      if (Math.abs(targetLift - state.lift) > 0.01 || state.speed > 0.1) {
+        wakeLamp();
+      } else {
+        state.lift = targetLift;
+        state.speed = 0;
+      }
       const linear = screenLinear(element, cache);
       const shadow = projectLampShadow({
         center: {
@@ -291,7 +306,7 @@ const startLampShadows = (onCast: () => void) => {
       const isResting = state.lift <= height + RESTING_LIFT;
       const isCanvasShadow =
         claim?.ready === true &&
-        (claim.inside ? isResting : !hasOwnTransform(element));
+        (claim.inside ? isResting : !hasOwnTransform(element, cache));
       if (claim) {
         // An unready canvas reads the shadow to prepare its bitmap, once
         // the caster rests: a sticker still flying in blurs more.

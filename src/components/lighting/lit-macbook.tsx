@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { MacbookSticker } from "@/cards/registry";
+import { wakeLamp } from "./desk-lamp";
 import { runLitSurface } from "./lit-surface";
 import type { LitImage, LitQuad } from "./macbook-renderer";
 
@@ -45,6 +46,7 @@ export const LitMacbook = ({
 
   useEffect(() => {
     hoveredRef.current = hoveredSticker;
+    wakeLamp();
   }, [hoveredSticker]);
 
   useEffect(() => {

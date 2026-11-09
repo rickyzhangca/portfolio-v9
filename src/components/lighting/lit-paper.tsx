@@ -1,10 +1,11 @@
 import { useAtomValue } from "jotai";
 import { useEffect, useRef, useState } from "react";
 import { deskLampAtom } from "@/context/atoms";
-import { LAMP_SHADOW_ATTRIBUTE, LAMP_SHADOW_MARGIN } from "./lamp-shadows";
+import { wakeLamp } from "./desk-lamp";
+import { LAMP_SHADOW_ATTRIBUTE } from "./lamp-shadows";
 import { runLitSurface } from "./lit-surface";
-import { startLazily } from "./start-lazily";
 import type { PaperTexture } from "./paper-renderer";
+import { startLazily } from "./start-lazily";
 
 /**
  * smooth: clean writing paper (resume, about); fibre: a fibrous sheet
@@ -156,6 +157,7 @@ const LitPaper = ({
 
   useEffect(() => {
     coveredRef.current = covered;
+    wakeLamp();
   }, [covered]);
 
   useEffect(() => {
@@ -184,6 +186,7 @@ const LitPaper = ({
         const { attachPaper } = await import("./paper-renderer");
         return attachPaper(canvas, gloss, signal);
       },
+      canvases: (stock.shade ? 1 : 0) + (stock.gloss > 0 ? 1 : 0),
       draw: (surface, { height, intensity, light, pixelScale, width }) =>
         surface.render({
           curl: curlLift,
@@ -205,7 +208,6 @@ const LitPaper = ({
           texture: stock.texture,
           width,
         }),
-      canvases: (stock.shade ? 1 : 0) + (stock.gloss > 0 ? 1 : 0),
       element,
       label: "Paper lighting",
       // Grain, curl and gloss are soft: half resolution while the lamp sweeps
@@ -229,8 +231,9 @@ const LitPaper = ({
       return;
     }
     return startLazily(
-      () => import("./lit-shadow"),
-      ({ runLampShadow }) => runLampShadow({ canvas, caster, radius }),
+      () => import("./lit-sprite"),
+      ({ runLampSprite }) =>
+        runLampSprite({ canvas, caster, inside: false, outline: { radius } }),
       "Lamp shadow"
     );
   }, [isShadowDrawn, radius]);
@@ -250,14 +253,8 @@ const LitPaper = ({
       {castsShadow ? (
         // Behind the caster in the parent's isolated group.
         <canvas
-          className="pointer-events-none absolute -z-10"
+          className="pointer-events-none absolute top-0 left-0 -z-10 opacity-0 will-change-[transform,opacity]"
           ref={shadowRef}
-          style={{
-            height: `calc(100% + ${LAMP_SHADOW_MARGIN * 2}px)`,
-            left: -LAMP_SHADOW_MARGIN,
-            top: -LAMP_SHADOW_MARGIN,
-            width: `calc(100% + ${LAMP_SHADOW_MARGIN * 2}px)`,
-          }}
         />
       ) : null}
       {stock.shade ? (

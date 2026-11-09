@@ -3,6 +3,7 @@ import {
   getFrameTransformCache,
   getLampConfig,
   subscribeLamp,
+  wakeLamp,
 } from "./desk-lamp";
 import { screenLinear } from "./lamp-shadows";
 
@@ -53,6 +54,9 @@ export const startLampSheen = (root: HTMLElement) => {
     const fade = easeOutCubic(
       Math.min(1, (performance.now() - fadeStart) / FADE_IN_MS)
     );
+    if (fade < 1) {
+      wakeLamp();
+    }
     const cache = getFrameTransformCache();
 
     // Reads; the glints are written once every lamp listener has read.

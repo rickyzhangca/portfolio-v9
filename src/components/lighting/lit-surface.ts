@@ -5,8 +5,9 @@ import {
   isLampCatchingUp,
   type LampPosition,
   subscribeLamp,
+  wakeLamp,
 } from "./desk-lamp";
-import { screenLinear } from "./lamp-shadows";
+import { screenBounds, screenLinear } from "./lamp-shadows";
 
 /** What a lit surface needs each frame, in its own untransformed CSS px. */
 export interface SurfaceView {
@@ -29,9 +30,6 @@ interface LitSurfaceOptions<Surface extends { destroy: () => void }> {
   element: HTMLElement;
   /** Names the surface in the console when WebGPU fails. */
   label: string;
-  /** Called when the surface cannot attach or a draw throws. */
-  onFail?: (error: unknown) => void;
-  onReady: () => void;
   /**
    * Share of the full backing-store resolution to draw at while the lamp
    * moves fast; full resolution returns once it slows. For surfaces whose
@@ -40,6 +38,9 @@ interface LitSurfaceOptions<Surface extends { destroy: () => void }> {
    * resolution, as surfaces drawing sharp prints or text must.
    */
   motionScale?: number;
+  /** Called when the surface cannot attach or a draw throws. */
+  onFail?: (error: unknown) => void;
+  onReady: () => void;
   /** How far the canvas overhangs the element on each side, in local px. */
   overhang?: number;
   /**
@@ -154,8 +155,6 @@ let flushQueued = false;
 let pixelBudget = INITIAL_PIXEL_BUDGET;
 /** The budget the last late frame ran at. */
 let ceiling = MAX_PIXEL_BUDGET;
-/** Pixels drawn outside the queue since the last flush (`chargeLitPixels`). */
-let charged = 0;
 /** Whether the last frame left surfaces waiting for budget. */
 let budgetSpent = false;
 let frameTime = 0;
@@ -207,14 +206,6 @@ const paceFrame = (time: number, lamp: LampPosition) => {
   budgetSpent = false;
 };
 
-/**
- * Counts pixels drawn outside the queue (lamp shadow canvases) against the
- * next flush's budget.
- */
-export const chargeLitPixels = (pixels: number) => {
-  charged += pixels;
-};
-
 // Runs after every lamp listener of this frame has queued its redraw. The
 // first surface always draws, so one larger than the budget is not stuck.
 const flushDraws = () => {
@@ -222,12 +213,12 @@ const flushDraws = () => {
   const queue = [...pending.entries()].sort(
     (a, b) => b[1].staleness - a[1].staleness || a[1].since - b[1].since
   );
-  let spent = charged;
-  charged = 0;
+  let spent = 0;
   let drawn = 0;
   for (const [owner, entry] of queue) {
     if (drawn > 0 && spent + entry.pixels > pixelBudget) {
       budgetSpent = true;
+      wakeLamp();
       return;
     }
     pending.delete(owner);
@@ -287,7 +278,7 @@ const measure = (
 ): SurfaceView | null => {
   const width = element.offsetWidth;
   const height = element.offsetHeight;
-  const rect = element.getBoundingClientRect();
+  const rect = screenBounds(element, getFrameTransformCache());
   // Surfaces off screen keep their last frame.
   if (
     !(width && height) ||
@@ -363,6 +354,8 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
   let surface: Surface | null = null;
   let unsubscribe: (() => void) | null = null;
   const owner = {};
+  const resize = new ResizeObserver(wakeLamp);
+  resize.observe(element);
 
   const fail = (error: unknown) => {
     if (!abort.signal.aborted) {
@@ -382,15 +375,14 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
     let drawn: SurfaceView | null = null;
     let drawnOwn = "";
     let announced = false;
-    let lastFrame = fadeStart;
+    let previousOwn = "";
 
-    unsubscribe = subscribeLamp((lamp, time) => {
+    unsubscribe = subscribeLamp((lamp, time, elapsed) => {
       // Paced by the hand's lamp: a flare's jumps and flicker are not a
       // sweep, and dropping resolution for them reallocated every canvas.
       paceFrame(time, getLampPointer());
       const now = performance.now();
-      const own = step?.(Math.min((now - lastFrame) / 1000, 0.1)) ?? [];
-      lastFrame = now;
+      const own = step?.(elapsed) ?? [];
       const shown = prominence?.() ?? 1;
       // A hidden surface would only redraw to change resolution and back.
       const view = measure(
@@ -401,8 +393,18 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
         shown > 0 ? motionScale : 1
       );
       if (!view) {
+        pending.delete(owner);
         return;
       }
+      const motionKey = own.map((value) => value.toFixed(4)).join();
+      if (
+        motionKey !== previousOwn ||
+        now - fadeStart < FADE_IN_MS ||
+        (motionScale < 1 && time < movingUntil)
+      ) {
+        wakeLamp();
+      }
+      previousOwn = motionKey;
       const ownKey = own.map((value) => value.toFixed(2)).join();
       const animating = ownKey !== drawnOwn;
       let staleness = RESHAPED;
@@ -460,6 +462,7 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
 
   return () => {
     abort.abort();
+    resize.disconnect();
     pending.delete(owner);
     unsubscribe?.();
     surface?.destroy();

@@ -50,10 +50,9 @@ export const LAMP_LIFT = {
 } as const;
 
 /**
- * How far a lamp shadow canvas (lit-shadow.ts) overhangs its caster on each
- * side, in local px: room for a hovered card's shadow (lifted 20 px: 32 px
- * away, blurred 15 px) out to two and a half deviations, where it has faded
- * below 1%.
+ * A hovered card's shadow reach in local px. Culling reserves three times
+ * this for higher flight lifts and their blur; bitmap margins follow the
+ * actual blur instead.
  */
 export const LAMP_SHADOW_MARGIN = 72;
 
@@ -75,26 +74,87 @@ const toLinear = (matrix: DOMMatrix): Linear => ({
   d: matrix.d,
 });
 
+export const createTransformCache = () => ({
+  bounds: new Map<Element, DOMRect>(),
+  linear: new Map<Element, Linear>(),
+  matrices: new Map<string, Linear>(),
+  styles: new Map<Element, CSSStyleDeclaration>(),
+});
+
+type TransformCache = ReturnType<typeof createTransformCache>;
+
+const transformStyle = (element: Element, cache: TransformCache) => {
+  let style = cache.styles.get(element);
+  if (!style) {
+    style = getComputedStyle(element);
+    cache.styles.set(element, style);
+  }
+  return style;
+};
+
+const IDENTITY_MATRIX = "matrix(1, 0, 0, 1, 0, 0)";
+
+export const hasOwnTransform = (element: Element, cache: TransformCache) => {
+  const style = transformStyle(element, cache);
+  return (
+    (style.transform !== "none" && style.transform !== IDENTITY_MATRIX) ||
+    style.translate !== "none" ||
+    style.rotate !== "none" ||
+    style.scale !== "none"
+  );
+};
+
+export const screenBounds = (element: Element, cache: TransformCache) => {
+  let rect = cache.bounds.get(element);
+  if (!rect) {
+    rect = element.getBoundingClientRect();
+    cache.bounds.set(element, rect);
+  }
+  return rect;
+};
+
+/** Leave room for shadows that reach on screen while their caster does not. */
+export const isLampVisible = (rect: DOMRect, margin = LAMP_SHADOW_MARGIN * 3) =>
+  rect.width > 0 &&
+  rect.height > 0 &&
+  rect.right >= -margin &&
+  rect.bottom >= -margin &&
+  rect.left <= window.innerWidth + margin &&
+  rect.top <= window.innerHeight + margin;
+
+const parseLinear = (value: string, cache: TransformCache) => {
+  let linear = cache.matrices.get(value);
+  if (!linear) {
+    linear = toLinear(new DOMMatrix(value));
+    cache.matrices.set(value, linear);
+  }
+  return linear;
+};
+
 // Rotation and scale of one element, ignoring translation: offsets and blur
 // are vectors and lengths, so only the linear part of a transform matters.
 // CSS applies the individual `rotate` and `scale` properties before
 // `transform`, and Tailwind and Motion use both.
-const ownLinear = (element: Element): Linear => {
-  const style = getComputedStyle(element);
+const ownLinear = (element: Element, cache: TransformCache): Linear => {
+  const style = transformStyle(element, cache);
   let linear = IDENTITY;
   if (style.rotate && style.rotate !== "none") {
     const parts = style.rotate.split(" ");
     const angle = parts.at(-1);
     if (angle) {
-      linear = multiply(linear, toLinear(new DOMMatrix(`rotate(${angle})`)));
+      linear = multiply(linear, parseLinear(`rotate(${angle})`, cache));
     }
   }
   if (style.scale && style.scale !== "none") {
     const [x = "1", y = x] = style.scale.split(" ");
-    linear = multiply(linear, toLinear(new DOMMatrix(`scale(${x}, ${y})`)));
+    linear = multiply(linear, { a: Number(x), b: 0, c: 0, d: Number(y) });
   }
-  if (style.transform && style.transform !== "none") {
-    linear = multiply(linear, toLinear(new DOMMatrix(style.transform)));
+  if (
+    style.transform &&
+    style.transform !== "none" &&
+    style.transform !== IDENTITY_MATRIX
+  ) {
+    linear = multiply(linear, parseLinear(style.transform, cache));
   }
   return linear;
 };
@@ -105,19 +165,19 @@ const ownLinear = (element: Element): Linear => {
  */
 export const screenLinear = (
   element: Element | null,
-  cache: Map<Element, Linear>
+  cache: TransformCache
 ): Linear => {
   if (!element) {
     return IDENTITY;
   }
-  const cached = cache.get(element);
+  const cached = cache.linear.get(element);
   if (cached) {
     return cached;
   }
   const linear = multiply(
     screenLinear(element.parentElement, cache),
-    ownLinear(element)
+    ownLinear(element, cache)
   );
-  cache.set(element, linear);
+  cache.linear.set(element, linear);
   return linear;
 };

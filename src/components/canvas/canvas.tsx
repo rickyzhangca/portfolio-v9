@@ -18,7 +18,9 @@ import { ArticleModal } from "@/components/articles/article-modal";
 import {
   hideLampScene,
   holdLampShadows,
+  pauseLamp,
 } from "@/components/lighting/desk-lamp";
+import { watchLampScene } from "@/components/lighting/lamp-scene";
 import { ResumeModal } from "@/components/resume/resume-modal";
 import {
   deskLampAtom,
@@ -30,18 +32,18 @@ import {
   useCanvasEnvironment,
 } from "@/context/canvas-layout";
 import { useCanvasSession } from "@/context/canvas-session";
+import { useCanvasEntrance } from "@/hooks/use-canvas-entrance";
 import {
   type ActiveDocument,
   useCanvasInteractions,
 } from "@/hooks/use-canvas-interactions";
-import { useCanvasEntrance } from "@/hooks/use-canvas-entrance";
 import { useCanvasState } from "@/hooks/use-canvas-state";
 import { useCanvasViewport } from "@/hooks/use-canvas-viewport";
-import { useOpenItemLink } from "@/hooks/use-open-item-link";
 import {
   useDefaultDeskLamp,
   useDeskLampProbe,
 } from "@/hooks/use-default-desk-lamp";
+import { useOpenItemLink } from "@/hooks/use-open-item-link";
 import {
   useCoarsePointer,
   useIgnoreSyntheticMouseEvents,
@@ -52,8 +54,8 @@ import {
 } from "@/hooks/use-viewport-config";
 import { ENTRANCE_DURATION_MS, getEntranceDelays } from "@/lib/canvas-entrance";
 import { type CanvasLayout, DESKTOP_CANVAS_LAYOUT } from "@/lib/canvas-layout";
-import { getCompactPanBounds, type PanBounds } from "@/lib/pan-bounds";
 import { getDocumentLayoutId } from "@/lib/document-motion";
+import { getCompactPanBounds, type PanBounds } from "@/lib/pan-bounds";
 import {
   computeRepulsionOffsets,
   computeStackCardRepulsion,
@@ -298,6 +300,20 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
     (state.expandedStackId !== null || state.focusedItemId !== null);
   const { canvasVisible } = session;
   const { containerRef } = viewport;
+
+  useEffect(() => {
+    const root = containerRef.current;
+    if (root && isLampOn) {
+      return watchLampScene(root);
+    }
+  }, [containerRef, isLampOn]);
+
+  const lampObscured =
+    activeDocument !== null || session.articleOpen || !canvasVisible;
+  useLayoutEffect(() => {
+    pauseLamp(lampObscured, "canvas");
+    return () => pauseLamp(false, "canvas");
+  }, [lampObscured]);
 
   useEffect(() => {
     const container = containerRef.current;

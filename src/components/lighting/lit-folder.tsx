@@ -1,12 +1,13 @@
 import { useAtomValue } from "jotai";
 import { useEffect, useRef, useState } from "react";
-import { deskLampAtom } from "@/context/atoms";
-import { FOLDER_SHAPE_SIZE } from "@/lib/folder-shape";
 import type {
   BoardGlow,
   CoverLogoFinish,
   FolderMaterial,
 } from "@/cards/registry";
+import { deskLampAtom } from "@/context/atoms";
+import { FOLDER_SHAPE_SIZE } from "@/lib/folder-shape";
+import { wakeLamp } from "./desk-lamp";
 import type { FolderLogo } from "./folder-renderer";
 import { runLitSurface } from "./lit-surface";
 
@@ -49,8 +50,8 @@ const BULGE_RATE = 7;
  */
 const LOGO_FINISHES: Record<CoverLogoFinish, FolderLogo["finish"]> = {
   deboss: {
-    glow: 0,
     gloss: 0.04,
+    glow: 0,
     lightness: 1,
     metal: 0,
     relief: -1.5,
@@ -58,8 +59,8 @@ const LOGO_FINISHES: Record<CoverLogoFinish, FolderLogo["finish"]> = {
     tint: 0,
   },
   foil: {
-    glow: 0,
     gloss: 0.55,
+    glow: 0,
     lightness: 0,
     metal: 0,
     relief: 0.45,
@@ -67,8 +68,8 @@ const LOGO_FINISHES: Record<CoverLogoFinish, FolderLogo["finish"]> = {
     tint: 1,
   },
   glass: {
-    glow: 0.9,
     gloss: 0.45,
+    glow: 0.9,
     lightness: 0,
     metal: 0,
     relief: 0.6,
@@ -76,8 +77,8 @@ const LOGO_FINISHES: Record<CoverLogoFinish, FolderLogo["finish"]> = {
     tint: 0.4,
   },
   "hot-foil": {
-    glow: 0,
     gloss: 0,
+    glow: 0,
     lightness: 0,
     metal: 1,
     relief: -0.4,
@@ -85,8 +86,8 @@ const LOGO_FINISHES: Record<CoverLogoFinish, FolderLogo["finish"]> = {
     tint: 1,
   },
   print: {
-    glow: 0,
     gloss: 0.06,
+    glow: 0,
     lightness: 0,
     metal: 0,
     relief: 0.08,
@@ -121,6 +122,7 @@ const LitFolder = ({
 
   useEffect(() => {
     targetBulgeRef.current = bulgeFor(papers);
+    wakeLamp();
   }, [papers]);
 
   useEffect(() => {
@@ -158,6 +160,8 @@ const LitFolder = ({
           signal
         );
       },
+      // The shade and light canvases both cover the folder.
+      canvases: 2,
       draw: (surface, { height, intensity, light: lamp, pixelScale, width }) =>
         surface.render({
           bulge,
@@ -171,8 +175,6 @@ const LitFolder = ({
           width,
         }),
       element,
-      // The shade and light canvases both cover the folder.
-      canvases: 2,
       label: "Folder lighting",
       // Board relief and sheen are soft: half resolution while the lamp sweeps
       // keeps every cover relit each frame; full detail returns as it slows.
@@ -182,8 +184,9 @@ const LitFolder = ({
         bulge +=
           (targetBulgeRef.current - bulge) *
           (1 - Math.exp(-elapsed * BULGE_RATE));
-        // Redraw in quarter-pixel steps: finer changes do not show, and a
-        // folder whose papers fly out would otherwise redraw every frame.
+        if (Math.abs(targetBulgeRef.current - bulge) > 0.001) {
+          wakeLamp();
+        }
         return [Math.round(bulge * 4) / 4];
       },
     });

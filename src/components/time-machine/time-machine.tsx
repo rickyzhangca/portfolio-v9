@@ -353,10 +353,9 @@ export const TimeMachine = ({
     () => new Set()
   );
   /**
-   * Versions whose window has been opened and has landed. Hovering only
-   * preloads a page: its load event can come before an old site has painted
-   * anything, so a frame revealed on the timeline could show a blank white
-   * window. The page fades in over its screenshot once its window has been
+   * Versions whose window has been opened and has landed. A load event can
+   * come before an old site has painted anything. The page fades in over
+   * its screenshot once its window has been
    * opened and the camera has settled on it, and stays live from then on.
    */
   const [openedFrames, setOpenedFrames] = useState<ReadonlySet<string>>(
@@ -554,15 +553,17 @@ export const TimeMachine = ({
         const button = buttonsRef.current[index];
         if (index === 0 && button) {
           // The canvas is inert; this takes the present's clicks and holds
-          // its veil and rim, in screen px.
-          button.style.transform = toTransform(lifted.x, lifted.y, 1);
-          button.style.width = `${width * grow}px`;
-          button.style.height = `${height * grow}px`;
+          // its veil and rim, in the same world units as the past windows.
+          button.style.transform = toTransform(
+            lifted.x,
+            lifted.y,
+            scale * grow
+          );
           button.style.clipPath =
             timelineLight > 0
               ? `path("${getSquirclePath(
-                  { height: height * grow, width: width * grow, x: 0, y: 0 },
-                  crop * WINDOW_RADIUS_PX * grow
+                  { ...geometry.window, x: 0, y: 0 },
+                  crop * radius
                 )}")`
               : "";
         }
@@ -580,16 +581,14 @@ export const TimeMachine = ({
           if (rimOpacity > 1e-3 && path) {
             // Half the stroke falls outside the clip: a 1px line on screen.
             if (index === 0) {
-              const size = { height: height * grow, width: width * grow };
-              rim.setAttribute("viewBox", `0 0 ${size.width} ${size.height}`);
               path.setAttribute(
                 "d",
                 getSquirclePath(
-                  { ...size, x: 0, y: 0 },
-                  crop * WINDOW_RADIUS_PX * grow
+                  { ...geometry.window, x: 0, y: 0 },
+                  crop * radius
                 )
               );
-              path.setAttribute("stroke-width", "2");
+              path.setAttribute("stroke-width", String(2 / (scale * grow)));
             } else {
               path.setAttribute("d", windowPath);
               path.setAttribute("stroke-width", String(2 / (scale * grow)));
@@ -608,11 +607,10 @@ export const TimeMachine = ({
         const label = labelsRef.current[index];
         if (label) {
           label.style.transform = toTransform(
-            origin.x,
+            origin.x + width / 2,
             origin.y + height + TIMELINE_CONTROLS_GAP_PX,
             1
           );
-          label.style.width = `${width}px`;
           label.style.setProperty("--lift", String(light));
         }
       }
@@ -1020,22 +1018,6 @@ export const TimeMachine = ({
   );
   const showNewer = useCallback(() => showSibling(-1), [showSibling]);
   const showOlder = useCallback(() => showSibling(1), [showSibling]);
-  /** Starts an open version's neighbour loading before the camera does. */
-  const previewSibling = useCallback(
-    (direction: -1 | 1) => {
-      if (phase !== "open") {
-        return;
-      }
-      const sibling = getSibling(direction);
-      if (sibling) {
-        mountFrame(sibling.version.id);
-      }
-    },
-    [getSibling, mountFrame, phase]
-  );
-  const previewNewer = useCallback(() => previewSibling(-1), [previewSibling]);
-  const previewOlder = useCallback(() => previewSibling(1), [previewSibling]);
-
   // The scroller takes the timeline's pointer: a click on a window the
   // screen's edge cuts slides it to the middle; on one wholly in view it
   // opens it (the present closes). Empty space steps back.
@@ -1150,12 +1132,8 @@ export const TimeMachine = ({
       updateLifts();
       const index = getPointerWindow(event.clientX, event.clientY);
       event.currentTarget.style.cursor = index === null ? "" : "pointer";
-      const version = index === null ? undefined : TIMELINE[index - 1];
-      if (version) {
-        mountFrame(version.id);
-      }
     },
-    [getPointerWindow, mountFrame, updateLifts]
+    [getPointerWindow, updateLifts]
   );
   const handleScrollerPointerLeave = useCallback(() => {
     pointerRef.current = null;
@@ -1348,18 +1326,20 @@ export const TimeMachine = ({
 
       <button
         aria-label="Back to the current portfolio"
-        className="fixed top-0 left-0 z-[2] cursor-pointer focus-visible:outline-none"
+        className="fixed top-0 left-0 z-[2] origin-top-left cursor-pointer focus-visible:outline-none"
         data-time-machine-current=""
         inert={phase !== "timeline"}
         onBlur={handleWindowBlur}
         onClick={close}
         onFocus={handlePresentFocus}
         ref={registerPresentButton}
+        style={{ height: geometry.window.height, width: geometry.window.width }}
         type="button"
       >
         <WindowLight
           registerRim={registerPresentRim}
           registerVeil={registerPresentVeil}
+          viewBox={`0 0 ${geometry.window.width} ${geometry.window.height}`}
         />
       </button>
 
@@ -1377,7 +1357,6 @@ export const TimeMachine = ({
           onFocus={handleWindowFocus}
           onFrameLoad={handleFrameLoad}
           onOpen={openVersion}
-          onPreview={mountFrame}
           registerButton={registerButton}
           registerRim={registerRim}
           registerVeil={registerVeil}
@@ -1428,8 +1407,6 @@ export const TimeMachine = ({
           data-away={stepsAway ? "" : undefined}
           disabled={!hasNewer}
           onClick={showNewer}
-          onFocus={previewNewer}
-          onPointerEnter={previewNewer}
           ref={newerButtonRef}
           style={STEP_BUTTON_STYLE}
           type="button"
@@ -1448,8 +1425,6 @@ export const TimeMachine = ({
           data-away={stepsAway ? "" : undefined}
           disabled={!hasOlder}
           onClick={showOlder}
-          onFocus={previewOlder}
-          onPointerEnter={previewOlder}
           ref={olderButtonRef}
           style={STEP_BUTTON_STYLE}
           type="button"
@@ -1505,7 +1480,7 @@ const WindowLabel = ({
   return (
     <p
       aria-hidden
-      className="pointer-events-none fixed top-0 left-0 z-[5] flex items-center justify-center"
+      className="pointer-events-none fixed top-0 left-0 z-[5] flex -translate-x-1/2 items-center justify-center whitespace-nowrap"
       ref={handleRef}
       style={{
         height: STEP_BUTTON_PX,
@@ -1545,8 +1520,6 @@ interface VersionWindowProps {
   onFocus: (index: number, event: FocusEvent<HTMLButtonElement>) => void;
   onFrameLoad: (id: string) => void;
   onOpen: (index: number, version: PortfolioVersion) => void;
-  /** The pointer or focus reached the window: start loading its page. */
-  onPreview: (id: string) => void;
   registerButton: (index: number, element: HTMLButtonElement | null) => void;
   registerRim: (index: number, element: SVGSVGElement | null) => void;
   registerVeil: (index: number, element: HTMLDivElement | null) => void;
@@ -1573,7 +1546,6 @@ const VersionWindow = ({
   onFocus,
   onFrameLoad,
   onOpen,
-  onPreview,
   registerButton,
   registerRim,
   registerVeil,
@@ -1587,13 +1559,11 @@ const VersionWindow = ({
     () => onOpen(index, version),
     [index, onOpen, version]
   );
-  const handlePreview = useCallback(() => onPreview(id), [onPreview, id]);
   const handleFocus = useCallback(
     (event: FocusEvent<HTMLButtonElement>) => {
-      onPreview(id);
       onFocus(index, event);
     },
-    [id, index, onFocus, onPreview]
+    [index, onFocus]
   );
   const handleButton = useCallback(
     (element: HTMLButtonElement | null) => registerButton(index, element),
@@ -1672,7 +1642,6 @@ const VersionWindow = ({
           onBlur={onBlur}
           onClick={handleOpen}
           onFocus={handleFocus}
-          onPointerEnter={handlePreview}
           ref={handleButton}
           type="button"
         />

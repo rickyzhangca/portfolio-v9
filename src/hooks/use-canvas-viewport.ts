@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
+import { wakeLamp } from "@/components/lighting/desk-lamp";
 import { AUTO_PAN_DURATION_MS, AUTO_PAN_EASING } from "@/lib/auto-pan";
 import { clampToRange, type PanBounds } from "@/lib/pan-bounds";
 import type { ViewportState } from "@/types/canvas";
@@ -32,8 +33,8 @@ export const useCanvasViewport = (
   const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [scale, setScale] = useState(initialViewport.scale);
   const [dimensions, setDimensions] = useState(() => ({
-    width: window.innerWidth,
     height: window.innerHeight,
+    width: window.innerWidth,
   }));
 
   const commit = useCallback(() => {
@@ -46,6 +47,7 @@ export const useCanvasViewport = (
 
   const sync = useCallback(
     (viewport: ViewportState) => {
+      wakeLamp();
       viewportRef.current = { ...viewport };
       setScale(viewport.scale);
       if (commitTimerRef.current !== null) {
@@ -124,7 +126,7 @@ export const useCanvasViewport = (
         current.width === window.innerWidth &&
         current.height === window.innerHeight
           ? current
-          : { width: window.innerWidth, height: window.innerHeight }
+          : { height: window.innerHeight, width: window.innerWidth }
       );
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
@@ -200,14 +202,14 @@ export const useCanvasViewport = (
   );
 
   return {
-    transformRef,
-    containerRef,
-    viewportRef,
-    scale,
-    dimensions,
-    onTransformed,
-    onStopped,
-    panTo,
     cancelPendingPan,
+    containerRef,
+    dimensions,
+    onStopped,
+    onTransformed,
+    panTo,
+    scale,
+    transformRef,
+    viewportRef,
   };
 };

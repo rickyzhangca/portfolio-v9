@@ -2,50 +2,56 @@ import { test as base, expect, type Page } from "@playwright/test";
 import { PINNED_FONT_STYLESHEET } from "./visual/font-stylesheet";
 
 interface E2EOptions {
+  enableLamp: boolean;
   pinVisualFonts: boolean;
 }
 
 export const test = base.extend<E2EOptions>({
-  pinVisualFonts: [false, { option: true }],
-  page: async ({ baseURL, page, pinVisualFonts }, use) => {
+  enableLamp: [false, { option: true }],
+  page: async ({ baseURL, enableLamp, page, pinVisualFonts }, use) => {
     if (!baseURL) {
       throw new Error("E2E tests require a configured baseURL");
     }
 
     const appOrigin = new URL(baseURL).origin;
-    await page.addInitScript(() => {
-      // The desk lamp switches on wherever WebGPU works, and hosted runners
-      // differ in GPU support. Hide WebGPU so every run gets the DOM shading.
-      Reflect.deleteProperty(Navigator.prototype, "gpu");
-
-      let seed = 0x7a_4d_13_5b;
-      Math.random = () => {
-        seed = (seed * 48_271) % 2_147_483_647;
-        return (seed - 1) / 2_147_483_646;
-      };
-
-      const trackedWindow = window as Window & {
-        __e2eVisualMutationCount?: number;
-      };
-      trackedWindow.__e2eVisualMutationCount = 0;
-      const observer = new MutationObserver((records) => {
-        if (
-          records.some(
-            (record) =>
-              record.type === "childList" || record.attributeName === "style"
-          )
-        ) {
-          trackedWindow.__e2eVisualMutationCount =
-            (trackedWindow.__e2eVisualMutationCount ?? 0) + 1;
+    await page.addInitScript(
+      ({ keepLamp }) => {
+        // The desk lamp switches on wherever WebGPU works, and hosted runners
+        // differ in GPU support. Hide WebGPU so every run gets the DOM shading.
+        if (!keepLamp) {
+          Reflect.deleteProperty(Navigator.prototype, "gpu");
         }
-      });
-      observer.observe(document.documentElement, {
-        attributeFilter: ["style"],
-        attributes: true,
-        childList: true,
-        subtree: true,
-      });
-    });
+
+        let seed = 0x7a_4d_13_5b;
+        Math.random = () => {
+          seed = (seed * 48_271) % 2_147_483_647;
+          return (seed - 1) / 2_147_483_646;
+        };
+
+        const trackedWindow = window as Window & {
+          __e2eVisualMutationCount?: number;
+        };
+        trackedWindow.__e2eVisualMutationCount = 0;
+        const observer = new MutationObserver((records) => {
+          if (
+            records.some(
+              (record) =>
+                record.type === "childList" || record.attributeName === "style"
+            )
+          ) {
+            trackedWindow.__e2eVisualMutationCount =
+              (trackedWindow.__e2eVisualMutationCount ?? 0) + 1;
+          }
+        });
+        observer.observe(document.documentElement, {
+          attributeFilter: ["style"],
+          attributes: true,
+          childList: true,
+          subtree: true,
+        });
+      },
+      { keepLamp: enableLamp }
+    );
 
     await page.route("**/*", async (route) => {
       const requestUrl = new URL(route.request().url());
@@ -70,6 +76,7 @@ export const test = base.extend<E2EOptions>({
 
     await use(page);
   },
+  pinVisualFonts: [false, { option: true }],
 });
 
 /**
