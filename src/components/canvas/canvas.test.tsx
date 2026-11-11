@@ -87,7 +87,10 @@ vi.mock("@/lib/auto-pan", async (original) => {
 vi.mock("./canvas-item", () => ({
   CanvasItemRenderer: ({
     item,
+    obscured,
     onActivate,
+    onDragEnd,
+    onDragStart,
     onToggleExpanded,
     setRootRef,
     isExpanded,
@@ -97,7 +100,10 @@ vi.mock("./canvas-item", () => ({
     onContentLayoutMeasured,
   }: {
     item: CanvasItem;
+    obscured?: boolean;
     onActivate: (id: string) => void;
+    onDragEnd: () => void;
+    onDragStart: (id: string) => void;
     onToggleExpanded: (id: string) => void;
     setRootRef: (id: string, element: HTMLDivElement | null) => void;
     isExpanded: boolean;
@@ -112,6 +118,7 @@ vi.mock("./canvas-item", () => ({
         data-drag-disabled={dragDisabled}
         data-expanded={isExpanded}
         data-focused={isFocused}
+        data-obscured={Boolean(obscured)}
         data-testid={item.id}
         // biome-ignore lint/performance/noJsxPropsBind: test double rendered once per case
         ref={(el) => setRootRef(item.id, el)}
@@ -126,6 +133,15 @@ vi.mock("./canvas-item", () => ({
           type="button"
         >
           {item.id}
+        </button>
+        <button
+          // biome-ignore lint/performance/noJsxPropsBind: test double rendered once per case
+          onMouseDown={() => onDragStart(item.id)}
+          // biome-ignore lint/performance/noJsxPropsBind: test double rendered once per case
+          onMouseUp={() => onDragEnd()}
+          type="button"
+        >
+          Drag {item.id}
         </button>
         <button
           // biome-ignore lint/performance/noJsxPropsBind: test double rendered once per case
@@ -550,6 +566,40 @@ describe("Canvas interaction contracts", () => {
     unmount();
     settle();
     expect(transform.setTransform).not.toHaveBeenCalled();
+  });
+
+  it("marks only the time machine car obscured when another item opens, focuses, or drags", () => {
+    render(<Canvas initialItems={initialItems} />);
+    const timecar = screen.getByTestId("timecar-item");
+    const streetmap = screen.getByTestId("streetmap-item");
+    expect(timecar.dataset.obscured).toBe("false");
+    expect(streetmap.dataset.obscured).toBe("false");
+
+    // Dragging the car itself leaves it unobscured; dragging another item obscures it.
+    fireEvent.mouseDown(screen.getByText("Drag timecar-item"));
+    expect(timecar.dataset.obscured).toBe("false");
+    fireEvent.mouseUp(screen.getByText("Drag timecar-item"));
+    fireEvent.mouseDown(screen.getByText("Drag streetmap-item"));
+    expect(timecar.dataset.obscured).toBe("true");
+    expect(streetmap.dataset.obscured).toBe("false");
+    fireEvent.mouseUp(screen.getByText("Drag streetmap-item"));
+    expect(timecar.dataset.obscured).toBe("false");
+
+    // Focusing the street map or MacBook, or expanding a stack, obscures the car.
+    fireEvent.click(screen.getByText("streetmap-item"));
+    expect(timecar.dataset.obscured).toBe("true");
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(timecar.dataset.obscured).toBe("false");
+
+    fireEvent.click(screen.getByText("macbook-item"));
+    expect(timecar.dataset.obscured).toBe("true");
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(timecar.dataset.obscured).toBe("false");
+
+    fireEvent.click(screen.getByText("swag-stack"));
+    expect(timecar.dataset.obscured).toBe("true");
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(timecar.dataset.obscured).toBe("false");
   });
   describe("Canvas on touch screens", () => {
     const originalMatchMedia = window.matchMedia;

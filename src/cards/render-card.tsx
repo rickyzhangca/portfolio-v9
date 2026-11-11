@@ -22,6 +22,7 @@ interface RenderCardProps {
   className?: string;
   isExpanded?: boolean;
   isFocused?: boolean;
+  obscured?: boolean;
   onMeasure?: (height: number) => void;
   priority?: boolean;
 }
@@ -35,6 +36,7 @@ const RenderCardComponent = ({
   className,
   isExpanded = true,
   isFocused = false,
+  obscured = false,
   onMeasure,
   priority,
 }: RenderCardProps) => {
@@ -108,7 +110,7 @@ const RenderCardComponent = ({
       case "streetmap":
         return <StreetmapCard content={card.content} isFocused={isFocused} />;
       case "timecar":
-        return <TimecarCard content={card.content} />;
+        return <TimecarCard content={card.content} obscured={obscured} />;
       default: {
         // Exhaustiveness check - if we get here, we have a bug
         const _exhaustive: never = card;

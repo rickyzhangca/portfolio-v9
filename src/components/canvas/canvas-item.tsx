@@ -19,12 +19,13 @@ interface CanvasItemRendererProps {
   isFocused: boolean;
   item: CanvasItem;
   itemIndex: number;
+  obscured?: boolean;
   onActivate?: (id: string, cardId?: string, trigger?: HTMLElement) => void;
   onBringToFront: (id: string) => void;
   onCardHeightMeasured?: (id: string, cardId: string, height: number) => void;
   onContentLayoutMeasured?: (id: string, height: number) => void;
   onDragEnd?: () => void;
-  onDragStart?: () => void;
+  onDragStart?: (id: string) => void;
   onPageChange?: (id: string, page: number) => void;
   onPositionUpdate: (id: string, position: Position) => void;
   onToggleExpanded: (id: string) => void;
@@ -42,11 +43,12 @@ const CanvasItemContent = ({
   isExpanded,
   isFocused,
   dragDisabled,
+  obscured = false,
   repulsionOffset,
   onBringToFront: bringToFront,
   onToggleExpanded: toggleExpanded,
   onPositionUpdate: updatePosition,
-  onDragStart,
+  onDragStart: startDrag,
   onDragEnd,
   onCardHeightMeasured: measureCard,
   onContentLayoutMeasured: measureContent,
@@ -88,6 +90,10 @@ const CanvasItemContent = ({
     (height: number) => measureContent?.(item.id, height),
     [measureContent, item.id]
   );
+  const onDragStart = useCallback(
+    () => startDrag?.(item.id),
+    [startDrag, item.id]
+  );
   const setRootRef = useCallback(
     (element: HTMLDivElement | null) => registerElement?.(item.id, element),
     [registerElement, item.id]
@@ -99,6 +105,7 @@ const CanvasItemContent = ({
         dragDisabled={dragDisabled}
         isFocused={isFocused}
         item={item}
+        obscured={obscured}
         onActivate={onActivate}
         onBringToFront={onBringToFront}
         onCardHeightMeasured={onCardHeightMeasured}

@@ -642,3 +642,79 @@ test("the toy time machine on the desk opens it, and phones have none", async ({
     page.getByRole("button", { name: "Older version" })
   ).toBeVisible();
 });
+
+test("hovering the toy time machine never leaves it floating over opened items", async ({
+  page,
+}) => {
+  test.skip(
+    (page.viewportSize()?.width ?? 0) < 640,
+    "phones have no time machine"
+  );
+  await page.mouse.move(720, 500);
+  await page.mouse.wheel(150, 420);
+
+  const car = page.getByRole("button", {
+    name: "Time travel to earlier portfolios",
+  });
+  const carWrapper = page
+    .locator('[data-card-item-id="timecar-item"]')
+    .locator("xpath=ancestor::*[contains(@class,'canvas-entrance-item')]");
+
+  const chargeCar = async () => {
+    let lastY = Number.NaN;
+    await expect
+      .poll(async () => {
+        const box = await car.boundingBox();
+        if (!box || box.y <= 0 || box.y + box.height >= 1000) {
+          return Number.POSITIVE_INFINITY;
+        }
+        const delta = Math.abs(box.y - lastY);
+        lastY = box.y;
+        return delta;
+      })
+      .toBeLessThan(0.5);
+    const box = await car.boundingBox();
+    if (!box) {
+      throw new Error("the toy time machine is missing");
+    }
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(carWrapper).toHaveAttribute("data-time-travel", "");
+  };
+
+  // Focused MacBook brings its backdrop over the car.
+  await chargeCar();
+  await page
+    .locator('[data-card-item-id="macbook-item"] [role="button"]')
+    .click();
+  await expect(carWrapper).not.toHaveAttribute("data-time-travel");
+  await page.keyboard.press("Escape");
+
+  // Folder / collection opens with its backdrop over the car.
+  await chargeCar();
+  await page.getByRole("button", { name: "Toggle swag collection" }).click();
+  await expect(carWrapper).not.toHaveAttribute("data-time-travel");
+  await page.keyboard.press("Escape");
+
+  // Street map unfolds over the car's spot.
+  await chargeCar();
+  await page
+    .locator('[data-card-item-id="streetmap-item"] [role="button"]')
+    .click();
+  await expect(carWrapper).not.toHaveAttribute("data-time-travel");
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const carEl = document
+          .querySelector('[data-card-item-id="timecar-item"]')
+          ?.closest(".canvas-entrance-item");
+        const mapEl = document
+          .querySelector('[data-card-item-id="streetmap-item"]')
+          ?.closest(".canvas-entrance-item");
+        return (
+          Number(carEl ? getComputedStyle(carEl).zIndex : 0) <
+          Number(mapEl ? getComputedStyle(mapEl).zIndex : 0)
+        );
+      })
+    )
+    .toBe(true);
+});

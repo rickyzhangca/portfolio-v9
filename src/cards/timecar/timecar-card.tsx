@@ -35,6 +35,8 @@ const loadFluxCharge = () => {
 
 interface TimecarCardProps {
   content: TimecarCardContent;
+  /** True while another canvas item, overlay or reader sits over the desk. */
+  obscured?: boolean;
 }
 
 /**
@@ -44,11 +46,17 @@ interface TimecarCardProps {
  * controls' clock does, and it comes back when that closes. A drag only
  * moves it. Under the desk lamp it is relit with WebGPU.
  */
-export const TimecarCard = ({ content }: TimecarCardProps) => {
+export const TimecarCard = ({
+  content,
+  obscured = false,
+}: TimecarCardProps) => {
   const { openTimeMachine, timeMachineOpen } = useCanvasSession();
   const [isLampOn, setLampOn] = useAtom(deskLampAtom);
   const [isLitReady, setLitReady] = useState(false);
   const [isCharging, setCharging] = useState(false);
+  if (obscured && isCharging) {
+    setCharging(false);
+  }
   const [trip, setTrip] = useState<Trip>("parked");
   const [FluxCharge, setFluxCharge] = useState<FluxChargeType | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
@@ -145,10 +153,10 @@ export const TimecarCard = ({ content }: TimecarCardProps) => {
   const startCharging = useCallback(() => {
     warm();
     // Focus comes back to the car as it returns; it should not charge again.
-    if (trip === "parked") {
+    if (trip === "parked" && !obscured) {
       setCharging(true);
     }
-  }, [trip, warm]);
+  }, [obscured, trip, warm]);
   const stopCharging = useCallback(() => setCharging(false), []);
   const handleFocus = useCallback(
     (event: FocusEvent<HTMLButtonElement>) => {
@@ -215,6 +223,7 @@ export const TimecarCard = ({ content }: TimecarCardProps) => {
           height={HEIGHT}
           image={content.image}
           lampOn={isLampOn}
+          obscured={obscured}
           onDeparted={handleDeparted}
           onReturned={handleReturned}
           trip={trip}

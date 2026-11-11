@@ -35,6 +35,7 @@ interface SingleCardItemProps {
   dragDisabled: boolean;
   isFocused: boolean;
   item: CanvasSingleItem;
+  obscured?: boolean;
   onActivate?: (trigger?: HTMLElement) => void;
   onBringToFront: () => void;
   onCardHeightMeasured?: (cardId: string, height: number) => void;
@@ -52,6 +53,7 @@ export const SingleCardItem = ({
   scale,
   isFocused,
   dragDisabled,
+  obscured = false,
   repulsionOffset,
   onBringToFront,
   onPositionUpdate,
@@ -200,6 +202,7 @@ export const SingleCardItem = ({
       card={hiResCard}
       className="shadow-none hover:shadow-none"
       isFocused={isFocused}
+      obscured={obscured}
       onMeasure={shouldRenderFocusHiRes ? undefined : handleCardMeasure}
     />
   );

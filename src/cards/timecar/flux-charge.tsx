@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useRef } from "react";
+import { type RefObject, useEffect, useLayoutEffect, useRef } from "react";
 import carLightUrl from "@/assets/timecar/car-light.webp";
 import type { CarGlow } from "@/components/lighting/car-glow";
 import {
@@ -6,6 +6,7 @@ import {
   type LampPosition,
   setLampFlare,
   subscribeLamp,
+  wakeLamp,
 } from "@/components/lighting/desk-lamp";
 import {
   ARRIVAL,
@@ -445,6 +446,8 @@ interface FluxChargeProps {
   image: string;
   /** Whether the desk lamp is on: the landing's steam is lit by it. */
   lampOn?: boolean;
+  /** True while another canvas item, overlay or reader sits over the desk. */
+  obscured?: boolean;
   /** Called once the car has gone and the time machine should open. */
   onDeparted: () => void;
   /** Called once the returned car has thawed. */
@@ -626,6 +629,7 @@ export const FluxCharge = ({
   height,
   image,
   lampOn = false,
+  obscured = false,
   onDeparted,
   onReturned,
   trip,
@@ -635,10 +639,12 @@ export const FluxCharge = ({
   // Where the desk lamp is, client px, while it is on.
   const lampRef = useRef<LampPosition | null>(null);
   const shaderCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const chargingRef = useRef(charging);
+  const chargingRef = useRef(charging && !obscured);
+  const obscuredRef = useRef(obscured);
   const tripRef = useRef(trip);
   const callbacksRef = useRef({ onDeparted, onReturned });
   const startRef = useRef<() => void>(() => undefined);
+  const quenchRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
     callbacksRef.current = { onDeparted, onReturned };
@@ -1952,7 +1958,10 @@ export const FluxCharge = ({
 
     // The plasma's light on the desk round it, with its pulse.
     const writePlasmaLight = (now: number) => {
-      const plasma = reducedMotion ? { energy: 0, x: 0 } : getPlasma(now);
+      const plasma =
+        reducedMotion || obscuredRef.current
+          ? { energy: 0, x: 0 }
+          : getPlasma(now);
       const pulse = getPulse();
       plasmaLight = plasma.energy * pulse;
       plasmaShift = (plasma.x - width / 2) * Math.min(1, plasma.energy * 3);
@@ -1960,7 +1969,7 @@ export const FluxCharge = ({
       const host = button?.closest<HTMLElement>(
         ".canvas-entrance-item"
       )?.parentElement;
-      if (plasmaLight < 0.01 || !(button && host)) {
+      if (obscuredRef.current || plasmaLight < 0.01 || !(button && host)) {
         removePlasmaLayer();
         setLampFlare(null);
         return;
@@ -2574,6 +2583,12 @@ export const FluxCharge = ({
     };
 
     const writeDim = (now: number, dt: number) => {
+      if (obscuredRef.current) {
+        dim = 0;
+        removeDimLayer();
+        raise(false);
+        return;
+      }
       const target = getDimTarget(now);
       const seconds = target > dim ? ROOM_DIM.inSeconds : ROOM_DIM.outSeconds;
       dim += (target - dim) * (1 - Math.exp(-dt / seconds));
@@ -2581,7 +2596,8 @@ export const FluxCharge = ({
         dim = 0;
       }
       raise(
-        dim > 0 ||
+        level > 0 ||
+          Boolean(plasmaLayer) ||
           tripSeen === "departing" ||
           (tripSeen === "returning" && now - returnedAt < RETURN_MS)
       );
@@ -2852,16 +2868,73 @@ export const FluxCharge = ({
       last = performance.now();
       frame = requestAnimationFrame(tick);
     };
-    if (chargingRef.current || tripRef.current !== "parked") {
+    const body = bodyRef.current;
+    // Yields the desk at once when a stack, focus item, reader or drag covers
+    // the car, before the foreground item's first frame paints.
+    quenchRef.current = () => {
+      dim = 0;
+      plasmaLight = 0;
+      removeDimLayer();
+      removePlasmaLayer();
+      setLampFlare(null);
+      raise(false);
+      if (tripSeen === "parked") {
+        level = 0;
+        fedOrb = 0;
+        absorbedMass = 0;
+        impactSurge = 0;
+        impactKick.x = 0;
+        impactKick.y = 0;
+        impactVel.x = 0;
+        impactVel.y = 0;
+        arcs = [];
+        motes = [];
+        twinkles = [];
+        sliceBolts = [];
+        let hadGlow = false;
+        for (const light of glow?.lights ?? []) {
+          if (light.intensity > 0) {
+            light.intensity = 0;
+            hadGlow = true;
+          }
+        }
+        if (hadGlow) {
+          wakeLamp();
+        }
+        context.save();
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.restore();
+        if (body) {
+          body.style.transform = "";
+          body.style.opacity = "";
+          body.style.clipPath = "";
+        }
+        if (trails.length === 0) {
+          if (shaderDrawn) {
+            shaderCanvas.width = 0;
+            shaderCanvas.height = 0;
+            shaderBounds = "";
+            shaderDrawn = false;
+          }
+          cancelAnimationFrame(frame);
+          frame = 0;
+        }
+      }
+    };
+    if (
+      (chargingRef.current && !obscuredRef.current) ||
+      tripRef.current !== "parked"
+    ) {
       startRef.current();
     }
 
-    const body = bodyRef.current;
     return () => {
       disposed = true;
       cancelAnimationFrame(frame);
       clearTimeout(steamTimer);
       startRef.current = () => undefined;
+      quenchRef.current = () => undefined;
       renderer?.destroy();
       removeDimLayer();
       removePlasmaLayer();
@@ -2881,10 +2954,18 @@ export const FluxCharge = ({
     };
   }, [bodyRef, glow, height, image, width]);
 
+  useLayoutEffect(() => {
+    obscuredRef.current = obscured;
+    if (obscured) {
+      chargingRef.current = false;
+      quenchRef.current();
+    }
+  }, [obscured]);
+
   useEffect(() => {
-    chargingRef.current = charging;
+    chargingRef.current = charging && !obscuredRef.current;
     tripRef.current = trip;
-    if (charging || trip !== "parked") {
+    if (chargingRef.current || trip !== "parked") {
       startRef.current();
     }
   }, [charging, trip]);

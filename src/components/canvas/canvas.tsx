@@ -106,7 +106,8 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
   const { isCoarsePointer, layout } = useCanvasEnvironment();
   const [baselineItems] = useState(initialItems);
   const { state, actions } = useCanvasState(baselineItems);
-  const [isDragging, setIsDragging] = useState(false);
+  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
+  const isDragging = draggingItemId !== null;
   const [activeDocument, setActiveDocument] = useState<ActiveDocument>(null);
   const session = useCanvasSession();
   useIgnoreSyntheticMouseEvents();
@@ -253,8 +254,8 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
     state.viewportState.scale === 1 &&
     state.viewportState.positionX === 0 &&
     state.viewportState.positionY === 0;
-  const onDragStart = useCallback(() => setIsDragging(true), []);
-  const onDragEnd = useCallback(() => setIsDragging(false), []);
+  const onDragStart = useCallback((id: string) => setDraggingItemId(id), []);
+  const onDragEnd = useCallback(() => setDraggingItemId(null), []);
   const { cancelPendingPan, transformRef } = viewport;
   const resetViewport = useCallback(() => {
     cancelPendingPan();
@@ -294,6 +295,11 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
   const overlays = [state.expandedStackId, state.focusedItemId].filter(
     (id): id is string => id !== null
   );
+  const isTimecarObscured =
+    overlays.length > 0 ||
+    activeDocument !== null ||
+    session.articleOpen ||
+    (draggingItemId !== null && draggingItemId !== "timecar-item");
   const showCloseButton =
     isCoarsePointer &&
     !interaction.isLocked &&
@@ -400,6 +406,11 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
                     item={item}
                     itemIndex={itemIndex}
                     key={item.id}
+                    obscured={
+                      item.kind === "single" &&
+                      item.card.kind === "timecar" &&
+                      isTimecarObscured
+                    }
                     onActivate={interaction.activate}
                     onBringToFront={actions.bringItemToFront}
                     onCardHeightMeasured={actions.updateCardHeight}
