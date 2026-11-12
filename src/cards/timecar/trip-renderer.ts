@@ -1,7 +1,9 @@
+import fireSheetUrl from "@/assets/timecar/fire.webp";
 import steamSheetUrl from "@/assets/timecar/steam.webp";
 import {
   ARRIVAL,
   DEPARTURE,
+  FIRE_SHEET,
   getDriveDistance,
   getSliceTimes,
   STEAM_SHEET,
@@ -336,6 +338,9 @@ export const createTripRenderer = async (
     steamGrid: uniform("uSteamGrid"),
     steamRegion: uniform("uSteamRegion"),
     steamSheet: uniform("uSteamSheet"),
+    fireGrid: uniform("uFireGrid"),
+    fireSheet: uniform("uFireSheet"),
+    fireTile: uniform("uFireTile"),
     texture: uniform("uCarTexture"),
     time: uniform("uTime"),
     trailShift: uniform("uTrailShift"),
@@ -344,6 +349,51 @@ export const createTripRenderer = async (
   };
   gl.uniform1i(locations.texture, 0);
   gl.uniform1i(locations.steamSheet, 1);
+  let destroyed = false;
+  gl.uniform1i(locations.fireSheet, 2);
+  gl.uniform4f(
+    locations.fireGrid,
+    FIRE_SHEET.cols,
+    FIRE_SHEET.rows,
+    FIRE_SHEET.frames,
+    0
+  );
+  gl.uniform3f(
+    locations.fireTile,
+    FIRE_SHEET.tile.width,
+    FIRE_SHEET.tile.height,
+    FIRE_SHEET.tile.base
+  );
+  // The trails' fire: decoded off the main thread, then one grey texture.
+  // Until it is in, or without it, the shader's own flames stand in.
+  let fireTexture: WebGLTexture | null = null;
+  fetch(fireSheetUrl)
+    .then((response) => response.blob())
+    .then((blob) => createImageBitmap(blob))
+    .then((sheet) => {
+      if (destroyed) {
+        sheet.close();
+        return;
+      }
+      fireTexture = gl.createTexture();
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, fireTexture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, sheet);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.activeTexture(gl.TEXTURE0);
+      sheet.close();
+      gl.uniform4f(
+        locations.fireGrid,
+        FIRE_SHEET.cols,
+        FIRE_SHEET.rows,
+        FIRE_SHEET.frames,
+        1
+      );
+    })
+    .catch(() => undefined);
   const { region } = STEAM_SHEET;
   gl.uniform4f(
     locations.steamRegion,
@@ -368,7 +418,6 @@ export const createTripRenderer = async (
   let steamWanted = false;
   let steamUploading = false;
   let steamFrame = 0;
-  let destroyed = false;
   const uploadSteamRow = (row: number) => {
     steamFrame = 0;
     const bitmap = steamRows[row];
@@ -481,6 +530,7 @@ export const createTripRenderer = async (
       }
       gl.deleteTexture(texture);
       gl.deleteTexture(steamTexture);
+      gl.deleteTexture(fireTexture);
       gl.deleteBuffer(buffer);
       gl.deleteVertexArray(vao);
       gl.deleteProgram(program);

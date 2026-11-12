@@ -15,6 +15,7 @@ import {
   CAR_LIGHT_TILES,
   CHARGE_ORB,
   DEPARTURE,
+  DRIVE_END_MS,
   findEdgePoints,
   getArcRate,
   getArrivalLift,
@@ -89,7 +90,7 @@ const CUT_FEATHER_PX = { inside: 4, outside: 22 } as const;
  * How long the light takes to squeeze into the slice, ms: long enough to see
  * the one become the other.
  */
-const SLICE_OPEN_MS = 140;
+const SLICE_OPEN_MS = 220;
 /** The flash it snaps shut in lasts this long, ms. */
 const SNAP_FLASH_MS = 400;
 /** The arrival flashes' forks: how many, and how far they reach, px. */
@@ -123,24 +124,38 @@ const LAMPS = {
   ],
 } as const;
 /**
- * The room dims around the car while it charges and leaves, so its light
- * reads: not at all within `clearPx` of its middle, easing to `outer` by
- * `fullPx`, in a cool night tone; in px of the desk. The dimming eases in
- * over `inSeconds` and out over `outSeconds`. A deep veil in two stops read
- * as a hard vignette and showed 8-bit steps, and one deepest round the car
- * blacked out the screen, so it is gentle, clear round the car, eased
- * through many stops and dithered. Its clear pool is the plasma's light:
- * it follows the plasma and is scaled by `pool` (`min` + `gain` times the
- * plasma's light, up to `max`), so it grows and breathes with it.
+ * The room goes dark while the car charges and leaves, and again as it
+ * comes back, so its light reads: on a white desk nothing can outshine the
+ * page, and the plasma, the slice and the fire were pale tints on it. Dark
+ * to `outer` in a cool night tone, `parked` of that at full charge while it
+ * still stands, eased in over `inSeconds` and out over `outSeconds`; on the
+ * return it holds for `returnMs`, through the flashes, then the light comes
+ * back up as the steam pours; leaving, it lifts over `liftSeconds` from
+ * `liftLeadMs` before the time machine opens, so the present's window there
+ * is the desk and not a black card. Two layers make it: one with a pool of clear
+ * desk (none within `clearPx`, full by `fullPx`, in px of the desk, eased
+ * through many stops and dithered against 8-bit steps), which follows the
+ * plasma, and a flat one under it. The pool is as open as the plasma
+ * is bright, and `carPool` open for the car standing on the desk, easing
+ * over `poolSeconds`, never more than `poolMax`: the desk the plasma lights
+ * stays well under white, or its white heart had nothing to stand out from; the flat layer takes the share the pool gives up, so
+ * the far room keeps its dark. A pool that stayed open where the car had
+ * stood read as a spotlight on bare desk.
  */
 const ROOM_DIM = {
-  clearPx: 240,
-  fullPx: 1150,
-  inSeconds: 0.9,
-  outer: 0.3,
-  outSeconds: 1.4,
-  pool: { gain: 0.8, max: 1.7, min: 0.8 },
-  rgb: [10, 13, 24],
+  carPool: 0.32,
+  clearPx: 50,
+  fullPx: 400,
+  inSeconds: 0.22,
+  liftLeadMs: 380,
+  liftSeconds: 0.3,
+  outer: 0.9,
+  outSeconds: 1.1,
+  parked: 0.6,
+  poolMax: 0.42,
+  poolSeconds: 0.18,
+  returnMs: 1000,
+  rgb: [6, 8, 16],
 } as const;
 /**
  * The light the plasma throws on the desk round it, under the car and over
@@ -152,7 +167,7 @@ const ROOM_DIM = {
  */
 const PLASMA_LIGHT = {
   gradient:
-    "radial-gradient(closest-side, rgba(190, 235, 255, 0.7), rgba(110, 185, 255, 0.4) 26%, rgba(70, 135, 255, 0.16) 55%, rgba(60, 120, 255, 0.05) 80%, rgba(60, 120, 255, 0) 100%)",
+    "radial-gradient(closest-side, rgba(110, 185, 255, 0.34), rgba(70, 140, 255, 0.22) 26%, rgba(50, 110, 255, 0.1) 55%, rgba(50, 105, 255, 0.03) 80%, rgba(50, 105, 255, 0) 100%)",
   opacity: 1,
   radiusPx: 580,
 } as const;
@@ -745,6 +760,8 @@ export const FluxCharge = ({
     // The room dimmed around the car, 0 to 1, and the layer that dims it.
     let dim = 0;
     let dimLayer: HTMLDivElement | undefined;
+    let dimFlat: HTMLDivElement | undefined;
+    let dimPool = 0;
     let dimWrapper: HTMLElement | undefined;
     let dimWritten = "";
     // The conduits drawn once at the canvas's density, sharp and hazed.
@@ -1964,7 +1981,13 @@ export const FluxCharge = ({
           : getPlasma(now);
       const pulse = getPulse();
       plasmaLight = plasma.energy * pulse;
-      plasmaShift = (plasma.x - width / 2) * Math.min(1, plasma.energy * 3);
+      const shift = (plasma.x - width / 2) * Math.min(1, plasma.energy * 3);
+      // Leaving, the pool goes out where the light went out: sliding back
+      // to where the car had stood, it lit a patch of bare desk there.
+      plasmaShift =
+        tripSeen === "departing" || tripSeen === "away"
+          ? Math.min(plasmaShift, shift)
+          : shift;
       const button = bodyRef.current?.parentElement;
       const host = button?.closest<HTMLElement>(
         ".canvas-entrance-item"
@@ -2453,23 +2476,17 @@ export const FluxCharge = ({
         return 0;
       }
       if (tripSeen === "departing") {
-        return 1;
+        // The lights come back just before the time machine opens: the
+        // present's window on its timeline is the desk, not a black card.
+        return now - departedAt < OPEN_MS - ROOM_DIM.liftLeadMs ? 1 : 0;
       }
       if (tripSeen === "away") {
-        const [trail] = trails;
-        const flamesOut = trail
-          ? trail.departedAt +
-            slice.igniteAt +
-            (Math.min(trail.length, 1200) / DEPARTURE.fireSpeed) * 1000 +
-            DEPARTURE.flameHoldMs +
-            DEPARTURE.flameFadeMs
-          : 0;
-        return now < flamesOut ? 1 : 0;
-      }
-      if (tripSeen === "returning") {
         return 0;
       }
-      return level;
+      if (tripSeen === "returning") {
+        return now - returnedAt < ROOM_DIM.returnMs ? 1 : 0;
+      }
+      return level * ROOM_DIM.parked;
     };
 
     // The car's wrapper rises over the rest of the desk while it travels
@@ -2520,14 +2537,14 @@ export const FluxCharge = ({
 
     // The dim's gradient: clear around the car, easing out across the desk.
     const getDimGradient = () => {
-      const { clearPx, fullPx, outer, rgb } = ROOM_DIM;
+      const { clearPx, fullPx, rgb } = ROOM_DIM;
       const stops: string[] = [];
       for (let index = 0; index <= DIM_STOPS; index += 1) {
         const share = index / DIM_STOPS;
         const eased = share * share * (3 - 2 * share);
         const radius = clearPx + (fullPx - clearPx) * share;
         stops.push(
-          `rgba(${rgb.join(", ")}, ${(outer * eased).toFixed(4)}) ${radius.toFixed(1)}px`
+          `rgba(${rgb.join(", ")}, ${eased.toFixed(4)}) ${radius.toFixed(1)}px`
         );
       }
       return `radial-gradient(circle at 50% 50%, ${stops.join(", ")})`;
@@ -2570,15 +2587,36 @@ export const FluxCharge = ({
         willChange: "opacity, transform",
         zIndex: "99998",
       });
-      host.append(layer);
+      // The same dark with no pool in it, under the pooled one: between
+      // them the pool can close without the far room changing.
+      const flat = document.createElement("div");
+      flat.setAttribute("aria-hidden", "true");
+      Object.assign(flat.style, {
+        background: dither
+          ? `${dither}, rgb(${ROOM_DIM.rgb.join(", ")})`
+          : `rgb(${ROOM_DIM.rgb.join(", ")})`,
+        height: `${DIM_SIZE_PX}px`,
+        left: `${x - DIM_SIZE_PX / 2}px`,
+        opacity: "0",
+        pointerEvents: "none",
+        position: "absolute",
+        top: `${y - DIM_SIZE_PX / 2}px`,
+        width: `${DIM_SIZE_PX}px`,
+        willChange: "opacity",
+        zIndex: "99997",
+      });
+      host.append(flat, layer);
       dimLayer = layer;
+      dimFlat = flat;
       dimWritten = "";
       return layer;
     };
 
     const removeDimLayer = () => {
       dimLayer?.remove();
+      dimFlat?.remove();
       dimLayer = undefined;
+      dimFlat = undefined;
       dimWritten = "";
     };
 
@@ -2590,9 +2628,15 @@ export const FluxCharge = ({
         return;
       }
       const target = getDimTarget(now);
-      const seconds = target > dim ? ROOM_DIM.inSeconds : ROOM_DIM.outSeconds;
+      let seconds: number = ROOM_DIM.inSeconds;
+      if (target <= dim) {
+        seconds =
+          tripSeen === "returning" || tripSeen === "parked"
+            ? ROOM_DIM.outSeconds
+            : ROOM_DIM.liftSeconds;
+      }
       dim += (target - dim) * (1 - Math.exp(-dt / seconds));
-      if (target === 0 && dim < 0.004) {
+      if (target === 0 && dim < 0.015) {
         dim = 0;
       }
       raise(
@@ -2607,19 +2651,35 @@ export const FluxCharge = ({
       }
       const layer = ensureDimLayer();
       // The pool of light the dim leaves is the plasma's: it follows the
-      // light, grows with it and breathes with its flicker, pushing the dark
-      // back on a flare and letting it close in as it ebbs. Scaling the dim's
-      // opacity instead changed the far room most and the lit desk not at
-      // all, the reverse of a light, and read as a mask.
-      const { pool } = ROOM_DIM;
-      const scale = Math.min(
-        pool.max,
-        Math.max(pool.min, pool.min + pool.gain * plasmaLight)
+      // light and opens and closes with it. It only ever moves and fades:
+      // scaled with the plasma's flicker, the 40000px gradient was drawn
+      // again every frame, which alone took the charge, the trails and the
+      // return from 60fps to 35-50 on a 5K screen.
+      // How open the pool is: as the plasma's light, and a little for the
+      // car standing on the desk. With neither the dark is whole: a pool
+      // left where the car had stood read as a spotlight on bare desk.
+      const carStands =
+        tripSeen === "parked" ||
+        (tripSeen === "departing" && now - departedAt < DRIVE_END_MS) ||
+        (tripSeen === "returning" && now - returnedAt >= ARRIVAL.appearMs);
+      const poolTarget = Math.min(
+        ROOM_DIM.poolMax,
+        Math.max(plasmaLight * 1.3, carStands ? ROOM_DIM.carPool : 0)
       );
-      const written = `${dim.toFixed(3)} translate(${plasmaShift.toFixed(1)}px, 0) scale(${scale.toFixed(3)})`;
+      dimPool +=
+        (poolTarget - dimPool) * (1 - Math.exp(-dt / ROOM_DIM.poolSeconds));
+      // The far room is `dark` whatever the pool does: the flat layer takes
+      // the share the pool gives up, and the pooled one makes up the rest.
+      const dark = dim * ROOM_DIM.outer;
+      const flatOpacity = dark * (1 - dimPool);
+      const poolOpacity = 1 - (1 - dark) / (1 - flatOpacity);
+      const written = `${poolOpacity.toFixed(3)} ${flatOpacity.toFixed(3)} translate(${plasmaShift.toFixed(1)}px, 0)`;
       if (layer && written !== dimWritten) {
-        layer.style.opacity = dim.toFixed(3);
-        layer.style.transform = written.slice(written.indexOf(" ") + 1);
+        layer.style.opacity = poolOpacity.toFixed(3);
+        layer.style.transform = written.slice(written.indexOf("translate"));
+        if (dimFlat) {
+          dimFlat.style.opacity = flatOpacity.toFixed(3);
+        }
         dimWritten = written;
       }
     };

@@ -89,6 +89,13 @@ uniform sampler2D uCarTexture;
 // green and blue are the steam's brightness under each of three suns (and
 // the room's sky), its alpha the steam's coverage.
 uniform sampler2D uSteamSheet;
+// The trails' simulated fire (tools/render-fire.py): a looping sheet of its
+// heat alone, seen by the photo's camera. Grid: columns, rows, frames, and
+// 1 once it is loaded. Tile: one frame's width and height on the desk and
+// how far the fuel line lies above its bottom edge, local px.
+uniform sampler2D uFireSheet;
+uniform vec4 uFireGrid;
+uniform vec3 uFireTile;
 uniform vec4 uSteamGrid;
 uniform vec4 uSteamRegion;
 // The desk lamp, local px: x and y over the desk, z its height, w 1 while
@@ -98,6 +105,7 @@ uniform vec4 uLamp;
 // azimuths (anticlockwise from the screen's right, 90 up the screen) and
 // height, which the first, the room's daylight, shares.
 const float STEAM_FPS = 10.0;
+const float FIRE_FPS = 24.0;
 const vec3 STEAM_LIGHTS = vec3(135.0, 255.0, 15.0);
 const float STEAM_LIGHT_ELEVATION = 35.0;
 // How high the steam stands over the desk on average, local px: its shadow
@@ -166,6 +174,42 @@ vec3 fireColor(float t, float blue) {
   vec3 cold = mix(vec3(0.07, 0.17, 0.9), vec3(0.3, 0.6, 1.0), smoothstep(0.15, 0.6, t));
   cold = mix(cold, vec3(0.88, 0.95, 1.0), smoothstep(0.72, 1.0, t));
   return mix(warm, cold, blue);
+}
+
+// One frame of the fire sheet, sampled inside its own cell.
+float fireCell(vec2 uv, float index) {
+  vec2 grid = uFireGrid.xy;
+  vec2 cell = vec2(mod(index, grid.x), floor(index / grid.x));
+  vec2 inset = 0.5 * grid / vec2(textureSize(uFireSheet, 0));
+  return textureLod(uFireSheet, (cell + clamp(uv, inset, 1.0 - inset)) / grid, 0.0).r;
+}
+
+// The sheet's heat at `uv`, its frames blended in time, running round.
+float fireFrames(vec2 uv, float frame) {
+  float at = mod(frame, uFireGrid.z);
+  float first = floor(at);
+  return mix(fireCell(uv, first), fireCell(uv, mod(first + 1.0, uFireGrid.z)), at - first);
+}
+
+// The simulated fire's heat `along` a track and `up` the screen from its
+// fuel line, local px. The sheet does not tile, so two copies lie half a
+// tile apart, each tile at its own point in the loop, cross-faded: where
+// one meets its edge the other is at its middle.
+float sheetFire(float along, float up, float seed) {
+  float v = 1.0 - (up + uFireTile.z) / uFireTile.y;
+  if (v <= 0.0 || v >= 1.0) {
+    return 0.0;
+  }
+  float u = along / uFireTile.x + seed * 0.37;
+  float frame = uTime * FIRE_FPS + seed * 9.0;
+  float a = fract(u);
+  float b = fract(u + 0.5);
+  float share = abs(a * 2.0 - 1.0);
+  float first = fireFrames(vec2(a, v), frame + floor(u) * 7.0);
+  float second = fireFrames(vec2(b, v), frame + 17.0 + floor(u + 0.5) * 11.0);
+  // The hotter of the two leads, so the cross-fade does not grey the fire.
+  float blended = mix(first, second, share);
+  return mix(blended, max(first * (1.0 - share), second * share) * 1.6, 0.5);
 }
 
 // Half a tyre's track on the desk, local px: a tread about 10 px wide.
@@ -335,37 +379,55 @@ vec4 trail(vec2 p, float row, float seed, float t, float fireLength) {
   // speed up as they climb; the noise moves with them, so the sheet seethes.
   float burning = min(1.0, intensity + flare * 0.8);
   float shrink = 1.0 - 0.55 * blue;
-  float spread = TRACK_HALF * (1.2 + 1.0 * burning) * (0.75 + 0.5 * fbm3(vec2(p.x * 0.03 + seed, uTime * 0.4))) * shrink;
-  float reach = (16.0 + 26.0 * flare) * burning * shrink * (0.45 + 1.0 * fbm3(vec2(p.x * 0.04 - seed, uTime * 0.9)));
-  float up = max(0.0, -c);
-  float climb = c * 0.11 - up * up * 0.0016;
-  vec2 q = vec2(p.x * 0.085 + seed * 5.0, climb + uTime * 3.4);
-  vec2 warp = vec2(fbm3(q * 0.8 + vec2(0.0, uTime * 0.7)), fbm3(q * 0.8 + vec2(4.3, -uTime * 0.5)));
-  float n = fbm(q + (warp - 0.5) * 2.2);
-  float fuel = noise(vec2(p.x * 0.06 - seed * 2.0, uTime * 0.9)) * 0.6 + noise(vec2(p.x * 0.25, uTime * 3.0)) * 0.4;
-  // Thinning quickly past its near edge, slowly along the licks.
-  // Its near edge curls too, a few px down the screen: a straight lower
-  // edge read as a strip laid on the desk.
-  float curl = spread * (0.55 + 0.6 * fbm3(vec2(p.x * 0.07 - seed, uTime * 1.3))) + 2.0;
-  float shape = c >= 0.0
-    ? 1.0 - smoothstep(curl * 0.3, curl, c)
-    : 1.0 - smoothstep(spread * 0.3, spread + reach, up);
-  // Nothing past the licks: noise alone stood flames up as specks all
-  // over the desk around the trail.
-  float envelope = c >= 0.0
-    ? 1.0 - smoothstep(curl, curl + 6.0, c)
-    : 1.0 - smoothstep(spread + reach, spread + reach + 8.0, up);
-  float density = (shape * mix(0.6, 1.25, fuel) + (n - 0.5) * 1.6 - 0.18) * envelope;
-  float heat = clamp(density, 0.0, 1.2);
-  float alpha = smoothstep(0.02, 0.5, heat) * min(1.0, burning * 1.6) * mix(1.0, 0.72, blue);
-  // Hottest over the burning rubber, cooling out and up; just caught, it is
-  // white-hot.
-  float middle = exp(-pow(c / max(spread * 0.7, 1.0), 2.0));
+  float reach;
+  float heat;
+  float alpha;
+  float temperature;
+  // Blue roots show wherever the fire is cool, unless told where it is low.
+  float low = 1.0;
+  // Just caught, it is white-hot.
   float front = 1.0 - smoothstep(0.0, 0.12, age);
-  float temperature = clamp(heat * 0.5 + middle * 0.45 * mix(0.6, 1.0, fuel) + front * 0.5 + flare * 0.5, 0.0, 1.0);
+  if (uFireGrid.w > 0.5) {
+    // The simulated fire: lower as it dies down, taller where it flares.
+    float size = shrink * (0.5 + 0.5 * burning) * (1.0 + 0.5 * flare);
+    reach = uFireTile.y * 0.45 * size;
+    heat = sheetFire(p.x, -c / max(size, 0.05), seed) * min(1.0, burning * 1.6);
+    alpha = smoothstep(0.03, 0.4, heat) * mix(1.0, 0.72, blue);
+    // Its cool fringe is all round it; only down by the fuel is it a root.
+    low = 1.0 - smoothstep(2.0, max(reach * 0.3, 3.0), -c);
+    temperature = clamp(heat * 1.05 + front * 0.4 * step(0.05, heat) + flare * 0.35 * heat, 0.0, 1.0);
+  } else {
+    float spread = TRACK_HALF * (1.7 + 1.4 * burning) * (0.75 + 0.5 * fbm3(vec2(p.x * 0.03 + seed, uTime * 0.4))) * shrink;
+    reach = (38.0 + 44.0 * flare) * burning * shrink * (0.45 + 1.0 * fbm3(vec2(p.x * 0.04 - seed, uTime * 0.9)));
+    float up = max(0.0, -c);
+    float climb = c * 0.11 - up * up * 0.0016;
+    vec2 q = vec2(p.x * 0.085 + seed * 5.0, climb + uTime * 3.4);
+    vec2 warp = vec2(fbm3(q * 0.8 + vec2(0.0, uTime * 0.7)), fbm3(q * 0.8 + vec2(4.3, -uTime * 0.5)));
+    float n = fbm(q + (warp - 0.5) * 2.2);
+    float fuel = noise(vec2(p.x * 0.06 - seed * 2.0, uTime * 0.9)) * 0.6 + noise(vec2(p.x * 0.25, uTime * 3.0)) * 0.4;
+    // Thinning quickly past its near edge, slowly along the licks.
+    // Its near edge curls too, a few px down the screen: a straight lower
+    // edge read as a strip laid on the desk.
+    float curl = spread * (0.55 + 0.6 * fbm3(vec2(p.x * 0.07 - seed, uTime * 1.3))) + 2.0;
+    float shape = c >= 0.0
+      ? 1.0 - smoothstep(curl * 0.3, curl, c)
+      : 1.0 - smoothstep(spread * 0.3, spread + reach, up);
+    // Nothing past the licks: noise alone stood flames up as specks all
+    // over the desk around the trail.
+    float envelope = c >= 0.0
+      ? 1.0 - smoothstep(curl, curl + 6.0, c)
+      : 1.0 - smoothstep(spread + reach, spread + reach + 8.0, up);
+    float density = (shape * mix(0.6, 1.25, fuel) + (n - 0.5) * 1.6 - 0.18) * envelope;
+    heat = clamp(density, 0.0, 1.2);
+    alpha = smoothstep(0.02, 0.5, heat) * min(1.0, burning * 1.6) * mix(1.0, 0.72, blue);
+    // Hottest over the burning rubber, cooling out and up; just caught, it is
+    // white-hot.
+    float middle = exp(-pow(c / max(spread * 0.7, 1.0), 2.0));
+    temperature = clamp(heat * 0.5 + middle * 0.45 * mix(0.6, 1.0, fuel) + front * 0.5 + flare * 0.5, 0.0, 1.0);
+  }
   vec3 flame = fireColor(temperature, blue);
   // Blue roots at its cool rim, down by the desk, as the film's have.
-  float root = (1.0 - smoothstep(0.2, 0.55, heat)) * (1.0 - blue);
+  float root = (1.0 - smoothstep(0.2, 0.55, heat)) * (1.0 - blue) * low;
   // They glow: lighter and thinner than the body, so a faint root adds
   // light to the desk; a dark cobalt at low alpha read as purple dirt.
   flame = mix(flame, vec3(0.42, 0.64, 1.0), root * 0.75);
@@ -793,125 +855,208 @@ float carSpeed() {
   return clamp(uBlur.x / 24.0, 0.0, 1.0);
 }
 
-// The light the charge gathers ahead of the nose, after the film: high-energy
-// plasma, not a flame: an overexposed white core with a crisp edge in a body
-// of bright cells boiling fast, thin filaments writhing round it, sparks
-// popping at its rim and a tight saturated halo; it is never still. Standing, it churns and bulges; as the car gathers speed it
-// is pressed flat in front and drawn back into a wake that runs onto the
-// bumper, so the light wraps the nose rather than floating apart from it.
-// A soft violet haze with lobes licking back read as a gas burner. A round core
-// read as a sticker, metaballs and spikes as a starburst, a gap before the
-// bumper as a wall between the car and its light, and streamers sweeping
-// back along the car's sides as whiskers.
+// Light, not paint: mostly added to what is under it. Everything the plasma
+// and the slice glow with goes through this, since a glow painted `over` at
+// its own opacity tints the desk a flat blue instead of lighting it. The
+// room is dark while they burn, so there is room above the desk to add into.
+vec4 glow(vec3 tint, float amount) {
+  float a = max(amount, 0.0);
+  return vec4(tint * a, min(1.0, a) * 0.22);
+}
+
+// A lightning bolt from the origin along angle `a`, `len` px long, at `q`:
+// x its hairline core, y its glow. It is rooted where it starts and wanders
+// more the further it goes, in three octaves, so it kinks like a spark
+// rather than waving like a ribbon. `seed` picks which bolt.
+vec2 bolt(vec2 q, float a, float len, float seed) {
+  vec2 dir = vec2(cos(a), sin(a));
+  float along = dot(q, dir);
+  if (along < 0.0 || along > len) {
+    return vec2(0.0);
+  }
+  float side = dot(q, vec2(-dir.y, dir.x));
+  float u = along / len;
+  float amp = len * 0.2 * smoothstep(0.0, 0.3, u);
+  float wander = (noise(vec2(u * 2.6, seed)) - 0.5) * 2.0 * amp
+    + (noise(vec2(u * 8.0, seed + 7.3)) - 0.5) * 0.8 * amp
+    + (noise(vec2(u * 25.0, seed + 13.1)) - 0.5) * 0.3 * amp;
+  float dist = abs(side - wander);
+  float taper = 1.0 - smoothstep(0.6, 1.0, u);
+  float width = mix(1.0, 0.4, u);
+  float core = exp(-pow(dist / width, 2.0)) * taper;
+  float halo = taper * 2.6 / (dist * dist * 0.5 + 2.6);
+  return vec2(core, halo);
+}
+
+// How bright a bolt that strikes `rate` times a second is now: full as it
+// strikes, gone within a few frames, dark until the next. `strike` is which
+// one it is, to seed its path.
+float strikeLife(float rate, float phase, out float strike) {
+  float at = uTime * rate + phase;
+  strike = floor(at);
+  float since = fract(at);
+  // Some strikes miss, so it does not tick like a clock.
+  float lands = step(0.3, hash(vec2(strike, phase)));
+  return lands * exp(-since * 5.0) * (0.75 + 0.25 * step(0.5, fract(since * 3.0 + 0.2)));
+}
+
+// The light the charge gathers ahead of the nose: an electrical discharge,
+// not a ball of gas. A small white-hot heart, overexposed, its edge
+// roiling; light falling off it as from a point source (an inverse square,
+// never a Gaussian blob, which is what made the earlier one a soft cyan
+// egg with marbled swirls); and forked lightning striking out of it, each
+// bolt a hairline that holds a few frames and is gone. Standing, the bolts
+// reach all round; as the car gathers speed they sweep back onto it, and the
+// light fills the gap to the bumper. Squeezed, it narrows and stretches into
+// the slice. Earlier shapes that failed: Gaussian rings round a dot (a
+// sticker), noise forks in a disc (a marble in a web), metaball lobes (a
+// starburst), a smooth bow shock (a jellyfish), a violet haze licking back
+// (a gas burner), filaments swirled through fbm (soap film).
 // `d` is px from its middle, +x towards the car.
 vec4 plasmaFront(vec2 d, float strength, float squeeze) {
   float t = uTime;
   float g = clamp(uOrb, 0.0, 1.25);
   float v = carSpeed();
   float surge = uImpact.z;
-  float shown = smoothstep(0.0, 0.05, strength);
-  // A tall oval, taller than the car once grown; squeezed, it narrows and
-  // stretches up and down into the slice.
   float pulse = uImpact.w;
+  float shown = smoothstep(0.0, 0.05, strength);
+  float grown = smoothstep(0.02, 0.2, g);
   float girth = plasmaGirth(g) * (1.0 + 0.12 * surge) * (0.94 + 0.06 * pulse);
-  float radius = girth * (1.0 - 0.75 * squeeze);
-  float tall = girth * mix(2.8, 2.6, v) * (1.0 + 0.45 * squeeze);
-  // How far back the bumper is.
+  // Its heart: taller than wide, narrower and taller still as it is squeezed.
+  float radius = girth * 0.56 * (1.0 - 0.7 * squeeze);
+  float tall = girth * mix(1.5, 1.3, v) * (1.0 + 0.9 * squeeze);
   float nose = uCar.x - uRift.x;
-  float reach = max(tall * 2.5, nose + 60.0);
-  if (length(d) > reach + 40.0) {
+  float reach = max(girth * 7.5, nose + 60.0);
+  float far = length(d);
+  if (far > reach + 40.0) {
     return vec4(0.0);
   }
   vec2 q = d - uImpact.xy * 0.5;
-  // A slow warp that streams back towards the car as it speeds up; kept
-  // small, since a large one licked back like a flame.
-  float flow = t * mix(1.6, 10.0, v);
-  vec2 w = q / vec2(radius, tall * 0.45);
-  vec2 warp = vec2(
-    fbm3(w * vec2(0.9, 1.0) + vec2(-flow, 0.0)),
-    fbm3(w * vec2(0.9, 1.0) + vec2(-flow + 3.1, 5.2))
-  ) - 0.5;
-  vec2 wq = q + warp * vec2(radius, tall * 0.45) * mix(0.45, 0.35, v);
-  // Pressed a little flatter ahead, drawn out behind.
-  float lead = radius * mix(0.95, 0.7, v);
-  float wake = radius * mix(1.2, 2.0, v);
-  vec2 s = vec2(wq.x / (wq.x < 0.0 ? lead : wake), wq.y / tall);
-  // A tight outline that crackles rather than licking back: lobes that
-  // flowed back with the motion read as a gas burner's flame.
-  vec2 dir = s / max(length(s), 0.001);
-  float lobes = fbm3(dir * 2.6 + vec2(t * 6.0, -t * 4.7));
-  float r = length(s) * (1.0 + 0.18 * (0.5 - lobes));
-  // The pulse stirs its glow; the heart stays white-hot through it.
-  float flicker = pulse;
-  float grown = smoothstep(0.02, 0.2, g);
+  vec2 s = q / vec2(radius, tall);
+  float r = length(s);
   vec4 color = vec4(0.0);
-  // The light it throws back onto the bumper: a soft band filling the gap
-  // to the nose, fading a little past it.
-  float bridge = exp(-pow(q.y / (tall * 0.55), 2.0)) * smoothstep(-radius * 0.3, radius * 0.6, q.x) * (1.0 - smoothstep(nose - 6.0, nose + 26.0, q.x)) * 0.45 * smoothstep(0.1, 0.5, g);
-  color = over(vec4(vec3(0.15, 0.55, 1.0) * bridge, bridge), color);
-  // A tight saturated halo: a wide violet haze read as a flame's fog.
-  float halo = min(1.0, exp(-1.3 * r * r) * 0.62 * flicker);
-  color = over(vec4(vec3(0.07, 0.36, 1.0) * halo, halo), color);
-  // The plasma itself: a dense body of bright cells boiling fast in every
-  // direction, never smooth.
-  float cells = fbm3(s * vec2(3.2, 2.4) + vec2(t * 7.0, -t * 5.3));
-  float body = min(1.0, exp(-2.6 * r * r) * clamp(0.55 + 0.75 * cells, 0.0, 1.0) * mix(1.0, flicker, 0.5));
-  color = over(vec4(vec3(0.45, 0.86, 1.0) * body, body), color);
-  // Filaments: thin white strands writhing round the core and out to its
-  // rim, twisting as they go, as in a plasma ball.
-  float turn = t * 2.6 + r * 2.4;
-  vec2 swirl = mat2(cos(turn), -sin(turn), sin(turn), cos(turn)) * vec2(s.x, s.y * 0.6);
-  float ridge = 1.0 - abs(2.0 * fbm3(swirl * 2.3 + vec2(0.0, t * 3.5)) - 1.0);
-  float strands = pow(ridge, 12.0) * smoothstep(1.45, 0.75, r) * smoothstep(0.2, 0.5, r) * grown;
-  color = over(vec4(vec3(0.85, 0.96, 1.0) * strands, strands), color);
-  // Sparks popping at its rim, each a few frames.
-  vec2 cell = floor(d / 6.0);
-  float spark = step(0.982, hash(cell + floor(t * 24.0) * 1.37));
-  vec2 inCell = fract(d / 6.0) - 0.5;
-  float sparkle = spark * exp(-dot(inCell, inCell) * 18.0) * smoothstep(1.7, 0.9, r) * smoothstep(0.5, 0.8, r) * grown;
+
+  // Its light: a point source's, wide and blue far out, cyan nearer in,
+  // breathing with the pulse the room shares.
+  float falloff = 1.0 / (1.0 + r * r);
+  color = over(glow(vec3(0.05, 0.2, 1.0), falloff * 0.55 * pulse * grown), color);
+  color = over(glow(vec3(0.16, 0.6, 1.0), falloff * falloff * 1.5 * pulse * grown), color);
+  // On the bumper, filling the gap to the nose.
+  float bridge = exp(-pow(q.y / (girth * 1.6), 2.0)) * smoothstep(-radius, radius * 2.0, q.x) * (1.0 - smoothstep(nose - 6.0, nose + 26.0, q.x)) * 0.35 * smoothstep(0.1, 0.5, g);
+  color = over(glow(vec3(0.2, 0.62, 1.0), bridge), color);
+
+  // Forked lightning out of it. Each bolt strikes at its own rate, on a new
+  // path each time; a second, shorter fork leaves it partway.
+  float free = 1.0 - squeeze;
+  if (grown > 0.0 && free > 0.0) {
+    vec2 bq = vec2(q.x, q.y * 0.8);
+    for (int k = 0; k < 9; k++) {
+      float fk = float(k);
+      float strike;
+      float life = strikeLife(mix(9.0, 15.0, hash(vec2(fk, 1.7))), fk * 3.31, strike);
+      if (life < 0.02) {
+        continue;
+      }
+      float seed = strike * 1.37 + fk * 17.0;
+      // All round while it stands; swept back onto the car at speed.
+      float around = hash(vec2(seed, 2.3)) * 6.2832;
+      float back = (hash(vec2(seed, 5.1)) - 0.5) * 1.5;
+      float angle = mix(around, back, v * 0.75);
+      float len = girth * mix(2.4, 5.4, hash(vec2(seed, 9.7))) * (0.6 + 0.4 * g);
+      vec2 main = bolt(bq, angle, len, seed);
+      // The fork: from a point along the bolt, off to one side.
+      float from = mix(0.35, 0.6, hash(vec2(seed, 4.4)));
+      vec2 root = vec2(cos(angle), sin(angle)) * len * from;
+      float turn = angle + mix(0.5, 1.0, hash(vec2(seed, 6.6))) * sign(hash(vec2(seed, 8.8)) - 0.5);
+      vec2 fork = bolt(bq - root, turn, len * 0.45, seed + 31.0) * 0.7;
+      float core = max(main.x, fork.x) * life;
+      float halo = max(main.y, fork.y) * life;
+      color = over(glow(vec3(0.2, 0.55, 1.0), halo * 0.5 * free * grown), color);
+      color = over(vec4(vec3(0.92, 0.97, 1.0) * core, core) * free * grown, color);
+    }
+  }
+
+  // Sparks thrown off it: points that pop for a frame or two.
+  vec2 cell = floor(d / 5.0);
+  float pop = step(0.988, hash(cell + floor(t * 30.0) * 1.37));
+  vec2 inCell = fract(d / 5.0) - 0.5;
+  float sparkle = pop * exp(-dot(inCell, inCell) * 22.0) * smoothstep(7.0, 2.0, r) * smoothstep(1.0, 1.8, r) * grown * free;
   color = over(vec4(vec3(sparkle), sparkle), color);
-  // An overexposed white core with a crisp edge, churning.
-  vec2 h = vec2(s.x + 0.1, s.y * 1.1);
-  float churn = fbm3(s * 2.8 + vec2(t * 5.0, t * 3.1));
-  float hot = length(h) + 0.3 * (churn - 0.5);
-  float glowing = (1.0 - smoothstep(0.38, 0.8, hot)) * 0.9 * grown;
-  color = over(vec4(vec3(0.7, 0.94, 1.0) * glowing, glowing), color);
-  float heart = (1.0 - smoothstep(0.34, 0.5, hot)) * grown;
-  color = over(vec4(vec3(0.98, 0.99, 1.0) * heart, heart), color);
-  return color * shown * (1.0 - 0.65 * squeeze) * (1.0 - smoothstep(reach, reach + 40.0, length(d)));
+
+  // The heart: white-hot and overexposed, its edge roiling fast, with a
+  // hard cyan rim where it gives way to its light.
+  float roil = fbm3(s * 1.7 + vec2(t * 9.0, -t * 6.5));
+  float edge = r + 0.38 * (roil - 0.5);
+  float rim = (1.0 - smoothstep(0.75, 1.25, edge)) * grown;
+  color = over(vec4(vec3(0.55, 0.9, 1.0) * rim, rim), color);
+  float heart = (1.0 - smoothstep(0.55, 0.85, edge)) * grown;
+  color = over(vec4(vec3(heart), heart), color);
+  return color * shown * (1.0 - 0.5 * squeeze) * (1.0 - smoothstep(reach, reach + 40.0, far));
 }
 
 // The time slice, `open` 0 to 1: a tear across the car's path, far taller
 // than the car, that the light ahead of it is squeezed into: it starts as
 // tall as the light and grows from inside it. A line drawn from nothing
-// read as stuck on. A white-hot
-// lens widest at the car's middle, its edge shivering, inside a cyan sheath
-// and a cobalt halo, running on past its ends as fading hairlines; bright
-// knots race along it. A slit as tall as the car, with a box for a glow,
+// read as stuck on. A blinding white lens widest at the car's middle, its
+// edge shivering, running on past its ends as fading hairlines, with bright
+// knots racing along it. It is a light source: its light falls off to both
+// sides as from a line (never a painted halo, which read as a violet smudge
+// round a pencil line), rays of it streak out across the desk, and bolts
+// jump off it sideways. A slit as tall as the car, with a box for a glow,
 // read as a cut-out.
 vec4 timeSlice(vec2 d, float open) {
   float t = uTime;
   float rip = smoothstep(0.0, 1.0, open);
   float half_ = mix(plasmaGirth(uOrb) * 2.7, uSize.y * 1.25, rip);
   float x = d.x - tearLine(d.y);
+  float dx = abs(x);
   float yn = d.y / half_;
   float lens = sqrt(max(0.0, 1.0 - min(yn * yn, 1.0)));
   float past = max(abs(d.y) - half_, 0.0);
   float hair = exp(-past / 12.0) * (1.0 - smoothstep(0.0, 36.0, past));
   float knots = 0.65 + 0.55 * noise(vec2(d.y * 0.07 - t * 30.0 * sign(d.y), 3.0)) * noise(vec2(d.y * 0.2, t * 60.0));
   float shiver = 0.88 + 0.12 * noise(vec2(d.y * 0.1, t * 45.0));
-  float width = (0.8 + 8.5 * rip * pow(lens, 0.8)) * shiver;
+  float width = (0.9 + 9.5 * rip * pow(lens, 0.8)) * shiver;
+  float pulse = uImpact.w;
+  float span = max(lens, hair * 0.6);
   vec4 color = vec4(0.0);
-  // The light it pours out churns: plasma boiling off both faces of the
-  // tear, streaming along it, never a smooth gradient.
-  float boil = fbm3(vec2(x * 0.05 - sign(x) * t * 2.5, d.y * 0.028 - t * 3.0)) ;
-  vec2 hq = vec2(x / (20.0 + 44.0 * rip * lens + 8.0), d.y / (half_ * 1.05 + 16.0));
-  float halo = min(1.0, exp(-1.3 * dot(hq, hq)) * open * (0.45 + 0.6 * boil) * uImpact.w);
-  vec3 haloTint = mix(vec3(0.08, 0.4, 1.0), vec3(0.45, 0.24, 1.0), smoothstep(0.3, 0.75, boil + 0.3 * abs(yn)));
-  color = over(vec4(haloTint * halo, halo), color);
-  float sheath = min(1.0, exp(-abs(x) / (3.5 + 11.0 * rip * lens)) * (lens + hair) * open * 0.85 * knots * (0.7 + 0.5 * boil) * uImpact.w);
-  color = over(vec4(vec3(0.5, 0.9, 1.0) * sheath, sheath), color);
-  float core = (1.0 - smoothstep(width * 0.45, width + 0.6, abs(x))) * max(lens, hair * 0.8) * min(1.0, open * 1.6) * min(1.0, knots + 0.2);
+  // Its light on the desk: wide and deep blue, turning violet far out.
+  float wide = span / (1.0 + pow(dx / (36.0 + 70.0 * rip), 2.0));
+  vec3 wideTint = mix(vec3(0.07, 0.24, 1.0), vec3(0.34, 0.16, 1.0), smoothstep(40.0, 190.0, dx));
+  color = over(glow(wideTint, wide * 0.8 * open * pulse), color);
+  // Rays of it streaking out across the desk: thin, each its own length
+  // and gone in a frame or two. Broad even ones, as long as each other, read
+  // as scan lines ruled across the screen.
+  float tick = floor(t * 30.0);
+  float lane = floor(d.y / 2.5);
+  float lit = step(0.9, hash(vec2(lane, tick * 0.61)));
+  float length_ = mix(25.0, 150.0, hash(vec2(lane, tick * 0.37 + 5.0))) * rip;
+  float thin = 1.0 - abs(fract(d.y / 2.5) - 0.5) * 2.0;
+  float rays = lit * thin * exp(-dx / max(length_, 1.0)) * lens;
+  color = over(glow(vec3(0.35, 0.75, 1.0), rays * 0.45 * open), color);
+  // Close to it: cyan, falling off as from a line.
+  float near = span * (width + 2.0) / (dx + width + 2.0);
+  color = over(glow(vec3(0.3, 0.8, 1.0), near * near * 1.3 * open * knots * pulse), color);
+  // Bolts jumping off it to either side.
+  if (rip > 0.05) {
+    for (int k = 0; k < 5; k++) {
+      float fk = float(k);
+      float strike;
+      float life = strikeLife(mix(10.0, 16.0, hash(vec2(fk, 21.0))), fk * 2.71 + 40.0, strike);
+      if (life < 0.02) {
+        continue;
+      }
+      float seed = strike * 1.91 + fk * 23.0;
+      float y0 = (hash(vec2(seed, 1.1)) - 0.5) * 1.5 * half_;
+      float way = step(0.5, hash(vec2(seed, 2.2)));
+      float angle = way * 3.1416 + (hash(vec2(seed, 3.3)) - 0.5) * 1.1;
+      float len = mix(34.0, 120.0, hash(vec2(seed, 4.4))) * rip;
+      vec2 struck = bolt(d - vec2(tearLine(y0), y0), angle, len, seed);
+      color = over(glow(vec3(0.25, 0.55, 1.0), struck.y * 0.45 * life * open), color);
+      color = over(vec4(vec3(0.92, 0.97, 1.0) * struck.x, struck.x) * life * open, color);
+    }
+  }
+  float core = (1.0 - smoothstep(width * 0.45, width + 0.6, dx)) * max(lens, hair * 0.8) * min(1.0, open * 1.6) * min(1.0, knots + 0.2);
   return over(vec4(vec3(core), core), color);
 }
 

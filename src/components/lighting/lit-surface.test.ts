@@ -195,10 +195,50 @@ describe("runLitSurface", () => {
     x = swing();
     expect(await drawsDuring(x, time)).toBe(12);
 
-    // A dropped frame halves the budget.
+    // One dropped frame is not the GPU's limit; a second right after is,
+    // and halves the budget.
+    time += 48;
+    x = swing();
+    expect(await drawsDuring(x, time)).toBe(12);
     time += 48;
     x = swing();
     expect(await drawsDuring(x, time)).toBeLessThan(12);
+  });
+
+  it("keeps the budget through a late frame that drew nothing", async () => {
+    const surfaces = Array.from({ length: 12 }, () => startSurface());
+    await settle();
+    const drawsDuring = async (lampX: number, at: number) => {
+      const before = surfaces.reduce(
+        (sum, { draw }) => sum + draw.mock.calls.length,
+        0
+      );
+      await frame({ x: lampX, y: 50 }, at);
+      return (
+        surfaces.reduce((sum, { draw }) => sum + draw.mock.calls.length, 0) -
+        before
+      );
+    };
+
+    let time = PAUSE_MS;
+    let x = 50;
+    await drawsDuring(x, time);
+    const swing = () => (x === 50 ? 70 : 50);
+    for (let index = 0; index < 80; index += 1) {
+      time += 16;
+      x = swing();
+      // biome-ignore lint/performance/noAwaitInLoops: frames arrive one after another
+      await drawsDuring(x, time);
+    }
+    // The lamp rests for a frame, and the next one comes late: the page was
+    // busy with something else, not with relighting.
+    time += 16;
+    expect(await drawsDuring(x, time)).toBe(0);
+    time += 48;
+    expect(await drawsDuring(x, time)).toBe(0);
+    time += 16;
+    x = swing();
+    expect(await drawsDuring(x, time)).toBe(12);
   });
 
   it("keeps the budget while the lamp rests, so a sweep does not redraw everything at once", async () => {
@@ -221,7 +261,8 @@ describe("runLitSurface", () => {
     const drawn =
       surfaces.reduce((sum, { draw }) => sum + draw.mock.calls.length, 0) -
       before;
-    expect(drawn).toBe(4);
+    // What the budget had grown to while the first frames queued, not all 12.
+    expect(drawn).toBe(6);
   });
 
   it("counts a surface by the pixels it fills, not as one turn", async () => {
@@ -298,13 +339,15 @@ describe("runLitSurface", () => {
     };
     await drawsDuring(x, time);
     const before = await run(60);
-    // A late frame at that budget, then as many on-time frames as it took
+    // Two late frames at that budget, then more on-time frames than it took
     // to get there: the budget climbs back to most of it, not past it.
-    time += 48;
-    x += 20;
-    x = x === 50 ? 70 : 50;
-    await drawsDuring(x, time);
-    const after = await run(60);
+    for (let late = 0; late < 2; late += 1) {
+      time += 48;
+      x = x === 50 ? 70 : 50;
+      // biome-ignore lint/performance/noAwaitInLoops: frames arrive one after another
+      await drawsDuring(x, time);
+    }
+    const after = await run(20);
 
     expect(before).toBeGreaterThan(8);
     expect(after).toBeGreaterThan(before / 2);
@@ -360,11 +403,30 @@ describe("motion resolution", () => {
     return { moving, resting, settled };
   };
 
-  it("draws soft surfaces at half resolution while the lamp sweeps, then restores it", async () => {
+  it("keeps soft surfaces at full resolution while a sweep leaves none waiting", async () => {
+    vi.spyOn(window, "devicePixelRatio", "get").mockReturnValue(2);
+    const soft = startSurface({ motionScale: 0.5 });
+    await settle();
+
+    const { moving, resting, settled } = await sweep([soft]);
+
+    expect([resting, moving, settled]).toEqual([[2], [2], [2]]);
+  });
+
+  it("draws soft surfaces at half resolution while a sweep leaves surfaces waiting, then restores it", async () => {
     vi.spyOn(window, "devicePixelRatio", "get").mockReturnValue(2);
     const soft = startSurface({ motionScale: 0.5 });
     const sharp = startSurface();
+    // More than a frame's budget redraws.
+    for (let index = 0; index < 24; index += 1) {
+      startSurface();
+    }
     await settle();
+    // Their first frames drain before the sweep.
+    for (let index = 1; index <= 40; index += 1) {
+      // biome-ignore lint/performance/noAwaitInLoops: each frame drains the queue the previous one left
+      await frame({ x: 50, y: 50 }, index);
+    }
 
     const { moving, resting, settled } = await sweep([soft, sharp]);
 

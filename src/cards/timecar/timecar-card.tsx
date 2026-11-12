@@ -181,7 +181,14 @@ export const TimecarCard = ({
   return (
     <button
       aria-label="Time travel to earlier portfolios"
-      className="relative block cursor-pointer rounded-[18px] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-4"
+      className={tw(
+        "relative block cursor-pointer rounded-[18px]",
+        // No focus ring round the car mid-trip: focus comes back to it as
+        // it lands, and the ring boxed it in through the arrival.
+        trip === "parked"
+          ? "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-4"
+          : "outline-none"
+      )}
       onBlur={handleBlur}
       onClick={handleClick}
       onFocus={handleFocus}

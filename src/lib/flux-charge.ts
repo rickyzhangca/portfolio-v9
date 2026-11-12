@@ -230,14 +230,16 @@ export const makeArc = (
  */
 export const DEPARTURE = {
   /** The charge surges this long before the car moves. */
-  driveFromMs: 45,
+  driveFromMs: 160,
   /**
-   * From standing to its tail through the slice, ms. It launches hard: a
-   * steeper curve over a longer run held it back, then rammed it through.
+   * From standing to its tail through the slice, ms: long enough to watch
+   * it gather speed, the light squeeze into the slice and the car go
+   * through. At 560 the whole departure was over in a blink and the slice
+   * stood for about 150ms.
    */
-  driveMs: 560,
+  driveMs: 1000,
   /** The distance grows as time to this power: it accelerates. */
-  drivePower: 1.5,
+  drivePower: 1.7,
   /** The trails race on ahead of the slice this fast, local px/s. */
   fireSpeed: 1800,
   /**
@@ -252,7 +254,7 @@ export const DEPARTURE = {
   /** The squat on launch: the nose lifts this far, local px. */
   launchLiftPx: 2,
   /** The time machine opens this long after the slice has shut. */
-  openDelayMs: 1400,
+  openDelayMs: 1700,
   /** The ball of light moves out to its lead over this long, ms. */
   orbLeadMs: 260,
   /** The ball of light rides this far ahead of the nose once grown, px. */
@@ -559,6 +561,21 @@ export const STEAM_SHEET = {
   frames: 60,
   region: { height: 500, left: -170, top: -330, width: 810 },
   rows: 6,
+} as const;
+
+/**
+ * The trails' simulated fire, `tools/render-fire.py`'s atlas: `frames`
+ * looping frames at `fps`, `cols` by `rows`, each showing `tile` px of a
+ * burning track (as wide and as tall as that on the desk, its fuel line
+ * `base` px above its bottom edge). The trip shader tiles it along each
+ * track and colours its heat.
+ */
+export const FIRE_SHEET = {
+  cols: 6,
+  fps: 24,
+  frames: 36,
+  rows: 6,
+  tile: { base: 21, height: 120, width: 360 },
 } as const;
 
 /** How long the steam sheet plays, ms. */

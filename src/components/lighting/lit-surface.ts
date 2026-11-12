@@ -74,7 +74,7 @@ const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
  * their shadows trailed the lamp in steps; at half they all keep up.
  */
 const MOTION_SPEED = 240;
-const MOTION_REST_MS = 150;
+const MOTION_REST_MS = 80;
 
 /**
  * WebGPU surfaces redrawn per frame. Opening a folder of 14 prints moves
@@ -114,10 +114,27 @@ const INITIAL_PIXEL_BUDGET = 1_000_000;
 const MIN_PIXEL_BUDGET = 250_000;
 const MAX_PIXEL_BUDGET = 24_000_000;
 /** Growth per frame that arrives on time, as a share of the budget. */
-const BUDGET_GROWTH = 0.02;
+const BUDGET_GROWTH = 0.1;
 /** Growth once within `NEAR_CEILING` of the budget a frame ran late at. */
 const BUDGET_GROWTH_NEAR_CEILING = 0.0025;
 const NEAR_CEILING = 0.85;
+/**
+ * A late frame only counts against the budget when the frame before it drew
+ * at least this share of it. Frames run late for other reasons (the page
+ * loading, a folder opening, garbage collection), and one of those during
+ * the entrance used to set the ceiling at about 1.3 million pixels with the
+ * GPU idle: growth then crept at `BUDGET_GROWTH_NEAR_CEILING` for good, a
+ * quick move of the pointer could redraw one large surface a frame, and
+ * every other surface caught up in a visible step after the pointer stopped.
+ */
+const SATURATED_SHARE = 0.5;
+/** Two late frames this close together mean the GPU is at its limit. */
+const LATE_AGAIN_MS = 500;
+/**
+ * Once the budget has grown this far past a recorded ceiling with no late
+ * frame, the ceiling was not the GPU's limit, and is forgotten.
+ */
+const CEILING_DISPROVED = 1.15;
 /**
  * A draw into a new or resized backing store costs this many times its
  * pixels: the texture is allocated as well as filled. A folder that opened
@@ -143,6 +160,8 @@ const ANIMATING = Number.POSITIVE_INFINITY;
 
 interface PendingDraw {
   draw: () => void;
+  /** Whether the draw allocates its backing store. */
+  allocates: boolean;
   /** Backing pixels the draw fills. */
   pixels: number;
   since: number;
@@ -157,6 +176,15 @@ let pixelBudget = INITIAL_PIXEL_BUDGET;
 let ceiling = MAX_PIXEL_BUDGET;
 /** Whether the last frame left surfaces waiting for budget. */
 let budgetSpent = false;
+/**
+ * Backing pixels the last frame redrew into canvases it already had. Draws
+ * that allocate theirs are budgeted but teach nothing about the limit: the
+ * entrance allocates every canvas on the desk in a few frames, which ran
+ * late and left the ceiling at a quarter of what the GPU then redrew on time.
+ */
+let pixelsDrawn = 0;
+/** When a frame that was drawing near its budget last ran late. */
+let lateAt = Number.NEGATIVE_INFINITY;
 let frameTime = 0;
 /** The display's frame interval: falls at once, rises slowly. */
 let frameInterval = 0;
@@ -180,11 +208,17 @@ const paceFrame = (time: number, lamp: LampPosition) => {
   if (interval <= 0 || interval > MAX_FRAME_GAP_MS) {
     return;
   }
+  // Resolution drops only when a fast lamp leaves surfaces waiting for
+  // budget, and then holds until the lamp slows. Dropped on speed alone,
+  // every soft surface was redrawn sharp again 150ms after any quick move of
+  // the pointer, a visible snap across the desk, on GPUs that had kept up at
+  // full resolution all along.
   if (
     previous &&
     !isLampCatchingUp() &&
     (Math.hypot(lamp.x - previous.x, lamp.y - previous.y) / interval) * 1000 >
-      MOTION_SPEED
+      MOTION_SPEED &&
+    (budgetSpent || time < movingUntil)
   ) {
     movingUntil = time + MOTION_REST_MS;
   }
@@ -193,16 +227,27 @@ const paceFrame = (time: number, lamp: LampPosition) => {
       ? interval
       : frameInterval + (interval - frameInterval) * INTERVAL_RISE;
   if (interval > frameInterval * LATE_FRAME) {
-    ceiling = pixelBudget;
-    pixelBudget = Math.max(MIN_PIXEL_BUDGET, pixelBudget / 2);
+    if (pixelsDrawn >= pixelBudget * SATURATED_SHARE) {
+      // One late frame is not a limit: the first frame of a quick move ran
+      // late at 2.2 million pixels on a GPU that then drew as many for
+      // seconds on time. A second within `LATE_AGAIN_MS` is.
+      if (time - lateAt < LATE_AGAIN_MS) {
+        ceiling = pixelBudget;
+        pixelBudget = Math.max(MIN_PIXEL_BUDGET, pixelBudget / 2);
+      }
+      lateAt = time;
+    }
   } else if (budgetSpent) {
     const growth =
       pixelBudget < ceiling * NEAR_CEILING
         ? BUDGET_GROWTH
         : BUDGET_GROWTH_NEAR_CEILING;
     pixelBudget = Math.min(MAX_PIXEL_BUDGET, pixelBudget * (1 + growth));
-    ceiling = Math.max(ceiling, pixelBudget);
+    if (pixelBudget > ceiling * CEILING_DISPROVED) {
+      ceiling = MAX_PIXEL_BUDGET;
+    }
   }
+  pixelsDrawn = 0;
   budgetSpent = false;
 };
 
@@ -214,27 +259,35 @@ const flushDraws = () => {
     (a, b) => b[1].staleness - a[1].staleness || a[1].since - b[1].since
   );
   let spent = 0;
+  let redrawn = 0;
   let drawn = 0;
   for (const [owner, entry] of queue) {
     if (drawn > 0 && spent + entry.pixels > pixelBudget) {
       budgetSpent = true;
+      pixelsDrawn += redrawn;
       wakeLamp();
       return;
     }
     pending.delete(owner);
     entry.draw();
     spent += entry.pixels;
+    if (!entry.allocates) {
+      redrawn += entry.pixels;
+    }
     drawn += 1;
   }
+  pixelsDrawn += redrawn;
 };
 
 const requestDraw = (
   owner: object,
   draw: () => void,
   staleness: number,
-  pixels: number
+  pixels: number,
+  allocates: boolean
 ) => {
   pending.set(owner, {
+    allocates,
     draw,
     pixels,
     since: pending.get(owner)?.since ?? performance.now(),
@@ -423,6 +476,11 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
         pending.delete(owner);
         return;
       }
+      const allocates =
+        staleness === RESHAPED &&
+        (drawn?.width !== view.width ||
+          drawn.height !== view.height ||
+          drawn.pixelScale !== view.pixelScale);
       // Queued with this frame's view; a later frame replaces it.
       requestDraw(
         owner,
@@ -448,12 +506,8 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
         Math.round((view.width + overhang * 2) * view.pixelScale) *
           Math.round((view.height + overhang * 2) * view.pixelScale) *
           canvases *
-          (staleness === RESHAPED &&
-          (drawn?.width !== view.width ||
-            drawn.height !== view.height ||
-            drawn.pixelScale !== view.pixelScale)
-            ? ALLOCATION_COST
-            : 1)
+          (allocates ? ALLOCATION_COST : 1),
+        allocates
       );
     });
   };

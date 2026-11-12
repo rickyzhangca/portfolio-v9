@@ -10,6 +10,18 @@ Never rely on an idle subscription to poll future work: wake it when changing sh
 
 All outlines share the four-per-frame queue, which keeps the lamp awake until ready. The bitmap's margin follows its blur rather than reserving 72px on every side; keycap/keyboard/email margins remain unchanged for lifted shadows. `e2e/lamp-idle.spec.ts` opts into WebGPU (`enableLamp` in fixtures), skips without a desktop Chromium adapter, and checks zero idle lamp layout/style reads on home, open folders and readers. Run it headed when checking real GPU behavior.
 
+## Redraw budget and the snap after a quick move
+
+Measured in headed Chrome at 2560x1440 at 2x (2026-11): after any quick move of the pointer, every lit surface visibly caught up once it stopped. Three causes, all in `lit-surface.ts`, each fixed:
+
+- The budget was stuck near 1.3 million pixels a frame. A frame that ran late while the page loaded set `ceiling` there with the GPU idle, and growth then crept at `BUDGET_GROWTH_NEAR_CEILING`; a 450ms flick redrew one large surface a frame and the rest drained for 170ms after it stopped. A late frame now counts only when the frame before it drew at least `SATURATED_SHARE` of the budget, and only the second within `LATE_AGAIN_MS` lowers it (the first frame of a quick move ran late once at 2.2 million pixels on a GPU that then drew 4.6 million a frame on time). A ceiling the budget has grown `CEILING_DISPROVED` past is forgotten. `BUDGET_GROWTH` is 10% a frame (it was 2%: from 1 to 4 million took over a second of continuous motion, longer than most moves).
+- Soft surfaces dropped to half resolution on speed alone and were all redrawn sharp `MOTION_REST_MS` after the lamp slowed, staggered over 200ms by the small budget. They now drop only when a fast lamp leaves surfaces waiting for budget, and hold until it slows; on GPUs that keep up they never change resolution.
+- `MOTION_REST_MS` is 80 (it was 150), so where resolution does drop it comes back while the lamp is still gliding the last pixels, not as a separate step after everything has stopped.
+
+- Draws that allocate their backing store are budgeted (`ALLOCATION_COST`) but no longer teach the ceiling: the entrance allocates every canvas on the desk within a few frames, those frames ran late, and the ceiling they left varied from run to run between 2 and 9 million pixels.
+
+After the fixes the same flick redraws all 25 relit surfaces every frame, in three runs out of three, and the draws taper off as the lamp settles instead of draining after it. At 5K the GPU holds full resolution (9.5 million pixels a frame) for about nine frames, then two frames run late, the budget halves and soft surfaces drop to half resolution (4.6 million); they restore over three frames about 130ms after the pointer stops, which is the one step left. At 1440x900 full resolution holds longer. Not tried: a `motionScale` of 0.75, which would halve that step's size if the GPU can carry it.
+
 ## Browser support and gating
 
 The desk lamp runs in desktop Chromium and desktop Safari (`isDeskLampSupported`: exact `Chromium` client-hint brand, not mobile, not Android; or, without client hints, a Mac WebKit user agent with no touch points, which rules out iPads asking for desktop sites). Firefox stays off. `?lamp=force` skips the browser check (WebGPU and the adapter probe still decide) for comparing it elsewhere. Playwright's WebKit is not a stand-in for Safari here: it kept SVG masks that Safari drops, and it runs lamp mode at ~12fps while real Safari is smooth, so confirm Safari rendering and performance in Safari itself.
@@ -18,7 +30,7 @@ WebKit keeps a 2D context's `filter` and reads it back but never blurs, so the f
 
 ## Light tab and lamp config
 
-The playground's Light tab (first, and only while the lamp is on) edits `lampConfigAtom`: lamp height, pool size and room dimming. The lamp's follow rate is the fixed `LAMP_FOLLOW_RATE`. `DeskLampRoom` copies it into `desk-lamp.ts` with `setLampConfig`, and every lamp listener reads `getLampConfig()` each frame instead of constants. Defaults (`src/lib/lamp-config.ts`) reproduce the designed lighting. The room gradient lives in `src/lib/room-gradient.ts`, outside the first-load graph.
+The playground's Light tab (first, and only while the lamp is on) edits `lampConfigAtom`: lamp height, pool size and room dimming. The lamp's follow rate is the fixed `LAMP_FOLLOW_RATE`. It is 40 a second (a 25ms time constant). At 16 the light trailed a 900px/s sweep by 54ms, about 48px, and took 200ms to cover 95% of a jump, which read as the lighting not following the hand; measured in headed Chrome at 2560x1440 at 2x, 40 trails by 18ms with no more late frames and the lit surfaces no staler (a relit pixel's lighting is about 3 frames old either way, since surfaces far from the lamp wait for more travel before they redraw, `LIGHT_STEP`), and the desk is at rest 167ms after a jump instead of 467ms. At 70 the light trailed by 8ms but the surfaces' lighting ran two frames older. `DeskLampRoom` copies it into `desk-lamp.ts` with `setLampConfig`, and every lamp listener reads `getLampConfig()` each frame instead of constants. Defaults (`src/lib/lamp-config.ts`) reproduce the designed lighting. The room gradient lives in `src/lib/room-gradient.ts`, outside the first-load graph.
 
 ## Keycaps
 
