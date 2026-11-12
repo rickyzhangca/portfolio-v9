@@ -7,7 +7,7 @@ import {
 } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { FunProjectCardContent } from "@/cards/types";
+import type { FunProjectCardContent } from "@/cards/registry";
 import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
 import { deskLampAtom } from "@/context/atoms";
 import { FunProjectCard } from "./fun-project-card";

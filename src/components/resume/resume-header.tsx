@@ -1,4 +1,4 @@
-import type { ResumeHeader as ResumeHeaderData } from "@/cards/types";
+import type { ResumeHeader as ResumeHeaderData } from "@/cards/registry";
 import { ResumeSection } from "./resume-section";
 
 interface ResumeHeaderProps {

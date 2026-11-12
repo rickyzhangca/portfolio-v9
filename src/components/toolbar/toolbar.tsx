@@ -497,27 +497,6 @@ export const ToolbarButton = ({
   />
 );
 
-interface ToolbarLinkProps extends Omit<ComponentProps<"a">, "aria-label"> {
-  href: string;
-  label: string;
-}
-
-export const ToolbarLink = ({
-  href,
-  label,
-  className,
-  ...props
-}: ToolbarLinkProps) => (
-  <a
-    aria-label={label}
-    className={tw(buttonClassName, className)}
-    data-slot="toolbar-button"
-    href={href}
-    {...{ [TIP_ATTR]: label }}
-    {...props}
-  />
-);
-
 interface ToolbarTriggerProps
   extends Omit<ToolbarButtonProps, "active" | "onClick"> {
   /** The panel this button opens. */

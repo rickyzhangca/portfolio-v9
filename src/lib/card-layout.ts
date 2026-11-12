@@ -1,4 +1,4 @@
-import type { CardInstance } from "@/cards/types";
+import type { CardInstance } from "@/cards/registry";
 import { DESKTOP_CANVAS_LAYOUT, type SwagLayout } from "@/lib/canvas-layout";
 import type { FanConfig } from "@/lib/fan";
 import type { CanvasStackItem } from "@/types/canvas";

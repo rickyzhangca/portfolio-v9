@@ -1,4 +1,4 @@
-import type { ResumeData } from "@/cards/types";
+import type { ResumeData } from "@/cards/registry";
 import { tw } from "@/lib/utils";
 import { ResumeEducation } from "./resume-education";
 import { ResumeExperience } from "./resume-experience";

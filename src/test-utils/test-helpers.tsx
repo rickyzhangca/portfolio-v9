@@ -1,14 +1,14 @@
 import { render } from "@testing-library/react";
 import { vi } from "vitest";
-import type { CoverBoard } from "@/cards/registry";
 import type {
   CardInstance,
+  CoverBoard,
   CoverCardInstance,
   FunProjectCardInstance,
   ProjectCardInstance,
   StickyNoteCardInstance,
   SwagCoverCardInstance,
-} from "@/cards/types";
+} from "@/cards/registry";
 import type {
   CanvasFunStackItem,
   CanvasSingleItem,

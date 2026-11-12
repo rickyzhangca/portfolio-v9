@@ -1,4 +1,4 @@
-import type { ResumeEducation as ResumeEducationData } from "@/cards/types";
+import type { ResumeEducation as ResumeEducationData } from "@/cards/registry";
 import { ResumeEntry } from "./resume-entry";
 import { ResumeSection } from "./resume-section";
 

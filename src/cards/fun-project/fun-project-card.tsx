@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { FunProjectCardContent } from "@/cards/types";
+import type { FunProjectCardContent } from "@/cards/registry";
 import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
 import {
   LAMP_SHEEN_GRADIENT,

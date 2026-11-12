@@ -1,4 +1,4 @@
-import type { Experience } from "@/cards/types";
+import type { Experience } from "@/cards/registry";
 import { ResumeEntry } from "./resume-entry";
 import { ResumeSection } from "./resume-section";
 

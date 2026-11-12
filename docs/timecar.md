@@ -1,0 +1,129 @@
+# Toy time machine (timecar)
+
+Read this before changing `src/cards/timecar/`, the car's charge and departure effects, its steam bake, or the lamp flare it drives. Moved verbatim from AGENTS.md, regrouped by topic; the notes marked rejected or read-as-cheap record what not to retry. Desktop only.
+
+## Placement and assets
+
+The toy time machine (`src/cards/timecar/`, kind `timecar`, `timecar-item`) parks below the swag collection, left of the street map, with the desk clear to its left (the Thoughts folder sits high enough for it to pass under), and is the only way into the time machine, on click or Enter (it warms the chunk on hover/focus); the canvas controls no longer carry a clock button. It is desktop only: `createCompactScene` drops it (`DESKTOP_ONLY_ITEMS`), since phones have no time machine.
+
+Its photo (`src/assets/timecar/delorean.webp`, 3x, with a 2x sibling) and the lamp's maps beside it (`delorean-normal.webp`: desk-space normals, x right, y down the screen, z up; `delorean-material.webp`: metalness, roughness, glass) come from `node tools/render-timecar.ts <unzipped model>`, which renders Ddiaz Design's Sketchfab glTF with three.js in Chromium (`tools/render-timecar.html`): by an orthographic camera tilted 26° towards the screen's bottom (`TILT`; the shader's `VIEW` must follow it), with no perspective: a perspective camera's converging edges did not belong on the desk, stretching the frame by 1/cos 45° into the keyboard's exact oblique projection made the car look like a van, and 45°, 38° or 32° showed too much of its side, nose left, in a studio of grey walls, one far softbox and no direct light (a key light blew the roof white), with the body's half-metal paint made steel. A straight-down shot was too hard to recognise.
+
+Under the lamp `LitCar` (`car-renderer.ts`, `car-shader.wgsl`) relights the photo with GGX highlights and a brushed-steel sheen from those maps, so highlights slide over the steel and glass, and draws its contact and body shadows from its silhouette; the textures are padded with transparent texels, because the car fills its photo and wide shadow taps read the clamped edge of coarse mip levels as stepped blocks.
+
+## Hover, charge and click
+
+Resting the pointer on it (or focusing it from the keyboard: `:focus-visible`, and not the focus the browser hands back when the tab returns, which charged it wherever the pointer was) charges it up, and a click sends it off, after the film (`FluxCharge` in `flux-charge.tsx`, timing in `src/lib/flux-charge.ts`). The effect is its own chunk, loaded on the first hover or focus; a click before it loads (or with reduced motion) opens the time machine directly.
+
+Charging follows the film: the energy comes only from the flux hardware, never bare panels.
+
+Over `CHARGE_SECONDS` its cyan conduits (`isCoilColor` on the photo's pixels) light up from the nose back (`getReach`), with a pulse running back along them, and crackle with short, quick micro-arcs within a few px of them (`MICRO_ARC`, `getArcRate`: midpoint-displaced ribbons that taper from root to tip, a white core in a saturated blue edge, each holding a path for `JAG_MS`); long bolts jumping between outline points across the hood, roof and doors read as wire, not the film, and were cut.
+
+The front bumper is an emitter bar (`BUMPER`, `getBumperLevel`): stacked strokes along the nose's first opaque column (`getBumper`), white in cyan in a saturated blue, which lights early in the charge, burns full as it drives and washes the hood's leading edge in the body light. Sparks glint on the conduits, and past 60% the body shakes.
+
+Focus restored to it on return does not charge it again.
+
+### The light ahead of the car
+
+From `CHARGE_ORB.from` of the charge a ball of light already gathers ahead of the parked nose (`getChargeOrb`), fed by faint filaments from the bumper (`SLICE_BOLTS`; cyan at the bumper with a magenta sheath fading in towards the light) and by the conduits' motes: once the ball has formed (`getMoteRate`) the conduits shed balls of plasma (`MOTES`, `MOTE_LOOK`), comets with a white spine in a blue or violet sheath and an elongated white head, which fly a bowed curve round the body's side into the ball, gathering pace (`getMotePoint`), and keep their light all the way in (motes that faded short of it read as dying on the hood). They start from the conduit px nearest the body's side of a few picked, since most conduit px are in the band across the back and motes from its middle crossed the hood as lines.
+
+The light ahead is not a ball (`plasmaFront` in the trip shader): a tall oval, taller than the car once grown (`plasmaGirth` wide, about 2.7 times as tall), high-energy plasma rather than a flame: an overexposed white core with a crisp edge, a body of bright cells boiling fast in every direction, thin filaments writhing round the core (ridged noise in swirled coordinates), sparks popping at its rim and a tight saturated blue halo (a soft violet haze with lobes licking back read as a gas burner), riding `orbLeadPx` ahead of the nose and a little above the car's middle (`ORB_Y`, shared by the shader and `flux-charge.tsx`). Standing, it churns; as the car speeds up (`carSpeed`, from the streak's reach) it is pressed flat ahead and drawn into a wake that runs onto the bumper, with a soft band of light filling the gap to the nose (`bridge`).
+
+Rejected: Gaussian rings round a white dot (a static sticker), a white disc in isotropic noise with forks (a marble in a puffball inside a spider web), metaball lobes with spikes (a starburst), a smooth bow shock (a jellyfish bell), and any gap kept clear before the bumper (a wall between the car and its light), and streamers sweeping back along the car's sides (whiskers).
+
+It shows at once and grows with `uOrb`; fading it in with its growth left a faint wisp. The bumper's filaments are three faint ones spread over its height; eight converging on one point read as a cage. The departure carries it on from there (`getOrb`'s `charged`) rather than starting it afresh. Leaving drains it over `DISCHARGE_SECONDS`.
+
+## Departure
+
+Departure (`DEPARTURE`): the charge surges, the nose squats as it launches (`getLaunchLift`; pitch is a `skewY` about the car's middle, with a fraction-of-a-px road shake while it moves, since a car that only translated read as a sticker), and it launches hard to the left over a long run-up (`getDriveOffset`, distance as time to `drivePower`; a short lurch had no room for the build-up, and a steeper curve over a longer drive felt held back, then rammed through), its conduits pulsing forward and shedding motes into the ball fastest (`MOTES.drive`). The conduits carry the charge: they add light (`lighter`) in a halo and a wide bloom.
+
+### The slice (the tear)
+
+Energy gathers ahead of it as it goes: a ball of light rides `orbLeadPx` ahead of the nose, growing (`getOrb`), with the bumper's filaments and the motes pouring into it, until it stops where the slice opens (`getSliceTimes`, `opensAt`) and is squeezed into the slice over `SLICE_OPEN_MS` (`uOrb`, `squeeze`, `timeSlice`): the oval narrows and stretches up and down while the tear grows inside it from the oval's own height (a line appearing from nothing read as stuck on), into a tear far taller than the car, a white-hot lens widest across the car with a shivering edge, a cyan sheath and a churning cobalt and violet halo, running on past its ends as fading hairlines, bowed round the car (`tearLine`), with the bolts still feeding it and plasma ribbons whipping back over the body (only over it: ribbons past the car read as loose strings).
+
+The car is consumed by it front to back rather than cut off: the shader cuts it along the same wavering, bowed `tearLine` (`shown()`, `uClip`), stretches its last px into the tear (`tearPull`), burns them white, flushes cyan behind and draws them out in streaks; the 2D canvas fades its bolts into the slice through a gradient `mask-image` (`CUT_FEATHER_PX`). A slit as tall as the car, a straight cut with a glowing ruled edge and a glow ending on a box (an early return, or the canvas edge) read as crude Flash animation, so every glow in `rift()` is faded out by a window well inside the canvas. The DOM body keeps its `clip-path: inset()` only for when the shader is missing; at speed the shader draws the car.
+
+As the tail clears (`goneAt`, `DRIVE_END_MS`) the tear pinches shut from its ends and goes out in one small flash (a big round one read as a lens flare), and the time machine opens at `OPEN_MS`.
+
+## Fire trails
+
+The fire erupts at the slice when the rear tyres cross it (`igniteAt`) and races on ahead at `fireSpeed` (`getFirePass`) for as far as the screen's left edge plus `OFFSCREEN_PX` (`measureFireLength`, capped at `MAX_FIRE_PX`), the twin trails the car left in the past; behind the slice there are only short burnout rubber marks and tyre smoke, since long even rubber lines read as rails. The trails throw a faint warm light, smoke, and fade into scorch marks while the time machine opens (visible in the shrinking present window). Each departure's trails keep their own clock (up to `MAX_TRAILS`), so they burn on through the return and the next trip rather than vanishing when the car comes back; the car standing on the desk hides the trails under it.
+
+Trails stay on the desk where they were burnt: each departure anchors them to where the car stood (`measureDeskPoint`, the car's middle against the camera's content element, so panning and zooming do not move it), and when the car is dragged the shader shifts them back (`uTrailShift`) and the canvas grows to cover the car and every set of trails (`getBounds`).
+
+## Arrival
+
+The card tracks the trip (`parked`, `departing`, `away`, `returning`); when `timeMachineOpen` falls back to false it returns, after the film (`ARRIVAL`): three escalating flashes at the exit plane, `slidePx` to the right of its spot (`flashesMs`, each a white core in a ragged corona with a short soft bloom, gone within a fraction of a second: lingering flashes read as clouds), each throwing radial forks on the 2D canvas that reach past the core (`FLASH_FORKS`: forks inside the white core read as pen lines), and on the third the car bursts out of the exit front first, clipped at that plane, still heading left at speed with its headlamps and brake lights on (`LAMPS`: each a white-hot filament in blooms with an inverse-square falloff, lighting the steel around it; pools of light on the daylit desk could only tint it and read as flat cut-outs), lit until well after it stops, braking over `slidePx` to a stop on its spot with skid marks from the exit, its nose diving and springing back `reboundPx` (`getArrivalOffset`, `getArrivalLift`), iced over and thawing as cold-soaked metal does in warm humid air (`ice` in the trip shader, `getFrost`, `thawFromMs`, `thawMs`): hoar frost thickest and longest in the middle of the big flat panels, which hold the cold, while thin trim, edges, seams, tyres and the reactor and vents clear first, and glass is frosted all over, thinner.
+
+### Frost and thaw
+
+Each spot goes through the real stages: dry white crystals that blur the car under them and let its grain through, translucent slush (the white goes before the ice does), a water film that darkens the steel coolly, and beads with a faint dark rim that dry off. The melt starts at the warm edges soon after landing and eats steadily inward in wide soft fronts, in blotches 28 px and clusters 6 px across, in the car's own px so it rides with the car as it slides.
+
+Frost that held out longest along the photo's edges left a wireframe of the car once its panels had cleared; edges read from the sharp photo cleared every 1 px seam at once, like a pencil sketch, so busy detail is read from blurred levels; a late start with narrow fronts held the hood frozen, then cleared it within a second; lone white px as beads read as dust and pouring cold vapour off its body while its rear vents blow heavy steam.
+
+## Steam (Blender and Modal)
+
+Both are simulated and rendered in Blender (`tools/render-steam.py`, Mantaflow smoke, Cycles on the GPU), around the real model: the Sketchfab glTF that the photo was rendered from (pass its unzipped `scene.gltf` with `--model`; it is not in the repo), at its real 4.216 m, `PX_PER_M` 57.3 and placed so its projection matches the photo's opaque box to a pixel (check with a flat render from the photo's camera after changing either). The car is a holdout that casts no shadow, so steam behind it is hidden and steam over its edges shows; its voxel remesh is the obstacle and, a skin just outside it, the cold vapour's source; the vents' emitters sit just behind their grilles, since inside the obstacle they emit nothing.
+
+The steam is relightable: each frame is rendered three times, each lit by one sun (`LIGHTS`, azimuths 135°, 255° and 15° anticlockwise from screen right, `LIGHT_ELEVATION` 35°) plus the same soft sky, and the pack stores their luma in R, G and B with coverage in A. The shader (`steamShares`) weighs the three by where the light comes from, in linear light: under the desk lamp from the lamp's position (`uLamp`, client px turned into the car's px by `measureLamp`, height from `getLampConfig`), so the steam's lit side and shadow follow the pointer; in daylight pass a alone, the designed top-left light. The desk is not a shadow catcher: the shader casts the steam's shadow itself from its coverage (`steamShadow`), offset away from the light by the steam's lift over the lamp's height and foreshortened by the camera's tilt, softened, kept close (at most 90px off) and faint (13%): a darker shadow thrown 180px away read as a dirty patch of its own.
+
+Frames are packed `COLS` by `ROWS` into `src/assets/timecar/steam.webp` and played by the trip shader (`sheetSteam`) at `STEAM_SHEET.fps`, crossfading neighbouring frames, each sampled inside its own cell; `STEAM_SHEET` (frames, fps, grid, `region`) and the shader's `STEAM_FPS` must match the script. The sheet is decoded off the main thread when the car leaves (`createImageBitmap`, one premultiplied bitmap per row of frames) and goes to the GPU a row an animation frame (about 1 ms each; the whole sheet in one `texImage2D` held a frame for 30-70 ms), starting `STEAM_UPLOAD_DELAY_MS` after the car is away, or on return if that comes first.
+
+Bake on Modal, not the laptop (a full bake took about half an hour of all the M3's cores): `modal run tools/modal-steam.py --model <unzipped model dir> [--preview] [--render-only] [--out <dir>]` bakes on 32 CPU cores, renders the passes on L4 GPUs (OptiX) ten frames per container in parallel, packs, and writes `steam.webp` into `src/assets/timecar/` (not for `--preview`), keeping the cache on the `steam` volume.
+
+Mantaflow does not work on the volume's network mount, so each container bakes or renders on its local disk and copies; a domain built afresh, or one whose `cache_directory` is set again, renders an empty cache, so `--render` (`--render-only` on Modal) opens the bake's saved `scene.blend` (its cache path is relative) and resets only the device, quality and light (`light()`: `--sun`, `--sky`, `--exposure`, passed through Modal's `--light`): relighting costs a GPU render, about 20 minutes, while material changes need a new bake.
+
+`--probe "30;--sun 3 --sky 0.55|30;--sun 4 --sky 0.3"` renders single frames of the saved bake under each variant, one container each, to compare before a full render. Keep the sun strong against a dim sky (3 against 0.55): a bright sky lit the cloud from everywhere, and the three passes came out the same flat white, with nothing for the lamp to move. `--pack` only repacks, and the pack feathers the steam out over `FEATHER_PX` at the frame's edges, which the late steam outgrows.
+
+Until it is uploaded, or without it, the shader's procedural steam (`ventSteam`, `vapourSkirt`) stands in: metaball puffs lit from the top left, each thrown its own distance and drifting on, with the noise eating in from the rim (puffs that all stopped at one reach, or noise added past the rim, stood the cloud's edge up as a wall).
+
+## Room dimming and lamp flare
+
+While it charges and leaves, and while its flames burn, the room dims gently around it: `ROOM_DIM`, a 40000px radial veil appended beside the car's wrapper, clear within `clearPx` of the car and easing to a light `outer` across the desk, through `DIM_STOPS` stops and dithered (a deep two-stop veil read as a hard vignette with 8-bit steps, and one deepest round the car blacked out the whole screen). It does not dim on return.
+
+The plasma is a brighter lamp, and the room answers its instability: one pulse (`getPulse`: a flicker between 0.88 and 1.12 held 30-100ms, `PLASMA_FLICKER`, swelling a little as motes land) drives the shader's glow (`uImpact.w`; the white heart stays steady), the car's body light, a cyan wash of light on the desk round it (`PLASMA_LIGHT`, in the canvas host over the dim and under the travelling car, placed each frame on the light, the slice or the arrival's flashes, `getPlasma`) and the dim's clear pool, which follows the plasma and grows and breathes with it (`ROOM_DIM.pool`, a transform on the veil).
+
+Under the desk lamp `setLampFlare` (`desk-lamp.ts`) moves the room's light from the lamp onto the plasma by its strength (`weight`, `PLASMA_LAMP`), unsmoothed, so every shadow and lit surface turns away from it, and `getLampIntensity` deepens the DOM casters' shadows with its `brightness` (`FLARE_SHADOW_GAIN`), which carries the flicker: a light jittering in place counted as a sweeping lamp and sent every lit surface to half resolution and back. Lit surfaces pace their resolution by the hand's lamp (`getLampPointer`), not the light, and keep full resolution while the lamp glides back after a pause (`isLampCatchingUp`); both had reallocated every canvas on the desk around the trip.
+
+The pointer usually rests on the car, so moving the light alone barely showed; the deeper shadows are what read. Keep the light's effect local or physical: a black veil over the whole page sagging with the lamp's power darkened the plasma too, and pulsing the dim's opacity changed the far room most and the lit desk not at all; both read as a crude global mask.
+
+The car's wrapper rises above the desk with `data-time-travel` (`src/index.css`) while it travels and lands, so the dim and the cards beside it never cut its steam off.
+
+## Body light bake
+
+The light the charge throws on the car's own body is baked from the model, not painted: `tools/render-carlight.py` (run on Modal with `modal run tools/modal-steam.py::carlight`, about a minute of one GPU) renders the model through the photo's camera in a black room, lit by one light at a time, into grey tiles in `src/assets/timecar/car-light.webp` (`CAR_LIGHT`, `CAR_LIGHT_TILES`): the ball of light at four distances ahead of the nose (`orbAhead`; slid along the camera's line of sight to above the hood, since level with the bumper it lit only the bumper's edge), the slice and the exit at five cuts each (`sliceAt`, `exitAt`), and bolts round the front or rear half (`rimFront`, `rimRear`). The model's emission is off (the page draws the conduits) and the paint made steel, as in the photo.
+
+For a cut the model's materials turn transparent past it (`add_cut`), so the light standing in the cut lights what is left and shines through what is gone; the page uses only maps whose own cut the screen's clip already hides (`getCutBlend`), since blending maps with different cuts showed their cut edges as steps.
+
+`FluxCharge` splits the tiles a frame at a time into canvases of their tint with the light as alpha (`loadCarLight`) and lays them over the photo in `drawBodyLight`: ball-of-light maps blend by distance (`getLightBlend`), rim maps by the bolts on each half (`RIM_BOLTS`), at `CAR_LIGHT_GAIN` (full strength washed the car out pale), with radial glows standing in until they load. The ball of light and the slice read on the white desk by saturated cobalt and cyan close round their white heart: light cannot outshine a white desk, and the earlier pale halo read as haze.
+
+Under the desk lamp the effect also lights the WebGPU car (`car-glow.ts`, a plain object the card shares with `LitCar` and `FluxCharge`): the bolts' cold light from where they are, the ball of light, the slice and the landing flash, and the warm light of the trail burning just ahead of or behind it, each a small nearby source with the lamp's GGX highlights in `car-shader.wgsl`; `LitCar` reports their values through `step`, so they redraw it as a lamp move does.
+
+While the car moves fast the shader draws it as the shutter would see it (`smearedCar`: its photo averaged over the last `SHUTTER_MS` of travel, from `getVelocity`, with a smeared shadow) and the DOM car fades out between `BLUR_SHARE_PX` streak lengths, so it streaks instead of strobing tens of px a frame.
+
+## Canvases and shaders
+
+### Canvases and frame loop
+
+The trip's WebGL canvas only grows (`reserve` in `trip-renderer.ts`, with headroom) and frames draw into its bottom-left corner; it is reserved for the return while the time machine covers the desk (with the steam's upload), since resizing a WebGL canvas waits on the GPU and growing it as the car landed, with the lamp relighting the desk, held the main thread for 70 ms. Its shader compiles with `KHR_parallel_shader_compile`, polled a frame at a time: asking for its status at once blocked the first hover for 30 ms. Two canvases sit over the car (`MARGIN` 130px around it), with a frame loop only while something moves. The charge (micro-arcs, the bumper and its filaments, motes, conduits, glints, lamps, the arrival's forks and landing bolts) is 2D and rides along with the car: glows are stacked translucent strokes, because canvas `shadowBlur` on each stroke halved the frame rate at full charge (60 to 30fps in Chrome on an M3 at 2x).
+
+### The trip shader and the flames
+
+The trip is a WebGL2 fragment shader under it, whose canvas covers the car's margin and every set of trails (`getBounds`) (`trip-shader.glsl`, `trip-renderer.ts`, imported once the photo's outline has loaded; without WebGL2 the car still leaves and returns, without fire): flames seen from above: a seething sheet of domain-warped fbm over each track, wider where it burns harder, licking up the screen and curling a few px down it (a straight lower edge read as a strip laid on the desk), inside an envelope (noise past it stood flames up as specks all over the desk). They are the film's colours, a white heart and pale gold with cobalt roots (generic orange read as a campfire); the roots are light and thin, since a dark cobalt at low alpha read as purple dirt. They flare where they erupt, grow in over a ragged run (a cut start read as a bug), turn blue as they die (`getFlameBlue`) and leave white smoke, lit from under. The char they leave wanders, swells and blisters inside a soft soot shadow, with smouldering specks, rather than two ruled lines.
+
+Then embers, the arrival's flashes, ice and vapour, at `SHADER_DENSITY` (0.75 canvas px per CSS px). Its photo texture is padded with transparent texels (`TEXTURE_PAD`): coarse mip reads past the car's clamped edge smeared stripes across the canvas. The shader mirrors the drive and burn curves in `src/lib/flux-charge.ts` through uniforms. Smoke is a veil while the flames burn (heavier smoke hid the fire and read as soot) and thickens as they die. The tracks are a tyre's tread wide (`TRACK_HALF`).
+
+The launch rubber behind the slice darkens in over a ragged run behind the parked tyre and breaks into tread streaks within a car length: a blunt dark cap read as a cut edge and a long even line as rails. Side-on flames grown from one baseline read as a pasted strip, a thin line as a pen stroke, noise varying fast along the track as a barcode, and noise strands as wool.
+
+`patch` is a reserved word in GLSL ES 3.0, and the renderer swallows compile errors, so a shader that fails shows nothing at all.
+
+## Rejected approaches and notes
+
+There is no glow under the car: a blue halo read as cheap. The trip follows the film's shots rather than inventing its own; Gemini (through the Copilot CLI, `gemini-4-argon` at high effort) reviewed filmed contact sheets against the film, and sparks, shock wave rings, diffraction starbursts, long anamorphic streaks, a whiteout as the car vanished and a car that simply slid off screen were all cut as not in it.
+
+An earlier return that collapsed out of a line of light read as childish.
+
+Hand-drawn 2D flames and a noise dissolve of the photo (which broke into blocks) read as cheap.
+
+## Testing and performance
+
+Playwright screenshots taken right after the click can show stale canvases; film the car with a CDP screencast. Holding 60fps through the drive, the trails and the return in Chrome on an M3 at 2x; opening the time machine costs its own two or three late frames either way.

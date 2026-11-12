@@ -1,7 +1,7 @@
 import { FileIcon } from "@phosphor-icons/react";
 import { useCallback } from "react";
+import type { ResumeData } from "@/cards/registry";
 import { RESUME_CARD_SIZE } from "@/cards/resume/resume-data";
-import type { ResumeData } from "@/cards/types";
 import { ReaderShell } from "@/components/documents/reader-shell";
 import { AnalyticsEvents, track } from "@/lib/analytics";
 import { SPRING_PRESETS } from "@/lib/animation";

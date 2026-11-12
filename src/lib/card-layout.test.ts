@@ -1,5 +1,4 @@
-import type { ProjectCardInstance } from "@/cards/registry";
-import type { CardInstance } from "@/cards/types";
+import type { CardInstance, ProjectCardInstance } from "@/cards/registry";
 import { getAutoPanTarget } from "@/lib/auto-pan";
 import { createMockCover, createMockStack } from "@/test-utils/test-helpers";
 import { describe, expect, it } from "vitest";

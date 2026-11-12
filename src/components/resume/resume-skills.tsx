@@ -1,4 +1,4 @@
-import type { SkillCategory } from "@/cards/types";
+import type { SkillCategory } from "@/cards/registry";
 import { ResumeSection } from "./resume-section";
 
 interface ResumeSkillsProps {

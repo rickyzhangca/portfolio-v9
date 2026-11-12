@@ -8,7 +8,7 @@ import type {
   ProjectCardInstance,
   StickyNoteCardInstance,
   SwagCoverCardInstance,
-} from "@/cards/types";
+} from "@/cards/registry";
 
 export type StackCardInstance =
   | ProjectCardInstance
@@ -105,5 +105,5 @@ export type CanvasAction =
     }
   | { type: "SET_FOCUSED_ITEM"; payload: { id: string | null } };
 
-// Card types are exported from @/cards/types
+// Card types are exported from @/cards/registry
 // Import directly from there to maintain clean dependency direction
