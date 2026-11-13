@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getStackFlightTransition } from "./animation";
+import { getSpringCrossingTime, getStackFlightTransition } from "./animation";
 
 describe("getStackFlightTransition", () => {
   it("sends the top card out first and brings it back last", () => {
@@ -37,5 +37,38 @@ describe("getStackFlightTransition", () => {
     expect(out.x.stiffness).toBeGreaterThan(out.y.stiffness);
     expect(back.y.delay).toBeLessThan(back.x.delay);
     expect(back.y.stiffness).toBeGreaterThan(back.x.stiffness);
+  });
+
+  it("crosses the folder's wall sideways before a card changes rows", () => {
+    const out = getStackFlightTransition(0, 1, "out", {
+      coverWidth: 240,
+      from: { x: 20, y: 70 },
+      to: { x: 620, y: 850 },
+    });
+    // The drop waits until the sideways spring has carried the card past the
+    // cover, so the two moves never overlap on a diagonal.
+    const clear = getSpringCrossingTime(out.x, (240 + 12 - 20) / 600);
+    expect(out.y.delay - out.x.delay).toBeCloseTo(clear, 3);
+    expect(out.y.delay - out.x.delay).toBeGreaterThan(0.04);
+  });
+
+  it("rises to the folder's row before sliding back in", () => {
+    const back = getStackFlightTransition(0, 1, "in", {
+      coverWidth: 240,
+      from: { x: 620, y: 850 },
+      to: { x: 20, y: 70 },
+    });
+
+    expect(back.x.delay - back.y.delay).toBeGreaterThan(0.04);
+  });
+
+  it("does not wait for a row it is already on", () => {
+    const out = getStackFlightTransition(0, 1, "out", {
+      coverWidth: 240,
+      from: { x: 20, y: 70 },
+      to: { x: 254, y: 80 },
+    });
+
+    expect(out.y.delay).toBe(out.x.delay);
   });
 });

@@ -28,7 +28,7 @@ const MAX_RETURN_STAGGER_S = 0.08;
  */
 const RETURN_FADE_DELAY_S = 0.17;
 /** Long enough for every returning card to land before it unmounts. */
-export const STACK_RETURN_MS = 520;
+export const STACK_RETURN_MS = 700;
 /** The axis that leads a flight, and the one that trails it. */
 const FLIGHT_LEAD = {
   type: "spring",
@@ -47,19 +47,64 @@ const FLIGHT_TRAIL_DELAY_S = 0.03;
 export const FLIGHT_SCALE = 1.03;
 const FLIGHT_SCALE_DURATION_S = 0.32;
 /** Long enough for the last card to land; then hover moves go back to snappy. */
-export const STACK_FLIGHT_MS = 700;
+export const STACK_FLIGHT_MS = 800;
+
+interface SpringConfig {
+  damping: number;
+  mass: number;
+  stiffness: number;
+}
+
+/**
+ * Seconds a spring released from rest needs to cover `fraction` of its
+ * distance, found by stepping the damped oscillator.
+ */
+export const getSpringCrossingTime = (
+  { damping, mass, stiffness }: SpringConfig,
+  fraction: number
+) => {
+  const dt = 0.001;
+  let position = 0;
+  let velocity = 0;
+  for (let step = 0; step < 2000; step += 1) {
+    const force = -stiffness * (position - 1) - damping * velocity;
+    velocity += (force / mass) * dt;
+    position += velocity * dt;
+    if (position >= fraction) {
+      return (step + 1) * dt;
+    }
+  }
+  return 2;
+};
+
+/** Margin past the folder's edge before a card may start changing rows. */
+const FLIGHT_CLEARANCE_PX = 12;
+/** How much of its rise a returning card finishes before it slides in. */
+const RETURN_RISE_FRACTION = 0.85;
+/** Rows closer than this are not worth waiting for. */
+const MIN_SEQUENCED_TRAVEL_PX = 24;
+
+/** Where one card's flight starts and ends, in the folder's own px. */
+export interface StackFlightPath {
+  /** The folder cover's width: a card is clear of it once past this x. */
+  coverWidth: number;
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+}
 
 /**
  * Per-property transitions for one card leaving or entering its folder.
- * Out of the folder the sideways move leads and the drop into its row trails,
- * so a card slides out through the notch before it falls into the fan, on an
- * arc rather than a straight line. Back in, the rise to the folder's row leads
- * and the slide under the cover trails.
+ * The folder has walls, so a card crosses them sideways and changes rows only
+ * where it is free: out of the folder the sideways move leads and the drop into
+ * its row waits until the card has cleared the cover; back in, the rise to the
+ * folder's row leads and the slide under the cover waits until it is there.
+ * Without a `path` the trailing axis follows after a short fixed delay.
  */
 export const getStackFlightTransition = (
   index: number,
   count: number,
-  flight: StackFlight
+  flight: StackFlight,
+  path?: StackFlightPath
 ) => {
   const order = flight === "out" ? index : count - 1 - index;
   const step = Math.min(
@@ -69,7 +114,27 @@ export const getStackFlightTransition = (
   );
   const delay = FLIGHT_BASE_DELAY_S + order * step;
   const lead = { ...FLIGHT_LEAD, delay };
-  const trail = { ...FLIGHT_TRAIL, delay: delay + FLIGHT_TRAIL_DELAY_S };
+  let trailDelay = FLIGHT_TRAIL_DELAY_S;
+  if (path) {
+    const travelX = Math.abs(path.to.x - path.from.x);
+    const travelY = Math.abs(path.to.y - path.from.y);
+    if (flight === "out") {
+      const clearance = path.coverWidth + FLIGHT_CLEARANCE_PX - path.from.x;
+      trailDelay =
+        travelX > 0 && travelY > MIN_SEQUENCED_TRAVEL_PX
+          ? getSpringCrossingTime(
+              FLIGHT_LEAD,
+              Math.min(0.9, Math.max(0.2, clearance / travelX))
+            )
+          : 0;
+    } else {
+      trailDelay =
+        travelY > MIN_SEQUENCED_TRAVEL_PX
+          ? getSpringCrossingTime(FLIGHT_LEAD, RETURN_RISE_FRACTION)
+          : 0;
+    }
+  }
+  const trail = { ...FLIGHT_TRAIL, delay: delay + trailDelay };
   return {
     opacity: {
       ...TRANSITIONS.opacity,

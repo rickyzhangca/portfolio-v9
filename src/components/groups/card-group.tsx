@@ -802,7 +802,14 @@ export const CardStack = ({
                       ? getStackFlightTransition(
                           index,
                           projectsWithSizes.length,
-                          flight
+                          flight,
+                          {
+                            coverWidth,
+                            from:
+                              flight === "out" ? collapsedStackPose : placement,
+                            to:
+                              flight === "out" ? placement : collapsedStackPose,
+                          }
                         )
                       : SPRING_PRESETS.snappy
                   }
