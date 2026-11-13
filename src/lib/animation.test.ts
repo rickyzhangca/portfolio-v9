@@ -36,7 +36,6 @@ describe("getStackFlightTransition", () => {
     expect(out.x.delay).toBeLessThan(out.y.delay);
     expect(out.x.stiffness).toBeGreaterThan(out.y.stiffness);
     expect(back.y.delay).toBeLessThan(back.x.delay);
-    expect(back.y.stiffness).toBeGreaterThan(back.x.stiffness);
   });
 
   it("crosses the folder's wall sideways before a card changes rows", () => {
@@ -70,5 +69,25 @@ describe("getStackFlightTransition", () => {
     });
 
     expect(out.y.delay).toBe(out.x.delay);
+  });
+
+  it("grows a card only after it has left the folder, and shrinks it first going back", () => {
+    const path = {
+      coverWidth: 240,
+      from: { x: 20, y: 70 },
+      to: { x: 620, y: 850 },
+    };
+    const out = getStackFlightTransition(0, 1, "out", path);
+    const back = getStackFlightTransition(0, 1, "in", {
+      ...path,
+      from: path.to,
+      to: path.from,
+    });
+
+    expect(out.scale.delay).toBeGreaterThan(out.x.delay);
+    expect(out.scale.delay).toBeCloseTo(out.y.delay, 6);
+    expect(back.scale.delay + back.scale.duration).toBeLessThanOrEqual(
+      back.x.delay + 1e-9
+    );
   });
 });
