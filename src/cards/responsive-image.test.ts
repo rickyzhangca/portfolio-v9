@@ -16,9 +16,9 @@ const cardImages = [...companyStacks, writingStack].flatMap((stack) => [
 
 describe("getResponsiveImageSources", () => {
   it("serves every cover and project screenshot from its 2x copy below 3x", () => {
-    // 31 project screenshots and the Thoughts cover; company covers are
+    // 33 project screenshots and the Thoughts cover; company covers are
     // drawn from vector logos and have no bitmap.
-    expect(cardImages).toHaveLength(31 + 1);
+    expect(cardImages).toHaveLength(33 + 1);
     for (const image of cardImages) {
       const { src, srcSet } = getResponsiveImageSources(image);
       expect(src).toMatch(SMALL_VARIANT);

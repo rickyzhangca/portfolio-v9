@@ -5,7 +5,7 @@ const VARIANT_SUFFIX = "-2x.webp";
 const WEBP_EXTENSION = /\.webp$/;
 
 const urls = import.meta.glob<string>(
-  "../assets/{covers,mintlify,mosaic,rbc,wealthsimple}/*.webp",
+  "../assets/{covers,github,mintlify,mosaic,rbc,wealthsimple}/*.webp",
   { eager: true, import: "default" }
 );
 

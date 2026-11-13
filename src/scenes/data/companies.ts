@@ -5,6 +5,8 @@ import mintlifyLogo from "@/assets/logos/mintlify.svg?no-inline";
 import mosaicLogo from "@/assets/logos/mosaic.svg?no-inline";
 import rbcLogo from "@/assets/logos/rbc.svg?no-inline";
 import wealthsimpleLogo from "@/assets/logos/wealthsimple.svg?no-inline";
+import releases from "@/assets/github/releases.webp";
+import storybook from "@/assets/github/storybook.webp";
 import auth from "@/assets/mintlify/auth.webp";
 import chat from "@/assets/mintlify/chat.webp";
 import editor from "@/assets/mintlify/editor.webp";
@@ -130,12 +132,21 @@ export const githubStack: CanvasStackItem = {
   },
   stack: [
     {
-      id: "sticky-note-github-1",
-      kind: "stickynote",
-      size: { width: 200, height: 200 },
+      id: "github-storybook",
+      kind: "project",
+      size: { width: 350 },
       content: {
-        content: "Exploring AI × design system, just getting started ;-)",
-        color: "yellow",
+        title: "Storybook cleanup",
+        image: storybook,
+      },
+    },
+    {
+      id: "github-releases",
+      kind: "project",
+      size: { width: 350 },
+      content: {
+        title: "New page layout",
+        image: releases,
       },
     },
   ],
