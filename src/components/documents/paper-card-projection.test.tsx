@@ -197,8 +197,11 @@ describe("paper card projection", () => {
       </PaperCardProjection>
     );
     const label = screen.getByText("Resume");
-    expect(label.className).toBe(
+    // Class order is the linter's business; the set is what matters.
+    expect([...label.classList].sort()).toEqual(
       "mx-2 mt-2 mb-1 w-fit rounded-full bg-background2 px-5 py-2 font-medium text-foreground1/50 text-sm"
+        .split(" ")
+        .sort()
     );
     const frame = label.closest<HTMLElement>("[data-paper-frame]");
     const surface = frame?.querySelector<HTMLElement>("[data-paper-surface]");

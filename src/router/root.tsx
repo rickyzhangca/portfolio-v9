@@ -37,7 +37,7 @@ import { PROFILE_LINKS, SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site";
 import type { ArticleLocale, ArticleSource } from "@/types/article";
 import "../index.css";
 
-const ARTICLE_PATH = /^\/writing\/(en|cn)\/[^/]+\/?$/;
+const ARTICLE_PATH = /^\/writing\/(en|cn)\/[^/]+\/?$/u;
 // Phosphor's SpinnerIcon (regular weight), inlined: the icon component would
 // bring all six weights into every route's first load.
 const SPINNER_PATH =
@@ -329,7 +329,7 @@ function PortfolioLoading({ leaving }: { leaving: boolean }) {
     <main
       aria-busy={!leaving}
       aria-hidden={leaving || undefined}
-      className={`fixed inset-0 flex flex-col items-center justify-center gap-6 text-foreground2 transition-[opacity,transform] duration-300 ease-out ${
+      className={`text-foreground2 fixed inset-0 flex flex-col items-center justify-center gap-6 transition-[opacity,transform] duration-300 ease-out ${
         leaving ? "scale-95 opacity-0" : ""
       }`}
     >
@@ -399,7 +399,7 @@ export function ErrorBoundary() {
   const notFound = isRouteErrorResponse(error) && error.status === 404;
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
-      <h1 className="font-medium text-3xl">
+      <h1 className="text-3xl font-medium">
         {notFound ? "Article not found" : "This page couldn’t load"}
       </h1>
       <p className="text-foreground2">
@@ -407,7 +407,7 @@ export function ErrorBoundary() {
           ? "Return to the portfolio to find an article in the Thoughts folder."
           : "Return to the portfolio or reload to retry."}
       </p>
-      <a className="rounded-full bg-foreground1 px-5 py-3 text-white" href="/">
+      <a className="bg-foreground1 rounded-full px-5 py-3 text-white" href="/">
         Return to portfolio
       </a>
     </main>

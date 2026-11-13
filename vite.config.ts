@@ -9,7 +9,7 @@ import remarkGfm from "remark-gfm";
 import { defineConfig } from "vite";
 import { articlesPlugin } from "./tools/articles-plugin.ts";
 
-const ARTICLE_MDX_PATTERN = /\.mdx$/;
+const ARTICLE_MDX_PATTERN = /\.mdx$/u;
 
 // https://vite.dev/config/
 export default defineConfig({

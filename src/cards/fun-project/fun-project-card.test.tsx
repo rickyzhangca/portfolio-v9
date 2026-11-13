@@ -48,7 +48,7 @@ const content: FunProjectCardContent = {
   ],
 };
 
-const PX_VALUE = /px$/;
+const PX_VALUE = /px$/u;
 
 const keycapContent: FunProjectCardContent = {
   ...content,

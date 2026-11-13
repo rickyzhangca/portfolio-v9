@@ -48,7 +48,7 @@ describe("createCompactScene", () => {
       const item = scene[index];
       if (above && item) {
         expect(item.position.y).toBeGreaterThanOrEqual(
-          above.position.y + (above.kind ? footprint(above).height : 0)
+          above.position.y + footprint(above).height
         );
       }
     }

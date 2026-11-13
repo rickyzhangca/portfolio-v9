@@ -1,7 +1,6 @@
 import { articles } from "@/content/generated/catalogue";
 import type { ArticleLocale, ArticleMetadata } from "@/types/article";
 
-// biome-ignore lint/performance/noBarrelFile: Domain catalogue exposes its validated metadata.
 export { articles } from "@/content/generated/catalogue";
 
 const articleBySlug = new Map(

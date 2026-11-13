@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures";
 
-const NONEMPTY_NAME = /.+/;
+const NONEMPTY_NAME = /.+/u;
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });

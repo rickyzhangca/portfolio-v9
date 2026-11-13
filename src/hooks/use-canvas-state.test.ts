@@ -567,7 +567,7 @@ describe("useCanvasState - Reducer Action Coverage", () => {
     it("returns same state for unknown action type", () => {
       const state = createMockState([]);
       const newState = canvasReducer(state, {
-        type: "UNKNOWN" as any,
+        type: "UNKNOWN" as never,
         payload: {},
       });
       expect(newState).toBe(state);

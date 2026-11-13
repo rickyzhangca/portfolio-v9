@@ -47,7 +47,7 @@ const Key = ({ mode, children }: { mode: DomLook; children: ReactNode }) => {
     <div className={tw("relative", look.corner)}>
       <div
         className={tw(
-          "absolute flex size-18 -translate-y-2 items-center justify-center border-2 border-foreground1/80 transition duration-75 hover:-translate-y-1.5 active:translate-y-0",
+          "border-foreground1/80 absolute flex size-18 -translate-y-2 items-center justify-center border-2 transition duration-75 hover:-translate-y-1.5 active:translate-y-0",
           look.corner
         )}
         style={{
@@ -69,7 +69,7 @@ const Key = ({ mode, children }: { mode: DomLook; children: ReactNode }) => {
           {children}
         </div>
       </div>
-      <div className={tw("z-20 size-18 bg-foreground1", look.corner)} />
+      <div className={tw("bg-foreground1 z-20 size-18", look.corner)} />
     </div>
   );
 };
@@ -141,7 +141,7 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
     <div className="relative flex h-full">
       <div
         className={tw(
-          "absolute flex items-center justify-center gap-4 pt-1.5 pr-6 pb-2 pl-2 outline outline-foreground1/60",
+          "outline-foreground1/60 absolute flex items-center justify-center gap-4 pt-1.5 pr-6 pb-2 pl-2 outline",
           mode === "logi" ? "rounded-2xl" : "rounded-lg",
           isDomHidden && "opacity-0"
         )}
@@ -267,7 +267,7 @@ const SocialsCardComponent = ({ content }: SocialsCardProps) => {
       </div>
       <div
         className={tw(
-          "h-[96px] w-[300px] bg-foreground1",
+          "bg-foreground1 h-[96px] w-[300px]",
           mode === "logi" ? "rounded-2xl" : "rounded-xl",
           // Not opacity: that would stack it over the keys and take their
           // clicks.

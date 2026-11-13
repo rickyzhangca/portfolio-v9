@@ -301,10 +301,10 @@ const MacbookCardComponent = ({
           >
             <div
               className={tw(
-                "bg-background1 px-4 py-3 shadow-lg outline outline-border",
+                "bg-background1 outline-border px-4 py-3 shadow-lg outline",
                 tooltip.side === "right"
-                  ? "rounded-b-3xl rounded-tr-3xl"
-                  : "rounded-b-3xl rounded-tl-3xl"
+                  ? "rounded-tr-3xl rounded-b-3xl"
+                  : "rounded-tl-3xl rounded-b-3xl"
               )}
             >
               {tooltip.description}

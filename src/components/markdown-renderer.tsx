@@ -13,8 +13,8 @@ import {
 import ReactMarkdown, { type Components } from "react-markdown";
 import { tw } from "@/lib/utils";
 
-const LANGUAGE_REGEX = /language-(\w+)/;
-const VIDEO_EXTENSIONS_REGEX = /\.(mov|mp4|webm)(?:[?#].*)?$/i;
+const LANGUAGE_REGEX = /language-(\w+)/u;
+const VIDEO_EXTENSIONS_REGEX = /\.(mov|mp4|webm)(?:[?#].*)?$/iu;
 const DEFAULT_VIDEO_ASPECT_RATIO = "16 / 9";
 const LazyCodeHighlighter = lazy(() =>
   import("./code-highlighter").then((module) => ({
@@ -288,16 +288,16 @@ const MarkdownVideo = ({ src, alt }: MarkdownVideoProps) => {
   }, []);
 
   return (
-    <span className="relative mt-4 not-last:mb-4 w-full">
+    <span className="relative mt-4 w-full not-last:mb-4">
       <span
         aria-hidden={true}
-        className="pointer-events-none absolute inset-0 bg-background3 transition-opacity"
+        className="bg-background3 pointer-events-none absolute inset-0 transition-opacity"
         style={{ opacity: showVideo ? 0 : 1 }}
       />
       <video
         aria-label={alt}
         autoPlay={isVisible}
-        className="h-full w-full outline outline-border/50 transition-opacity"
+        className="outline-border/50 h-full w-full outline transition-opacity"
         controls={isAutoplayBlocked}
         loop
         muted
@@ -316,7 +316,7 @@ const MarkdownVideo = ({ src, alt }: MarkdownVideoProps) => {
       />
       {hasError ? (
         <span
-          className="absolute inset-0 flex items-center justify-center rounded-xl bg-background3 text-foreground2 text-sm"
+          className="bg-background3 text-foreground2 absolute inset-0 flex items-center justify-center rounded-xl text-sm"
           role="alert"
         >
           Video could not be loaded.
@@ -343,7 +343,7 @@ const MEDIA_COMPONENTS: Components = {
       // biome-ignore lint/correctness/useImageSize: auto sizing
       <img
         alt={alt as string}
-        className="mt-4 not-last:mb-4 w-full rounded-lg outline outline-border"
+        className="outline-border mt-4 w-full rounded-lg outline not-last:mb-4"
         decoding="async"
         loading="lazy"
         src={src as string}
@@ -392,9 +392,9 @@ const CARD_COMPONENTS: Components = {
     </ExternalLink>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="mt-3 not-last:mb-6 flex w-full items-center gap-1.5">
-      <div className="h-full w-1.5 rounded-full bg-accent" />
-      <div className="flex-1 rounded-xl bg-accent/8 px-4 py-3">{children}</div>
+    <blockquote className="mt-3 flex w-full items-center gap-1.5 not-last:mb-6">
+      <div className="bg-accent h-full w-1.5 rounded-full" />
+      <div className="bg-accent/8 flex-1 rounded-xl px-4 py-3">{children}</div>
     </blockquote>
   ),
   code: ({ className, children, ...props }) => {
@@ -404,7 +404,7 @@ const CARD_COMPONENTS: Components = {
       return (
         <code
           className={tw(
-            "rounded-md bg-background3 px-1.5 py-0.5 font-mono text-accent text-xs"
+            "bg-background3 text-accent rounded-md px-1.5 py-0.5 font-mono text-xs"
           )}
           {...props}
         >
@@ -416,19 +416,19 @@ const CARD_COMPONENTS: Components = {
     return <code {...props}>{children}</code>;
   },
   h1: ({ children }) => (
-    <h1 className="not-last:mb-8 font-medium text-4xl sm:text-5xl">
+    <h1 className="text-4xl font-medium not-last:mb-8 sm:text-5xl">
       {children}
     </h1>
   ),
   h2: ({ children }) => (
-    <h2 className="mt-5 not-last:mb-4 font-medium text-2xl">{children}</h2>
+    <h2 className="mt-5 text-2xl font-medium not-last:mb-4">{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 className="mt-4 not-last:mb-3 font-medium text-lg">{children}</h3>
+    <h3 className="mt-4 text-lg font-medium not-last:mb-3">{children}</h3>
   ),
   li: ({ children }) => <li>{children}</li>,
   p: ({ children }) => (
-    <p className="not-last:mb-3 text-foreground1/80">{children}</p>
+    <p className="text-foreground1/80 not-last:mb-3">{children}</p>
   ),
   strong: ({ children }) => (
     <strong className="font-semibold">{children}</strong>

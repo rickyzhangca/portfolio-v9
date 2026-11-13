@@ -93,7 +93,7 @@ export const StreetmapCard = ({
           className={tw(
             "absolute inset-0",
             !isLampOn &&
-              "transition-[filter] duration-200 [filter:drop-shadow(0_0.5px_0.75px_rgba(20,14,8,0.28))_drop-shadow(0_5px_9px_rgba(20,14,8,0.14))] hover:[filter:drop-shadow(0_1px_1px_rgba(20,14,8,0.22))_drop-shadow(0_10px_16px_rgba(20,14,8,0.2))]"
+              "[filter:drop-shadow(0_0.5px_0.75px_rgba(20,14,8,0.28))_drop-shadow(0_5px_9px_rgba(20,14,8,0.14))] transition-[filter] duration-200 hover:[filter:drop-shadow(0_1px_1px_rgba(20,14,8,0.22))_drop-shadow(0_10px_16px_rgba(20,14,8,0.2))]"
           )}
           data-lamp-contact={isLampOn ? "" : undefined}
           data-lamp-shadow={isLampOn ? LAMP_LIFT.card : undefined}

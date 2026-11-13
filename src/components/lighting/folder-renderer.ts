@@ -111,7 +111,7 @@ const MATERIALS: Record<FolderMaterial, MaterialLook> = {
   },
 };
 
-const HEX_COLOR = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i;
+const HEX_COLOR = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/iu;
 
 const hexToRgb = (hex: string | undefined) => {
   const match = hex?.match(HEX_COLOR);

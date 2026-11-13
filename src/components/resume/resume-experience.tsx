@@ -22,7 +22,7 @@ export const ResumeExperience = ({ data }: ResumeExperienceProps) => {
             title={experience.title}
           >
             {experience.description.length > 1 ? (
-              <ul className="list-disc space-y-1.5 pl-5 marker:text-foreground1/40">
+              <ul className="marker:text-foreground1/40 list-disc space-y-1.5 pl-5">
                 {experience.description.map((description) => (
                   <li key={description}>{description}</li>
                 ))}

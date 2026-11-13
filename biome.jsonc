@@ -5,10 +5,33 @@
     "rules": {
       "complexity": {
         "noExcessiveCognitiveComplexity": "off"
+      },
+      // Rules added by Ultracite 8 that do not fit this codebase: regexes
+      // stay positional, `vi.mock` must precede the imports it replaces, class
+      // mocks and error boundaries keep empty hooks, and Tailwind `@apply`
+      // properties are not flagged by baseline data.
+      "style": {
+        "useNamedCaptureGroup": "off",
+        "useImportsFirst": "off",
+        "useThisInClassMethods": "off"
+      },
+      "suspicious": {
+        "useBaseline": "off"
       }
     }
   },
   "overrides": [
+    {
+      // Rendered in the browser through an import map, not from node_modules.
+      "includes": ["tools/render-timecar.html"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUndeclaredDependencies": "off"
+          }
+        }
+      }
+    },
     {
       "includes": ["**/*.svg"],
       "formatter": {

@@ -73,7 +73,7 @@ const LightSlider = ({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span className="text-muted-foreground text-sm">{label}</span>
-        <span className="font-medium text-foreground2 text-sm">
+        <span className="text-foreground2 text-sm font-medium">
           {format(value)}
         </span>
       </div>
@@ -183,14 +183,14 @@ const LightPreview = ({ config }: { config: LampConfig }) => {
 
   return (
     <div
-      className="relative h-48 w-60 overflow-hidden bg-background3"
+      className="bg-background3 relative h-48 w-60 overflow-hidden"
       data-testid="light-preview"
       ref={rootRef}
     >
       <div className="absolute inset-0" ref={roomRef} />
       {PREVIEW_CARDS.map((card) => (
         <div
-          className="absolute rounded-md bg-background2 outline outline-border"
+          className="bg-background2 outline-border absolute rounded-md outline"
           data-preview-card
           key={`${card.x} ${card.y}`}
           style={{
@@ -202,10 +202,10 @@ const LightPreview = ({ config }: { config: LampConfig }) => {
         />
       ))}
       <div
-        className="absolute top-0 left-0 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-background3 outline outline-accent"
+        className="bg-background3 outline-accent absolute top-0 left-0 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full outline"
         ref={lampRef}
       >
-        <div className="size-full rounded-full bg-accent opacity-60" />
+        <div className="bg-accent size-full rounded-full opacity-60" />
       </div>
     </div>
   );

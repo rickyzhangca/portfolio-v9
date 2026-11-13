@@ -448,7 +448,7 @@ export const FunProjectGroup = ({
                 >
                   <LampSprite outline="box" />
                   <div
-                    className="flex flex-col gap-5 rounded-3xl bg-background2 p-6 outline outline-border"
+                    className="bg-background2 outline-border flex flex-col gap-5 rounded-3xl p-6 outline"
                     ref={getContentCardRefCallback(index)}
                     style={{ width: contentWidth }}
                   >
@@ -460,13 +460,13 @@ export const FunProjectGroup = ({
                           src={funItem.icon}
                           width={40}
                         />
-                        <span className="font-semibold text-xl">
+                        <span className="text-xl font-semibold">
                           {funItem.title}
                         </span>
                       </div>
                       <span
                         className={tw(
-                          "inline-block rounded-full px-2.5 py-1 font-medium text-xs outline",
+                          "inline-block rounded-full px-2.5 py-1 text-xs font-medium outline",
                           funItem.status === "Active" &&
                             "bg-green-500/10 text-green-700 outline-green-700/30",
                           funItem.status === "Maintaining" &&
@@ -482,14 +482,14 @@ export const FunProjectGroup = ({
                     {funItem.image ? (
                       <img
                         alt={funItem.title}
-                        className="w-full rounded-md outline outline-border"
+                        className="outline-border w-full rounded-md outline"
                         height={200}
                         src={funItem.image}
                         width={380}
                       />
                     ) : null}
 
-                    <div className="prose prose-sm max-w-none text-foreground1/80">
+                    <div className="prose prose-sm text-foreground1/80 max-w-none">
                       <Suspense fallback={null}>
                         <ProjectDescription
                           content={funItem.description}
@@ -501,7 +501,7 @@ export const FunProjectGroup = ({
 
                     {funItem.link ? (
                       <a
-                        className="relative flex w-full items-center justify-center gap-3 rounded-full bg-linear-to-b from-background3 to-background4 px-6 py-3 text-center text-foreground1 shadow outline outline-border transition hover:from-background4 hover:shadow-md"
+                        className="from-background3 to-background4 text-foreground1 outline-border hover:from-background4 relative flex w-full items-center justify-center gap-3 rounded-full bg-linear-to-b px-6 py-3 text-center shadow outline transition hover:shadow-md"
                         href={funItem.link.url}
                         rel="noopener noreferrer"
                         target="_blank"
@@ -511,7 +511,7 @@ export const FunProjectGroup = ({
                           ? ` on ${funItem.link.type === "Figma" ? "Figma" : "GitHub"}`
                           : ""}
                         {funItem.link.count ? (
-                          <span className="flex items-center gap-0.5 text-foreground2">
+                          <span className="text-foreground2 flex items-center gap-0.5">
                             <ArrowUpRightIcon />
                             {funItem.link.count}
                           </span>

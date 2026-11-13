@@ -23,7 +23,7 @@ for (const article of articles) {
     const route = `/writing/${locale}/${article.slug}`;
     const html = readFileSync(path.join(output, `${route}.html`), "utf8");
     assert.equal(
-      (html.match(/<h1(?:\s|>)/g) ?? []).length,
+      (html.match(/<h1(?:\s|>)/gu) ?? []).length,
       1,
       `${route}: expected a single h1`
     );
@@ -63,7 +63,7 @@ for (const article of articles) {
         `${route}: missing section ID ${heading.id}`
       );
     }
-    for (const match of html.matchAll(/(?:src|href)="(\/assets\/[^"?#]+)"/g)) {
+    for (const match of html.matchAll(/(?:src|href)="(\/assets\/[^"?#]+)"/gu)) {
       assert.ok(
         existsSync(path.join(output, match[1])),
         `${route}: missing deployed asset ${match[1]}`

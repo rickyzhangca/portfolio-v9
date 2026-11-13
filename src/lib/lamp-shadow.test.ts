@@ -10,9 +10,9 @@ import {
 const IDENTITY: Linear2D = { a: 1, b: 0, c: 0, d: 1 };
 const LAMP_HEIGHT = 240;
 const LAMP_FILTER =
-  /^drop-shadow\([\d.]+px [\d.]+px [\d.]+px rgb\([\d ]+ \/ [\d.]+\)\)$/;
-const LAMP_BOX = /^4\.0px -3\.0px 12\.0px rgb\(/;
-const CONTACT_BOX = /^0 0 [\d.]+px rgb\([\d ]+ \/ [\d.]+\)$/;
+  /^drop-shadow\([\d.]+px [\d.]+px [\d.]+px rgb\([\d ]+ \/ [\d.]+\)\)$/u;
+const LAMP_BOX = /^4\.0px -3\.0px 12\.0px rgb\(/u;
+const CONTACT_BOX = /^0 0 [\d.]+px rgb\([\d ]+ \/ [\d.]+\)$/u;
 
 describe("projectLampShadow", () => {
   it("throws the shadow away from the lamp", () => {

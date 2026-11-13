@@ -568,7 +568,7 @@ const createBrowserRecorder = async (page: Page): Promise<void> => {
         }
         capture.domSamples.push({
           timeMs: performance.now() - capture.startedAt,
-          elementCount: document.getElementsByTagName("*").length,
+          elementCount: document.querySelectorAll("*").length,
           imageCount: document.images.length,
           videoCount: document.querySelectorAll("video").length,
         });

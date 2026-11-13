@@ -127,7 +127,7 @@ const EmailCardComponent = ({ content }: EmailCardProps) => {
       <div
         className={tw(
           "relative flex h-full items-center justify-center gap-1 overflow-hidden rounded-full p-2",
-          !isDomHidden && "bg-linear-to-b from-white to-background2"
+          !isDomHidden && "to-background2 bg-linear-to-b from-white"
         )}
       >
         <motion.button
@@ -139,7 +139,7 @@ const EmailCardComponent = ({ content }: EmailCardProps) => {
             isDomHidden
               ? // Under the lamp the address glows on the screen, centred on
                 // it, and brightens under the pointer.
-                "text-[#FFB86B] [text-shadow:0_0_4px_rgba(255,160,60,0.7),0_0_12px_rgba(255,140,40,0.3)] hover:text-[#FFE0B0] active:opacity-80 hover:[text-shadow:0_0_3px_rgba(255,220,160,1),0_0_10px_rgba(255,170,70,0.95),0_0_24px_rgba(255,140,40,0.7)]"
+                "text-[#FFB86B] [text-shadow:0_0_4px_rgba(255,160,60,0.7),0_0_12px_rgba(255,140,40,0.3)] hover:text-[#FFE0B0] hover:[text-shadow:0_0_3px_rgba(255,220,160,1),0_0_10px_rgba(255,170,70,0.95),0_0_24px_rgba(255,140,40,0.7)] active:opacity-80"
               : "hover:bg-background2 active:bg-background3"
           )}
           disabled={isAnimating}

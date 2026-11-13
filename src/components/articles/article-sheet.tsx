@@ -17,7 +17,7 @@ export function ArticleSheet({ article, locale }: ArticleSheetProps) {
     <ArticlePaper article={article} locale={locale}>
       <Suspense
         fallback={
-          <p aria-live="polite" className="py-12 text-foreground2">
+          <p aria-live="polite" className="text-foreground2 py-12">
             {locale === "cn" ? "正在加载文章…" : "Loading article…"}
           </p>
         }

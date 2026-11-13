@@ -27,7 +27,7 @@ const StickyNoteCardComponent = ({ content }: StickyNoteCardProps) => {
         colorClass
       )}
     >
-      <p className="wrap-break-word whitespace-pre-wrap font-hand text-sm">
+      <p className="font-hand text-sm wrap-break-word whitespace-pre-wrap">
         {content.content}
       </p>
       <PaperLighting kind="sticky" radius={4} />

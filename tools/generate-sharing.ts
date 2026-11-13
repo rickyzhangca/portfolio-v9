@@ -30,11 +30,11 @@ const CJK_CHARACTER = new RegExp(`[${CJK}]`, "u");
 const WRAP_TOKEN = new RegExp(`[${CJK}]|[^\\s${CJK}]+`, "gu");
 const WHITESPACE = /\s/u;
 const TOUCH_ICON_SIZE = 180;
-const ROUNDED_RECT = /(<rect[^>]*?)\s+rx="[^"]*"\s+ry="[^"]*"/;
+const ROUNDED_RECT = /(<rect[^>]*?)\s+rx="[^"]*"\s+ry="[^"]*"/u;
 
 function xml(value: string) {
   return value.replace(
-    /[<>&"']/g,
+    /[<>&"']/gu,
     (character) =>
       ({
         "'": "&apos;",

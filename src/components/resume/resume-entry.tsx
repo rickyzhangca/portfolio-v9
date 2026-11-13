@@ -32,7 +32,7 @@ export const ResumeEntry = ({
           <span className="font-semibold">{title}</span>
           <span className="text-foreground1/65">{subtitle}</span>
         </h3>
-        <p className="mt-1 whitespace-pre-line text-foreground1/65 text-sm/[20px] tabular-nums">
+        <p className="text-foreground1/65 mt-1 text-sm/[20px] whitespace-pre-line tabular-nums">
           {dates}
         </p>
       </div>

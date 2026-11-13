@@ -266,7 +266,7 @@ describe("article content validation", () => {
     const output = path.join(directory, ".generated");
     generateArticles(directory, output);
     const source = readFileSync(path.join(output, "previews.ts"), "utf8");
-    expect(source.match(/import articlePreviewImage/g)).toHaveLength(1);
+    expect(source.match(/import articlePreviewImage/gu)).toHaveLength(1);
     expect(source).toContain('assets/diagram.svg?no-inline"');
     expect(source).toContain('"src": articlePreviewImage0');
     expect(source).toContain('\\"src\\": \\"articlePreviewImage0\\"');

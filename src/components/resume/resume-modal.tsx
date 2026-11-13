@@ -35,7 +35,7 @@ export function ResumeModal({
     <ReaderShell
       actions={
         <a
-          className="flex items-center gap-2 whitespace-nowrap border-white/20 border-l py-4 pr-6 pl-5 hover:bg-white/10 focus-visible:outline-2"
+          className="flex items-center gap-2 border-l border-white/20 py-4 pr-6 pl-5 whitespace-nowrap hover:bg-white/10 focus-visible:outline-2"
           download="RickyZhang_Resume.pdf"
           href="/RickyZhang_Resume.pdf"
         >

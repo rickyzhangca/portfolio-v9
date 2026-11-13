@@ -49,13 +49,26 @@ const getShadowStyle = (intensity: number): string => {
   return `drop-shadow(0 ${blur / 2}px ${blur}px rgba(0,0,0,${opacity}))`;
 };
 
-const SCALE_PATTERN = /scale\(([^)]+)\)/;
+const SCALE_PATTERN = /scale\(([^)]+)\)/u;
+const MATRIX_PATTERN = /^matrix\(([^)]+)\)$/u;
 
-// How far an icon has popped onto the card: Motion writes its scale inline,
-// and leaves no scale once it rests at 1.
+// How far an icon has popped onto the card. Motion runs independent
+// transforms such as `scale` as hardware-accelerated animations, which never
+// write their frames inline, so the computed style is the live source. Inline
+// `scale(...)` covers main-thread animations, and an icon with no scale at all
+// has landed.
 const readPop = (element: HTMLElement | undefined) => {
   if (!element) {
     return 0;
+  }
+  const { scale, transform } = getComputedStyle(element);
+  if (scale && scale !== "none") {
+    return Math.max(0, Number.parseFloat(scale) || 0);
+  }
+  const matrix = MATRIX_PATTERN.exec(transform)?.[1]?.split(",");
+  if (matrix) {
+    const [a = "1", b = "0"] = matrix;
+    return Math.hypot(Number.parseFloat(a), Number.parseFloat(b));
   }
   const match = SCALE_PATTERN.exec(element.style.transform);
   return match ? Math.max(0, Number.parseFloat(match[1] ?? "1") || 0) : 1;

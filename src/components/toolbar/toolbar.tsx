@@ -404,7 +404,7 @@ export const ToolbarList = ({
       {rect && tip?.label && !hideForPanel ? (
         <div
           aria-hidden
-          className="pointer-events-none absolute top-0 left-0 z-50 pointer-coarse:hidden whitespace-nowrap rounded-md bg-foreground1 px-2 py-1 text-[12px] text-background1 leading-none opacity-100 starting:opacity-0"
+          className="bg-foreground1 text-background1 pointer-events-none absolute top-0 left-0 z-50 rounded-md px-2 py-1 text-[12px] leading-none whitespace-nowrap opacity-100 starting:opacity-0 pointer-coarse:hidden"
           data-slot="toolbar-tip"
           style={{
             transform: tipTransform(rect, side),
@@ -462,7 +462,7 @@ export const ToolbarSeparator = () => (
 );
 
 const buttonClassName = tw(
-  "relative z-0 inline-flex pointer-coarse:size-11 size-10 shrink-0 items-center justify-center rounded-none text-foreground1 outline-none",
+  "text-foreground1 relative z-0 inline-flex size-10 shrink-0 items-center justify-center rounded-none outline-none pointer-coarse:size-11",
   "transition-[background-color,border-radius] duration-150",
   "hover:z-1 hover:rounded-full hover:not-active:bg-black/5",
   "active:z-1 active:rounded-full active:bg-black/8",
@@ -549,7 +549,7 @@ export const ToolbarPanel = ({
   return createPortal(
     <section
       aria-label={label}
-      className={tw("block w-max min-w-44 text-foreground1 text-sm", className)}
+      className={tw("text-foreground1 block w-max min-w-44 text-sm", className)}
       data-slot="toolbar-panel"
       id={panelId(value)}
     >

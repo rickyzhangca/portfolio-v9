@@ -7,7 +7,7 @@ import {
   waitForVisualStability,
 } from "./helpers";
 
-const EXPLORING_AI = /Exploring AI/;
+const EXPLORING_AI = /Exploring AI/u;
 
 test.use({ pinVisualFonts: true });
 

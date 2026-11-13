@@ -2,7 +2,7 @@
 // Each one in these folders has a "-2x" sibling sized for its card at 2x
 // (720px project screenshots, 480px covers) at about a third of the bytes.
 const VARIANT_SUFFIX = "-2x.webp";
-const WEBP_EXTENSION = /\.webp$/;
+const WEBP_EXTENSION = /\.webp$/u;
 
 const urls = import.meta.glob<string>(
   "../assets/{covers,github,mintlify,mosaic,rbc,wealthsimple}/*.webp",

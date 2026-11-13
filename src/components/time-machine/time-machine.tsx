@@ -1305,7 +1305,7 @@ export const TimeMachine = ({
       {/* Scrolls the timeline natively; sized to the row in screen px. */}
       <div
         aria-hidden
-        className="fixed inset-0 z-[3] overflow-y-auto overflow-x-hidden overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="fixed inset-0 z-[3] [scrollbar-width:none] overflow-x-hidden overflow-y-auto overscroll-contain [&::-webkit-scrollbar]:hidden"
         data-time-machine-scroller=""
         onClick={handleScrollerClick}
         onPointerCancel={handleScrollerPointerUp}
@@ -1490,7 +1490,7 @@ const WindowLabel = ({
     >
       <span
         className={tw(
-          "rounded-full px-2.5 py-0.5 font-medium text-sm transition-colors",
+          "rounded-full px-2.5 py-0.5 text-sm font-medium transition-colors",
           isHighlighted && "bg-white text-black"
         )}
         // Brightens as its window lifts (`--lift`, written by the stage).
@@ -1606,7 +1606,7 @@ const VersionWindow = ({
           instead of a white window. */}
       <img
         alt=""
-        className="pointer-events-none absolute inset-0 size-full select-none object-cover object-[0_0]"
+        className="pointer-events-none absolute inset-0 size-full object-cover object-[0_0] select-none"
         decoding="async"
         draggable={false}
         height={size.height}

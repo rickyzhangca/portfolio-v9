@@ -10,7 +10,7 @@ export function PaperPreviewFrame({
   return (
     <div className="h-full w-full overflow-hidden rounded-3xl bg-white">
       {label ? (
-        <p className="mx-2 mt-2 mb-1 w-fit rounded-full bg-background2 px-5 py-2 font-medium text-foreground1/50 text-sm">
+        <p className="bg-background2 text-foreground1/50 mx-2 mt-2 mb-1 w-fit rounded-full px-5 py-2 text-sm font-medium">
           {label}
         </p>
       ) : null}

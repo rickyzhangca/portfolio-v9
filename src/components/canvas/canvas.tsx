@@ -434,7 +434,7 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
                     return item ? (
                       <motion.div
                         animate={{ opacity: 0.8 }}
-                        className="absolute cursor-pointer bg-background1"
+                        className="bg-background1 absolute cursor-pointer"
                         exit={{ opacity: 0 }}
                         initial={{ opacity: 0 }}
                         key={id}
@@ -490,7 +490,7 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
                     key="close"
                   >
                     <button
-                      className="pointer-events-auto flex items-center gap-2 rounded-full bg-foreground1/80 px-5 py-3.5 font-medium text-white shadow-lg backdrop-blur active:bg-foreground1"
+                      className="bg-foreground1/80 active:bg-foreground1 pointer-events-auto flex items-center gap-2 rounded-full px-5 py-3.5 font-medium text-white shadow-lg backdrop-blur"
                       data-no-collapse
                       onClick={interaction.closeActive}
                       type="button"

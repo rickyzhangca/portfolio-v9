@@ -12,8 +12,8 @@ type PreviewImage = Omit<
   Extract<ArticlePreviewBlock, { kind: "image" }>,
   "key" | "kind" | "text"
 >;
-const RELATIVE_IMPORT_PATTERN = /^\.\.?\//;
-const DIMENSION_PATTERN = /^\d+(?:\.\d+)?$/;
+const RELATIVE_IMPORT_PATTERN = /^\.\.?\//u;
+const DIMENSION_PATTERN = /^\d+(?:\.\d+)?$/u;
 
 const IMAGE_EXTENSIONS = new Set([
   ".avif",

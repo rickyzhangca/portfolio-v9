@@ -45,7 +45,7 @@ const CoverCardComponent = ({ content }: CoverCardProps) => {
         width={logo.width}
       />
       <div className="absolute right-4 bottom-6 left-6">
-        <p className="font-semibold text-[17px] text-white leading-tight">
+        <p className="text-[17px] leading-tight font-semibold text-white">
           {content.company}
         </p>
         {content.title ? (

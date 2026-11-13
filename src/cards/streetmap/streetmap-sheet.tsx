@@ -543,6 +543,11 @@ export const StreetmapSheet = ({
         initial.tilt
       );
       const light = getLamp();
+      const tintPoints = [
+        [0, PANEL_HEIGHT / 2, 0],
+        [PANEL_WIDTH / 2, PANEL_HEIGHT / 2, 0],
+        [PANEL_WIDTH, PANEL_HEIGHT / 2, 0],
+      ] as const;
       for (const [i, { matrix }] of placements.entries()) {
         const elements = panels[i];
         if (!elements.panel) {
@@ -554,19 +559,16 @@ export const StreetmapSheet = ({
         const visible: Vec3 = frontUp
           ? normal
           : [-normal[0], -normal[1], -normal[2]];
-        const stops = (
-          [
-            [0, PANEL_HEIGHT / 2, 0],
-            [PANEL_WIDTH / 2, PANEL_HEIGHT / 2, 0],
-            [PANEL_WIDTH, PANEL_HEIGHT / 2, 0],
-          ] as const
-        ).map((point) =>
-          getFaceTint(
-            visible,
-            getLightDirection(transformPoint(matrix, point), light),
-            isLampOn
-          )
-        );
+        const stops: ReturnType<typeof getFaceTint>[] = [];
+        for (const point of tintPoints) {
+          stops.push(
+            getFaceTint(
+              visible,
+              getLightDirection(transformPoint(matrix, point), light),
+              isLampOn
+            )
+          );
+        }
         if (!frontUp) {
           stops.reverse();
         }
@@ -1071,14 +1073,14 @@ export const StreetmapSheet = ({
                 className="absolute inset-0 [backface-visibility:hidden]"
                 ref={panelRefs[i].frontShade}
               />
-              <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+              <div className="absolute inset-0 [transform:rotateY(180deg)] [backface-visibility:hidden]">
                 <canvas
                   className="absolute top-0 left-0"
                   ref={panelRefs[i].back}
                 />
               </div>
               <div
-                className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]"
+                className="absolute inset-0 [transform:rotateY(180deg)] [backface-visibility:hidden]"
                 ref={panelRefs[i].backShade}
               />
             </div>

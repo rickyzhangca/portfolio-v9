@@ -320,9 +320,9 @@ interface UserAgentData {
   platform: string;
 }
 
-const MAC_PATTERN = /Macintosh/;
-const WEBKIT_PATTERN = /AppleWebKit\//;
-const OTHER_ENGINE_PATTERN = /Chrome|Chromium|Firefox/;
+const MAC_PATTERN = /Macintosh/u;
+const WEBKIT_PATTERN = /AppleWebKit\//u;
+const OTHER_ENGINE_PATTERN = /Chrome|Chromium|Firefox/u;
 
 /**
  * Safari, or another WebKit browser, on a Mac. WebKit sends no client hints,

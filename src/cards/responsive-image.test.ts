@@ -3,7 +3,7 @@ import { companyStacks } from "@/scenes/data/companies";
 import { writingStack } from "@/scenes/data/writing";
 import { getResponsiveImageSources } from "./responsive-image";
 
-const SMALL_VARIANT = /-2x\.webp$/;
+const SMALL_VARIANT = /-2x\.webp$/u;
 
 const cardImages = [...companyStacks, writingStack].flatMap((stack) => [
   ...("image" in stack.cover.content && stack.cover.content.image

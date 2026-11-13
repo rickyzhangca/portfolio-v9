@@ -25,7 +25,7 @@ describe("getRoomGradient", () => {
   it("lays the tone over the desk within two levels of multiplying it", () => {
     const gradient = getRoomGradient({ poolRadiusPx: 900, roomDim: 1 }, "0 0");
     const overlays = [
-      ...gradient.matchAll(/rgba\((\d+), (\d+), (\d+), ([\d.]+)\)/g),
+      ...gradient.matchAll(/rgba\((\d+), (\d+), (\d+), ([\d.]+)\)/gu),
     ].map((match) => match.slice(1).map(Number));
     const tones = [
       [255, 255, 252],

@@ -64,7 +64,7 @@ export const CodeHighlighter = memo(
   ({ code, language = "text" }: CodeHighlighterProps) => {
     const highlighter = use(loadGrammar(language));
     return (
-      <div className="my-4 overflow-x-auto rounded-lg text-sm outline outline-border">
+      <div className="outline-border my-4 overflow-x-auto rounded-lg text-sm outline">
         <ShikiHighlighter
           highlighter={highlighter}
           language={language}

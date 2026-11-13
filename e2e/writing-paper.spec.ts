@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test";
 import { test, waitForCanvasEntrance } from "./fixtures";
 
 const EPHEMERAL_PATH = "/writing/en/ephemeral-design";
-const ARTICLE_BODY_MODULE_PATTERN = /^\/assets\/(?:en|cn)-.+\.js$/;
+const ARTICLE_BODY_MODULE_PATTERN = /^\/assets\/(?:en|cn)-.+\.js$/u;
 const PROJECTION_ARTICLES = [
   "design-engineer-types",
   "ephemeral-design",
@@ -211,13 +211,17 @@ for (const slug of PROJECTION_ARTICLES) {
     ).toBeLessThan(0.005);
     expect(new Set(frames.map((frame) => frame.headingWidth)).size).toBe(1);
     expect(new Set(frames.map((frame) => frame.headingHeight)).size).toBe(1);
-    expect(Math.max(...frames.map((frame) => frame.insetX))).toBeGreaterThan(8);
-    expect(Math.min(...frames.map((frame) => frame.insetX))).toBeGreaterThan(
+    // Motion 14.7+ re-measures the reader's content box once as the shared
+    // layout hands off, after it has faded out completely, so only frames where
+    // the content can be seen constrain its inset.
+    const seen = frames.filter((frame) => frame.contentOpacity > 0.01);
+    expect(Math.max(...seen.map((frame) => frame.insetX))).toBeGreaterThan(8);
+    expect(Math.min(...seen.map((frame) => frame.insetX))).toBeGreaterThan(
       -0.5
     );
-    expect(Math.max(...frames.map((frame) => frame.insetX))).toBeLessThan(16.5);
-    expect(Math.max(...frames.map((frame) => frame.insetY))).toBeLessThan(24.5);
-    expect(Math.min(...frames.map((frame) => frame.insetY))).toBeGreaterThan(
+    expect(Math.max(...seen.map((frame) => frame.insetX))).toBeLessThan(16.5);
+    expect(Math.max(...seen.map((frame) => frame.insetY))).toBeLessThan(24.5);
+    expect(Math.min(...seen.map((frame) => frame.insetY))).toBeGreaterThan(
       -0.5
     );
 

@@ -1,9 +1,9 @@
 import { expect, type Page } from "@playwright/test";
 import { test, waitForCanvasEntrance } from "./fixtures";
 
-const SCALE_PATTERN = /scale\(([\d.]+)\)/;
-const TRANSFORM_STYLE = /transform/;
-const DATE_LABEL = /^[A-Z][a-z]{2} \d{4}$/;
+const SCALE_PATTERN = /scale\(([\d.]+)\)/u;
+const TRANSFORM_STYLE = /transform/u;
+const DATE_LABEL = /^[A-Z][a-z]{2} \d{4}$/u;
 
 // The toy car on the desk is the way in. It parks below the first view, so
 // the desk is wheeled until it is in view and then clicked, as a person

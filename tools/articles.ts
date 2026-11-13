@@ -31,9 +31,9 @@ export const GENERATED_DIRECTORY = path.join(
   "src/content/generated"
 );
 const LOCALES: readonly ArticleLocale[] = ["en", "cn"];
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const IMPORT_PATTERN = /\bimport\s+\w+\s+from\s+["'](\.\.?\/[^"']+)["']/g;
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
+const IMPORT_PATTERN = /\bimport\s+\w+\s+from\s+["'](\.\.?\/[^"']+)["']/gu;
 const PREVIEW_CHARACTER_LIMIT = 4000;
 const PREVIEW_BLOCK_LIMIT = 16;
 const PREVIEW_NODE_LIMIT = 256;
@@ -107,7 +107,7 @@ export function describeParagraphs(
   const limit = DESCRIPTION_LIMIT[locale];
   const characters = Array.from(
     paragraphs
-      .map((paragraph) => paragraph.replace(/\s+/g, " ").trim())
+      .map((paragraph) => paragraph.replace(/\s+/gu, " ").trim())
       .filter(Boolean)
       .join(" ")
   );
@@ -480,7 +480,7 @@ export function generateArticles(
         ? previewImages.get(value)
         : value,
     2
-  ).replace(/"src": "(articlePreviewImage\d+)"/g, '"src": $1');
+  ).replace(/"src": "(articlePreviewImage\d+)"/gu, '"src": $1');
   mkdirSync(generatedDirectory, { recursive: true });
   writeChanged(
     path.join(generatedDirectory, "catalogue.ts"),

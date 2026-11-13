@@ -11,8 +11,8 @@ const GITHUB_NOTE = "Exploring AI × design system, just getting started ;-)";
 const SWAG_ITEM_COUNT = 102;
 const CONTINUOUS_PAN_STEPS = 72;
 const CONTINUOUS_DRAG_STEPS = 48;
-const TOGGLE_LABEL_PATTERN = /^Toggle /;
-const CURSOR_GRABBING_PATTERN = /cursor-grabbing/;
+const TOGGLE_LABEL_PATTERN = /^Toggle /u;
+const CURSOR_GRABBING_PATTERN = /cursor-grabbing/u;
 const RAPID_INTERACTION_CYCLES = Number(process.env.PERF_RAPID_CYCLES ?? "4");
 const SAMPLE_COUNT_ANNOTATION = "performance-sample-count";
 if (

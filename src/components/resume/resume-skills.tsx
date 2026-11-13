@@ -14,7 +14,7 @@ export const ResumeSkills = ({ data }: ResumeSkillsProps) => {
       <div className="flex flex-col gap-6 sm:grid sm:grid-flow-col sm:gap-x-10">
         {skillCategories.map((category) => (
           <div className="flex flex-col gap-1.5" key={category.category}>
-            <h3 className="font-semibold text-foreground1/65 text-sm/[20px]">
+            <h3 className="text-foreground1/65 text-sm/[20px] font-semibold">
               {category.category}
             </h3>
             <ul className="flex flex-col">

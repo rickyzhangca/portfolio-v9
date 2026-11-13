@@ -137,9 +137,9 @@ export const CanvasControlPanel = () => {
           </TabsPanel>
         ) : null}
         <TabsPanel value="repulsion">
-          <div className="relative h-48 w-60 bg-background3 p-4">
+          <div className="bg-background3 relative h-48 w-60 p-4">
             <div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full outline outline-accent"
+              className="outline-accent absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full outline"
               style={{
                 width: config.radiusPx / 13,
                 height: config.radiusPx / 13,
@@ -156,9 +156,9 @@ export const CanvasControlPanel = () => {
                 minHeight: 36,
               }}
             />
-            <div className="absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-background3 outline outline-accent" />
+            <div className="bg-background3 outline-accent absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full outline" />
             <div
-              className="absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent"
+              className="bg-accent absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full"
               style={{
                 opacity: config.strengthPx / 5 / 100,
               }}
@@ -174,7 +174,7 @@ export const CanvasControlPanel = () => {
                 >
                   Radius
                 </label>
-                <span className="font-medium text-foreground2 text-sm">
+                <span className="text-foreground2 text-sm font-medium">
                   {config.radiusPx}px
                 </span>
               </div>
@@ -196,7 +196,7 @@ export const CanvasControlPanel = () => {
                 >
                   Strength
                 </label>
-                <span className="font-medium text-foreground2 text-sm">
+                <span className="text-foreground2 text-sm font-medium">
                   {config.strengthPx}px
                 </span>
               </div>
@@ -220,12 +220,12 @@ export const CanvasControlPanel = () => {
         </TabsPanel>
 
         <TabsPanel value="visual">
-          <div className="relative h-48 w-60 bg-background3 p-4">
+          <div className="bg-background3 relative h-48 w-60 p-4">
             <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-start justify-center">
               {/* Cover card - index 0 */}
               <motion.div
                 animate={calculateCardTransform(0, true)}
-                className="size-8 rounded-md bg-accent/10 outline outline-accent"
+                className="bg-accent/10 outline-accent size-8 rounded-md outline"
                 style={{ transformOrigin: "center center" }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               />
@@ -234,21 +234,21 @@ export const CanvasControlPanel = () => {
                   {/* Row 1, Card 1 - index 1 */}
                   <motion.div
                     animate={calculateCardTransform(1, false)}
-                    className="size-8 rounded-md bg-accent/10 outline outline-accent"
+                    className="bg-accent/10 outline-accent size-8 rounded-md outline"
                     style={{ transformOrigin: "center center" }}
                     transition={SPRING_PRESETS.smooth}
                   />
                   {/* Row 1, Card 2 - index 2 */}
                   <motion.div
                     animate={calculateCardTransform(2, false)}
-                    className="size-8 rounded-md bg-accent/10 outline outline-accent"
+                    className="bg-accent/10 outline-accent size-8 rounded-md outline"
                     style={{ transformOrigin: "center center" }}
                     transition={SPRING_PRESETS.smooth}
                   />
                   {/* Row 1, Card 3 - index 3 */}
                   <motion.div
                     animate={calculateCardTransform(3, false)}
-                    className="size-8 rounded-md bg-accent/10 outline outline-accent"
+                    className="bg-accent/10 outline-accent size-8 rounded-md outline"
                     style={{ transformOrigin: "center center" }}
                     transition={SPRING_PRESETS.smooth}
                   />
@@ -257,21 +257,21 @@ export const CanvasControlPanel = () => {
                   {/* Row 2, Card 1 - index 4 */}
                   <motion.div
                     animate={calculateCardTransform(4, false)}
-                    className="size-8 rounded-md bg-accent/10 outline outline-accent"
+                    className="bg-accent/10 outline-accent size-8 rounded-md outline"
                     style={{ transformOrigin: "center center" }}
                     transition={SPRING_PRESETS.smooth}
                   />
                   {/* Row 2, Card 2 - index 5 */}
                   <motion.div
                     animate={calculateCardTransform(5, false)}
-                    className="size-8 rounded-md bg-accent/10 outline outline-accent"
+                    className="bg-accent/10 outline-accent size-8 rounded-md outline"
                     style={{ transformOrigin: "center center" }}
                     transition={SPRING_PRESETS.smooth}
                   />
                   {/* Row 2, Card 3 - index 6 */}
                   <motion.div
                     animate={calculateCardTransform(6, false)}
-                    className="size-8 rounded-md bg-accent/10 outline outline-accent"
+                    className="bg-accent/10 outline-accent size-8 rounded-md outline"
                     style={{ transformOrigin: "center center" }}
                     transition={SPRING_PRESETS.smooth}
                   />
@@ -289,7 +289,7 @@ export const CanvasControlPanel = () => {
                 >
                   Rotation step
                 </label>
-                <span className="font-medium text-foreground2 text-sm">
+                <span className="text-foreground2 text-sm font-medium">
                   {fanConfig.rotateStepDeg}°
                 </span>
               </div>
@@ -311,7 +311,7 @@ export const CanvasControlPanel = () => {
                 >
                   Arc step
                 </label>
-                <span className="font-medium text-foreground2 text-sm">
+                <span className="text-foreground2 text-sm font-medium">
                   {fanConfig.arcStepPx}px
                 </span>
               </div>
@@ -333,7 +333,7 @@ export const CanvasControlPanel = () => {
                 >
                   Horizontal gap
                 </label>
-                <span className="font-medium text-foreground2 text-sm">
+                <span className="text-foreground2 text-sm font-medium">
                   {fanConfig.expandGapPx}px
                 </span>
               </div>
@@ -355,7 +355,7 @@ export const CanvasControlPanel = () => {
                 >
                   Vertical gap
                 </label>
-                <span className="font-medium text-foreground2 text-sm">
+                <span className="text-foreground2 text-sm font-medium">
                   {fanConfig.expandRowGapPx}px
                 </span>
               </div>

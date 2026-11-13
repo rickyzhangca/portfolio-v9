@@ -17,7 +17,7 @@ export function ArticleLanguageSwitch({
   return (
     <nav
       aria-label="Article language"
-      className="flex border-white/20 border-l"
+      className="flex border-l border-white/20"
     >
       {(["en", "cn"] as const)
         .filter((language) => article.translations[language])

@@ -156,6 +156,7 @@ export default function ArticleRoute({
         /* Keep malformed fragments safe. */
       }
       const frame = requestAnimationFrame(() =>
+        // biome-ignore lint/style/useDomQuerySelector: ids are arbitrary Unicode heading slugs, not CSS selectors
         document.getElementById(id)?.scrollIntoView()
       );
       return () => cancelAnimationFrame(frame);

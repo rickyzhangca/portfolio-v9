@@ -21,7 +21,7 @@ import { PROJECT_ROOT } from "./articles.ts";
 /** The card's width on the desk, in CSS px; the photo is encoded at 3x. */
 const CARD_WIDTH = 248;
 const ORIGIN = "http://timecar.render";
-const MODEL_PREFIX = /^model\//;
+const MODEL_PREFIX = /^model\//u;
 const CONTENT_TYPES: Record<string, string> = {
   ".bin": "application/octet-stream",
   ".gltf": "model/gltf+json",

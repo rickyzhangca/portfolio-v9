@@ -30,8 +30,8 @@ function TabsList({
         "relative z-0 flex w-fit items-center justify-center gap-x-0.5",
         "data-[orientation=vertical]:flex-col",
         variant === "default"
-          ? "rounded-lg bg-background2 p-0.5"
-          : "data-[orientation=vertical]:px-1 data-[orientation=horizontal]:py-1 *:data-[slot=tabs-tab]:hover:bg-background3",
+          ? "bg-background2 rounded-lg p-0.5"
+          : "*:data-[slot=tabs-tab]:hover:bg-background3 data-[orientation=horizontal]:py-1 data-[orientation=vertical]:px-1",
         className
       )}
       data-slot="tabs-list"
@@ -42,8 +42,8 @@ function TabsList({
         className={tw(
           "absolute bottom-0 left-0 h-(--active-tab-height) w-(--active-tab-width) translate-x-(--active-tab-left) -translate-y-(--active-tab-bottom) transition-[width,translate] duration-200 ease-in-out",
           variant === "underline"
-            ? "z-10 bg-background3 data-[orientation=horizontal]:h-0.5 data-[orientation=vertical]:w-0.5 data-[orientation=vertical]:-translate-x-px data-[orientation=horizontal]:translate-y-px"
-            : "-z-1 rounded-lg bg-background3"
+            ? "bg-background3 z-10 data-[orientation=horizontal]:h-0.5 data-[orientation=horizontal]:translate-y-px data-[orientation=vertical]:w-0.5 data-[orientation=vertical]:-translate-x-px"
+            : "bg-background3 -z-1 rounded-lg"
         )}
         data-slot="tab-indicator"
       />
@@ -55,7 +55,7 @@ function TabsTab({ className, ...props }: TabsPrimitive.Tab.Props) {
   return (
     <TabsPrimitive.Tab
       className={tw(
-        "flex h-9 shrink-0 grow cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-[calc(--spacing(2.5)-1px)] text-base text-foreground2 outline-none transition-[color,background-color,box-shadow] hover:text-foreground1 focus-visible:ring-2 focus-visible:ring-ring data-disabled:pointer-events-none data-[orientation=vertical]:w-full data-[orientation=vertical]:justify-start data-active:text-foreground data-active:text-foreground1 data-disabled:opacity-64 sm:h-8 sm:text-sm [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:-mx-0.5 [&_svg]:shrink-0",
+        "text-foreground2 hover:text-foreground1 focus-visible:ring-ring data-active:text-foreground data-active:text-foreground1 flex h-9 shrink-0 grow cursor-pointer items-center justify-center gap-1.5 rounded-md border border-transparent px-[calc(--spacing(2.5)-1px)] text-base whitespace-nowrap transition-[color,background-color,box-shadow] outline-none focus-visible:ring-2 data-disabled:pointer-events-none data-disabled:opacity-64 data-[orientation=vertical]:w-full data-[orientation=vertical]:justify-start sm:h-8 sm:text-sm [&_svg]:pointer-events-none [&_svg]:-mx-0.5 [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4",
         className
       )}
       data-slot="tabs-tab"

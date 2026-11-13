@@ -42,9 +42,9 @@ const bounds = (placements: PanelPlacement[]) => {
   };
 };
 
-const ALPHA = /,([\d.]+)\)$/;
-const DARK = /^rgba\(18,14,10/;
-const LIGHT = /^rgba\(246/;
+const ALPHA = /,([\d.]+)\)$/u;
+const DARK = /^rgba\(18,14,10/u;
+const LIGHT = /^rgba\(246/u;
 
 describe("map fold timeline", () => {
   it("starts opening from the booklet and ends held open", () => {

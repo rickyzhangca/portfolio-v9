@@ -125,9 +125,12 @@ describe("reader shell", () => {
       name: "Projected essay",
     });
     expect(dialog.style.opacity).toBe("");
-    expect(
-      dialog.querySelector<HTMLElement>("[data-reader-backdrop]")?.style.opacity
-    ).toBe("0");
+    const backdrop = dialog.querySelector<HTMLElement>(
+      "[data-reader-backdrop]"
+    );
+    // Motion animates the backdrop in from transparent; it ends opaque.
+    await waitFor(() => expect(backdrop?.style.opacity).toBe("1"));
+    expect(dialog.style.opacity).toBe("");
   });
 
   it("releases pointer interception and modal isolation as soon as exit starts", async () => {

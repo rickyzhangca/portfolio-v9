@@ -48,7 +48,7 @@ const ProjectCardComponent = ({
           data-lamp-shadow={isExpanded ? LAMP_LIFT.card : LAMP_LIFT.screenshot}
         >
           {imageError ? (
-            <div className="flex items-center justify-center p-12 text-foreground2">
+            <div className="text-foreground2 flex items-center justify-center p-12">
               No Image
             </div>
           ) : (
@@ -96,7 +96,7 @@ const ProjectCardComponent = ({
         {content.link?.url ? (
           <div className="flex items-center gap-1">
             <a
-              className="no-drag flex items-center gap-1 text-accent"
+              className="no-drag text-accent flex items-center gap-1"
               href={content.link.url}
               rel="noopener noreferrer"
               target="_blank"

@@ -37,7 +37,7 @@ const dialogName = (name: "About" | "Resume") =>
 
 const PortalDialog = () => {
   const dialogRef = useModalAccessibility();
-  const portalRoot = document.getElementById("modal-portal-root");
+  const portalRoot = document.querySelector<HTMLElement>("#modal-portal-root");
 
   if (!portalRoot) {
     return null;

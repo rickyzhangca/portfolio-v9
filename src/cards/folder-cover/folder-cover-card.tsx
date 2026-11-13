@@ -28,7 +28,7 @@ export function FolderCoverCard({
         data-lamp-shadow={LAMP_LIFT.label}
         style={{ borderRadius: LABEL_RADIUS }}
       >
-        <p className="wrap-break-word whitespace-pre-wrap font-hand text-sm">
+        <p className="font-hand text-sm wrap-break-word whitespace-pre-wrap">
           {content.label}
         </p>
         <PaperLighting kind="label" radius={LABEL_RADIUS} />
