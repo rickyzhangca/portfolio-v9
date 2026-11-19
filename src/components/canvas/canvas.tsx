@@ -81,9 +81,9 @@ const DOF_VIGNETTE_LIT =
 const DOF_VIGNETTE_DAYLIGHT =
   "radial-gradient(ellipse 70% 70% at 50% 50%, rgba(0, 0, 0, 0) 44%, rgba(16, 20, 28, 0.1) 100%)";
 const DOF_VIGNETTE_STACK_LIT =
-  "radial-gradient(ellipse 75% 75% at 50% 50%, rgba(0, 0, 0, 0) 46%, rgba(10, 14, 24, 0.14) 100%)";
+  "radial-gradient(ellipse 75% 75% at 50% 50%, rgba(0, 0, 0, 0) 48%, rgba(10, 14, 24, 0.1) 100%)";
 const DOF_VIGNETTE_STACK_DAYLIGHT =
-  "radial-gradient(ellipse 75% 75% at 50% 50%, rgba(0, 0, 0, 0) 48%, rgba(16, 20, 28, 0.08) 100%)";
+  "radial-gradient(ellipse 75% 75% at 50% 50%, rgba(0, 0, 0, 0) 50%, rgba(16, 20, 28, 0.06) 100%)";
 const DOF_ENTER_EASE = [0.22, 1, 0.36, 1] as const;
 
 // The dimmed room and its shadow loop exist only under the lamp.
@@ -490,7 +490,7 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
                       return null;
                     }
                     const isFocusOverlay = id === state.focusedItemId;
-                    const blurPx = isFocusOverlay ? 8 : 5.5;
+                    const blurPx = isFocusOverlay ? 8 : 4.5;
                     let vignette = DOF_VIGNETTE_STACK_DAYLIGHT;
                     if (isFocusOverlay) {
                       vignette = isLampOn

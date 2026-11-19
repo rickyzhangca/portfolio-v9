@@ -35,7 +35,7 @@ interface StackCardRepulsionOptions {
 
 export const DEFAULT_REPULSION_CONFIG: RepulsionConfig = {
   radiusPx: 1400,
-  strengthPx: 300,
+  strengthPx: 200,
 };
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
