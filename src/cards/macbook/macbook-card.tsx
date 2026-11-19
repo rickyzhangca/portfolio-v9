@@ -237,10 +237,10 @@ const MacbookCardComponent = ({
         <img
           alt={sticker.description}
           className={tw(
-            "pointer-events-auto absolute drop-shadow-xs transition",
+            "pointer-events-auto absolute drop-shadow-[0_0.5px_1px_rgba(0,0,0,0.22)] transition",
             isFocused &&
               tooltip?.stickerSrc === sticker.src &&
-              "-translate-y-0.5 drop-shadow-md",
+              "-translate-y-px drop-shadow-sm",
             isDomHidden && "opacity-0"
           )}
           data-description={sticker.description}

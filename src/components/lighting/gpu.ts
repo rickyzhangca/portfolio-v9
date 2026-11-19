@@ -99,6 +99,46 @@ export const configureCanvas = (canvas: HTMLCanvasElement, gpu: Gpu) => {
   return context;
 };
 
+let frameEncoders: Map<GPUDevice, GPUCommandEncoder> | null = null;
+
+/**
+ * Returns the active frame's shared command encoder for `device`, creating one
+ * on first use, or null when called outside `withGpuFrame`.
+ */
+export const getFrameEncoder = (
+  device: GPUDevice
+): GPUCommandEncoder | null => {
+  if (!frameEncoders) {
+    return null;
+  }
+  let encoder = frameEncoders.get(device);
+  if (!encoder) {
+    encoder = device.createCommandEncoder();
+    frameEncoders.set(device, encoder);
+  }
+  return encoder;
+};
+
+/**
+ * Batches every WebGPU draw inside `fn` into one command encoder and one
+ * `queue.submit()` per device. Nested calls join the outer batch.
+ */
+export const withGpuFrame = <T>(fn: () => T): T => {
+  if (frameEncoders) {
+    return fn();
+  }
+  const encoders = new Map<GPUDevice, GPUCommandEncoder>();
+  frameEncoders = encoders;
+  try {
+    return fn();
+  } finally {
+    frameEncoders = null;
+    for (const [device, encoder] of encoders) {
+      device.queue.submit([encoder.finish()]);
+    }
+  }
+};
+
 /** Resizes the backing store, then draws one quad into it. */
 export const drawQuad = (
   gpu: Gpu,
@@ -112,14 +152,16 @@ export const drawQuad = (
     canvas.width = pixelSize.width;
     canvas.height = pixelSize.height;
   }
-  const encoder = gpu.device.createCommandEncoder();
+  const view = context.getCurrentTexture().createView();
+  const sharedEncoder = getFrameEncoder(gpu.device);
+  const encoder = sharedEncoder ?? gpu.device.createCommandEncoder();
   const pass = encoder.beginRenderPass({
     colorAttachments: [
       {
         clearValue: { a: 0, b: 0, g: 0, r: 0 },
         loadOp: "clear",
         storeOp: "store",
-        view: context.getCurrentTexture().createView(),
+        view,
       },
     ],
   });
@@ -127,7 +169,9 @@ export const drawQuad = (
   pass.setBindGroup(0, bindGroup);
   pass.draw(4);
   pass.end();
-  gpu.device.queue.submit([encoder.finish()]);
+  if (!sharedEncoder) {
+    gpu.device.queue.submit([encoder.finish()]);
+  }
 };
 
 /**

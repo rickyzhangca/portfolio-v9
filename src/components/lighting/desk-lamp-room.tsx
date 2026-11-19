@@ -1,6 +1,7 @@
 import { useAtomValue } from "jotai";
 import { useEffect, useRef } from "react";
 import { lampConfigAtom } from "@/context/atoms";
+import type { LampConfig } from "@/lib/lamp-config";
 import {
   contactBoxShadow,
   type LampShadow,
@@ -8,12 +9,13 @@ import {
   lampShadowFilter,
   projectLampShadow,
 } from "@/lib/lamp-shadow";
-import { getRoomGradient } from "@/lib/room-gradient";
+import { getRoomGradientStops } from "@/lib/room-gradient";
 import {
   areLampShadowsHeld,
   getFrameTransformCache,
   getLampConfig,
   getLampIntensity,
+  getLampPointer,
   isLampSceneHidden,
   setLampConfig,
   subscribeLamp,
@@ -33,6 +35,8 @@ import { getLampShadowClaim, setClaimedLampShadow } from "./lit-shadow";
 
 /** How long the room takes to dim when the lamp switches on. */
 const ROOM_FADE_MS = 700;
+/** Fixed backing store for the room radial gradient (0.26 Mpx, compositor-translated). */
+const ROOM_CANVAS_SIZE = 512;
 /** The desk's colour under the lamp, before the room's tone. */
 const LIT_DESK = "#fff";
 /**
@@ -400,6 +404,52 @@ const startLampShadows = (onCast: () => void) => {
   };
 };
 
+/**
+ * Draws the room's radial dimming gradient into a fixed 512x512 backing store
+ * sized large enough to cover the viewport from any lamp position, so pointer
+ * motion translates the canvas on the GPU compositor with zero re-rasterization.
+ */
+const drawRoomCanvas = (
+  canvas: HTMLCanvasElement,
+  config: Pick<LampConfig, "poolRadiusPx" | "roomDim">
+) => {
+  const size = Math.ceil(
+    Math.max(window.innerWidth, window.innerHeight) * 2 +
+      config.poolRadiusPx * 2
+  );
+  const half = size / 2;
+  canvas.style.width = `${size}px`;
+  canvas.style.height = `${size}px`;
+  canvas.style.left = `${-half}px`;
+  canvas.style.top = `${-half}px`;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return;
+  }
+  const stops = getRoomGradientStops(config);
+  const center = ROOM_CANVAS_SIZE / 2;
+  const radius = Math.max(0, (config.poolRadiusPx / size) * ROOM_CANVAS_SIZE);
+  context.clearRect(0, 0, ROOM_CANVAS_SIZE, ROOM_CANVAS_SIZE);
+  if (radius > 0) {
+    const gradient = context.createRadialGradient(
+      center,
+      center,
+      0,
+      center,
+      center,
+      radius
+    );
+    for (const { color, offset } of stops) {
+      gradient.addColorStop(offset, color);
+    }
+    context.fillStyle = gradient;
+  } else {
+    context.fillStyle = stops.at(-1)?.color ?? "rgba(0, 0, 0, 0)";
+  }
+  context.fillRect(0, 0, ROOM_CANVAS_SIZE, ROOM_CANVAS_SIZE);
+};
+
 interface DeskLampRoomProps {
   /** Called once the lamp's first shadows are written. */
   onShadowsCast?: () => void;
@@ -414,6 +464,7 @@ interface DeskLampRoomProps {
  */
 export const DeskLampRoom = ({ onShadowsCast }: DeskLampRoomProps) => {
   const ref = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const config = useAtomValue(lampConfigAtom);
   const onShadowsCastRef = useRef(onShadowsCast);
 
@@ -427,11 +478,25 @@ export const DeskLampRoom = ({ onShadowsCast }: DeskLampRoomProps) => {
     setLampConfig(config);
   }, [config]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+    const draw = () => drawRoomCanvas(canvas, config);
+    draw();
+    window.addEventListener("resize", draw, { passive: true });
+    return () => {
+      window.removeEventListener("resize", draw);
+    };
+  }, [config]);
+
   useEffect(() => startLampShadows(() => onShadowsCastRef.current?.()), []);
 
   useEffect(() => {
     const element = ref.current;
-    if (!element) {
+    const canvas = canvasRef.current;
+    if (!(element && canvas)) {
       return;
     }
     // Under the lamp the bare desk is white paper: the room's tone over it is
@@ -449,9 +514,12 @@ export const DeskLampRoom = ({ onShadowsCast }: DeskLampRoomProps) => {
       body.style.backgroundColor = LIT_DESK;
     });
     let previous = "";
+    const applyPosition = (x: string, y: string) => {
+      canvas.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    };
     const unsubscribe = subscribeLamp((lamp) => {
-      const x = `${lamp.x.toFixed(1)}px`;
-      const y = `${lamp.y.toFixed(1)}px`;
+      const x = lamp.x.toFixed(1);
+      const y = lamp.y.toFixed(1);
       // The lamp eases forever toward the pointer; skip sub-pixel steps so a
       // resting lamp stops touching the DOM.
       if (`${x} ${y}` === previous) {
@@ -459,10 +527,14 @@ export const DeskLampRoom = ({ onShadowsCast }: DeskLampRoomProps) => {
       }
       previous = `${x} ${y}`;
       return () => {
-        element.style.setProperty("--lamp-x", x);
-        element.style.setProperty("--lamp-y", y);
+        applyPosition(x, y);
       };
     });
+    const initial = getLampPointer();
+    const initialX = initial.x.toFixed(1);
+    const initialY = initial.y.toFixed(1);
+    previous = `${initialX} ${initialY}`;
+    applyPosition(initialX, initialY);
     return () => {
       cancelAnimationFrame(fade);
       unsubscribe();
@@ -474,15 +546,17 @@ export const DeskLampRoom = ({ onShadowsCast }: DeskLampRoomProps) => {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-40 opacity-0 transition-opacity"
+      className="pointer-events-none fixed inset-0 z-40 overflow-hidden opacity-0 transition-opacity"
       ref={ref}
-      style={{
-        background: getRoomGradient(
-          config,
-          "var(--lamp-x, 30vw) var(--lamp-y, 18vh)"
-        ),
-        transitionDuration: `${ROOM_FADE_MS}ms`,
-      }}
-    />
+      style={{ transitionDuration: `${ROOM_FADE_MS}ms` }}
+    >
+      <canvas
+        className="absolute"
+        height={ROOM_CANVAS_SIZE}
+        ref={canvasRef}
+        style={{ willChange: "transform" }}
+        width={ROOM_CANVAS_SIZE}
+      />
+    </div>
   );
 };

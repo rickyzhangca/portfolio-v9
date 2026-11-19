@@ -102,8 +102,7 @@ const bulgeFor = (papers: number) =>
 /**
  * Lights a folder's front panel with WebGPU: its material, the rounded cut
  * edge of the board and the bulge of the papers inside. It must sit inside
- * the cover's masked container, which clips it to the outline and isolates
- * its blend modes to the cover.
+ * the cover's masked container, which clips it to the outline.
  */
 const LitFolder = ({
   glows,
@@ -112,8 +111,7 @@ const LitFolder = ({
   papers,
   tint,
 }: FolderLightingProps) => {
-  const shadeRef = useRef<HTMLCanvasElement | null>(null);
-  const lightRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isReady, setReady] = useState(false);
   const targetBulgeRef = useRef(bulgeFor(papers));
   const logoSrc = logo?.src;
@@ -126,10 +124,9 @@ const LitFolder = ({
   }, [papers]);
 
   useEffect(() => {
-    const shade = shadeRef.current;
-    const light = lightRef.current;
-    const element = shade?.parentElement;
-    if (!(shade && light && element)) {
+    const canvas = canvasRef.current;
+    const element = canvas?.parentElement;
+    if (!(canvas && element)) {
       return;
     }
     const size = {
@@ -145,8 +142,7 @@ const LitFolder = ({
       attach: async (signal) => {
         const { attachFolder } = await import("./folder-renderer");
         return attachFolder(
-          shade,
-          light,
+          canvas,
           size,
           logoSrc && logoFinish && logoRect
             ? {
@@ -160,8 +156,7 @@ const LitFolder = ({
           signal
         );
       },
-      // The shade and light canvases both cover the folder.
-      canvases: 2,
+      canvases: 1,
       draw: (surface, { height, intensity, light: lamp, pixelScale, width }) =>
         surface.render({
           bulge,
@@ -194,18 +189,11 @@ const LitFolder = ({
 
   const style = { opacity: isReady ? 1 : 0 };
   return (
-    <>
-      <canvas
-        className="pointer-events-none absolute inset-0 z-10 h-full w-full mix-blend-multiply"
-        ref={shadeRef}
-        style={style}
-      />
-      <canvas
-        className="pointer-events-none absolute inset-0 z-10 h-full w-full mix-blend-screen"
-        ref={lightRef}
-        style={style}
-      />
-    </>
+    <canvas
+      className="pointer-events-none absolute inset-0 z-10 h-full w-full"
+      ref={canvasRef}
+      style={style}
+    />
   );
 };
 

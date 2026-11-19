@@ -2,9 +2,9 @@
 // made of; folder-renderer.ts sets each material's look. The folder outline
 // comes in as coverage blurred two ways (folder-renderer.ts): slightly, for the
 // rounded cut edge (the board's thickness), and widely, for the pillow the
-// papers inside push into the panel. Two passes share this shader: pass 0 is
-// multiplied over the cover (shading), pass 1 is screened over it (sheen and
-// the catch-light on the edge), so the DOM cover art and text stay in place.
+// papers inside push into the panel. One normal-blend premultiplied pass draws
+// both shading (darkening) and light (sheen, rim, glows, logo finish), so the
+// DOM cover art and text stay in place without mix-blend-mode group passes.
 // Units are the cover's untransformed CSS px ("local px").
 
 struct Folder {
@@ -20,8 +20,7 @@ struct Folder {
   seed: vec2f,
   // How far the papers inside push the panel up, in local px.
   bulge: f32,
-  // 0: shading pass, 1: light pass. ("pass" is reserved in WGSL.)
-  stage: f32,
+  _pad: f32,
   // Where the logo sits on the board, in local px (zero size: no logo).
   logoRect: vec4f,
   // x: relief height in local px (raised; negative is pressed in), y: gloss,
@@ -36,7 +35,7 @@ struct Folder {
   // w: rim catch-light.
   shading: vec4f,
   // x: glint on the rim facing away (glass), y: metal grain sparkle,
-  // zw: unused.
+  // z: baked static-slope encoding range, w: unused.
   effects: vec4f,
   // How brightly coloured light answers the lamp: x the board's glows,
   // y the logo's own colour. z: how much the logo is metal leaf (hot foil),
@@ -53,6 +52,8 @@ struct Folder {
 @group(0) @binding(4) var seam: texture_2d<f32>;
 // Coloured light pooled in the board (folder-renderer.ts), over the board.
 @group(0) @binding(5) var glows: texture_2d<f32>;
+// Pre-baked static surface slopes (rg) and material masks (ba).
+@group(0) @binding(6) var bakedMap: texture_2d<f32>;
 
 struct VertexOut {
   @builtin(position) position: vec4f,
@@ -69,15 +70,23 @@ fn vs(@builtin(vertex_index) index: u32) -> VertexOut {
 }
 
 const LAMP_COLOR = vec3f(1.0, 0.97, 0.92);
-// Metal leaf away from the lamp's reflection: its colour, a shade deeper,
-// so it keeps the printed logo's brightness and only gains on the lamp.
-const LEAF_SHADE = vec3f(0.95, 0.9, 0.84);
+// Metal leaf away from the lamp's reflection: a subtle darkening so hot-foil
+// gold reads rich and deep away from the lamp and blazes on specular catch.
+const LEAF_SHADE = 0.92;
 // How far, in local px, a pressed-in mark's walls shade the floor beside
 // them: all round (lit by the room), and further on the side toward the lamp.
 const RECESS_OCCLUSION_LOD = 3.0;
 const RECESS_SHADOW_REACH = 3.0;
 // Board thickness, in local px.
 const THICKNESS = 2.0;
+// Static bake sampling footprint (1 / BAKE_DENSITY) and finite-difference step.
+const BAKE_FOOTPRINT = 0.5;
+const BAKE_E = 0.6;
+// Centering at 127/255 lets zero slope round-trip through rgba8unorm exactly.
+const SLOPE_ZERO = 127.0 / 255.0;
+const SLOPE_SCALE = 127.0 / 255.0;
+// Upper bound for kraft's baked light-strand + formation additive term.
+const KRAFT_LIGHT_RANGE = 0.15;
 
 fn shapeUv(p: vec2f) -> vec2f {
   let margin = folder.light.w;
@@ -225,10 +234,6 @@ fn seamAt(p: vec2f) -> vec4f {
   return textureSampleLevel(seam, shapeSampler, shapeUv(p), 0.0);
 }
 
-fn rimHeight(p: vec2f) -> f32 {
-  return smoothstep(0.0, 1.0, outline(p).g) * THICKNESS * folder.shading.z;
-}
-
 fn surfaceHeight(p: vec2f, footprint: f32) -> f32 {
   if (surfaceIs(0.0)) {
     return cardstock(p, footprint);
@@ -258,14 +263,47 @@ fn markDepth(art: vec4f) -> f32 {
   return mix(art.a, lightness, folder.response.w);
 }
 
-fn height(p: vec2f, footprint: f32) -> f32 {
-  let body = smoothstep(0.5, 1.0, outline(p).b) * folder.bulge;
+fn staticHeight(p: vec2f, footprint: f32) -> f32 {
   let art = logoAt(p, 1.0);
   let mark = folder.logoFinish.x * markDepth(art);
   // The die that stamps metal leaf presses the grain under it mostly flat;
   // what is left breaks its reflection into a fine glitter.
   let grain = 1.0 - art.a * folder.response.z * 0.5;
-  return rimHeight(p) + body + surfaceHeight(p, footprint) * grain + mark;
+  return surfaceHeight(p, footprint) * grain + mark;
+}
+
+// One-time bake of lamp-independent material relief slopes (rg) and kraft /
+// leather masks (ba), keeping Voronoi and fibre loops out of per-frame draws.
+@fragment
+fn fsBake(in: VertexOut) -> @location(0) vec4f {
+  let p = in.local;
+  let e = BAKE_E;
+  let staticSlope = vec2f(
+    staticHeight(p + vec2f(e, 0.0), BAKE_FOOTPRINT) - staticHeight(p - vec2f(e, 0.0), BAKE_FOOTPRINT),
+    staticHeight(p + vec2f(0.0, e), BAKE_FOOTPRINT) - staticHeight(p - vec2f(0.0, e), BAKE_FOOTPRINT),
+  ) / (2.0 * e);
+  let maxSlope = max(folder.effects.z, 0.001);
+  let encodedSlope = clamp(
+    staticSlope * (SLOPE_SCALE / maxSlope) + SLOPE_ZERO,
+    vec2f(0.0),
+    vec2f(1.0),
+  );
+
+  var channelB = 0.0;
+  var channelA = 0.0;
+  if (surfaceIs(4.0)) {
+    channelB = seamAt(p).r;
+  } else if (surfaceIs(5.0)) {
+    let kraftFibre = kraftFibres(p);
+    let fibreResolved = resolved(1.0, BAKE_FOOTPRINT);
+    channelB = kraftFibre.x * max(-kraftFibre.y, 0.0) * fibreResolved;
+    // Lighter strands in the pulp catch the lamp, over the board's cloudy
+    // formation, where the pulp lies thicker or thinner.
+    let formation = valueNoise(p / 14.0 + folder.seed) * valueNoise(p / 5.0 + folder.seed.yx);
+    let lightAdd = kraftFibre.x * max(kraftFibre.y, 0.0) * 0.08 * fibreResolved + formation * 0.06;
+    channelA = clamp(lightAdd / KRAFT_LIGHT_RANGE, 0.0, 1.0);
+  }
+  return vec4f(encodedSlope, channelB, channelA);
 }
 
 @fragment
@@ -274,11 +312,29 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
   // Local px under one device pixel; changes with camera zoom and DPR.
   let footprint = max(fwidth(p.x), fwidth(p.y));
   let e = max(0.6, footprint);
-  let h = height(p, footprint);
-  let slope = vec2f(
-    height(p + vec2f(e, 0.0), footprint) - height(p - vec2f(e, 0.0), footprint),
-    height(p + vec2f(0.0, e), footprint) - height(p - vec2f(0.0, e), footprint),
-  ) / (2.0 * e);
+
+  let outCenter = outline(p);
+  let h = smoothstep(0.0, 1.0, outCenter.g) * THICKNESS * folder.shading.z
+    + smoothstep(0.5, 1.0, outCenter.b) * folder.bulge;
+
+  let outL = outline(p - vec2f(e, 0.0));
+  let outR = outline(p + vec2f(e, 0.0));
+  let outT = outline(p - vec2f(0.0, e));
+  let outB = outline(p + vec2f(0.0, e));
+  let invTwoE = 1.0 / (2.0 * e);
+  let bulgeSlope = vec2f(
+    smoothstep(0.5, 1.0, outR.b) - smoothstep(0.5, 1.0, outL.b),
+    smoothstep(0.5, 1.0, outB.b) - smoothstep(0.5, 1.0, outT.b),
+  ) * (folder.bulge * invTwoE);
+  let rimSlope = vec2f(
+    smoothstep(0.0, 1.0, outR.g) - smoothstep(0.0, 1.0, outL.g),
+    smoothstep(0.0, 1.0, outB.g) - smoothstep(0.0, 1.0, outT.g),
+  ) * (THICKNESS * folder.shading.z * invTwoE);
+
+  let baked = textureSampleLevel(bakedMap, shapeSampler, p / folder.size, 0.0);
+  let maxSlope = max(folder.effects.z, 0.001);
+  let staticSlope = (baked.rg - vec2f(SLOPE_ZERO)) * (maxSlope / SLOPE_SCALE);
+  let slope = staticSlope + rimSlope + bulgeSlope;
   let n = normalize(vec3f(-slope, 1.0));
 
   let lamp = folder.light.xyz;
@@ -288,33 +344,31 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
   // A distant lamp lights the folder less, so its relief shows less.
   let falloff = 1.0 / (1.0 + pow(length(toLamp) / (lamp.z * 1.9), 2.0));
 
-  if (folder.stage < 0.5) {
-    // The change in light against a flat panel, not their ratio, which
-    // explodes under grazing light.
-    let delta = max(dot(n, l), 0.0) - flatLight.z;
-    var tone = clamp(folder.shading.y + delta * folder.shading.x * falloff, 0.0, 1.0);
-    if (surfaceIs(5.0)) {
-      // Darker strands in the pulp.
-      let fibre = kraftFibres(p);
-      tone *= 1.0 - fibre.x * max(-fibre.y, 0.0) * 0.07 * resolved(1.0, footprint);
-    }
-    if (folder.logoFinish.x < 0.0) {
-      // A pressed-in mark: its walls hide the floor next to them from the
-      // room, and the wall nearest the lamp casts a short shadow across it.
-      let here = markDepth(logoAt(p, 0.0));
-      let around = markDepth(logoAt(p, RECESS_OCCLUSION_LOD));
-      let toward = normalize(l.xy + vec2f(1e-5)) * RECESS_SHADOW_REACH
-        * clamp(length(l.xy) / max(l.z, 0.2), 0.3, 1.0);
-      let wall = markDepth(logoAt(p + toward, 1.0));
-      let occlusion = max(here - around, 0.0) * 0.18 + max(here - wall, 0.0) * 0.22 * falloff;
-      tone *= 1.0 - occlusion;
-    }
-    // Metal leaf away from the light reads a little deeper than ink; it
-    // brightens as it mirrors the lamp (the light pass).
-    let leaf = folder.response.z * logoAt(p, 0.0).a;
-    let shaded = vec3f(tone) * mix(vec3f(1.0), LEAF_SHADE, leaf);
-    return vec4f(mix(vec3f(1.0), shaded, folder.intensity), 1.0);
+  let mark = logoAt(p, 0.0);
+  let leaf = folder.response.z * mark.a;
+
+  // The change in light against a flat panel, not their ratio, which
+  // explodes under grazing light.
+  let delta = max(dot(n, l), 0.0) - flatLight.z;
+  var tone = clamp(folder.shading.y + delta * folder.shading.x * falloff, 0.0, 1.0);
+  if (surfaceIs(5.0)) {
+    // Darker strands in the pulp.
+    tone *= 1.0 - baked.b * 0.07;
   }
+  if (folder.logoFinish.x < 0.0) {
+    // A pressed-in mark: its walls hide the floor next to them from the
+    // room, and the wall nearest the lamp casts a short shadow across it.
+    let here = markDepth(mark);
+    let around = markDepth(logoAt(p, RECESS_OCCLUSION_LOD));
+    let toward = normalize(l.xy + vec2f(1e-5)) * RECESS_SHADOW_REACH
+      * clamp(length(l.xy) / max(l.z, 0.2), 0.3, 1.0);
+    let wall = markDepth(logoAt(p + toward, 1.0));
+    let occlusion = max(here - around, 0.0) * 0.18 + max(here - wall, 0.0) * 0.22 * falloff;
+    tone *= 1.0 - occlusion;
+  }
+  // Metal leaf away from the light reads a little deeper than ink; it
+  // brightens as it mirrors the lamp.
+  tone *= mix(1.0, LEAF_SHADE, leaf);
 
   let halfway = normalize(l + vec3f(0.0, 0.0, 1.0));
   let nh = max(dot(n, halfway), 0.0);
@@ -324,10 +378,6 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
 
   // The rounded cut edge catches the lamp on the side that faces it; glass
   // also flashes where light leaves through the far side.
-  let rimSlope = vec2f(
-    rimHeight(p + vec2f(e, 0.0)) - rimHeight(p - vec2f(e, 0.0)),
-    rimHeight(p + vec2f(0.0, e)) - rimHeight(p - vec2f(0.0, e)),
-  ) / (2.0 * e);
   let rimFacing = dot(normalize(-rimSlope + vec2f(1e-5)), normalize(l.xy + vec2f(1e-5)));
   let rimEdge = smoothstep(0.05, 0.45, length(rimSlope) / max(folder.shading.z, 0.1));
   let rim = rimEdge * (max(rimFacing, 0.0) * folder.shading.w
@@ -346,7 +396,6 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
 
   // The logo's own finish: foil mirrors the lamp in its own colour, glass
   // catches a tight highlight, print barely shines.
-  let mark = logoAt(p, 0.0);
   let markColor = mark.rgb / max(mark.a, 0.0001);
   let markTint = mix(vec3f(1.0), markColor, folder.logoFinish.w);
   let markShine = pow(nh, max(folder.logoFinish.z, 1.0)) * folder.logoFinish.y * mark.a;
@@ -360,7 +409,6 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
   // Metal leaf mirrors the lamp in its own colour over a wide lobe, as the
   // stamped leaf is not quite flat, with a pale, tight highlight inside it
   // that the grain left under the leaf breaks up.
-  let leaf = folder.response.z * mark.a;
   let leafShine = mix(markTint, vec3f(1.0), 0.2) * (pow(nh, 14.0) * 0.4 + pow(nh, 3.0) * 0.05)
     + mix(markTint, vec3f(1.0), 0.7) * pow(nh, 220.0) * 0.7;
 
@@ -368,15 +416,15 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
     + markTint * markShine + leafShine * leaf + colored * nearness);
   if (surfaceIs(4.0)) {
     // The thread is a shade lighter than the hide it is sewn into.
-    added += LAMP_COLOR * seamAt(p).r * 0.05;
+    added += LAMP_COLOR * baked.b * 0.05;
   }
   if (surfaceIs(5.0)) {
-    // Lighter strands in the pulp catch the lamp, over the board's cloudy
-    // formation, where the pulp lies thicker or thinner.
-    let fibre = kraftFibres(p);
-    let formation = valueNoise(p / 14.0 + folder.seed) * valueNoise(p / 5.0 + folder.seed.yx);
-    added += LAMP_COLOR * (fibre.x * max(fibre.y, 0.0) * 0.08 * resolved(1.0, footprint)
-      + formation * 0.06);
+    added += LAMP_COLOR * (baked.a * KRAFT_LIGHT_RANGE);
   }
-  return vec4f(added * falloff * folder.intensity, 1.0);
+
+  let darken = clamp((1.0 - tone) * folder.intensity, 0.0, 1.0);
+  let lightRgb = clamp(added * falloff * folder.intensity, vec3f(0.0), vec3f(1.0));
+  let bright = max(lightRgb.r, max(lightRgb.g, lightRgb.b));
+  let alpha = clamp(max(darken, bright), 0.0, 1.0);
+  return vec4f(min(lightRgb, vec3f(alpha)), alpha);
 }

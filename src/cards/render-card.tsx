@@ -22,6 +22,7 @@ interface RenderCardProps {
   card: CardInstance;
   className?: string;
   isExpanded?: boolean;
+  isFlying?: boolean;
   isFocused?: boolean;
   obscured?: boolean;
   onMeasure?: (height: number) => void;
@@ -37,6 +38,7 @@ const RenderCardComponent = ({
   card,
   className,
   isExpanded = true,
+  isFlying = false,
   isFocused = false,
   obscured = false,
   onMeasure,
@@ -82,6 +84,7 @@ const RenderCardComponent = ({
             captionDelay={captionDelay}
             content={card.content}
             isExpanded={isExpanded}
+            isFlying={isFlying}
             priority={priority}
           />
         );

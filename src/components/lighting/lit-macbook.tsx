@@ -15,11 +15,12 @@ interface LitMacbookProps {
 /** Room around the card for shadows, in local px. */
 const CANVAS_MARGIN = 128;
 const LID_PAD = 120;
-const STICKER_PAD = 24;
+const STICKER_PAD = 12;
 const LID_LIFT = 24;
 const LID_HOVER_LIFT = 40;
-const STICKER_LIFT = 2;
-const STICKER_HOVER_LIFT = 9;
+/** Vinyl stickers adhere flush to the lid and lift only subtly on hover. */
+const STICKER_LIFT = 0.35;
+const STICKER_HOVER_LIFT = 1.8;
 /** How quickly the lid and stickers follow a hover, per second. */
 const LIFT_RATE = 14;
 

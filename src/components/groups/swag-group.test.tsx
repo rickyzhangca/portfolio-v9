@@ -67,6 +67,11 @@ describe("SwagGroup", () => {
         .every((image) => image.getAttribute("loading") === "lazy")
     ).toBe(true);
     rerender(<SwagGroup {...actions} isExpanded={false} />);
+    // Items remain mounted briefly to glide back in, then unmount after SWAG_RETURN_MS.
+    expect(screen.getAllByRole("img")).toHaveLength(12);
+    act(() => {
+      vi.advanceTimersByTime(650);
+    });
     expect(screen.getAllByRole("img")).toHaveLength(6);
   });
 

@@ -7,6 +7,7 @@ import {
   subscribeLamp,
   wakeLamp,
 } from "./desk-lamp";
+import { withGpuFrame } from "./gpu";
 import { screenBounds, screenLinear } from "./lamp-shadows";
 
 /** What a lit surface needs each frame, in its own untransformed CSS px. */
@@ -30,6 +31,11 @@ interface LitSurfaceOptions<Surface extends { destroy: () => void }> {
   element: HTMLElement;
   /** Names the surface in the console when WebGPU fails. */
   label: string;
+  /**
+   * Optional upper bound on backing-store device pixels per local CSS px.
+   * Caps `fullScale` before motion scaling and `MAX_CANVAS_PIXELS`.
+   */
+  maxPixelScale?: number;
   /**
    * Share of the full backing-store resolution to draw at while the lamp
    * moves fast; full resolution returns once it slows. For surfaces whose
@@ -152,16 +158,22 @@ const INTERVAL_RISE = 0.02;
  * The lamp moves this far, in local px, before a surface right under it
  * redraws; surfaces further from it wait for proportionally more travel.
  */
-const LIGHT_STEP = 1;
+const LIGHT_STEP = 2.5;
+/**
+ * Minimum time between relight draws for a surface that is neither reshaped
+ * nor animating its own parts, pacing static relighting to ~60Hz on 120Hz
+ * displays.
+ */
+const MIN_STATIC_REDRAW_MS = 16;
 /** Staleness of a surface whose size, zoom or fade-in has changed. */
 const RESHAPED = Number.MAX_VALUE;
 /** Staleness of a surface animating its own parts: it always goes first. */
 const ANIMATING = Number.POSITIVE_INFINITY;
 
 interface PendingDraw {
-  draw: () => void;
   /** Whether the draw allocates its backing store. */
   allocates: boolean;
+  draw: () => void;
   /** Backing pixels the draw fills. */
   pixels: number;
   since: number;
@@ -261,21 +273,22 @@ const flushDraws = () => {
   let spent = 0;
   let redrawn = 0;
   let drawn = 0;
-  for (const [owner, entry] of queue) {
-    if (drawn > 0 && spent + entry.pixels > pixelBudget) {
-      budgetSpent = true;
-      pixelsDrawn += redrawn;
-      wakeLamp();
-      return;
+  withGpuFrame(() => {
+    for (const [owner, entry] of queue) {
+      if (drawn > 0 && spent + entry.pixels > pixelBudget) {
+        budgetSpent = true;
+        wakeLamp();
+        return;
+      }
+      pending.delete(owner);
+      entry.draw();
+      spent += entry.pixels;
+      if (!entry.allocates) {
+        redrawn += entry.pixels;
+      }
+      drawn += 1;
     }
-    pending.delete(owner);
-    entry.draw();
-    spent += entry.pixels;
-    if (!entry.allocates) {
-      redrawn += entry.pixels;
-    }
-    drawn += 1;
-  }
+  });
   pixelsDrawn += redrawn;
 };
 
@@ -327,7 +340,8 @@ const measure = (
   lamp: LampPosition,
   fadeStart: number,
   overhang: number,
-  motionScale: number
+  motionScale: number,
+  maxPixelScale: number
 ): SurfaceView | null => {
   const width = element.offsetWidth;
   const height = element.offsetHeight;
@@ -354,9 +368,11 @@ const measure = (
   const awayX = lamp.x - (rect.left + rect.width / 2);
   const awayY = lamp.y - (rect.top + rect.height / 2);
   const { heightPx } = getLampConfig();
-  const fullScale =
+  const fullScale = Math.min(
     Math.ceil((screenScale * window.devicePixelRatio) / PIXEL_SCALE_STEP) *
-    PIXEL_SCALE_STEP;
+      PIXEL_SCALE_STEP,
+    maxPixelScale
+  );
   // Never below one backing pixel per CSS pixel, so 1x screens lose nothing.
   const scale =
     frameTime < movingUntil
@@ -396,6 +412,7 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
   draw,
   element,
   label,
+  maxPixelScale = Number.POSITIVE_INFINITY,
   motionScale = 1,
   onFail,
   onReady,
@@ -426,6 +443,7 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
     surface = attached;
     const fadeStart = performance.now();
     let drawn: SurfaceView | null = null;
+    let drawnAt = Number.NEGATIVE_INFINITY;
     let drawnOwn = "";
     let announced = false;
     let previousOwn = "";
@@ -443,7 +461,8 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
         lamp,
         fadeStart,
         overhang,
-        shown > 0 ? motionScale : 1
+        shown > 0 ? motionScale : 1,
+        maxPixelScale
       );
       if (!view) {
         pending.delete(owner);
@@ -476,6 +495,16 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
         pending.delete(owner);
         return;
       }
+      if (
+        !animating &&
+        staleness !== RESHAPED &&
+        time >= drawnAt &&
+        time - drawnAt < MIN_STATIC_REDRAW_MS
+      ) {
+        pending.delete(owner);
+        wakeLamp();
+        return;
+      }
       const allocates =
         staleness === RESHAPED &&
         (drawn?.width !== view.width ||
@@ -496,6 +525,7 @@ export const runLitSurface = <Surface extends { destroy: () => void }>({
             return;
           }
           drawn = view;
+          drawnAt = time;
           drawnOwn = ownKey;
           if (!announced) {
             announced = true;

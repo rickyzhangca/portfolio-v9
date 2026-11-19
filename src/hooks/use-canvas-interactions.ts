@@ -31,6 +31,8 @@ interface InteractionOptions {
 
 /** How long the street map folds in place before the camera returns. */
 const STREETMAP_RETURN_DELAY_MS = 320;
+/** How long the visible swag stickers tuck back before the camera returns. */
+const SWAG_RETURN_CAMERA_DELAY_MS = 220;
 
 export type ActiveDocument = {
   cardId: string;
@@ -105,19 +107,17 @@ export const useCanvasInteractions = ({
     [getViewport, state.items]
   );
 
-  const closeStack = useCallback(() => {
-    pendingLayoutRef.current = null;
-    if (preStackViewportRef.current) {
-      panTo(preStackViewportRef.current);
-      preStackViewportRef.current = null;
-    }
-    setExpandedStack(null);
-  }, [panTo, setExpandedStack]);
-
   const isStreetmap = useCallback(
     (id: string | null) => {
       const item = id ? state.items.get(id) : undefined;
       return item?.kind === "single" && item.card.kind === "streetmap";
+    },
+    [state.items]
+  );
+  const isSwagStack = useCallback(
+    (id: string | null) => {
+      const item = id ? state.items.get(id) : undefined;
+      return item?.kind === "swagstack";
     },
     [state.items]
   );
@@ -128,13 +128,8 @@ export const useCanvasInteractions = ({
   }, []);
   useEffect(() => cancelFocusReturn, [cancelFocusReturn]);
 
-  const closeFocus = useCallback(() => {
-    const target = preFocusViewportRef.current;
-    preFocusViewportRef.current = null;
-    cancelFocusReturn();
-    if (target && isStreetmap(state.focusedItemId)) {
-      // The street map folds where it is held, then the camera carries the
-      // booklet back as it drops; a camera that moved meanwhile stays put.
+  const scheduleCameraReturn = useCallback(
+    (target: ViewportState, delayMs: number) => {
       const { positionX, positionY } = getViewport();
       returnTimerRef.current = window.setTimeout(() => {
         returnTimerRef.current = 0;
@@ -145,16 +140,49 @@ export const useCanvasInteractions = ({
         ) {
           panTo(target);
         }
-      }, STREETMAP_RETURN_DELAY_MS);
+      }, delayMs);
+    },
+    [getViewport, panTo]
+  );
+
+  const closeStack = useCallback(() => {
+    pendingLayoutRef.current = null;
+    const target = preStackViewportRef.current;
+    preStackViewportRef.current = null;
+    cancelFocusReturn();
+    if (target && isSwagStack(state.expandedStackId)) {
+      // Let the outer sticker wave dissolve in place before gliding the camera back.
+      scheduleCameraReturn(target, SWAG_RETURN_CAMERA_DELAY_MS);
+    } else if (target) {
+      panTo(target);
+    }
+    setExpandedStack(null);
+  }, [
+    cancelFocusReturn,
+    isSwagStack,
+    panTo,
+    scheduleCameraReturn,
+    setExpandedStack,
+    state.expandedStackId,
+  ]);
+
+  const closeFocus = useCallback(() => {
+    const target = preFocusViewportRef.current;
+    preFocusViewportRef.current = null;
+    cancelFocusReturn();
+    if (target && isStreetmap(state.focusedItemId)) {
+      // The street map folds where it is held, then the camera carries the
+      // booklet back as it drops; a camera that moved meanwhile stays put.
+      scheduleCameraReturn(target, STREETMAP_RETURN_DELAY_MS);
     } else if (target) {
       panTo(target);
     }
     setFocusedItem(null);
   }, [
     cancelFocusReturn,
-    getViewport,
     isStreetmap,
     panTo,
+    scheduleCameraReturn,
     setFocusedItem,
     state.focusedItemId,
   ]);

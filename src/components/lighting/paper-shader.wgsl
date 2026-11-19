@@ -10,10 +10,12 @@
 // Units are the paper's untransformed CSS px ("local px").
 //
 // Every texture layer returns the slope of its relief directly (rather than
-// a height to difference), which keeps layers cheap to stack. The pattern
-// ideas (curling fibres from noise, faceted wrinkles) follow
-// Paper Shaders' paper-texture (paper.design, Apache-2.0); here they become
-// real relief lit by the desk lamp.
+// a height to difference), which keeps layers cheap to stack. The static
+// relief (pulp, fibres, wrinkles) is baked once per sheet into `reliefMap`
+// via `fsBake` and sampled once per frame in `fs`; curl and lighting remain
+// per-frame. The pattern ideas (curling fibres from noise, faceted wrinkles)
+// follow Paper Shaders' paper-texture (paper.design, Apache-2.0); here they
+// become real relief lit by the desk lamp.
 
 struct Paper {
   size: vec2f,
@@ -43,6 +45,8 @@ struct Paper {
 }
 
 @group(0) @binding(0) var<uniform> paper: Paper;
+@group(0) @binding(1) var reliefMap: texture_2d<f32>;
+@group(0) @binding(2) var reliefSampler: sampler;
 
 struct VertexOut {
   @builtin(position) position: vec4f,
@@ -243,37 +247,91 @@ fn roundedBox(p: vec2f) -> f32 {
   return length(max(q, vec2f(0.0))) + min(max(q.x, q.y), 0.0) - paper.radius;
 }
 
+// Static paper relief is baked once into an rgba8unorm texture (RG = packed
+// slope, B = packed fibre cover). At footprint 1.0 the combined pulp and
+// wrinkle slopes stay under 0.085 (and under 0.24 even at footprint 0.5), so
+// +/-0.25 never clips while keeping 8-bit quantization below half a shade
+// level. 128/255 sits on an exact byte so zero slope round-trips without bias
+// and matches the 1x1 neutral dummy texture ([128, 128, 0, 255]).
+const MAX_TEXTURE_SLOPE = 0.25;
+const MAX_FIBRE_COVER = 3.0;
+const ZERO_OFFSET = 128.0 / 255.0;
+// Matches LitPaper's maxPixelScale: 1 (one backing pixel per local CSS px).
+const BAKE_FOOTPRINT = 1.0;
+
+@fragment
+fn fsBake(in: VertexOut) -> @location(0) vec4f {
+  let p = in.local;
+  var texture = vec2f(0.0);
+  var fibreCover = 0.0;
+  if (paper.texture.x > 0.0) {
+    texture += paper.texture.x * pulpSlope(p, BAKE_FOOTPRINT);
+  }
+  if (paper.texture.y > 0.0) {
+    let fibres = fibreSlope(p, BAKE_FOOTPRINT);
+    texture += paper.texture.y * fibres.xy;
+    fibreCover = fibres.z;
+  }
+  if (paper.texture.z > 0.0) {
+    texture += paper.texture.z * wrinkleSlope(p, BAKE_FOOTPRINT);
+  }
+  let packedSlope = clamp(
+    texture / (2.0 * MAX_TEXTURE_SLOPE) + vec2f(ZERO_OFFSET),
+    vec2f(0.0),
+    vec2f(1.0),
+  );
+  return vec4f(
+    packedSlope,
+    clamp(fibreCover / MAX_FIBRE_COVER, 0.0, 1.0),
+    1.0,
+  );
+}
+
 @fragment
 fn fs(in: VertexOut) -> @location(0) vec4f {
   let p = in.local;
-  // Local px under one device pixel; changes with camera zoom and DPR.
-  let footprint = max(fwidth(p.x), fwidth(p.y));
-
   let curl = curlField(p);
-  let fibres = fibreSlope(p, footprint);
-  let texture = paper.texture.x * pulpSlope(p, footprint)
-    + paper.texture.y * fibres.xy
-    + paper.texture.z * wrinkleSlope(p, footprint);
-  let slope = curl.yz + texture * paper.relief;
-  let n = normalize(vec3f(-slope, 1.0));
 
   let lamp = paper.light.xyz;
   let l = normalize(lamp - vec3f(p, curl.x));
-  let flatLight = normalize(lamp - vec3f(p, 0.0));
   let lampDistance = length(lamp - vec3f(p, 0.0));
   // A distant lamp lights the paper less, so its relief shows less.
   let falloff = 1.0 / (1.0 + pow(lampDistance / (lamp.z * 1.9), 2.0));
+  let coverage = clamp(0.5 - roundedBox(p), 0.0, 1.0);
+
+  if (paper.finish.y > 0.5) {
+    // Gloss pass: a coated print is smooth, so only the curl bends the normal
+    // and mirrors the lamp as a soft hotspot plus a wide, faint sheen.
+    let n = normalize(vec3f(-curl.yz, 1.0));
+    let halfway = normalize(l + vec3f(0.0, 0.0, 1.0));
+    let nh = max(dot(n, halfway), 0.0);
+    let reflection = pow(nh, 90.0) * 0.32 + pow(nh, 12.0) * 0.05;
+    let gloss = LAMP_COLOR * reflection * paper.finish.x * falloff * paper.intensity
+      * coverage;
+    // Premultiplied light, as opaque as its brightest channel: over black it
+    // is what screening it was, and over white the warm lamp tints it by at
+    // most a few percent where screening stayed white.
+    return vec4f(gloss, max(gloss.r, max(gloss.g, gloss.b)));
+  }
+
+  let margin = paper.light.w;
+  let uv = (p + vec2f(margin)) / (paper.size + vec2f(margin * 2.0));
+  let relief = textureSampleLevel(reliefMap, reliefSampler, uv, 0.0);
+  let texture = (relief.xy - vec2f(ZERO_OFFSET)) * (2.0 * MAX_TEXTURE_SLOPE);
+  let fibreCover = relief.z * MAX_FIBRE_COVER;
+  let slope = curl.yz + texture * paper.relief;
+  let n = normalize(vec3f(-slope, 1.0));
+
+  let flatLight = normalize(lamp - vec3f(p, 0.0));
   // The change in light against flat paper, not their ratio: dividing by
   // the flat term multiplied the grain up to 12x under grazing light.
   let delta = max(dot(n, l), 0.0) - flatLight.z;
   // Fibres sit denser in the sheet and read faintly even in flat light.
-  let fibreTint = 1.0 - 0.03 * paper.texture.y * fibres.z;
+  let fibreTint = 1.0 - 0.03 * paper.texture.y * fibreCover;
   // White paper cannot get brighter than white, so flat paper sits a touch
   // below it and only faces turned to the lamp reach full white.
   let shade = clamp((0.975 + delta * 1.4 * falloff) * fibreTint, 0.0, 1.0);
   let tone = mix(1.0, shade, paper.intensity);
-
-  let coverage = clamp(0.5 - roundedBox(p), 0.0, 1.0);
 
   // Shadow of the lifted curl on the desk beside the paper: find the paper
   // point above this desk point as seen from the lamp, at the curl's height.
@@ -289,20 +347,6 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
   let occluded = smoothstep(softness, -softness, roundedBox(p + shift));
   let shadow = occluded * smoothstep(0.0, 2.0, lift)
     * (0.06 + 0.16 * falloff) * paper.intensity;
-
-  if (paper.finish.y > 0.5) {
-    // Gloss pass: a coated print mirrors the lamp as a soft hotspot that
-    // slides across it and bends over the curl, plus a wide, faint sheen.
-    let halfway = normalize(l + vec3f(0.0, 0.0, 1.0));
-    let nh = max(dot(n, halfway), 0.0);
-    let reflection = pow(nh, 90.0) * 0.32 + pow(nh, 12.0) * 0.05;
-    let gloss = LAMP_COLOR * reflection * paper.finish.x * falloff * paper.intensity
-      * coverage;
-    // Premultiplied light, as opaque as its brightest channel: over black it
-    // is what screening it was, and over white the warm lamp tints it by at
-    // most a few percent where screening stayed white.
-    return vec4f(gloss, max(gloss.r, max(gloss.g, gloss.b)));
-  }
 
   // Premultiplied: black at 1 - tone over the paper, a cool shadow off it.
   let tinted = (1.0 - coverage) * min(shadow * SHADOW_DEPTH, 1.0);

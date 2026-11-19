@@ -1,15 +1,3 @@
-import {
-  ARTICLE_CARD_PREVIEW_INSET,
-  ARTICLE_CARD_PREVIEW_LIFT,
-  ARTICLE_CARD_SIZE,
-} from "@/cards/article/article-card";
-import { RenderCard } from "@/cards/render-card";
-import { PaperCardProjection } from "@/components/documents/paper-card-projection";
-import { deskLampAtom, fanConfigAtom } from "@/context/atoms";
-import { useCanvasEnvironment } from "@/context/canvas-layout";
-import { useDraggable } from "@/hooks/use-draggable";
-import { AnalyticsEvents, track } from "@/lib/analytics";
-import type { CanvasStackItem, Position } from "@/types/canvas";
 import { motion } from "framer-motion";
 import { useAtomValue } from "jotai";
 import {
@@ -22,7 +10,23 @@ import {
   useRef,
   useState,
 } from "react";
-
+import {
+  ARTICLE_CARD_PREVIEW_INSET,
+  ARTICLE_CARD_PREVIEW_LIFT,
+  ARTICLE_CARD_SIZE,
+} from "@/cards/article/article-card";
+import { getCoverLogoRect } from "@/cards/cover/cover-layout";
+import { RenderCard } from "@/cards/render-card";
+import { PaperCardProjection } from "@/components/documents/paper-card-projection";
+import { FolderBack } from "@/components/lighting/folder-back";
+import { LAMP_DEPTH, LAMP_LIFT } from "@/components/lighting/lamp-shadows";
+import { LampSprite } from "@/components/lighting/lamp-sprite";
+import { FolderLighting } from "@/components/lighting/lit-folder";
+import { deskLampAtom, fanConfigAtom } from "@/context/atoms";
+import { useItemEntrance } from "@/context/canvas-entrance";
+import { useCanvasEnvironment } from "@/context/canvas-layout";
+import { useDraggable } from "@/hooks/use-draggable";
+import { AnalyticsEvents, track } from "@/lib/analytics";
 import {
   getStackCaptionDelay,
   getStackFlightTransition,
@@ -32,6 +36,7 @@ import {
   type StackFlight,
   TRANSITIONS,
 } from "@/lib/animation";
+import { ENTRANCE_LANDED_MS } from "@/lib/canvas-entrance";
 import {
   COLLAPSED_POSITIONS,
   COLLAPSED_VISIBLE_COUNT,
@@ -41,20 +46,14 @@ import {
   WRITING_COLLAPSED_GAP_PX,
   WRITING_COLLAPSED_HOVER_GAP_PX,
 } from "@/lib/card-layout";
-import { getCoverLogoRect } from "@/cards/cover/cover-layout";
-import { FolderBack } from "@/components/lighting/folder-back";
-import { LAMP_DEPTH, LAMP_LIFT } from "@/components/lighting/lamp-shadows";
-import { FolderLighting } from "@/components/lighting/lit-folder";
-import { useItemEntrance } from "@/context/canvas-entrance";
-import { ENTRANCE_LANDED_MS } from "@/lib/canvas-entrance";
-import { LampSprite } from "@/components/lighting/lamp-sprite";
+import { getDocumentLayoutId } from "@/lib/document-motion";
 import {
   FOLDER_MASK_IMAGE,
   FOLDER_SHAPE_PATH,
   FOLDER_SHAPE_SIZE,
 } from "@/lib/folder-shape";
-import { getDocumentLayoutId } from "@/lib/document-motion";
 import { tw } from "@/lib/utils";
+import type { CanvasStackItem, Position } from "@/types/canvas";
 import { StackArticleLink } from "./stack-article-link";
 
 /** A folder cover's lamp shadow follows its folder-shaped mask. */
@@ -775,6 +774,7 @@ export const CardStack = ({
                 captionDelay={captionDelay}
                 card={card}
                 isExpanded={isExpanded}
+                isFlying={flight !== null}
                 onMeasure={
                   card.kind === "article"
                     ? undefined
@@ -834,6 +834,7 @@ export const CardStack = ({
                       onActivate={onActivateCard}
                     >
                       <PaperCardProjection
+                        covered={!isExpanded}
                         inset={ARTICLE_CARD_PREVIEW_INSET}
                         layoutId={
                           isExpanded

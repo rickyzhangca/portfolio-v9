@@ -388,44 +388,61 @@ fn deskShadow(p: vec3f) -> f32 {
   return (1.0 - (1.0 - lampShadow) * (1.0 - foot)) * email.intensity;
 }
 
-// Premultiplied colour at screen point s.
-fn colorAt(s: vec2f, footprint: f32) -> vec4f {
-  var best = -1.0;
-  var part = PART_DESK;
-  var wall = false;
+struct Hit {
+  z: f32,
+  part: i32,
+  wall: i32,
+}
+
+fn hitAt(s: vec2f) -> Hit {
+  var hit = Hit(-1.0, PART_DESK, 0);
   let pill = extrusion(s, pillRect(), pillRadius(), 0.0, pillHeight());
-  if (pill.x > best) {
-    best = pill.x;
-    part = PART_PILL;
-    wall = pill.y > 0.5;
+  if (pill.x > hit.z) {
+    hit = Hit(pill.x, PART_PILL, select(0, 1, pill.y > 0.5));
   }
   let button = extrusion(s, buttonRect(), buttonRadius(), pillHeight(), buttonTop());
   // A button pressed flush with the pill still shows over it.
-  if (button.x >= 0.0 && button.x >= best) {
-    best = button.x;
-    part = PART_BUTTON;
-    wall = button.y > 0.5;
+  if (button.x >= 0.0 && button.x >= hit.z) {
+    hit = Hit(button.x, PART_BUTTON, select(0, 1, button.y > 0.5));
   }
-  if (part == PART_DESK) {
+  return hit;
+}
+
+// Premultiplied colour at screen point s, for what the ray there meets.
+fn shade(s: vec2f, hit: Hit, footprint: f32) -> vec4f {
+  if (hit.part == PART_DESK) {
     let shadow = min(deskShadow(vec3f(s, 0.0)) * SHADOW_DEPTH, 1.0);
     return vec4f(SHADOW_TINT * shadow, shadow);
   }
-  let p = vec3f(s.x, s.y + best, best);
-  if (part == PART_PILL) {
-    return vec4f(shadePill(p, wall, footprint), 1.0);
+  let p = vec3f(s.x, s.y + hit.z, hit.z);
+  if (hit.part == PART_PILL) {
+    return vec4f(shadePill(p, hit.wall != 0, footprint), 1.0);
   }
-  return vec4f(shadeButton(p, wall), 1.0);
+  return vec4f(shadeButton(p, hit.wall != 0), 1.0);
 }
 
 @fragment
 fn fs(in: VertexOut) -> @location(0) vec4f {
   // Local px under one device pixel; changes with camera zoom and DPR.
   let footprint = max(fwidth(in.local.x), fwidth(in.local.y));
-  // Four samples per pixel smooth the silhouettes the ray cast leaves hard.
+  // Four samples smooth the silhouettes the ray cast leaves hard. Finding
+  // what each sample meets is cheap and lighting it is not, so a pixel
+  // whose samples all meet the same thing is lit once.
+  let center = hitAt(in.local);
+  var hits: array<Hit, 4>;
+  var same = true;
+  for (var i = 0; i < 4; i++) {
+    let offset = (vec2f(f32(i & 1), f32(i >> 1u)) - 0.5) * 0.5 * footprint;
+    hits[i] = hitAt(in.local + offset);
+    same = same && hits[i].part == center.part && hits[i].wall == center.wall;
+  }
+  if (same) {
+    return shade(in.local, center, footprint);
+  }
   var sum = vec4f(0.0);
   for (var i = 0; i < 4; i++) {
     let offset = (vec2f(f32(i & 1), f32(i >> 1u)) - 0.5) * 0.5 * footprint;
-    sum += colorAt(in.local + offset, footprint);
+    sum += shade(in.local + offset, hits[i], footprint);
   }
   return sum * 0.25;
 }

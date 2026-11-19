@@ -2,12 +2,13 @@ import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { useAtomValue } from "jotai";
 import { memo, useCallback, useState } from "react";
+import type { ProjectCardContent } from "@/cards/registry";
+import { getResponsiveImageSources } from "@/cards/responsive-image";
 import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
+import { LampSprite } from "@/components/lighting/lamp-sprite";
 import { PaperLighting } from "@/components/lighting/lit-paper";
 import { deskLampAtom } from "@/context/atoms";
 import { tw } from "@/lib/utils";
-import type { ProjectCardContent } from "@/cards/registry";
-import { getResponsiveImageSources } from "@/cards/responsive-image";
 
 /** rounded-4xl: the print's corner radius, in CSS px. */
 const PRINT_RADIUS = 32;
@@ -23,6 +24,7 @@ interface ProjectCardProps {
   captionDelay?: number;
   content: ProjectCardContent;
   isExpanded?: boolean;
+  isFlying?: boolean;
   priority?: boolean;
 }
 
@@ -30,6 +32,7 @@ const ProjectCardComponent = ({
   captionDelay = DEFAULT_CAPTION_DELAY_S,
   content,
   isExpanded = true,
+  isFlying = false,
   priority = false,
 }: ProjectCardProps) => {
   const [imageError, setImageError] = useState(false);
@@ -80,7 +83,7 @@ const ProjectCardComponent = ({
         </div>
         <PaperLighting
           castsShadow
-          covered={!isExpanded}
+          covered={!isExpanded || isFlying}
           kind="photo"
           radius={PRINT_RADIUS}
         />
@@ -90,11 +93,7 @@ const ProjectCardComponent = ({
           opacity: isExpanded ? 1 : 0,
           y: isExpanded ? 0 : -6,
         }}
-        className={tw(
-          "no-pan flex w-fit items-center gap-4 rounded-full bg-white px-5 py-3",
-          !isLampOn && "shadow-2xl"
-        )}
-        data-lamp-contact
+        className="relative isolate w-fit"
         data-lamp-shadow={isExpanded ? LAMP_LIFT.caption : undefined}
         initial={false}
         transition={
@@ -115,38 +114,42 @@ const ProjectCardComponent = ({
             : CAPTION_CLOSE_TRANSITION
         }
       >
-        <span className="font-medium">{content.title}</span>
-        {content.link?.url ? (
-          <div className="flex items-center gap-1">
-            <a
-              className="no-drag text-accent flex items-center gap-1"
-              href={content.link.url}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              {content.link.icon ?? (
-                <ArrowUpRightIcon
-                  weight={content.link.label ? "regular" : "bold"}
-                />
-              )}
-              {content.link.label ? (
-                <span className="text-sm">{content.link.label}</span>
-              ) : null}
-            </a>
-          </div>
-        ) : null}
+        {isExpanded ? <LampSprite outline="box" /> : null}
+        <div
+          className={tw(
+            "no-pan flex w-fit items-center gap-4 rounded-full bg-white px-5 py-3",
+            !isLampOn && "shadow-2xl"
+          )}
+        >
+          <span className="font-medium">{content.title}</span>
+          {content.link?.url ? (
+            <div className="flex items-center gap-1">
+              <a
+                className="no-drag text-accent flex items-center gap-1"
+                href={content.link.url}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {content.link.icon ?? (
+                  <ArrowUpRightIcon
+                    weight={content.link.label ? "regular" : "bold"}
+                  />
+                )}
+                {content.link.label ? (
+                  <span className="text-sm">{content.link.label}</span>
+                ) : null}
+              </a>
+            </div>
+          ) : null}
+        </div>
       </motion.div>
       {content.description ? (
-        <motion.p
+        <motion.div
           animate={{
             opacity: isExpanded ? 1 : 0,
             y: isExpanded ? 0 : -6,
           }}
-          className={tw(
-            "no-pan rounded-3xl bg-white px-5 py-4 text-sm",
-            !isLampOn && "shadow-2xl"
-          )}
-          data-lamp-contact
+          className="relative isolate"
           data-lamp-shadow={isExpanded ? LAMP_LIFT.caption : undefined}
           initial={false}
           transition={
@@ -167,8 +170,16 @@ const ProjectCardComponent = ({
               : CAPTION_CLOSE_TRANSITION
           }
         >
-          {content.description}
-        </motion.p>
+          {isExpanded ? <LampSprite outline="box" /> : null}
+          <p
+            className={tw(
+              "no-pan rounded-3xl bg-white px-5 py-4 text-sm",
+              !isLampOn && "shadow-2xl"
+            )}
+          >
+            {content.description}
+          </p>
+        </motion.div>
       ) : null}
     </div>
   );

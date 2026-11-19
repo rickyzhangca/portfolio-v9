@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_LAMP_CONFIG } from "./lamp-config";
-import { getRoomGradient } from "./room-gradient";
+import { getRoomGradient, getRoomGradientStops } from "./room-gradient";
 
 describe("getRoomGradient", () => {
   it("keeps the designed room at the default settings", () => {
@@ -43,5 +43,25 @@ describe("getRoomGradient", () => {
         }
       }
     }
+  });
+});
+
+describe("getRoomGradientStops", () => {
+  it("returns normalized stops matching the CSS gradient", () => {
+    expect(getRoomGradientStops(DEFAULT_LAMP_CONFIG)).toEqual([
+      { color: "rgba(128, 128, 0, 0.008)", offset: 0 },
+      { color: "rgba(67, 47, 0, 0.025)", offset: 0.35 },
+      { color: "rgba(15, 11, 0, 0.111)", offset: 0.75 },
+      { color: "rgba(10, 7, 0, 0.170)", offset: 1 },
+    ]);
+  });
+
+  it("scales stop colors with roomDim", () => {
+    expect(
+      getRoomGradientStops({ poolRadiusPx: 400, roomDim: 0 }).at(-1)
+    ).toEqual({ color: "rgba(0, 0, 0, 0)", offset: 1 });
+    expect(
+      getRoomGradientStops({ poolRadiusPx: 400, roomDim: 10 }).at(-1)
+    ).toEqual({ color: "rgba(0, 0, 0, 1.000)", offset: 1 });
   });
 });

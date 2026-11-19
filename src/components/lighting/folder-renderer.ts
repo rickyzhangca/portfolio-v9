@@ -8,11 +8,16 @@ import {
   createMipmappedTexture,
   createQuadPipeline,
   drawQuad,
+  getFrameEncoder,
   TEXTURE_USAGE,
   UNIFORM_USAGE,
 } from "./gpu";
 
 const FOLDER_FLOATS = 40;
+/** Pre-baked static surface map texels per local px. */
+const BAKE_DENSITY = 2;
+/** GPUTextureUsage.TEXTURE_BINDING | RENDER_ATTACHMENT */
+const BAKE_TEXTURE_USAGE = 0x14;
 /** Logo texels per local px: crisp at the camera's closest zoom. */
 const LOGO_DENSITY = 3;
 /** Transparent margin around the outline, so its blur fades to nothing. */
@@ -41,10 +46,10 @@ const SEAM = { dash: 3.4, gap: 2.2, groove: 2.6, inset: 9, thread: 1.2 };
  */
 interface MaterialLook {
   broad: readonly [number, number];
+  rim: { back?: number; height: number; strength: number };
   /** Relief shading strength, and the panel's tone with no relief. */
   shade: readonly [number, number];
   sharp: readonly [number, number];
-  rim: { back?: number; height: number; strength: number };
   sparkle?: number;
   surface: number;
   tint?: number;
@@ -109,6 +114,16 @@ const MATERIALS: Record<FolderMaterial, MaterialLook> = {
     sharp: [1, 0],
     surface: 5,
   },
+};
+
+/** Safe upper bound on each material's baked finite-difference slope. */
+const SURFACE_MAX_SLOPE: Record<FolderMaterial, number> = {
+  cardstock: 0.25,
+  "frosted-metal": 0.1,
+  glass: 0.05,
+  kraft: 0.3,
+  leather: 1.2,
+  silicone: 0.15,
 };
 
 const HEX_COLOR = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/iu;
@@ -191,17 +206,31 @@ export interface FolderSurface {
   render: (frame: FolderFrame) => void;
 }
 
-const getPipeline = cachePerDevice(async (gpu) => ({
-  pipeline: await createQuadPipeline(
-    gpu,
-    await compileShader(gpu.device, shaderSource)
-  ),
-  sampler: gpu.device.createSampler({
-    magFilter: "linear",
-    minFilter: "linear",
-    mipmapFilter: "linear",
-  }),
-}));
+const getPipeline = cachePerDevice(async (gpu) => {
+  const module = await compileShader(gpu.device, shaderSource);
+  const [pipeline, bakePipeline] = await Promise.all([
+    createQuadPipeline(gpu, module),
+    gpu.device.createRenderPipelineAsync({
+      fragment: {
+        entryPoint: "fsBake",
+        module,
+        targets: [{ format: "rgba8unorm" }],
+      },
+      layout: "auto",
+      primitive: { topology: "triangle-strip" },
+      vertex: { entryPoint: "vs", module },
+    }),
+  ]);
+  return {
+    bakePipeline,
+    pipeline,
+    sampler: gpu.device.createSampler({
+      magFilter: "linear",
+      minFilter: "linear",
+      mipmapFilter: "linear",
+    }),
+  };
+});
 
 // Safari keeps a 2D context's `filter` and reads it back, but draws through
 // it unblurred, so a probe checks that a blur actually spreads.
@@ -379,13 +408,11 @@ const rasterizeSeam = (size: { height: number; width: number }) => {
 };
 
 /**
- * Prepares the two canvases over one folder cover: `shadeCanvas` is
- * multiplied over it and `lightCanvas` screened over it. Contexts are
+ * Prepares the premultiplied canvas over one folder cover. The context is
  * configured only once nothing can cancel the attachment.
  */
 export const attachFolder = async (
-  shadeCanvas: HTMLCanvasElement,
-  lightCanvas: HTMLCanvasElement,
+  canvas: HTMLCanvasElement,
   size: { height: number; width: number },
   logo: FolderLogo | null,
   material: FolderMaterial,
@@ -393,9 +420,13 @@ export const attachFolder = async (
   signal: AbortSignal
 ): Promise<FolderSurface> => {
   const look = MATERIALS[material];
+  const maxSlope = Math.max(
+    0.25,
+    SURFACE_MAX_SLOPE[material] + Math.abs(logo?.finish.relief ?? 0) * 1.1
+  );
   const {
     gpu,
-    value: { pipeline, sampler },
+    value: { bakePipeline, pipeline, sampler },
   } = await getPipeline();
   const outline = await createMipmappedTexture(
     gpu.device,
@@ -423,37 +454,51 @@ export const attachFolder = async (
     signal.throwIfAborted();
   }
 
-  const passes = [shadeCanvas, lightCanvas].map((canvas, pass) => {
-    const buffer = gpu.device.createBuffer({
-      size: FOLDER_FLOATS * 4,
-      usage: UNIFORM_USAGE,
-    });
-    return {
-      bindGroup: gpu.device.createBindGroup({
-        entries: [
-          { binding: 0, resource: { buffer } },
-          { binding: 1, resource: outline.createView() },
-          { binding: 2, resource: sampler },
-          { binding: 3, resource: logoTexture.createView() },
-          { binding: 4, resource: seam.createView() },
-          { binding: 5, resource: glowTexture.createView() },
-        ],
-        layout: pipeline.getBindGroupLayout(0),
-      }),
-      buffer,
-      canvas,
-      context: configureCanvas(canvas, gpu),
-      pass,
-    };
+  const bakedTexture = gpu.device.createTexture({
+    format: "rgba8unorm",
+    size: [
+      Math.max(1, Math.round(size.width * BAKE_DENSITY)),
+      Math.max(1, Math.round(size.height * BAKE_DENSITY)),
+    ],
+    usage: BAKE_TEXTURE_USAGE,
   });
+  const buffer = gpu.device.createBuffer({
+    size: FOLDER_FLOATS * 4,
+    usage: UNIFORM_USAGE,
+  });
+  const bakeBindGroup = gpu.device.createBindGroup({
+    entries: [
+      { binding: 0, resource: { buffer } },
+      { binding: 2, resource: sampler },
+      { binding: 3, resource: logoTexture.createView() },
+      { binding: 4, resource: seam.createView() },
+    ],
+    layout: bakePipeline.getBindGroupLayout(0),
+  });
+  const bindGroup = gpu.device.createBindGroup({
+    entries: [
+      { binding: 0, resource: { buffer } },
+      { binding: 1, resource: outline.createView() },
+      { binding: 2, resource: sampler },
+      { binding: 3, resource: logoTexture.createView() },
+      { binding: 5, resource: glowTexture.createView() },
+      { binding: 6, resource: bakedTexture.createView() },
+    ],
+    layout: pipeline.getBindGroupLayout(0),
+  });
+  const context = configureCanvas(canvas, gpu);
   const data = new Float32Array(FOLDER_FLOATS);
+  let baked = false;
+  let bakedHeight = Number.NaN;
+  let bakedSeedX = Number.NaN;
+  let bakedSeedY = Number.NaN;
+  let bakedWidth = Number.NaN;
 
   return {
     destroy: () => {
-      for (const { buffer, context } of passes) {
-        context.unconfigure();
-        buffer.destroy();
-      }
+      context.unconfigure();
+      buffer.destroy();
+      bakedTexture.destroy();
       outline.destroy();
       logoTexture.destroy();
       seam.destroy();
@@ -461,50 +506,80 @@ export const attachFolder = async (
     },
     render: (frame) => {
       const tint = hexToRgb(frame.tint);
-      for (const { bindGroup, buffer, canvas, context, pass } of passes) {
-        data.set([
-          frame.width,
-          frame.height,
-          frame.intensity,
-          look.surface,
-          frame.light.x,
-          frame.light.y,
-          frame.light.z,
-          SHAPE_MARGIN,
-          frame.seed.x,
-          frame.seed.y,
-          frame.bulge,
-          pass,
-          logo?.rect.x ?? 0,
-          logo?.rect.y ?? 0,
-          logo?.rect.width ?? 0,
-          logo?.rect.height ?? 0,
-          logo?.finish.relief ?? 0,
-          logo?.finish.gloss ?? 0,
-          logo?.finish.shininess ?? 1,
-          logo?.finish.tint ?? 0,
-          ...tint,
-          look.tint ?? 0,
-          ...look.broad,
-          ...look.sharp,
-          ...look.shade,
-          look.rim.height,
-          look.rim.strength,
-          look.rim.back ?? 0,
-          look.sparkle ?? 0,
-          0,
-          0,
-          glows.length > 0 ? GLOW_RESPONSE : 0,
-          logo?.finish.glow ?? 0,
-          logo?.finish.metal ?? 0,
-          logo?.finish.lightness ?? 0,
-        ]);
-        gpu.device.queue.writeBuffer(buffer, 0, data);
-        drawQuad(gpu, canvas, context, pipeline, bindGroup, {
-          height: frame.pixelHeight,
-          width: frame.pixelWidth,
+      data.set([
+        frame.width,
+        frame.height,
+        frame.intensity,
+        look.surface,
+        frame.light.x,
+        frame.light.y,
+        frame.light.z,
+        SHAPE_MARGIN,
+        frame.seed.x,
+        frame.seed.y,
+        frame.bulge,
+        0,
+        logo?.rect.x ?? 0,
+        logo?.rect.y ?? 0,
+        logo?.rect.width ?? 0,
+        logo?.rect.height ?? 0,
+        logo?.finish.relief ?? 0,
+        logo?.finish.gloss ?? 0,
+        logo?.finish.shininess ?? 1,
+        logo?.finish.tint ?? 0,
+        ...tint,
+        look.tint ?? 0,
+        ...look.broad,
+        ...look.sharp,
+        ...look.shade,
+        look.rim.height,
+        look.rim.strength,
+        look.rim.back ?? 0,
+        look.sparkle ?? 0,
+        maxSlope,
+        0,
+        glows.length > 0 ? GLOW_RESPONSE : 0,
+        logo?.finish.glow ?? 0,
+        logo?.finish.metal ?? 0,
+        logo?.finish.lightness ?? 0,
+      ]);
+      gpu.device.queue.writeBuffer(buffer, 0, data);
+      if (
+        !baked ||
+        bakedSeedX !== frame.seed.x ||
+        bakedSeedY !== frame.seed.y ||
+        bakedWidth !== frame.width ||
+        bakedHeight !== frame.height
+      ) {
+        const sharedEncoder = getFrameEncoder(gpu.device);
+        const encoder = sharedEncoder ?? gpu.device.createCommandEncoder();
+        const bakePass = encoder.beginRenderPass({
+          colorAttachments: [
+            {
+              clearValue: { a: 0, b: 0, g: 127 / 255, r: 127 / 255 },
+              loadOp: "clear",
+              storeOp: "store",
+              view: bakedTexture.createView(),
+            },
+          ],
         });
+        bakePass.setPipeline(bakePipeline);
+        bakePass.setBindGroup(0, bakeBindGroup);
+        bakePass.draw(4);
+        bakePass.end();
+        if (!sharedEncoder) {
+          gpu.device.queue.submit([encoder.finish()]);
+        }
+        baked = true;
+        bakedSeedX = frame.seed.x;
+        bakedSeedY = frame.seed.y;
+        bakedWidth = frame.width;
+        bakedHeight = frame.height;
       }
+      drawQuad(gpu, canvas, context, pipeline, bindGroup, {
+        height: frame.pixelHeight,
+        width: frame.pixelWidth,
+      });
     },
   };
 };

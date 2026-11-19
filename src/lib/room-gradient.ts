@@ -36,20 +36,36 @@ const toOverlay = (tone: readonly number[]) => {
   return `rgba(${red}, ${green}, ${blue}, ${alpha.toFixed(3)})`;
 };
 
+export interface RoomGradientStop {
+  color: string;
+  offset: number;
+}
+
+/**
+ * The room's overlay stops, with `offset` in `[0, 1]` matching `ROOM_STOPS`.
+ * `roomDim` scales each stop's distance from white.
+ */
+export const getRoomGradientStops = ({
+  roomDim,
+}: Pick<LampConfig, "poolRadiusPx" | "roomDim">): RoomGradientStop[] =>
+  ROOM_STOPS.map(({ at, rgb }) => {
+    const tone = rgb.map((channel) =>
+      Math.round(Math.max(0, 255 - (255 - channel) * roomDim))
+    );
+    return { color: toOverlay(tone), offset: at / 100 };
+  });
+
 /**
  * The dimmed room as a radial gradient centered at `center` (a CSS
  * position), laid over the desk with normal blending. `roomDim` scales each
  * stop's distance from white.
  */
 export const getRoomGradient = (
-  { poolRadiusPx, roomDim }: Pick<LampConfig, "poolRadiusPx" | "roomDim">,
+  config: Pick<LampConfig, "poolRadiusPx" | "roomDim">,
   center: string
 ) => {
-  const stops = ROOM_STOPS.map(({ at, rgb }) => {
-    const tone = rgb.map((channel) =>
-      Math.round(Math.max(0, 255 - (255 - channel) * roomDim))
-    );
-    return `${toOverlay(tone)} ${at}%`;
-  });
-  return `radial-gradient(circle ${poolRadiusPx}px at ${center}, ${stops.join(", ")})`;
+  const stops = getRoomGradientStops(config).map(
+    ({ color, offset }) => `${color} ${Math.round(offset * 100)}%`
+  );
+  return `radial-gradient(circle ${config.poolRadiusPx}px at ${center}, ${stops.join(", ")})`;
 };

@@ -8,6 +8,7 @@ const lamp = vi.hoisted(() => ({
     (position: LampPosition, time: number, elapsed: number) => void
   >(),
   pointer: { x: 0, y: 0 } as LampPosition,
+  wake: vi.fn(),
 }));
 
 // The lamp's frames are stepped by hand.
@@ -22,7 +23,7 @@ vi.mock("./desk-lamp", () => ({
     lamp.listeners.add(listener);
     return () => lamp.listeners.delete(listener);
   },
-  wakeLamp: vi.fn(),
+  wakeLamp: () => lamp.wake(),
 }));
 
 type LitSurfaceModule = typeof import("./lit-surface");
@@ -31,8 +32,14 @@ let litSurface: LitSurfaceModule;
 /** A 100 px square whose top-left corner sits at (left, top) on screen. */
 const createElement = (left = 0, top = 0) => {
   const element = document.createElement("div");
-  Object.defineProperty(element, "offsetWidth", { value: 100 });
-  Object.defineProperty(element, "offsetHeight", { value: 100 });
+  Object.defineProperty(element, "offsetWidth", {
+    configurable: true,
+    value: 100,
+  });
+  Object.defineProperty(element, "offsetHeight", {
+    configurable: true,
+    value: 100,
+  });
   element.getBoundingClientRect = () =>
     DOMRect.fromRect({ height: 100, width: 100, x: left, y: top });
   document.body.append(element);
@@ -41,14 +48,18 @@ const createElement = (left = 0, top = 0) => {
 
 const startSurface = ({
   canvases,
+  element,
   left = 0,
+  maxPixelScale,
   motionScale,
   prominence,
   step,
   top = 0,
 }: {
   canvases?: number;
+  element?: HTMLElement;
   left?: number;
+  maxPixelScale?: number;
   motionScale?: number;
   prominence?: () => number;
   step?: () => readonly number[];
@@ -59,8 +70,9 @@ const startSurface = ({
     attach: () => Promise.resolve({ destroy: vi.fn() }),
     canvases,
     draw,
-    element: createElement(left, top),
+    element: element ?? createElement(left, top),
     label: "Test surface",
+    maxPixelScale,
     motionScale,
     onReady: vi.fn(),
     prominence,
@@ -96,6 +108,7 @@ describe("runLitSurface", () => {
     vi.resetModules();
     litSurface = await import("./lit-surface");
     clock = 0;
+    lamp.wake.mockClear();
     vi.spyOn(performance, "now").mockImplementation(() => clock);
     // Each 100 px surface fills 500 x 500 backing pixels, so the starting
     // budget of a million pixels draws four of them a frame.
@@ -511,5 +524,184 @@ describe("lightStaleness", () => {
     );
     expect(staleness).toBeGreaterThan(0);
     expect(staleness).toBeLessThan(1);
+  });
+});
+
+describe("resolution cap, pacing and GPU batching", () => {
+  type GpuModule = typeof import("./gpu");
+  let gpuModule: GpuModule;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    gpuModule = await import("./gpu");
+    litSurface = await import("./lit-surface");
+    clock = 0;
+    lamp.wake.mockClear();
+    vi.spyOn(performance, "now").mockImplementation(() => clock);
+    vi.spyOn(window, "devicePixelRatio", "get").mockReturnValue(3);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    lamp.listeners.clear();
+    document.body.replaceChildren();
+  });
+
+  const createMockGpu = () => {
+    const pass = {
+      draw: vi.fn(),
+      end: vi.fn(),
+      setBindGroup: vi.fn(),
+      setPipeline: vi.fn(),
+    };
+    const encoder = {
+      beginRenderPass: vi.fn(() => pass),
+      finish: vi.fn(() => ({}) as GPUCommandBuffer),
+    };
+    const device = {
+      createCommandEncoder: vi.fn(() => encoder),
+      queue: { submit: vi.fn() },
+    } as unknown as GPUDevice;
+    const context = {
+      getCurrentTexture: vi.fn(() => ({ createView: vi.fn(() => ({})) })),
+    } as unknown as GPUCanvasContext;
+    return {
+      context,
+      device,
+      encoder,
+      gpu: { device, format: "bgra8unorm" as GPUTextureFormat },
+      pass,
+    };
+  };
+
+  it("caps pixelScale at maxPixelScale while keeping uncapped surfaces full", async () => {
+    const capped = startSurface({ maxPixelScale: 1.5 });
+    const uncapped = startSurface();
+    await settle();
+
+    await frame({ x: 50, y: 50 }, PAUSE_MS);
+
+    expect(
+      (capped.draw.mock.calls[0]?.[1] as { pixelScale: number } | undefined)
+        ?.pixelScale
+    ).toBe(1.5);
+    expect(
+      (uncapped.draw.mock.calls[0]?.[1] as { pixelScale: number } | undefined)
+        ?.pixelScale
+    ).toBe(3);
+  });
+
+  it("ignores local lamp shifts below LIGHT_STEP (2.5 px)", async () => {
+    const surface = startSurface();
+    await settle();
+    await frame({ x: 50, y: 50 }, PAUSE_MS);
+    expect(surface.draw).toHaveBeenCalledTimes(1);
+
+    await frame({ x: 52, y: 50 }, PAUSE_MS + 32);
+    expect(surface.draw).toHaveBeenCalledTimes(1);
+
+    await frame({ x: 53, y: 50 }, PAUSE_MS + 64);
+    expect(surface.draw).toHaveBeenCalledTimes(2);
+  });
+
+  it("paces static relighting to 60Hz on 120Hz frames and sleeps once settled", async () => {
+    const surface = startSurface();
+    await settle();
+    // Fade-in completes before PAUSE_MS.
+    await frame({ x: 50, y: 50 }, PAUSE_MS);
+    expect(surface.draw).toHaveBeenCalledTimes(1);
+
+    // 8ms later with a large lamp move: deferred to next frame and wakes lamp.
+    lamp.wake.mockClear();
+    await frame({ x: 70, y: 50 }, PAUSE_MS + 8);
+    expect(surface.draw).toHaveBeenCalledTimes(1);
+    expect(lamp.wake).toHaveBeenCalledTimes(1);
+
+    // 16ms after the previous draw: eligible and draws.
+    lamp.wake.mockClear();
+    await frame({ x: 70, y: 50 }, PAUSE_MS + 16);
+    expect(surface.draw).toHaveBeenCalledTimes(2);
+
+    // Settled 8ms later: staleness < LIGHT_STEP cancels pending work and sleeps.
+    lamp.wake.mockClear();
+    await frame({ x: 70, y: 50 }, PAUSE_MS + 24);
+    expect(surface.draw).toHaveBeenCalledTimes(2);
+    expect(lamp.wake).not.toHaveBeenCalled();
+  });
+
+  it("does not defer animating or reshaped surfaces on 120Hz frames", async () => {
+    let part = 0;
+    const animating = startSurface({
+      step: () => {
+        part += 1;
+        return [part];
+      },
+    });
+    let width = 100;
+    const element = createElement();
+    Object.defineProperty(element, "offsetWidth", { get: () => width });
+    const reshaped = startSurface({ element });
+    await settle();
+
+    await frame({ x: 50, y: 50 }, PAUSE_MS);
+    expect(animating.draw).toHaveBeenCalledTimes(1);
+    expect(reshaped.draw).toHaveBeenCalledTimes(1);
+
+    width = 120;
+    await frame({ x: 70, y: 50 }, PAUSE_MS + 8);
+    expect(animating.draw).toHaveBeenCalledTimes(2);
+    expect(reshaped.draw).toHaveBeenCalledTimes(2);
+  });
+
+  it("batches multiple surface draws in a frame into one encoder and one queue submit", async () => {
+    const mock = createMockGpu();
+    const pipeline = {} as GPURenderPipeline;
+    const bindGroup = {} as GPUBindGroup;
+    const drawIntoMock = () => {
+      gpuModule.drawQuad(
+        mock.gpu,
+        document.createElement("canvas"),
+        mock.context,
+        pipeline,
+        bindGroup,
+        { height: 64, width: 64 }
+      );
+    };
+
+    // Outside a batch, each draw creates and submits its own encoder.
+    expect(gpuModule.getFrameEncoder(mock.device)).toBeNull();
+    drawIntoMock();
+    expect(mock.device.createCommandEncoder).toHaveBeenCalledTimes(1);
+    expect(mock.device.queue.submit).toHaveBeenCalledTimes(1);
+
+    // Inside runLitSurface's flushDraws, surfaces share one encoder + submit.
+    vi.mocked(mock.device.createCommandEncoder).mockClear();
+    vi.mocked(mock.device.queue.submit).mockClear();
+    mock.encoder.beginRenderPass.mockClear();
+
+    const first = litSurface.runLitSurface({
+      attach: () => Promise.resolve({ destroy: vi.fn() }),
+      draw: drawIntoMock,
+      element: createElement(0, 0),
+      label: "First",
+      onReady: vi.fn(),
+    });
+    const second = litSurface.runLitSurface({
+      attach: () => Promise.resolve({ destroy: vi.fn() }),
+      draw: drawIntoMock,
+      element: createElement(120, 0),
+      label: "Second",
+      onReady: vi.fn(),
+    });
+    await settle();
+
+    await frame({ x: 50, y: 50 }, PAUSE_MS);
+
+    expect(mock.encoder.beginRenderPass).toHaveBeenCalledTimes(2);
+    expect(mock.device.createCommandEncoder).toHaveBeenCalledTimes(1);
+    expect(mock.device.queue.submit).toHaveBeenCalledTimes(1);
+    expect(gpuModule.getFrameEncoder(mock.device)).toBeNull();
+    first();
+    second();
   });
 });

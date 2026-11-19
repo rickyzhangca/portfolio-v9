@@ -16,24 +16,26 @@ export const SHEET_WIDTH = FOLD_COLUMNS * PANEL_WIDTH;
 export const SHEET_HEIGHT = FOLD_ROWS * PANEL_HEIGHT;
 const CREASES = FOLD_COLUMNS - 1;
 
-/** Timing and geometry of the fold, tuned in the prototype. */
+/** Timing and geometry of the fold, tuned so each physical stage reads clearly. */
 export const FOLD_PARAMS = {
-  /** The cross fold opens after this long (s), on its own spring. */
-  crossStart: 0.05,
-  crossResponse: 0.42,
-  crossBounce: 0.12,
+  /** The cross fold opens after the booklet begins lifting (s), on its own spring. */
+  crossStart: 0.12,
+  crossResponse: 0.62,
+  crossBounce: 0.06,
   /**
-   * One continuous pull opens the accordion: a half-open target in between
-   * made the creases slow down and speed up again, which read as a hitch.
+   * One continuous pull opens the accordion once the cross fold is clearly
+   * readable: a half-open target in between made the creases hitch.
    */
-  pullStart: 0.18,
-  pullResponse: 0.5,
-  pullBounce: 0.08,
-  /** The creases open from the top of the stack down, this far apart (s). */
-  stagger: 0.03,
+  pullStart: 0.36,
+  pullResponse: 0.68,
+  pullBounce: 0.05,
+  /** The creases ripple open from the top of the stack down, this far apart (s). */
+  stagger: 0.045,
+  /** Closing stagger keeps all creases tucked before the cross fold flips over. */
+  closeStagger: 0.03,
   /** Angle (deg) an opened crease keeps: the paper remembers its folds. */
   residual: 6,
-  liftResponse: 0.38,
+  liftResponse: 0.5,
   /** How high the sheet is held above the desk, in sheet px. */
   liftZ: 70,
   /** On a phone the booklet lies turned by this much (deg); square on a desk. */
@@ -301,7 +303,9 @@ export const getClosePose = (
       start *
       (1 -
         easeInOut3(
-          clamp01((t - i * FOLD_PARAMS.stagger) / FOLD_PARAMS.closeFoldDuration)
+          clamp01(
+            (t - i * FOLD_PARAMS.closeStagger) / FOLD_PARAMS.closeFoldDuration
+          )
         ))
   );
   const cross =

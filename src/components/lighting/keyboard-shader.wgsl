@@ -568,60 +568,78 @@ fn deskShadow(p: vec3f) -> f32 {
   return (1.0 - (1.0 - lamp) * (1.0 - foot)) * kb.intensity;
 }
 
-// Premultiplied colour at screen point s.
-fn colorAt(s: vec2f, footprint: f32) -> vec4f {
-  var best = -1.0;
-  var part = PART_DESK;
-  var index = 0;
-  var wall = false;
-  var face = 0;
+struct Hit {
+  z: f32,
+  part: i32,
+  index: i32,
+  wall: i32,
+  face: i32,
+}
+
+fn hitAt(s: vec2f) -> Hit {
+  var hit = Hit(-1.0, PART_DESK, 0, 0, 0);
 
   let chassis = chassisSurface(s);
-  if (chassis.x > best) {
-    best = chassis.x;
-    part = PART_CHASSIS;
-    face = i32(chassis.y + 0.5);
+  if (chassis.x > hit.z) {
+    hit = Hit(chassis.x, PART_CHASSIS, 0, 0, i32(chassis.y + 0.5));
   }
   for (var i = 0; i < 3; i++) {
     let key = keyHit(s, i);
     // A key pressed flush with the chassis still shows over it.
-    if (key.x >= 0.0 && key.x >= best) {
-      best = key.x;
-      part = PART_KEY;
-      index = i;
-      wall = key.y > 0.5;
+    if (key.x >= 0.0 && key.x >= hit.z) {
+      hit = Hit(key.x, PART_KEY, i, select(0, 1, key.y > 0.5), 0);
     }
   }
   let knob = extrusion(s, knobRect(), KNOB_RADIUS, grooveFloor(), knobTop());
-  if (knob.x > best) {
-    best = knob.x;
-    part = PART_KNOB;
-    wall = knob.y > 0.5;
+  if (knob.x > hit.z) {
+    hit = Hit(knob.x, PART_KNOB, 0, select(0, 1, knob.y > 0.5), 0);
   }
 
-  if (part == PART_DESK) {
+  return hit;
+}
+
+// Premultiplied colour at screen point s, for what the ray there meets.
+fn shade(s: vec2f, hit: Hit, footprint: f32) -> vec4f {
+  if (hit.part == PART_DESK) {
     let shadow = min(deskShadow(vec3f(s, 0.0)) * SHADOW_DEPTH, 1.0);
     return vec4f(SHADOW_TINT * shadow, shadow);
   }
-  let p = vec3f(s.x, s.y + best, best);
-  if (part == PART_CHASSIS) {
-    return vec4f(shadeChassis(p, face), 1.0);
+  let p = vec3f(s.x, s.y + hit.z, hit.z);
+  if (hit.part == PART_CHASSIS) {
+    return vec4f(shadeChassis(p, hit.face), 1.0);
   }
-  if (part == PART_KEY) {
-    return vec4f(shadeKey(p, index, wall, footprint), 1.0);
+  if (hit.part == PART_KEY) {
+    return vec4f(shadeKey(p, hit.index, hit.wall != 0, footprint), 1.0);
   }
-  return vec4f(shadeKnob(p, wall), 1.0);
+  return vec4f(shadeKnob(p, hit.wall != 0), 1.0);
 }
 
 @fragment
 fn fs(in: VertexOut) -> @location(0) vec4f {
   // Local px under one device pixel; changes with camera zoom and DPR.
   let footprint = max(fwidth(in.local.x), fwidth(in.local.y));
-  // Four samples per pixel smooth the silhouettes the ray cast leaves hard.
+  // Four samples smooth the silhouettes the ray cast leaves hard. Finding
+  // what each sample meets is cheap and lighting it is not, so a pixel
+  // whose samples all meet the same thing is lit once.
+  let center = hitAt(in.local);
+  var hits: array<Hit, 4>;
+  var same = true;
+  for (var i = 0; i < 4; i++) {
+    let offset = (vec2f(f32(i & 1), f32(i >> 1u)) - 0.5) * 0.5 * footprint;
+    hits[i] = hitAt(in.local + offset);
+    same = same
+      && hits[i].part == center.part
+      && hits[i].index == center.index
+      && hits[i].wall == center.wall
+      && hits[i].face == center.face;
+  }
+  if (same) {
+    return shade(in.local, center, footprint);
+  }
   var sum = vec4f(0.0);
   for (var i = 0; i < 4; i++) {
     let offset = (vec2f(f32(i & 1), f32(i >> 1u)) - 0.5) * 0.5 * footprint;
-    sum += colorAt(in.local + offset, footprint);
+    sum += shade(in.local + offset, hits[i], footprint);
   }
   return sum * 0.25;
 }

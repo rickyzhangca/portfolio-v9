@@ -154,6 +154,10 @@ const LitPaper = ({
   const shadowRef = useRef<HTMLCanvasElement | null>(null);
   const [isReady, setReady] = useState(false);
   const stock = PAPER_STOCKS[kind];
+  const isPhotoOnly = !stock.shade && stock.gloss > 0;
+  // Tucked coated prints keep their 2D shadow sprite but skip the WebGPU
+  // gloss canvas until the folder opens.
+  const shouldMountSurface = !(isPhotoOnly && covered);
 
   useEffect(() => {
     coveredRef.current = covered;
@@ -161,6 +165,10 @@ const LitPaper = ({
   }, [covered]);
 
   useEffect(() => {
+    if (!shouldMountSurface) {
+      setReady(false);
+      return;
+    }
     const canvas = canvasRef.current;
     const gloss = glossRef.current;
     const element = (canvas ?? gloss)?.parentElement;
@@ -210,14 +218,15 @@ const LitPaper = ({
         }),
       element,
       label: "Paper lighting",
-      // Grain, curl and gloss are soft: half resolution while the lamp sweeps
-      // keeps every sheet's shadow with it, and the text stays DOM-sharp.
+      // Grain, curl and photo gloss are soft overlays while DOM text and
+      // images stay native resolution; capping at 1x avoids Retina overdraw.
+      maxPixelScale: 1,
       motionScale: 0.5,
       onReady: () => setReady(true),
       overhang: SHADOW_MARGIN,
       prominence: () => (coveredRef.current ? COVERED_PROMINENCE : 1),
     });
-  }, [radius, stock]);
+  }, [radius, shouldMountSurface, stock]);
 
   // A covered print relights only once the folder opens, but its shadow,
   // which shows past the cover, keeps following the lamp.
@@ -264,7 +273,7 @@ const LitPaper = ({
           style={style}
         />
       ) : null}
-      {stock.gloss > 0 ? (
+      {stock.gloss > 0 && shouldMountSurface ? (
         <canvas
           className="pointer-events-none absolute z-10"
           ref={glossRef}

@@ -24,6 +24,11 @@ const DOCUMENT_LABEL_BLOCK = 48;
 
 interface PaperCardProjectionProps {
   children: ReactNode;
+  /**
+   * Mostly hidden, as a card tucked in a closed folder: keeps its last lit
+   * frame instead of redrawing while the folder is closed.
+   */
+  covered?: boolean;
   inset: number;
   label?: string;
   /**
@@ -47,6 +52,7 @@ interface PaperCardProjectionProps {
 
 export function PaperCardProjection({
   children,
+  covered = false,
   inset,
   label,
   layoutDependency,
@@ -189,7 +195,13 @@ export function PaperCardProjection({
           {children}
         </div>
       </motion.div>
-      <PaperLighting castsShadow hidden={isOpening} kind={stock} radius={24} />
+      <PaperLighting
+        castsShadow
+        covered={covered}
+        hidden={isOpening}
+        kind={stock}
+        radius={24}
+      />
     </div>
   );
 }
