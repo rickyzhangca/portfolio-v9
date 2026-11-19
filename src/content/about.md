@@ -1,45 +1,34 @@
 # Make designs happen
 
-I'm a design engineer specializing in design systems, passionate about fintech and dev tools. I help engineers and designers move faster together.
+I'm a design engineer working on design systems and tooling, with a background in fintech and dev tools. I help designers and engineers move faster together.
 
 ## What got me here?
 
-I designed my first UI in grade 8. I immediately knew this would be what I want to do for the rest of my life. I also loved programming but I hadn't found a way to combine the two.
+I designed my first UI in grade 8, and knew right away it was what I wanted to do for the rest of my life. I also loved programming, though for a long time I didn't know how to combine the two.
 
-Until I read about [Prototyping a Smoother Map](https://medium.com/google-design/google-maps-cb0326d165f5) by a Google's UX engineer — I was fascinated by the idea of being at the intersection of design and engineering.
+Then I read [Prototyping a Smoother Map](https://medium.com/google-design/google-maps-cb0326d165f5) by a Google UX engineer, and got hooked on the idea of working across design and engineering.
 
 ## What is design engineering to me?
 
-
 To me, it is about making designs happen and delivering experiences in their best form.
 
-First, it's sad to see great designs being left on the shelf due to technical uncertainty or lack of buy-ins. And it eventually drains designers.
+Good designs often get left on the shelf because of technical uncertainty or a lack of buy-in, and over time that drains designers. Other times they get built, but lose the details along the way and turn into mediocre software.
 
-Second, it's sad to see designs not implemented well, making good products turning slop.
+Sometimes it's also just faster and better to design in code. I jump between Figma and code all the time depending on what the work needs. I use Figma to explore open-ended problems, and I write code to build prototypes people can actually try, and to ship the real thing.
 
-Third, it's sometimes better and faster to design in code. I jump between code and figma very often based on the needs. I code to get prototypes for people to try and ship things. I Figma to explore open-ended problems, and when creativity is needed.
-
-After all, I am still a designer. Coding is a tool to design. Just like chefs picks the right knives based on the ingredients.
+I care about holding a designer's bar for quality while having an engineer's control over how things are built, and picking the right tool for the job.
 
 ## Good software should be beautiful
 
-It is the natural outcome of solving problems and taking care.
+Beauty is the natural outcome of solving problems well and taking care with the details.
 
-Details and crafts are a glimpse into the creator's passion and dedication. It is a reflection of the creator's commitment to excellence and a desire to create something meaningful.
+Craft shows how much the people behind a product cared about making it. Look and feel is also the quickest way for users to judge the quality of software and decide whether they trust it.
 
-The chase of craft proves the love and sacrifice went into our beliefs — for the benefit of user's experience. Look and feel is the quickest to way to tell the quality of the software and make users trust it.
+## How I like to work
 
-## My values
-
-- **Ship things**: I sometimes make fancy announcement graphics just as a ritual
-- **Care about work**: life is short, I make the most of it by creating what we will be proud of
-- **Remote first**: the energy spent commuting should be spent building
-- **Iterative approach**: consistent small wins > brain our momentum in going back and forth
-- **Openess**: I am a deep believer of the free flow of information — I share and post a lot
-
-## What Drives Me
-
- - Ownership on problem areas: I love DRI-ing projects!
- - Creating impactful tools: I love empowering others and seeing my work help others
- - Shipping to public: I love making the bigger world a tiny bit better
- - Ambitious, non-corporate team: I love dreaming big, idealism moves people forward
+- **Ship things**: I love shipping to the public, and I still make fancy internal announcement graphics sometimes just as a ritual.
+- **Iterate in small steps**: Consistent small wins beat draining our momentum in endless back-and-forth.
+- **Own the problem**: I like being the DRI on a problem area and seeing it through end to end.
+- **Build tools for others**: Some of my favorite work is building systems and tools that make other people faster.
+- **Work in the open**: I believe in the free flow of information, so I share my work and write publicly as much as I can.
+- **Remote-first, non-corporate teams**: Life is short. Energy spent commuting is better spent building things we're proud of with ambitious people who still have some idealism.

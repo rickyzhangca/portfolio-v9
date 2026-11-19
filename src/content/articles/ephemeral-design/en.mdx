@@ -16,7 +16,7 @@ Keeping that parallel universe running is expensive. The most common cost is des
 
 High-fidelity mockups also hide implementation complexity. An input that looks simple in Figma may involve backend validation, error states and compatibility with legacy systems. A polished static mockup suggests that every decision has already been made, so engineers hold back technical objections early, then have to raise them later, and the process gets messy. Both sides spend their time explaining details like "this shadow can't be rendered on Android" or "this data isn't available when the list first loads."
 
-Drift is unavoidable too. Shopify's Polaris team spent a year pushing design system coverage in their admin to 86.6%. Later, when they shipped a product-wide visual update, about 86% of the admin changed automatically once they updated Polaris. The hard part was the remaining 14% of code that had drifted off Polaris ([source](https://medium.com/shopify-ux/uplifting-shopify-polaris-7c54fc6564d9)). If a design system in the same codebase drifts that much, a separate replica in Figma has no chance of keeping up.
+Drift is unavoidable too. Small fixes, copy tweaks and edge-case workarounds go straight into PRs every day without touching Figma. Even within the same codebase, product UI constantly drifts away from its own design system. A separate replica in Figma has no chance of keeping up.
 
 Design and engineering often end up in something like a cold war. Designers add Dev Mode annotations, variables and tokens in Figma to get more control over the implementation. Engineers, under pressure to ship, ignore that complexity and build something that looks close enough in code. When a bug shows up, people first argue about whether the design file or the code is wrong, and the broken user experience comes second.
 
@@ -46,9 +46,9 @@ There are three principles.
 
 First, Figma is a whiteboard. In Figma, the focus is on exploring widely and working through the logic, using rough drafts to try several directions fast. Rough here means skipping the tedious work of building and maintaining structure. Visually, these drafts are often still polished.
 
-Second, archive after launch. Once a feature moves into development, its design file is no longer worth maintaining. Archive it as a historical record. When the feature needs to change later, start from the live product, which is the code, instead of a mockup from months ago.
+Second, archive after launch. Once a feature moves into development, stop updating its design file to match every change, and archive it as a historical record once it ships. When the feature needs to change later, start from the live product, which is the code, instead of a mockup from months ago.
 
-Third, the only thing in Figma worth maintaining long term is a lean component library tightly aligned with code, so designers can assemble ideas quickly. Its real source lives in code, which is also why 86% of Shopify's admin could update automatically.
+Third, maintain only a lean design system. The real source of truth for the system lives in code. In Figma, you only need a lean component library aligned with code so designers can assemble ideas quickly.
 
 This approach doesn't suit every team. Right now it works best for teams that are strong on product logic, move fast and have a high bar for talent. Where visual expression is the product itself, like marketing sites, landing pages and brand experiences, fully letting go of traditional design files needs more experimentation.
 
@@ -56,12 +56,12 @@ This approach doesn't suit every team. Right now it works best for teams that ar
 
 The teams that made this transition smoothly mostly did a few things.
 
-First, they redefined what a draft is. They made it clear to stakeholders that Figma files are drafts and concept validation, not final contracts. At the end of each sprint, they marked the related design files as archived and stopped maintaining them. In decisions, they gave more weight to designers with taste and technical skills, and moved the team toward judging by results.
+First, they redefined what a draft is. They made it clear to stakeholders that Figma files are drafts and concept validation, not final contracts. At the end of each sprint, they marked the related design files as archived and stopped maintaining them. They moved the team toward judging the shipped result instead of the spec, and gave more weight in decisions to designers with taste and technical skills.
 
 Next, they put the design system on a diet. If a component or piece of logic doesn't exist in code, it shouldn't exist in Figma, and the components, tokens and variants in Figma stay consistent with code.
 
 Then they made designers comfortable in the code environment. They encouraged AI coding tools like Cursor, and treated touching code as neither overstepping nor an extra burden, just another tool in the toolbox. They also improved the developer experience so anyone could easily pull the code, run Storybook, open a PR and spin up a staging environment for testing.
 
-Finally, they made code previews the new shared language. They used preview links from real code instead of, or alongside, Figma prototypes, so everyone got used to making decisions based on the real experience.
+Finally, they made code previews the new shared language. They used preview links from real code instead of, or alongside, Figma prototypes, so everyone got used to making decisions based on the real experience. For states that are hard to reach in a live app, like empty or error states, they use Storybook or simple debug toggles to check them in one place.
 
 Design has always been about planning and solving problems. Maintaining full sets of high-fidelity mockups used to be a necessary way to reduce engineering risk. Now that code is fast and cheap, and Figma keeps getting more complex, the marginal value of that process is close to zero, and often negative. Once designers let go of the idea that the design file is the truth, they can give their time back to what matters: understanding users, and deciding what to build and what to cut.
