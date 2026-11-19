@@ -65,7 +65,7 @@ import {
   computeStackCardRepulsion,
 } from "@/lib/repulsion";
 import { tw } from "@/lib/utils";
-import type { CanvasItem, ViewportState } from "@/types/canvas";
+import type { CanvasItem, Position, ViewportState } from "@/types/canvas";
 import { CanvasControls } from "./canvas-controls";
 import { CanvasItemRenderer } from "./canvas-item";
 
@@ -84,7 +84,7 @@ const DOF_VIGNETTE_STACK_LIT =
   "radial-gradient(ellipse 75% 75% at 50% 50%, rgba(0, 0, 0, 0) 48%, rgba(10, 14, 24, 0.1) 100%)";
 const DOF_VIGNETTE_STACK_DAYLIGHT =
   "radial-gradient(ellipse 75% 75% at 50% 50%, rgba(0, 0, 0, 0) 50%, rgba(16, 20, 28, 0.06) 100%)";
-const DOF_ENTER_EASE = [0.22, 1, 0.36, 1] as const;
+const DOF_ENTER_EASE = [0.33, 1, 0.68, 1] as const;
 
 // The dimmed room and its shadow loop exist only under the lamp.
 const DeskLampRoom = lazy(() =>
@@ -224,6 +224,10 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
   const documentItemId = documentSource?.itemId ?? null;
   const sourceId =
     documentItemId ?? state.expandedStackId ?? state.focusedItemId;
+  // Preserve unchanged {x, y} offset references across unrelated state.items
+  // updates (e.g. newly mounted folder cards measuring their height) so
+  // React.memo(CanvasItemRenderer) does not re-render every sibling mid-flight.
+  const stableRepulsionRef = useRef(new Map<string, Position>());
   const repulsion = useMemo(() => {
     const sourceItem = documentItemId
       ? state.items.get(documentItemId)
@@ -240,13 +244,24 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
             stack: sourceItem,
           })
         : null;
+    const rawItems = computeRepulsionOffsets(
+      state.items,
+      stackRepulsion?.source ?? sourceId,
+      config
+    );
+    const previous = stableRepulsionRef.current;
+    const items = new Map<string, Position>();
+    for (const [id, next] of rawItems) {
+      const prior = previous.get(id);
+      items.set(
+        id,
+        prior && prior.x === next.x && prior.y === next.y ? prior : next
+      );
+    }
+    stableRepulsionRef.current = items;
     return {
       cards: stackRepulsion?.offsets,
-      items: computeRepulsionOffsets(
-        state.items,
-        stackRepulsion?.source ?? sourceId,
-        config
-      ),
+      items,
       stackId: stackRepulsion?.source.itemId,
     };
   }, [
@@ -533,7 +548,8 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
                           zIndex: item.zIndex - 1,
                         }}
                         transition={{
-                          duration: isFocusOverlay ? 0.4 : 0.34,
+                          delay: 0.016,
+                          duration: 0.36,
                           ease: DOF_ENTER_EASE,
                         }}
                       />

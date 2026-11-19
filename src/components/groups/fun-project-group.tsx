@@ -17,7 +17,11 @@ import { deskLampAtom } from "@/context/atoms";
 import { useCanvasEnvironment } from "@/context/canvas-layout";
 import { useDraggable } from "@/hooks/use-draggable";
 import { useTogglePress } from "@/hooks/use-toggle-press";
-import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
+import {
+  REPULSION_TRANSITION,
+  SPRING_PRESETS,
+  TRANSITIONS,
+} from "@/lib/animation";
 import { FUN_STACK_LAYOUT } from "@/lib/card-layout";
 import { tw } from "@/lib/utils";
 import type { CanvasFunStackItem, Position } from "@/types/canvas";
@@ -371,8 +375,8 @@ export const FunProjectGroup = ({
       style={{ zIndex: item.zIndex }}
       transition={{
         opacity: TRANSITIONS.opacity,
-        x: SPRING_PRESETS.smooth,
-        y: SPRING_PRESETS.smooth,
+        x: REPULSION_TRANSITION,
+        y: REPULSION_TRANSITION,
       }}
     >
       <motion.div

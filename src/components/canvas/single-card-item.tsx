@@ -16,7 +16,11 @@ import { PaperCardProjection } from "@/components/documents/paper-card-projectio
 import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
 import { deskLampAtom } from "@/context/atoms";
 import { useDraggable } from "@/hooks/use-draggable";
-import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
+import {
+  REPULSION_TRANSITION,
+  SPRING_PRESETS,
+  TRANSITIONS,
+} from "@/lib/animation";
 import { getDocumentLayoutId } from "@/lib/document-motion";
 import { tw } from "@/lib/utils";
 import type { CanvasSingleItem, Position } from "@/types/canvas";
@@ -226,8 +230,8 @@ export const SingleCardItem = ({
       style={{ zIndex: item.zIndex }}
       transition={{
         opacity: TRANSITIONS.opacity,
-        x: SPRING_PRESETS.smooth,
-        y: SPRING_PRESETS.smooth,
+        x: REPULSION_TRANSITION,
+        y: REPULSION_TRANSITION,
       }}
     >
       <motion.div

@@ -20,7 +20,7 @@ import type {
 } from "@/types/canvas";
 
 export const AUTO_PAN_MARGIN = 40;
-export const AUTO_PAN_DURATION_MS = 280;
+export const AUTO_PAN_DURATION_MS = 360;
 export const AUTO_PAN_EASING = "easeOutCubic";
 
 const {

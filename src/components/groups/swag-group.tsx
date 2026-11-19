@@ -14,7 +14,11 @@ import { useCanvasEnvironment } from "@/context/canvas-layout";
 import { useDraggable } from "@/hooks/use-draggable";
 import { whenPageIdle } from "@/hooks/page-idle";
 import { useTogglePress } from "@/hooks/use-toggle-press";
-import { SPRING_PRESETS, TRANSITIONS } from "@/lib/animation";
+import {
+  REPULSION_TRANSITION,
+  SPRING_PRESETS,
+  TRANSITIONS,
+} from "@/lib/animation";
 import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
 import { LampSprite } from "@/components/lighting/lamp-sprite";
 import { getSwagPosition } from "@/lib/card-layout";
@@ -231,8 +235,8 @@ export const SwagGroup = ({
       style={{ zIndex: item.zIndex }}
       transition={{
         opacity: TRANSITIONS.opacity,
-        x: SPRING_PRESETS.smooth,
-        y: SPRING_PRESETS.smooth,
+        x: REPULSION_TRANSITION,
+        y: REPULSION_TRANSITION,
       }}
     >
       <motion.div

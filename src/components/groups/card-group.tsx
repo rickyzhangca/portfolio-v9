@@ -30,6 +30,7 @@ import { AnalyticsEvents, track } from "@/lib/analytics";
 import {
   getStackCaptionDelay,
   getStackFlightTransition,
+  REPULSION_TRANSITION,
   SPRING_PRESETS,
   STACK_FLIGHT_MS,
   STACK_RETURN_MS,
@@ -469,8 +470,8 @@ export const CardStack = ({
       style={{ zIndex: stack.zIndex }}
       transition={{
         opacity: TRANSITIONS.opacity,
-        x: SPRING_PRESETS.smooth,
-        y: SPRING_PRESETS.smooth,
+        x: REPULSION_TRANSITION,
+        y: REPULSION_TRANSITION,
       }}
     >
       <motion.div

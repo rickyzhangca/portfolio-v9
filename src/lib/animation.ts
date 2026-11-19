@@ -9,6 +9,17 @@ export const TRANSITIONS = {
   none: { type: "tween", duration: 0 },
 } as const;
 
+/**
+ * Matches `AUTO_PAN_DURATION_MS` (360ms) and `AUTO_PAN_EASING` (easeOutCubic)
+ * with a 1-frame alignment delay for `panTo`'s rAF so camera pan and item
+ * repulsion compose into one straight, monotonic trajectory without reversals.
+ */
+export const REPULSION_TRANSITION = {
+  delay: 0.016,
+  duration: 0.36,
+  ease: [0.33, 1, 0.68, 1],
+} as const;
+
 /** Which way a folder's cards are travelling: out of the folder, or back in. */
 export type StackFlight = "in" | "out";
 
