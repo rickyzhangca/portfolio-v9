@@ -17,44 +17,75 @@ export type StackFlight = "in" | "out";
  * whole stagger is capped, so a folder of 14 cards does not keep its top card
  * waiting half a second.
  */
-const FLIGHT_BASE_DELAY_S = 0.02;
+const FLIGHT_BASE_DELAY_S = 0.015;
 const FLIGHT_STAGGER_S = 0.022;
 const MAX_FLIGHT_STAGGER_S = 0.12;
 /** Closing should feel quicker than opening. */
 const MAX_RETURN_STAGGER_S = 0.05;
 /**
- * Going back in, cards pass under the cover, so the ones the closed folder
- * hides fade only as they arrive.
+ * Fallback fade delay when no path is given; with a path, each hidden card
+ * fades once its own x spring slips behind the cover.
  */
-const RETURN_FADE_DELAY_S = 0.17;
+const RETURN_FADE_DELAY_S = 0.14;
 /** Long enough for every returning card to land before it unmounts. */
 export const STACK_RETURN_MS = 600;
-/** The axis that leads a flight, and the one that trails it. */
+/**
+ * Opening springs: nearly critically damped so cards glide out as one
+ * continuous gesture without rubbery overshoot or mid-flight stalls.
+ */
 const FLIGHT_LEAD = {
   type: "spring",
-  stiffness: 620,
-  damping: 42,
+  stiffness: 520,
+  damping: 43,
   mass: 1,
 } as const;
 const FLIGHT_TRAIL = {
   type: "spring",
-  stiffness: 400,
-  damping: 35,
+  stiffness: 380,
+  damping: 36,
   mass: 1,
 } as const;
-/** Going back in, both moves are brisk: the folder takes its cards quickly. */
-const RETURN_SPRING = {
+const FLIGHT_SCALE_SPRING = {
   type: "spring",
-  stiffness: 800,
-  damping: 50,
+  stiffness: 380,
+  damping: 37,
+  mass: 1,
+} as const;
+/**
+ * Closing springs: brisk and nearly critically damped so cards tuck cleanly
+ * back under the cover without bouncing back out.
+ */
+const RETURN_LEAD = {
+  type: "spring",
+  stiffness: 640,
+  damping: 49,
+  mass: 1,
+} as const;
+const RETURN_TRAIL = {
+  type: "spring",
+  stiffness: 540,
+  damping: 45,
+  mass: 1,
+} as const;
+const RETURN_SCALE_SPRING = {
+  type: "spring",
+  stiffness: 620,
+  damping: 48,
   mass: 1,
 } as const;
 const FLIGHT_TRAIL_DELAY_S = 0.03;
-/** Lifted cards come a little closer to the camera mid-flight. */
-export const FLIGHT_SCALE = 1.03;
-const FLIGHT_SCALE_DURATION_S = 0.32;
+/**
+ * Slight head start for x before scale unfolds on open for row-0 cards,
+ * so the first card grows smoothly in motion instead of inflating after stop.
+ */
+const FLIGHT_SCALE_DELAY_S = 0.02;
+/**
+ * Lower-row cards start scaling once they have crossed this share of their
+ * exit time, keeping their height inside the folder pocket while x < coverWidth.
+ */
+const LOWER_ROW_SCALE_DELAY_RATIO = 0.68;
 /** Long enough for the last card to land; then hover moves go back to snappy. */
-export const STACK_FLIGHT_MS = 800;
+export const STACK_FLIGHT_MS = 700;
 
 interface SpringConfig {
   damping: number;
@@ -70,6 +101,9 @@ export const getSpringCrossingTime = (
   { damping, mass, stiffness }: SpringConfig,
   fraction: number
 ) => {
+  if (fraction <= 0) {
+    return 0;
+  }
   const dt = 0.001;
   let position = 0;
   let velocity = 0;
@@ -84,12 +118,12 @@ export const getSpringCrossingTime = (
   return 2;
 };
 
-/** Margin past the folder's edge before a card may start changing rows. */
-const FLIGHT_CLEARANCE_PX = 12;
-/** How much of its rise a returning card finishes before it slides in. */
-const RETURN_RISE_FRACTION = 0.55;
-/** A returning card is back to its small size by the time it slides in. */
-const RETURN_SHRINK_DURATION_S = 0.06;
+/** How close to the collapsed row y must rise before x enters the cover wall. */
+const RETURN_WALL_MARGIN_PX = 18;
+/** Share of shrink a returning card finishes by the time x reaches coverWidth. */
+const RETURN_SHRINK_AT_WALL = 0.92;
+/** Share of cover width a hidden returning card passes before fading out. */
+const RETURN_COVER_ENTRY_RATIO = 0.6;
 /** Rows closer than this are not worth waiting for. */
 const MIN_SEQUENCED_TRAVEL_PX = 24;
 
@@ -101,19 +135,10 @@ export interface StackFlightPath {
   to: { x: number; y: number };
 }
 
-/**
- * Per-property transitions for one card leaving or entering its folder.
- * The folder has walls, so a card crosses them sideways and changes rows only
- * where it is free: out of the folder the sideways move leads and the drop into
- * its row waits until the card has cleared the cover; back in, the rise to the
- * folder's row leads and the slide under the cover waits until it is there.
- * Without a `path` the trailing axis follows after a short fixed delay.
- */
-export const getStackFlightTransition = (
+const getStackFlightDelay = (
   index: number,
   count: number,
-  flight: StackFlight,
-  path?: StackFlightPath
+  flight: StackFlight
 ) => {
   const order = flight === "out" ? index : count - 1 - index;
   const step = Math.min(
@@ -121,55 +146,132 @@ export const getStackFlightTransition = (
     (flight === "out" ? MAX_FLIGHT_STAGGER_S : MAX_RETURN_STAGGER_S) /
       Math.max(count - 1, 1)
   );
-  const delay = FLIGHT_BASE_DELAY_S + order * step;
+  return FLIGHT_BASE_DELAY_S + order * step;
+};
+
+const getOpenClearTime = (path: StackFlightPath) => {
+  const travelX = Math.abs(path.to.x - path.from.x);
+  if (travelX <= 0) {
+    return 0;
+  }
+  const fraction = Math.min(
+    0.92,
+    Math.max(0.15, (path.coverWidth - path.from.x) / travelX)
+  );
+  return getSpringCrossingTime(FLIGHT_LEAD, fraction);
+};
+
+/** Extra beat past coverWidth so a caption pill clears even the rounded corner. */
+const CAPTION_CLEAR_BUFFER_S = 0.02;
+
+/**
+ * Seconds after opening starts when a card's caption should fade in: right as
+ * that card clears the folder's right edge, so captions never peek beneath the
+ * closed bottom wall of the cover.
+ */
+export const getStackCaptionDelay = (
+  index: number,
+  count: number,
+  path: StackFlightPath
+) =>
+  getStackFlightDelay(index, count, "out") +
+  getOpenClearTime(path) +
+  CAPTION_CLEAR_BUFFER_S;
+
+/**
+ * Per-property transitions for one card leaving or entering its folder.
+ * A folder is a pocket sealed on top, left and bottom and open only on the
+ * right: out of the folder, lower-row cards clear the right edge before
+ * dropping below the bottom wall; back in, x is timed so lower-row cards have
+ * risen to the pocket opening by the moment they cross the cover's right edge.
+ */
+export const getStackFlightTransition = (
+  index: number,
+  count: number,
+  flight: StackFlight,
+  path?: StackFlightPath
+) => {
+  const delay = getStackFlightDelay(index, count, flight);
   const lead = {
-    ...(flight === "out" ? FLIGHT_LEAD : RETURN_SPRING),
+    ...(flight === "out" ? FLIGHT_LEAD : RETURN_LEAD),
     delay,
   };
   let trailDelay = FLIGHT_TRAIL_DELAY_S;
-  // A card is small inside the folder and full size outside it, so it only
-  // grows once it has cleared the cover, and has shrunk before it goes back in.
-  let scaleDelay = delay;
-  let scaleDuration = FLIGHT_SCALE_DURATION_S;
+  let scaleDelay = flight === "out" ? delay + FLIGHT_SCALE_DELAY_S : delay;
+  let fadeDelay = flight === "out" ? delay : delay + RETURN_FADE_DELAY_S;
   if (path) {
     const travelX = Math.abs(path.to.x - path.from.x);
-    const travelY = Math.abs(path.to.y - path.from.y);
-    const isRowChange = travelY > MIN_SEQUENCED_TRAVEL_PX;
     if (flight === "out") {
-      const clearance = path.coverWidth + FLIGHT_CLEARANCE_PX - path.from.x;
-      const clearTime =
+      const isLowerRow = path.to.y - path.from.y > MIN_SEQUENCED_TRAVEL_PX;
+      const clearTime = getOpenClearTime(path);
+      trailDelay = isLowerRow ? clearTime : 0;
+      scaleDelay =
+        delay +
+        (isLowerRow
+          ? clearTime * LOWER_ROW_SCALE_DELAY_RATIO
+          : FLIGHT_SCALE_DELAY_S);
+    } else {
+      const riseY = path.from.y - path.to.y;
+      const isLowerRow = riseY > MIN_SEQUENCED_TRAVEL_PX;
+      const yAlignFraction = isLowerRow
+        ? Math.min(
+            0.985,
+            Math.max(0.5, (riseY - RETURN_WALL_MARGIN_PX) / riseY)
+          )
+        : 0;
+      const yAlignTime = isLowerRow
+        ? getSpringCrossingTime(RETURN_LEAD, yAlignFraction)
+        : 0;
+      const xReachWallFraction =
         travelX > 0
-          ? getSpringCrossingTime(
-              FLIGHT_LEAD,
-              Math.min(0.9, Math.max(0.2, clearance / travelX))
+          ? Math.min(
+              0.92,
+              Math.max(0, (path.from.x - path.coverWidth) / travelX)
             )
           : 0;
-      trailDelay = isRowChange ? clearTime : 0;
-      scaleDelay = delay + clearTime;
-    } else {
-      const riseTime = isRowChange
-        ? getSpringCrossingTime(RETURN_SPRING, RETURN_RISE_FRACTION)
-        : 0;
-      scaleDuration = RETURN_SHRINK_DURATION_S;
-      trailDelay = Math.max(riseTime, RETURN_SHRINK_DURATION_S);
+      const xReachWallTime =
+        travelX > 0
+          ? getSpringCrossingTime(RETURN_TRAIL, xReachWallFraction)
+          : 0;
+      trailDelay = isLowerRow ? Math.max(0, yAlignTime - xReachWallTime) : 0;
+      const scaleReachTime = getSpringCrossingTime(
+        RETURN_SCALE_SPRING,
+        RETURN_SHRINK_AT_WALL
+      );
+      scaleDelay = Math.max(
+        delay,
+        delay + trailDelay + xReachWallTime - scaleReachTime
+      );
+      if (travelX > 0) {
+        const entryFraction = Math.min(
+          0.85,
+          Math.max(
+            0.45,
+            (path.from.x - path.coverWidth * RETURN_COVER_ENTRY_RATIO) / travelX
+          )
+        );
+        fadeDelay =
+          delay +
+          trailDelay +
+          getSpringCrossingTime(RETURN_TRAIL, entryFraction);
+      }
     }
   }
   const trail = {
-    ...(flight === "out" ? FLIGHT_TRAIL : RETURN_SPRING),
+    ...(flight === "out" ? FLIGHT_TRAIL : RETURN_TRAIL),
     delay: delay + trailDelay,
+  };
+  const scale = {
+    ...(flight === "out" ? FLIGHT_SCALE_SPRING : RETURN_SCALE_SPRING),
+    delay: scaleDelay,
   };
   return {
     opacity: {
       ...TRANSITIONS.opacity,
-      delay: flight === "out" ? delay : delay + RETURN_FADE_DELAY_S,
+      delay: fadeDelay,
     },
     rotate: trail,
-    scale: {
-      delay: scaleDelay,
-      duration: scaleDuration,
-      ease: "easeInOut" as const,
-      times: [0, 0.45, 1],
-    },
+    scale,
     x: flight === "out" ? lead : trail,
     y: flight === "out" ? trail : lead,
   };

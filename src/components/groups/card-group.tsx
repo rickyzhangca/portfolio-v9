@@ -24,7 +24,7 @@ import {
 } from "react";
 
 import {
-  FLIGHT_SCALE,
+  getStackCaptionDelay,
   getStackFlightTransition,
   SPRING_PRESETS,
   STACK_FLIGHT_MS,
@@ -62,7 +62,7 @@ const FOLDER_OUTLINE = { path: FOLDER_SHAPE_PATH, size: FOLDER_SHAPE_SIZE };
 const ZERO_REPULSION_OFFSET = { x: 0, y: 0 } as const;
 /** How far a folder gives under a press, and how quickly. */
 const COVER_PRESS_SCALE = 0.975;
-const COVER_PRESS = { damping: 30, stiffness: 900, type: "spring" } as const;
+const COVER_PRESS = { damping: 50, stiffness: 700, type: "spring" } as const;
 /** FolderCoverCard's board colour, for its back panel. */
 const FOLDER_COVER_COLOR = "#d7e4d4";
 /** The back panel appears as the lamp's lighting warms up. */
@@ -656,6 +656,7 @@ export const CardStack = ({
 
             const collapsedSlot = Math.min(index, COLLAPSED_VISIBLE_COUNT - 1);
             const collapsedPos = COLLAPSED_POSITIONS[collapsedSlot];
+            const isTuckedPeeking = isPeeking && !isExpanded;
             const writingPose = isWritingFolder
               ? getWritingCollapsedPose(
                   collapsedSlot,
@@ -667,7 +668,7 @@ export const CardStack = ({
                     height: card.size.height ?? 360,
                     width: card.size.width ?? 240,
                   },
-                  isPeeking && index < COLLAPSED_VISIBLE_COUNT
+                  isTuckedPeeking && index < COLLAPSED_VISIBLE_COUNT
                     ? WRITING_COLLAPSED_HOVER_GAP_PX
                     : WRITING_COLLAPSED_GAP_PX
                 )
@@ -678,7 +679,7 @@ export const CardStack = ({
             let jigY = 0;
             let jigRotate = 0;
 
-            if (!writingPose && isPeeking && index < 2) {
+            if (!writingPose && isTuckedPeeking && index < 2) {
               if (index === 0) {
                 jigX = 12;
                 jigY = -8;
@@ -755,8 +756,23 @@ export const CardStack = ({
                   y: collapsedPos.y,
                 };
 
+            const openPath = {
+              coverWidth,
+              from: collapsedStackPose,
+              to: placement,
+            };
+            const captionDelay =
+              card.kind === "project"
+                ? getStackCaptionDelay(
+                    index,
+                    projectsWithSizes.length,
+                    openPath
+                  )
+                : undefined;
+
             const content = (
               <RenderCard
+                captionDelay={captionDelay}
                 card={card}
                 isExpanded={isExpanded}
                 onMeasure={
@@ -779,10 +795,7 @@ export const CardStack = ({
                   animate={{
                     opacity,
                     rotate,
-                    // Picked up mid-flight: a touch closer to the camera.
-                    scale: flight
-                      ? [null, cardScale * FLIGHT_SCALE, cardScale]
-                      : cardScale,
+                    scale: cardScale,
                     x,
                     y,
                   }}
@@ -822,14 +835,6 @@ export const CardStack = ({
                     >
                       <PaperCardProjection
                         inset={ARTICLE_CARD_PREVIEW_INSET}
-                        // Motion registers a shared layout id when a node mounts
-                        // and re-measures every node in the canvas whenever any
-                        // of them updates. A tucked card still holding its id gets
-                        // re-measured against the expanded pose while the folder
-                        // closes, which makes its paper jump. Tucked cards cannot
-                        // be opened, so they carry no id: it mounts with the card
-                        // when the folder opens, and the key remounts it per state.
-                        key={isExpanded ? "open" : "tucked"}
                         layoutId={
                           isExpanded
                             ? getDocumentLayoutId(stack.id, card.id)

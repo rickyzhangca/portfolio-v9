@@ -210,7 +210,7 @@ export const ToolbarRoot = ({
   return (
     <div
       className={tw(
-        "relative isolate",
+        "pointer-events-none relative isolate",
         elevation === "open" && "z-50",
         elevation === "closing" && "z-40",
         className

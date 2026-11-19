@@ -146,4 +146,28 @@ describe("paper shadow sprites", () => {
     expect(style).not.toHaveBeenCalled();
     expect(fill).not.toHaveBeenCalled();
   });
+
+  it("defers bitmap redraw while the caster is actively scaling, then redraws at rest", () => {
+    const { caster, fill } = sprite();
+    document.body.appendChild(caster);
+    try {
+      caster.style.scale = "0.67";
+      frame([caster]);
+      expect(fill).toHaveBeenCalledTimes(1);
+
+      // Mid-flight scale changes cross ZOOM_DRIFT but should not redraw while still scaling.
+      caster.style.scale = "0.85";
+      frame([caster]);
+      caster.style.scale = "1";
+      frame([caster]);
+      expect(fill).toHaveBeenCalledTimes(1);
+      expect(lamp.wake).toHaveBeenCalled();
+
+      // Once scale holds steady on the next frame, redraw once at the settled scale.
+      frame([caster]);
+      expect(fill).toHaveBeenCalledTimes(2);
+    } finally {
+      caster.remove();
+    }
+  });
 });

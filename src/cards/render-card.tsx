@@ -18,6 +18,7 @@ import { TimecarCard } from "@/cards/timecar/timecar-card";
 import { tw } from "@/lib/utils";
 
 interface RenderCardProps {
+  captionDelay?: number;
   card: CardInstance;
   className?: string;
   isExpanded?: boolean;
@@ -32,6 +33,7 @@ interface RenderCardProps {
  * based on the card kind from the registry.
  */
 const RenderCardComponent = ({
+  captionDelay,
   card,
   className,
   isExpanded = true,
@@ -77,6 +79,7 @@ const RenderCardComponent = ({
       case "project":
         return (
           <ProjectCard
+            captionDelay={captionDelay}
             content={card.content}
             isExpanded={isExpanded}
             priority={priority}

@@ -110,6 +110,15 @@ export function getStackPage(stack: CanvasStackItem, requestedPage = 0) {
   };
 }
 
+/** Space below a project card's square print for its gap and title pill. */
+const PROJECT_CAPTION_HEIGHT_PX = 54;
+
+const getEstimatedCardHeight = (card: CardInstance) =>
+  card.size.height ??
+  (card.kind === "project"
+    ? (card.size.width ?? 350) + PROJECT_CAPTION_HEIGHT_PX
+    : 360);
+
 export function getExpandedStackLayout(
   cover: CardInstance | undefined,
   cards: CardInstance[],
@@ -144,7 +153,7 @@ export function getExpandedStackLayout(
     const cosine = Math.cos(angle);
     const sine = Math.sin(angle);
     const width = card.size.width ?? 350;
-    const height = card.size.height ?? 360;
+    const height = getEstimatedCardHeight(card);
     // CardStack rotates around the top-left corner, so positive rotation
     // extends left of x; a width-only bounding box would miss that edge.
     const corners = [
@@ -231,7 +240,7 @@ export const getOffsets = (
       hasPrevInRow = false;
     }
 
-    const cardHeight = card.size.height ?? 360;
+    const cardHeight = getEstimatedCardHeight(card);
     const cardWidth = card.size.width ?? 350;
     const rotationDeg = (col + 1) * fanConfig.rotateStepDeg;
     const { width: bboxWidth, height: bboxHeight } = getRotatedBoundingBox(

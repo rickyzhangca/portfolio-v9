@@ -5,7 +5,6 @@ import { memo, useCallback, useState } from "react";
 import { LAMP_LIFT } from "@/components/lighting/lamp-shadows";
 import { PaperLighting } from "@/components/lighting/lit-paper";
 import { deskLampAtom } from "@/context/atoms";
-import { SPRING_PRESETS } from "@/lib/animation";
 import { tw } from "@/lib/utils";
 import type { ProjectCardContent } from "@/cards/registry";
 import { getResponsiveImageSources } from "@/cards/responsive-image";
@@ -13,13 +12,22 @@ import { getResponsiveImageSources } from "@/cards/responsive-image";
 /** rounded-4xl: the print's corner radius, in CSS px. */
 const PRINT_RADIUS = 32;
 
+const DEFAULT_CAPTION_DELAY_S = 0.08;
+
+const CAPTION_CLOSE_TRANSITION = {
+  opacity: { duration: 0.08, ease: "easeOut" },
+  y: { duration: 0.1, ease: "easeIn" },
+} as const;
+
 interface ProjectCardProps {
+  captionDelay?: number;
   content: ProjectCardContent;
   isExpanded?: boolean;
   priority?: boolean;
 }
 
 const ProjectCardComponent = ({
+  captionDelay = DEFAULT_CAPTION_DELAY_S,
   content,
   isExpanded = true,
   priority = false,
@@ -80,8 +88,7 @@ const ProjectCardComponent = ({
       <motion.div
         animate={{
           opacity: isExpanded ? 1 : 0,
-          y: isExpanded ? 0 : -8,
-          scale: isExpanded ? 1 : 0.95,
+          y: isExpanded ? 0 : -6,
         }}
         className={tw(
           "no-pan flex w-fit items-center gap-4 rounded-full bg-white px-5 py-3",
@@ -90,7 +97,23 @@ const ProjectCardComponent = ({
         data-lamp-contact
         data-lamp-shadow={isExpanded ? LAMP_LIFT.caption : undefined}
         initial={false}
-        transition={SPRING_PRESETS.snappy}
+        transition={
+          isExpanded
+            ? {
+                opacity: {
+                  delay: captionDelay,
+                  duration: 0.2,
+                  ease: "easeOut",
+                },
+                y: {
+                  damping: 36,
+                  delay: captionDelay,
+                  stiffness: 380,
+                  type: "spring",
+                },
+              }
+            : CAPTION_CLOSE_TRANSITION
+        }
       >
         <span className="font-medium">{content.title}</span>
         {content.link?.url ? (
@@ -117,8 +140,7 @@ const ProjectCardComponent = ({
         <motion.p
           animate={{
             opacity: isExpanded ? 1 : 0,
-            y: isExpanded ? 0 : -8,
-            scale: isExpanded ? 1 : 0.95,
+            y: isExpanded ? 0 : -6,
           }}
           className={tw(
             "no-pan rounded-3xl bg-white px-5 py-4 text-sm",
@@ -127,10 +149,23 @@ const ProjectCardComponent = ({
           data-lamp-contact
           data-lamp-shadow={isExpanded ? LAMP_LIFT.caption : undefined}
           initial={false}
-          transition={{
-            ...SPRING_PRESETS.snappy,
-            delay: 0.02,
-          }}
+          transition={
+            isExpanded
+              ? {
+                  opacity: {
+                    delay: captionDelay + 0.03,
+                    duration: 0.2,
+                    ease: "easeOut",
+                  },
+                  y: {
+                    damping: 36,
+                    delay: captionDelay + 0.03,
+                    stiffness: 380,
+                    type: "spring",
+                  },
+                }
+              : CAPTION_CLOSE_TRANSITION
+          }
         >
           {content.description}
         </motion.p>

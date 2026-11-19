@@ -27,6 +27,8 @@ const BLUR_REACH = 3;
  */
 const ZOOM_DRIFT = 0.2;
 const BLUR_DRIFT = 0.35;
+/** Scale change per frame above which a caster is mid-scale (skip bitmap redraw). */
+const ACTIVE_SCALE_DELTA = 0.002;
 /** Steps too small to show, in screen px, leave the sprite where it is. */
 const SHADOW_STEP = 0.25;
 const OPACITY_STEP = 0.002;
@@ -267,6 +269,7 @@ export const runLampSprite = ({
   let drawn: Drawn | null = null;
   let written = "";
   let shape: Shape | null = null;
+  let lastScreenScale: number | null = null;
 
   const hide = () => {
     if (written !== "hidden") {
@@ -322,6 +325,10 @@ export const runLampSprite = ({
     const screenScale = Math.sqrt(
       Math.abs(linear.a * linear.d - linear.b * linear.c)
     );
+    const isScaling =
+      lastScreenScale !== null &&
+      Math.abs(screenScale - lastScreenScale) > ACTIVE_SCALE_DELTA;
+    lastScreenScale = screenScale;
     const zoomed =
       drawn !== null &&
       Math.abs(screenScale / drawn.screenScale - 1) > ZOOM_DRIFT;
@@ -352,6 +359,13 @@ export const runLampSprite = ({
         reshaped ||
         (drawn !== null &&
           Math.abs(shadow.blur - drawn.blur) > drawn.blur * BLUR_DRIFT);
+      if (drawn && isScaling && !reshaped) {
+        if (drifted) {
+          wakeLamp();
+        }
+        place(shadow, screenScale);
+        return;
+      }
       if (!drawn || drifted) {
         // Not loaded yet, or out of turns: the filter draws the shadow
         // meanwhile, or the old bitmap does.
