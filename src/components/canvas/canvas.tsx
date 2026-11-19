@@ -11,7 +11,11 @@ import {
   useRef,
   useState,
 } from "react";
-import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import {
+  type ReactZoomPanPinchRef,
+  TransformComponent,
+  TransformWrapper,
+} from "react-zoom-pan-pinch";
 import { getInteractionPolicy } from "@/cards/registry";
 import { AboutModal } from "@/components/about/about-modal";
 import { ArticleModal } from "@/components/articles/article-modal";
@@ -61,7 +65,7 @@ import {
   computeStackCardRepulsion,
 } from "@/lib/repulsion";
 import { tw } from "@/lib/utils";
-import type { CanvasItem } from "@/types/canvas";
+import type { CanvasItem, ViewportState } from "@/types/canvas";
 import { CanvasControls } from "./canvas-controls";
 import { CanvasItemRenderer } from "./canvas-item";
 
@@ -71,6 +75,16 @@ interface CanvasProps {
 }
 
 const ZERO_OFFSET = { x: 0, y: 0 } as const;
+/** Subtle dark peripheral lens vignetting only (zero milky frosted-glass tint). */
+const DOF_VIGNETTE_LIT =
+  "radial-gradient(ellipse 70% 70% at 50% 50%, rgba(0, 0, 0, 0) 40%, rgba(10, 14, 24, 0.2) 100%)";
+const DOF_VIGNETTE_DAYLIGHT =
+  "radial-gradient(ellipse 70% 70% at 50% 50%, rgba(0, 0, 0, 0) 44%, rgba(16, 20, 28, 0.1) 100%)";
+const DOF_VIGNETTE_STACK_LIT =
+  "radial-gradient(ellipse 75% 75% at 50% 50%, rgba(0, 0, 0, 0) 46%, rgba(10, 14, 24, 0.14) 100%)";
+const DOF_VIGNETTE_STACK_DAYLIGHT =
+  "radial-gradient(ellipse 75% 75% at 50% 50%, rgba(0, 0, 0, 0) 48%, rgba(16, 20, 28, 0.08) 100%)";
+const DOF_ENTER_EASE = [0.22, 1, 0.36, 1] as const;
 
 // The dimmed room and its shadow loop exist only under the lamp.
 const DeskLampRoom = lazy(() =>
@@ -306,6 +320,47 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
     (state.expandedStackId !== null || state.focusedItemId !== null);
   const { canvasVisible } = session;
   const { containerRef } = viewport;
+  const dofBackdropsRef = useRef(new Set<HTMLDivElement>());
+  const positionDofBackdrops = useCallback((vp: ViewportState) => {
+    const currentScale = vp.scale || 1;
+    const translate = `${-vp.positionX / currentScale - 2}px ${-vp.positionY / currentScale - 2}px`;
+    for (const element of dofBackdropsRef.current) {
+      element.style.translate = translate;
+    }
+  }, []);
+  const registerDofBackdrop = useCallback(
+    (element: HTMLDivElement | null) => {
+      if (!element) {
+        return;
+      }
+      dofBackdropsRef.current.add(element);
+      const vp = viewport.viewportRef.current;
+      const currentScale = vp.scale || 1;
+      element.style.translate = `${-vp.positionX / currentScale - 2}px ${-vp.positionY / currentScale - 2}px`;
+      return () => {
+        dofBackdropsRef.current.delete(element);
+      };
+    },
+    [viewport.viewportRef]
+  );
+  const handleTransform = useCallback(
+    (ref: ReactZoomPanPinchRef) => {
+      viewport.onTransformed(ref);
+      positionDofBackdrops(ref.state);
+    },
+    [positionDofBackdrops, viewport]
+  );
+
+  useLayoutEffect(() => {
+    if (state.focusedItemId || state.expandedStackId) {
+      positionDofBackdrops(viewport.viewportRef.current);
+    }
+  }, [
+    positionDofBackdrops,
+    state.expandedStackId,
+    state.focusedItemId,
+    viewport.viewportRef,
+  ]);
 
   useEffect(() => {
     const root = containerRef.current;
@@ -361,7 +416,7 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
           maxScale={3}
           minScale={0.3}
           onPanningStop={viewport.onStopped}
-          onTransform={viewport.onTransformed}
+          onTransform={handleTransform}
           onZoomStop={viewport.onStopped}
           panning={{
             disabled: isDragging || interaction.isLocked,
@@ -431,22 +486,58 @@ const CanvasScene = ({ initialItems }: Pick<CanvasProps, "initialItems">) => {
                 <AnimatePresence>
                   {overlays.map((id) => {
                     const item = state.items.get(id);
-                    return item ? (
+                    if (!item) {
+                      return null;
+                    }
+                    const isFocusOverlay = id === state.focusedItemId;
+                    const blurPx = isFocusOverlay ? 8 : 5.5;
+                    let vignette = DOF_VIGNETTE_STACK_DAYLIGHT;
+                    if (isFocusOverlay) {
+                      vignette = isLampOn
+                        ? DOF_VIGNETTE_LIT
+                        : DOF_VIGNETTE_DAYLIGHT;
+                    } else if (isLampOn) {
+                      vignette = DOF_VIGNETTE_STACK_LIT;
+                    }
+                    // Single viewport-sized optical DOF layer (no mask pass or
+                    // stacked second blur) for both focused items and expanded
+                    // folders, keeping rack-focus smooth on 60/120Hz screens.
+                    return (
                       <motion.div
-                        animate={{ opacity: 0.8 }}
-                        className="bg-background1 absolute cursor-pointer"
-                        exit={{ opacity: 0 }}
-                        initial={{ opacity: 0 }}
-                        key={id}
+                        animate={{
+                          backdropFilter: `blur(${blurPx}px) contrast(1.02) saturate(1.03)`,
+                          opacity: 1,
+                        }}
+                        className="pointer-events-auto absolute top-0 left-0 cursor-pointer will-change-[backdrop-filter,opacity]"
+                        data-dof-backdrop
+                        exit={{
+                          backdropFilter: "blur(0px) contrast(1) saturate(1)",
+                          opacity: 0,
+                          transition: { duration: 0.28, ease: "easeInOut" },
+                        }}
+                        initial={{
+                          backdropFilter: "blur(0px) contrast(1) saturate(1)",
+                          opacity: 0,
+                        }}
+                        key={`dof-${id}`}
+                        ref={registerDofBackdrop}
                         style={{
-                          height: 100_000,
-                          left: -50_000,
-                          top: -50_000,
-                          width: 100_000,
+                          background: vignette,
+                          height:
+                            viewport.dimensions.height / (viewport.scale || 1) +
+                            4,
+                          translate: `${-viewport.viewportRef.current.positionX / (viewport.viewportRef.current.scale || 1) - 2}px ${-viewport.viewportRef.current.positionY / (viewport.viewportRef.current.scale || 1) - 2}px`,
+                          width:
+                            viewport.dimensions.width / (viewport.scale || 1) +
+                            4,
                           zIndex: item.zIndex - 1,
                         }}
+                        transition={{
+                          duration: isFocusOverlay ? 0.4 : 0.34,
+                          ease: DOF_ENTER_EASE,
+                        }}
                       />
-                    ) : null;
+                    );
                   })}
                 </AnimatePresence>
               </TransformComponent>

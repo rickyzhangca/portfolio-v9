@@ -6,18 +6,21 @@ import type { LitImage, LitQuad } from "./macbook-renderer";
 
 interface LitMacbookProps {
   hoveredSticker: string | null;
+  isFocused?: boolean;
   lidSrc: string;
   onFail: () => void;
   onReady: () => void;
   stickers: MacbookSticker[];
 }
 
-/** Room around the card for shadows, in local px. */
-const CANVAS_MARGIN = 128;
-const LID_PAD = 120;
+/** Room around the card for shadows, in local px (covers max offset + mip blur tail). */
+const CANVAS_MARGIN = 180;
+const LID_PAD = 172;
 const STICKER_PAD = 12;
 const LID_LIFT = 24;
-const LID_HOVER_LIFT = 40;
+const LID_HOVER_LIFT = 32;
+/** Slightly higher lift when focused, kept well inside LID_PAD so shadow never clips. */
+const LID_FOCUS_LIFT = 36;
 /** Vinyl stickers adhere flush to the lid and lift only subtly on hover. */
 const STICKER_LIFT = 0.35;
 const STICKER_HOVER_LIFT = 1.8;
@@ -36,6 +39,7 @@ const ease = (value: number, target: number, elapsed: number) =>
  */
 export const LitMacbook = ({
   hoveredSticker,
+  isFocused = false,
   lidSrc,
   onFail,
   onReady,
@@ -43,12 +47,18 @@ export const LitMacbook = ({
 }: LitMacbookProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const hoveredRef = useRef(hoveredSticker);
+  const focusedRef = useRef(isFocused);
   const callbacksRef = useRef({ onFail, onReady });
 
   useEffect(() => {
     hoveredRef.current = hoveredSticker;
     wakeLamp();
   }, [hoveredSticker]);
+
+  useEffect(() => {
+    focusedRef.current = isFocused;
+    wakeLamp();
+  }, [isFocused]);
 
   useEffect(() => {
     callbacksRef.current = { onFail, onReady };
@@ -150,11 +160,13 @@ export const LitMacbook = ({
       onReady: () => callbacksRef.current.onReady(),
       overhang: CANVAS_MARGIN,
       step: (elapsed) => {
-        lidLift = ease(
-          lidLift,
-          cardHovered ? LID_HOVER_LIFT : LID_LIFT,
-          elapsed
-        );
+        let lidTarget = LID_LIFT;
+        if (focusedRef.current) {
+          lidTarget = LID_FOCUS_LIFT;
+        } else if (cardHovered) {
+          lidTarget = LID_HOVER_LIFT;
+        }
+        lidLift = ease(lidLift, lidTarget, elapsed);
         for (const [index, sticker] of stickers.entries()) {
           stickerLifts[index] = ease(
             stickerLifts[index] ?? STICKER_LIFT,

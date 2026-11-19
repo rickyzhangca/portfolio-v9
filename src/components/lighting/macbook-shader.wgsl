@@ -134,13 +134,15 @@ fn shadowAt(p: vec2f, lift: f32, strength: f32, isSticker: bool) -> f32 {
   let len = length(delta);
   // Clamped without branching: textureSample needs uniform control flow.
   let lampDelta = delta * min(1.0, lift * 1.6 / max(len, 0.0001));
+  let clampedLen = length(lampDelta);
   let domDelta = select(vec2f(0.0, -16.0), vec2f(0.0, -1.0), isSticker);
   let offset = mix(domDelta, lampDelta, g.intensity);
   // Stickers adhere flat to the lid: tight edge shadow rather than a wide puddle.
+  // Use clampedLen so distant lamp positions never blow the blur past LID_PAD.
   let domRadius = select(16.0, 1.0, isSticker);
   let lampRadius = select(
-    1.5 + lift * 0.45 + len * 0.15,
-    0.4 + lift * 0.45 + len * 0.08,
+    1.5 + lift * 0.45 + clampedLen * 0.15,
+    0.4 + lift * 0.45 + clampedLen * 0.08,
     isSticker,
   );
   let radius = mix(domRadius, lampRadius, g.intensity);
@@ -258,7 +260,10 @@ fn fs(in: VertexOut) -> @location(0) vec4f {
     lit = stickerColor(p, base);
   }
   let isSticker = q.kind > 0.5;
-  let strength = select(0.24, 0.22, isSticker);
+  // A laptop lifted toward the camera casts a wider, softer, fainter shadow on
+  // the distant desk below.
+  let lidStrength = 0.24 / (1.0 + max(q.lift - 24.0, 0.0) * 0.015);
+  let strength = select(lidStrength, 0.22, isSticker);
   let shadow = shadowAt(p, q.lift, strength, isSticker);
   let rgb = mix(base.rgb, lit, g.intensity);
   // Premultiplied: the image over its own cool shadow.

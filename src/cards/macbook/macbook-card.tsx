@@ -32,6 +32,9 @@ interface StickerTooltipState {
 const TOOLTIP_WIDTH_THRESHOLD = 200;
 /** Gap the note keeps from the screen edge on narrow screens. */
 const TOOLTIP_EDGE_MARGIN = 16;
+/** Subtle foreground parallax (px) while focused so the lifted lid reads in 3D. */
+const FOCUS_PARALLAX_PX = 7;
+const FOCUS_PARALLAX_RATE = 10;
 
 const MacbookCardComponent = ({
   content,
@@ -212,6 +215,71 @@ const MacbookCardComponent = ({
     }
   }, [isFocused]);
 
+  // Subtle foreground-only parallax while focused: keeps the blurred backdrop
+  // 100% static (GPU-cached) while giving the lifted laptop palpable Z-depth.
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) {
+      return;
+    }
+    if (!isFocused) {
+      element.style.translate = "";
+      return;
+    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    let targetX = 0;
+    let targetY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let frameId = 0;
+    let lastTime = 0;
+
+    const step = (time: number) => {
+      frameId = 0;
+      const elapsed = lastTime
+        ? Math.min((time - lastTime) / 1000, 0.05)
+        : 1 / 60;
+      lastTime = time;
+      const follow = 1 - Math.exp(-elapsed * FOCUS_PARALLAX_RATE);
+      currentX += (targetX - currentX) * follow;
+      currentY += (targetY - currentY) * follow;
+      if (Math.hypot(targetX - currentX, targetY - currentY) < 0.05) {
+        currentX = targetX;
+        currentY = targetY;
+      } else {
+        frameId = requestAnimationFrame(step);
+      }
+      element.style.translate = `${currentX.toFixed(2)}px ${currentY.toFixed(2)}px`;
+    };
+
+    const schedule = () => {
+      if (!frameId) {
+        lastTime = performance.now();
+        frameId = requestAnimationFrame(step);
+      }
+    };
+
+    const onPointerMove = (event: globalThis.PointerEvent) => {
+      if (event.pointerType !== "mouse") {
+        return;
+      }
+      const nx = (event.clientX / Math.max(window.innerWidth, 1) - 0.5) * 2;
+      const ny = (event.clientY / Math.max(window.innerHeight, 1) - 0.5) * 2;
+      targetX = -nx * FOCUS_PARALLAX_PX;
+      targetY = -ny * FOCUS_PARALLAX_PX;
+      schedule();
+    };
+
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      cancelAnimationFrame(frameId);
+      element.style.translate = "";
+    };
+  }, [isFocused]);
+
   return (
     <div
       className="relative h-full w-full"
@@ -226,7 +294,10 @@ const MacbookCardComponent = ({
       <img
         alt="MacBook"
         className={tw(
-          "pointer-events-none h-full w-full object-contain",
+          "pointer-events-none h-full w-full object-contain transition-[filter] duration-300",
+          isFocused &&
+            !isLampOn &&
+            "drop-shadow-[0_28px_42px_rgba(0,0,0,0.22)]",
           isDomHidden && "opacity-0"
         )}
         src={macbookImage}
@@ -262,6 +333,7 @@ const MacbookCardComponent = ({
       {isLampOn ? (
         <LitMacbook
           hoveredSticker={isFocused ? (tooltip?.stickerSrc ?? null) : null}
+          isFocused={isFocused}
           lidSrc={macbookImage}
           onFail={handleLitFail}
           onReady={handleLitReady}
